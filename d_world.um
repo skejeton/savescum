@@ -1,0 +1,125 @@
+import ("image.um"; "map.um"; "th.um"; "std.um"; "csv.um"
+        "d_util.um"; "d_background.um")
+
+const (
+        chunkW* = 320/16*2
+        chunkH* = 240/16*2
+        lastVersion* = "000"
+)
+
+type (
+        Chunk* = [chunkW][chunkH]int
+        ChunkPos* = struct {
+                x: int
+                y: int
+        }
+        World* = struct {
+                tileset: image.Image
+                tilemap: map.Map
+        }
+)
+
+fn pos2Tile*(x, y: int): int {
+        return y * 4 + x + 1;
+}
+
+fn tile2Pos*(pos: int): th.Vf2 {
+        pos -= 1
+        return th.Vf2{pos%4, pos/4}
+}
+
+fn (world: ^World) setTile*(tx, ty, tile: int) {
+        // get or construct a chunk
+        chunk_pos := ChunkPos{d_util.floor(tx/real(chunkW)), d_util.floor(ty/real(chunkH))};
+        chunk := ^Chunk(world.tilemap.get(chunk_pos))
+        if chunk == null {
+                chunk = new(Chunk)
+                world.tilemap.set(chunk_pos, chunk)
+        }
+
+        // make tile positions local
+        tx = tx - chunk_pos.x * chunkW;
+        ty = ty - chunk_pos.y * chunkH;
+
+        chunk[tx][ty] = tile
+}
+
+fn (world: ^World) draw*(pan: th.Vf2) {
+        for bucket in world.tilemap {
+                for item in bucket {
+                        pos := ChunkPos(item.key)
+                        chunk := ^Chunk(item.val)
+                        for cx := 0; cx < chunkW; cx++ {
+                                for cy := 0; cy < chunkH; cy++ {
+                                        tx := cx + pos.x * chunkW
+                                        ty := cy + pos.y * chunkH
+                                        tileId := chunk[cx][cy]
+
+                                        if tileId > 0 {
+                                                pos := tile2Pos(tileId)
+
+                                                world.tileset.crop(th.Vf2{pos.x/4, pos.y/4}, th.Vf2{pos.x/4+1/4.0, pos.y/4+1/4.0})
+                                                world.tileset.draw(d_util.posTrans(tx * 16 - pan.x, ty * 16 - pan.y))
+                                        }
+                                }
+                        }
+
+                }
+        }
+}
+
+fn (world: ^World) save*(): str {
+        const filename = "scn.csv"
+        data := make([][]str, 0)
+        version := make([]str, 0)
+        version = append(version, lastVersion)
+        data = append(data, version)
+
+        for bucket in world.tilemap {
+                for item in bucket {
+                        pos := ChunkPos(item.key)
+                        chunk := ^Chunk(item.val)
+                        data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y)})
+                        
+                        for ty := 0; ty < chunkH; ty++ {
+                                row := make([]str, 0)
+                                for tx := 0; tx < chunkW; tx++ {
+                                        row = append(row, std.itoa(chunk[tx][ty]))
+                                }
+                                data = append(data, row)
+                        }
+                }
+        }
+
+        return csv.encode(data)
+}
+
+fn (world: ^World) load*(data: str) {
+        csvData := csv.parse(data)
+
+        world.tilemap = map.Map{}
+
+        if csvData[0][0] != lastVersion {
+                error("Scene version mismatch")
+        }
+
+        row := 1
+        
+        // NOTE: I check first column of the csv data because csv parser reports adds bogus row with empty string
+        for row < len(csvData) && csvData[row][0] != "" {
+                ofsX := std.atoi(csvData[row][0])*chunkW
+                ofsY := std.atoi(csvData[row][1])*chunkH
+                row += 1
+
+                for y := 0; y < chunkH; y++ {
+                        for x := 0; x < chunkW; x++ {
+                                tileId := std.atoi(csvData[row+y][x])
+                                if tileId > 0 {
+                                        world.setTile(x+ofsX, y+ofsY, tileId)
+                                }
+                        }
+                }
+                row += chunkH
+        }
+}
+
