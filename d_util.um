@@ -11,13 +11,13 @@ fn isMouseInRect*(r: rect.Rect): bool {
 
 fn drawRectLines*(color: uint32, r: rect.Rect) {
         // top
-        canvas.drawRect(color, rect.Rect{r.x, r.y, r.w, 1});
+        canvas.drawRect(color, rect.Rect{r.x, r.y, r.w, 0.5});
         // bottom
-        canvas.drawRect(color, rect.Rect{r.x, r.y+r.h-1, r.w, 1});
+        canvas.drawRect(color, rect.Rect{r.x, r.y+r.h-0.5, r.w, 0.5});
         // left
-        canvas.drawRect(color, rect.Rect{r.x, r.y+1, 1, r.h-2});
+        canvas.drawRect(color, rect.Rect{r.x, r.y+0.5, 0.5, r.h-1});
         // right
-        canvas.drawRect(color, rect.Rect{r.x+r.w-1, r.y+1, 1, r.h-2});
+        canvas.drawRect(color, rect.Rect{r.x+r.w-0.5, r.y+0.5, 0.5, r.h-1});
 }
 
 fn floor*(n: real): int {

@@ -131,6 +131,31 @@ fn loadMap() {
         world.load(data)
 }
 
+fn drawLayerIcon(x, y: real) {
+        fills := [3]bool{worldSelLayer == -1, worldSelLayer == 0, worldSelLayer == 1};
+
+        // NOTE: If we choose to show all layers, the icon will show all boxes filled in
+        if worldShowCurrentLayer == false {
+                fills = [3]bool{true, true, true};
+        }
+
+        x += 13
+
+        for l in fills {
+                rec := rect.Rect{x-10, y, 10, 6}
+                x -= 1
+                y += 2
+
+                if l {
+                        canvas.drawRect(0xAAAAFFFF, rec)
+                        d_util.drawRectLines(0xFFFFFFFF, rec)
+                } else {
+                        canvas.drawRect(0x001122FF, rec)
+                        d_util.drawRectLines(0xFFFFFFFF, rec)
+                }
+        }
+}
+
 fn drawBar() {
         canvas.drawRect(0x001122FF, uiWindows[1])
         mx := uiWindows[1].x+3
@@ -161,26 +186,21 @@ fn drawBar() {
         if putButton("Load", &area, 30) {
                 loadMap()
         }
-        if putSelect("FG", &area, 15, worldSelLayer == 1) {
-                worldSelLayer = 1
+        if putSelect("BG", &area, 15, worldSelLayer == -1) {
+                worldSelLayer = -1
         }
         if putSelect("MG", &area, 15, worldSelLayer == 0) {
                 worldSelLayer = 0
         }
-        if putSelect("BG", &area, 15, worldSelLayer == -1) {
-                worldSelLayer = -1
-        }
-        
-        var switchText: str
-        if (worldShowCurrentLayer) {
-                switchText = "CUR"
-        } else {
-                switchText = "ALL"
+        if putSelect("FG", &area, 15, worldSelLayer == 1) {
+                worldSelLayer = 1
         }
 
-        if putButton(switchText, &area, 20) {
+        if putButton(" ", &area, 20) {
                 worldShowCurrentLayer = !worldShowCurrentLayer
         }
+        // FIXME: Hack to get the position of the previous butotn
+        drawLayerIcon(area.x + area.w+4, area.y+3)
 }
 
 fn drawPicker() {
