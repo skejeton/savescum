@@ -4,14 +4,17 @@ import ("std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "inp
 
 
 var (
-        selTileX: int
-        selTileY: int
         uiWindows: [3]rect.Rect
         uiFocusWindow: int
-        viewOfsX: int
-        viewOfsY: int
         mainFont: font.Cached
 
+
+        worldViewOfsX: int
+        worldViewOfsY: int
+        worldSelTileX: int
+        worldSelTileY: int
+        worldSelLayer: int
+        worldShowCurrentLayer: bool
         world: d_world.World
 )
 
@@ -22,15 +25,15 @@ fn actField() {
         if uiFocusWindow == 0 && (input.isPressed(input.mouse1) || input.isPressed(input.mouse3)) {
                 pos := input.getMousePos()
 
-                tx := trunc(pos.x / 16) + viewOfsX
-                ty := trunc(pos.y / 16) + viewOfsY
+                tx := trunc(pos.x / 16) + worldViewOfsX
+                ty := trunc(pos.y / 16) + worldViewOfsY
 
                 painting := input.isPressed(input.mouse1)
 
                 if painting {
-                        world.setTile(tx, ty, d_world.pos2Tile(selTileX, selTileY))
+                        world.setTile(worldSelLayer, tx, ty, d_world.pos2Tile(worldSelTileX, worldSelTileY))
                 } else {
-                        world.setTile(tx, ty, 0)
+                        world.setTile(worldSelLayer, tx, ty, 0)
                 }
         }
 }
@@ -51,7 +54,11 @@ fn drawGridEditor() {
 
  
         // draw world
-        world.draw(th.Vf2{viewOfsX * 16, viewOfsY * 16})
+        if worldShowCurrentLayer {
+                world.drawLayer(th.Vf2{worldViewOfsX * 16, worldViewOfsY * 16}, worldSelLayer)
+        } else {
+                world.draw(th.Vf2{worldViewOfsX * 16, worldViewOfsY * 16})
+        }
 
         // draw tile highlight
         if uiFocusWindow == 0 {
@@ -62,19 +69,15 @@ fn drawGridEditor() {
         }
 }
 
-fn putBtn(text: str, r: rect.Rect): bool {
+fn putBtnBase(text: str, r: rect.Rect, colorMod: uint32): bool {
         // -- measure
         txtSize := d_util.measureText(mainFont, text)
         // center the text
         txtPos := th.Vf2{r.x+(r.w-txtSize.x)/2, r.y+(r.h-txtSize.y)/2}
-        color := 0x224455FF
+        color := 0x224455FF + colorMod
         hovered := d_util.isMouseInRect(r)
-        pressed := hovered && input.isPressed(input.mouse1)
         nudged  := hovered && input.isJustPressed(input.mouse1)
         if (hovered) {
-                color += 0x11111100
-        }
-        if (pressed) {
                 color += 0x11111100
         }
 
@@ -84,7 +87,19 @@ fn putBtn(text: str, r: rect.Rect): bool {
         return nudged
 }
 
-fn saveMap() {
+fn putBtn(text: str, r: rect.Rect): bool {
+
+        hovered := d_util.isMouseInRect(r)
+        pressed := hovered && input.isPressed(input.mouse1)
+        color := 0
+        if (hovered) {
+                color += 0x11111100
+        }
+
+        return putBtnBase(text, r, color)
+}
+
+fn saveMap() { 
         file := std.fopen("data/sc00_sky.csv", "w")
         if file == null {
                 error("Can't save the scene")
@@ -120,16 +135,51 @@ fn drawBar() {
         canvas.drawRect(0x001122FF, uiWindows[1])
         mx := uiWindows[1].x+3
         my := uiWindows[1].y+3
-        mainFont.draw("x: " + std.itoa(viewOfsX) + " y: " + std.itoa(viewOfsY), th.Vf2{mx, my}, 0xFFFFFFFF, 1.6);
+        mainFont.draw("x: " + std.itoa(worldViewOfsX) + " y: " + std.itoa(worldViewOfsY), th.Vf2{mx, my}, 0xFFFFFFFF, 1.6);
         
         area := uiWindows[1]
 
-        if putBtn("Save", d_util.rectChopRight(&area, 30)) {
+        putButton := fn(s: str, r: ^rect.Rect, w: int): bool {
+                pressed := putBtn(s, d_util.rectChopRight(r, w))
+                d_util.rectChopRight(r, 1) // border
+                return pressed
+        }
+
+        putSelect := fn(s: str, r: ^rect.Rect, w: int, check: bool): bool {
+                var colorMod : uint32 = 0
+                if check {
+                        colorMod = 0x00009900
+                }
+                pressed := putBtnBase(s, d_util.rectChopRight(r, w), colorMod)
+                d_util.rectChopRight(r, 1) // border
+                return pressed
+        }
+
+        if putButton("Save", &area, 30) {
                 saveMap()
         }
-        d_util.rectChopRight(&area, 1) // border
-        if putBtn("Load", d_util.rectChopRight(&area, 30)) {
+        if putButton("Load", &area, 30) {
                 loadMap()
+        }
+        if putSelect("FG", &area, 15, worldSelLayer == 1) {
+                worldSelLayer = 1
+        }
+        if putSelect("MG", &area, 15, worldSelLayer == 0) {
+                worldSelLayer = 0
+        }
+        if putSelect("BG", &area, 15, worldSelLayer == -1) {
+                worldSelLayer = -1
+        }
+        
+        var switchText: str
+        if (worldShowCurrentLayer) {
+                switchText = "CUR"
+        } else {
+                switchText = "ALL"
+        }
+
+        if putButton(switchText, &area, 20) {
+                worldShowCurrentLayer = !worldShowCurrentLayer
         }
 }
 
@@ -149,13 +199,13 @@ fn drawPicker() {
                         world.tileset.crop(th.Vf2{tx/real(tsw), ty/real(tsh)}, th.Vf2{tx/real(tsw)+1/real(tsw), ty/real(tsh)+1/real(tsh)})
                         world.tileset.draw(d_util.posTrans(x, y))
                         
-                        if (selTileX == tx) && (selTileY == ty) {
+                        if (worldSelTileX == tx) && (worldSelTileY == ty) {
                                 canvas.drawRect(0x00FF0033, rect.Rect{x, y, 16, 16});
                         }
 
                         if uiFocusWindow == 2 && d_util.isMouseInRect(rec) && input.isJustPressed(input.mouse1) { 
-                                selTileX = tx
-                                selTileY = ty
+                                worldSelTileX = tx
+                                worldSelTileY = ty
                         }
                 }
         }
@@ -196,16 +246,16 @@ fn main() {
                 handleUiWindows()
 
                 if input.isJustPressed(input.key_up) {
-                        viewOfsY -= 1;
+                        worldViewOfsY -= 1;
                 }
                 if input.isJustPressed(input.key_down) {
-                        viewOfsY += 1;
+                        worldViewOfsY += 1;
                 }
                 if input.isJustPressed(input.key_left) {
-                        viewOfsX -= 1;
+                        worldViewOfsX -= 1;
                 }
                 if input.isJustPressed(input.key_right) {
-                        viewOfsX += 1;
+                        worldViewOfsX += 1;
                 }
 
                 actField()

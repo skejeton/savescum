@@ -1,3 +1,11 @@
+//      d_world.um
+//      
+//      The world is split up into layers, which contain chunks.
+//      There's 3 layers:
+//              -1: the background layer, no collision checks are performed on it
+//               0: the middleground layer, this is where the collisions are tested
+//               1: the foreground layer, this is drawn over the character, no collision checks  
+
 import ("image.um"; "map.um"; "th.um"; "std.um"; "csv.um"
         "d_util.um"; "d_background.um")
 
@@ -15,7 +23,7 @@ type (
         }
         World* = struct {
                 tileset: image.Image
-                tilemap: map.Map
+                tilemap: [3]map.Map
         }
 )
 
@@ -28,13 +36,18 @@ fn tile2Pos*(pos: int): th.Vf2 {
         return th.Vf2{pos%4, pos/4}
 }
 
-fn (world: ^World) setTile*(tx, ty, tile: int) {
+fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
+        layer++
+        if layer < 0 || layer > 2 {
+                return;
+        }
+
         // get or construct a chunk
         chunk_pos := ChunkPos{d_util.floor(tx/real(chunkW)), d_util.floor(ty/real(chunkH))};
-        chunk := ^Chunk(world.tilemap.get(chunk_pos))
+        chunk := ^Chunk(world.tilemap[layer].get(chunk_pos))
         if chunk == null {
                 chunk = new(Chunk)
-                world.tilemap.set(chunk_pos, chunk)
+                world.tilemap[layer].set(chunk_pos, chunk)
         }
 
         // make tile positions local
@@ -44,8 +57,16 @@ fn (world: ^World) setTile*(tx, ty, tile: int) {
         chunk[tx][ty] = tile
 }
 
-fn (world: ^World) draw*(pan: th.Vf2) {
-        for bucket in world.tilemap {
+
+fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int) {
+        layerId++
+        if layerId < 0 || layerId > 2 {
+                return;
+        }
+        
+        layer := &world.tilemap[layerId]
+
+        for bucket in layer {
                 for item in bucket {
                         pos := ChunkPos(item.key)
                         chunk := ^Chunk(item.val)
@@ -68,6 +89,12 @@ fn (world: ^World) draw*(pan: th.Vf2) {
         }
 }
 
+fn (world: ^World) draw*(pan: th.Vf2) {
+        for i := -1; i < 2; i++ {
+                world.drawLayer(pan, i)
+        }
+}
+
 fn (world: ^World) save*(): str {
         const filename = "scn.csv"
         data := make([][]str, 0)
@@ -75,20 +102,25 @@ fn (world: ^World) save*(): str {
         version = append(version, lastVersion)
         data = append(data, version)
 
-        for bucket in world.tilemap {
-                for item in bucket {
-                        pos := ChunkPos(item.key)
-                        chunk := ^Chunk(item.val)
-                        data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y)})
-                        
-                        for ty := 0; ty < chunkH; ty++ {
-                                row := make([]str, 0)
-                                for tx := 0; tx < chunkW; tx++ {
-                                        row = append(row, std.itoa(chunk[tx][ty]))
+        // Start from -1, because that's the background layer, which maps to index 0
+        layerNo := -1
+        for layer in world.tilemap {
+                for bucket in layer {
+                        for item in bucket {
+                                pos := ChunkPos(item.key)
+                                chunk := ^Chunk(item.val)
+                                data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y), std.itoa(layerNo)})
+                                
+                                for ty := 0; ty < chunkH; ty++ {
+                                        row := make([]str, 0)
+                                        for tx := 0; tx < chunkW; tx++ {
+                                                row = append(row, std.itoa(chunk[tx][ty]))
+                                        }
+                                        data = append(data, row)
                                 }
-                                data = append(data, row)
                         }
                 }
+                layerNo++
         }
 
         return csv.encode(data)
@@ -97,7 +129,7 @@ fn (world: ^World) save*(): str {
 fn (world: ^World) load*(data: str) {
         csvData := csv.parse(data)
 
-        world.tilemap = map.Map{}
+        world.tilemap = [3]map.Map{map.Map{}, map.Map{}, map.Map{}}
 
         if csvData[0][0] != lastVersion {
                 error("Scene version mismatch")
@@ -107,19 +139,23 @@ fn (world: ^World) load*(data: str) {
         
         // NOTE: I check first column of the csv data because csv parser reports adds bogus row with empty string
         for row < len(csvData) && csvData[row][0] != "" {
-                ofsX := std.atoi(csvData[row][0])*chunkW
-                ofsY := std.atoi(csvData[row][1])*chunkH
+                chunkPos := ChunkPos{std.atoi(csvData[row][0]), std.atoi(csvData[row][1])}
+                layer := std.atoi(csvData[row][2]) + 1
                 row += 1
 
+                if layer < 0 || layer > 2 {
+                        continue
+                }
+                chunk := new(Chunk)
                 for y := 0; y < chunkH; y++ {
                         for x := 0; x < chunkW; x++ {
                                 tileId := std.atoi(csvData[row+y][x])
-                                if tileId > 0 {
-                                        world.setTile(x+ofsX, y+ofsY, tileId)
-                                }
+                                chunk[x][y] = tileId;                          
                         }
                 }
                 row += chunkH
+
+                world.tilemap[layer].set(chunkPos, chunk)
         }
 }
 
