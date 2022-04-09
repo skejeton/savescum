@@ -1,0 +1,5 @@
+const (
+        cPrimary* = 0x661111FF
+        cBack* = 0x772022FF
+        cText* = 0xFFFFEEFF
+)
