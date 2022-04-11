@@ -1,4 +1,6 @@
-import ("th.um"; "font.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um")
+import (
+        "th.um"; "font.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um"
+)
 
 fn posTrans*(x, y: th.fu): th.Transform {
         return th.Transform{p: th.Vf2{x, y}, s: th.Vf2{1, 1}}
@@ -8,6 +10,7 @@ fn isMouseInRect*(r: rect.Rect): bool {
         p := input.getMousePos()
         return p.x >= r.x && p.y >= r.y && p.x <= (r.x+r.w) && p.y <= (r.y+r.h)
 }
+
 
 fn drawRectLines*(color: uint32, r: rect.Rect) {
         // top

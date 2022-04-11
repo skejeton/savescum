@@ -1,0 +1,510 @@
+import (
+        "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"; "font.um"; "csv.um"
+        "utf8.um"; "map.um"; 
+        "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"
+)
+
+type (
+        Window = struct {
+                rect: rect.Rect
+                showDecorations: bool
+                closing: bool
+                closed: bool
+        }
+)
+
+const (
+        stateEditing = 0
+        statePlaying = 1
+)
+
+var (
+        state: int
+
+        uiLeftMouseDown: bool
+        uiPrevMousePos: th.Vf2
+        uiTileset: image.Image
+        uiTrayIconTileset: image.Image
+        uiWindows: [3]Window
+        uiProcessWindowId: int          // window currently processing (drawing)
+        uiFocusWindowId: int            // window currently focused on (mouse over)
+        uiDraggingWindowId: int         // window currently dragging
+        uiMainFont: font.Cached
+
+        worldViewOfsX: int
+        worldViewOfsY: int
+        worldSelTileX: int
+        worldSelTileY: int
+        worldSelLayer: int
+        worldShowCurrentLayer: bool
+        world: d_world.World
+)
+
+fn isLeftMouseReleased(): bool {
+        return !input.isPressed(input.mouse1) && uiLeftMouseDown
+}
+
+fn uiSelTile(x, y: int) {
+        uiTileset.crop(th.Vf2{x/4.0, y/4.0}, th.Vf2{x/4.0+1/4.0, y/4.0+1/4.0})
+}
+
+fn uiSelTrayTile(x, y: int) {
+        uiTrayIconTileset.crop(th.Vf2{x/4.0, y/4.0}, th.Vf2{x/4.0+1/4.0, y/4.0+1/4.0})
+}
+
+fn actField() {
+
+        if uiFocusWindowId == 0 && (input.isPressed(input.mouse1) || input.isPressed(input.mouse3)) {
+                pos := input.getMousePos()
+
+                tx := trunc(pos.x / 16) + worldViewOfsX
+                ty := trunc(pos.y / 16) + worldViewOfsY
+
+                painting := input.isPressed(input.mouse1)
+
+                if painting {
+                        world.setTile(worldSelLayer, tx, ty, d_world.pos2Tile(worldSelTileX, worldSelTileY))
+                } else {
+                        world.setTile(worldSelLayer, tx, ty, 0)
+                }
+        }
+}
+
+fn drawGridEditor() {
+        // draw grid
+        nx := 320/16
+        ny := 240/16
+
+        for cx := 0; cx < nx; cx++ {
+                x := cx * 16
+                canvas.drawRect(0xFFFFFF11, rect.Rect{x, 0, 0.5, 240})
+        }
+        for cy := 0; cy < ny; cy++ {
+                y := cy * 16
+                canvas.drawRect(0xFFFFFF11, rect.Rect{0, y, 320, 0.5})        
+        }
+
+ 
+        // draw world
+        if worldShowCurrentLayer {
+                world.drawLayer(th.Vf2{worldViewOfsX * 16, worldViewOfsY * 16}, worldSelLayer)
+        } else {
+                world.draw(th.Vf2{worldViewOfsX * 16, worldViewOfsY * 16})
+        }
+
+        // draw tile highlight
+        if uiFocusWindowId == 0 {
+                pos := input.getMousePos()
+                tx := trunc(pos.x / 16) 
+                ty := trunc(pos.y / 16)
+                canvas.drawRect(0x00FF0011, rect.Rect{tx*16, ty*16, 16, 16}) 
+        }
+}
+
+fn putBtnBase(text: str, r: rect.Rect, colorMod: uint32): bool {
+        // -- measure
+        txtSize := d_util.measureText(uiMainFont, text)
+        // center the text
+        txtPos := th.Vf2{r.x+(r.w-txtSize.x)/2, r.y+(r.h-txtSize.y)/2}
+        color := d_colors.cPrimary + colorMod
+        hovered := d_util.isMouseInRect(r) && uiProcessWindowId == uiFocusWindowId
+        nudged  := hovered && input.isJustPressed(input.mouse1)
+        if (hovered) {
+                color += 0x11111100
+        }
+
+        // -- draw
+        canvas.drawRect(color, r); 
+        uiMainFont.draw(text, txtPos, d_colors.cText, 1.6)
+        return nudged
+}
+
+fn putBtn(text: str, r: rect.Rect): bool {
+
+        hovered := d_util.isMouseInRect(r) && uiProcessWindowId == uiFocusWindowId
+        pressed := hovered && input.isPressed(input.mouse1)
+        color := 0
+        if (pressed) {
+                color += 0x11111100
+        }
+
+        return putBtnBase(text, r, color)
+}
+
+fn saveMap() { 
+        file := std.fopen("data/sc00_sky.csv", "w")
+        if file == null {
+                error("Can't save the scene")
+        }
+        dataStr := world.save()
+        data := make([]uint8, 0)
+        for c in dataStr {
+                data = append(data, uint8(c))
+        }
+        std.fwrite(file, data)
+        std.fclose(file)
+}
+
+fn loadMap() {
+        file := std.fopen("data/sc00_sky.csv", "r")
+        if file == null {
+                error("Can't load the scene")
+        }
+        std.fseek(file, 0, std.seekEnd)
+        datasiz := std.ftell(file)
+        std.fseek(file, 0, std.seekBegin)
+        buffer := make([]uint8, datasiz)
+        std.fread(file, buffer)
+        data := ""
+        for b in buffer {
+                data += char(b)
+        }
+        
+        world.load(data)
+}
+
+fn drawLayerIcon(x, y: real) {
+        fills := [3]bool{worldSelLayer == -1, worldSelLayer == 0, worldSelLayer == 1};
+
+        // NOTE: If we choose to show all layers, the icon will show all boxes filled in
+        if worldShowCurrentLayer == false {
+                fills = [3]bool{true, true, true};
+        }
+
+        x += 13
+
+        for l in fills {
+                rec := rect.Rect{x-10, y, 10, 6}
+                x -= 1
+                y += 2
+
+                if l {
+                        canvas.drawRect(0xAAAAFFFF, rec)
+                        d_util.drawRectLines(0xFFFFFFFF, rec)
+                } else {
+                        canvas.drawRect(d_colors.cBack, rec)
+                        d_util.drawRectLines(0xFFFFFFFF, rec)
+                }
+        }
+}
+
+//
+// putTrayBtn(
+//      pos:    Position of the button
+//      ix, iy: Position of the icon from the icon set 
+//      active: True if you want a "button pressed" appearance
+//              False if you want a "button released" appearance 
+// ): True if it was activated
+//
+fn putTrayBtn(pos: th.Vf2, ix, iy: int, active: bool): bool {
+        trayBtnRect := rect.Rect{pos.x, pos.y, 16, 16}
+
+        if active || (isLeftMouseReleased() || input.isPressed(input.mouse1)) && (d_util.isMouseInRect(trayBtnRect) && uiFocusWindowId == uiProcessWindowId) {
+                uiSelTrayTile(1, 0)
+                uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{0.5, 0.5}})
+                uiSelTrayTile(ix, iy)
+                uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{0.5, 0.5}}, 0x999999FF)
+        } else {
+                uiSelTrayTile(0, 0)
+                uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{0.5, 0.5}})
+                uiSelTrayTile(ix, iy)
+                uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{0.5, 0.5}})
+        }
+
+        return d_util.isMouseInRect(trayBtnRect) && isLeftMouseReleased() && uiFocusWindowId == uiProcessWindowId
+}
+
+fn drawBar() {
+
+        putButton := fn(s: str, r: ^rect.Rect, w: int): bool {
+                pressed := putBtn(s, d_util.rectChopRight(r, w))
+                d_util.rectChopRight(r, 1) // border
+                return pressed
+        }
+
+        putSelect := fn(s: str, r: ^rect.Rect, w: int, check: bool): bool {
+                var colorMod : uint32 = 0
+                if check {
+                        colorMod = 0x44223300
+                }
+                pressed := putBtnBase(s, d_util.rectChopRight(r, w), colorMod)
+                d_util.rectChopRight(r, 1) // border
+                return pressed
+        }
+
+        canvas.drawRect(d_colors.cBack, uiWindows[1].rect)
+        area := uiWindows[1].rect
+        
+        if putTrayBtn(th.Vf2{area.x, area.y}, 1, 1, false) {
+                d_game.world = world
+                d_game.chara = d_game.Character{rect: rect.Rect{0, 0, 16, 16}}
+                state = statePlaying
+        }
+        if putTrayBtn(th.Vf2{area.x+16, area.y}, 0, 1, !uiWindows[2].closed) {
+                uiWindows[2].closed = !uiWindows[2].closed;
+        }
+
+
+        if putButton("Save", &area, 30) {
+                saveMap()
+        }
+        if putButton("Load", &area, 30) {
+                loadMap()
+        }
+        if putSelect("BG", &area, 15, worldSelLayer == -1) {
+                worldSelLayer = -1
+        }
+        if putSelect("MG", &area, 15, worldSelLayer == 0) {
+                worldSelLayer = 0
+        }
+        if putSelect("FG", &area, 15, worldSelLayer == 1) {
+                worldSelLayer = 1
+        }
+
+        if putButton(" ", &area, 20) {
+                worldShowCurrentLayer = !worldShowCurrentLayer
+        }
+        // FIXME: Hack to get the position of the previous butotn
+        drawLayerIcon(area.x + area.w+4, area.y+3)
+}
+
+fn drawPicker() {
+        canvas.drawRect(d_colors.cBack, uiWindows[2].rect)
+
+        // selected tile
+        tsw := 4
+        tsh := 4
+        
+        for tx := 0; tx < tsw; tx++ {
+                for ty := 0; ty < tsh; ty++ {
+                        x := uiWindows[2].rect.x + 2 + tx * 18
+                        y := uiWindows[2].rect.y + 10 + ty * 18
+                                
+                        rec := rect.Rect{x, y, 16, 16}
+                        world.tileset.crop(th.Vf2{tx/real(tsw), ty/real(tsh)}, th.Vf2{tx/real(tsw)+1/real(tsw), ty/real(tsh)+1/real(tsh)})
+                        world.tileset.draw(d_util.posTrans(x, y))
+                        
+                        if (worldSelTileX == tx) && (worldSelTileY == ty) {
+                                canvas.drawRect(0x00FF0033, rect.Rect{x, y, 16, 16});
+                        }
+
+                        if uiFocusWindowId == 2 && d_util.isMouseInRect(rec) && input.isJustPressed(input.mouse1) { 
+                                worldSelTileX = tx
+                                worldSelTileY = ty
+                        }
+                }
+        }
+
+        world.tileset.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
+}
+
+fn getWindowOuterRect(win: int): rect.Rect {
+        r := uiWindows[win].rect
+        r.y -= 8
+        r.h += 8
+        return r
+}
+
+fn getWindowTitlebarRect(win: int): rect.Rect {
+        outerFrame := getWindowOuterRect(win)
+        outerFrame.x += 8
+        outerFrame.w -= 8
+        outerFrame.h = 8
+        return outerFrame
+}
+
+fn getWindowCloseRect(win: int): rect.Rect {
+        outerFrame := getWindowOuterRect(win)
+        outerFrame.w = 8
+        outerFrame.h = 8
+        return outerFrame
+}
+
+fn setupUiWindows() {
+        uiWindows[0].rect = rect.Rect{0, 0, 320, 240}
+        uiWindows[1].rect = rect.Rect{0, 240-16, 320, 16}        
+        uiWindows[2].rect = rect.Rect{240, 10, 73, 240-36}
+        uiWindows[2].showDecorations = true
+}
+
+fn getMouseDelta(): th.Vf2 {
+        delta := input.getMousePos()
+        
+        delta.x -= uiPrevMousePos.x;
+        delta.y -= uiPrevMousePos.y;
+        return delta
+}
+
+fn handleUiWindows() {
+        // -- handle window dragging
+        // no window is being dragged if we aren't holding the button
+        if (!input.isPressed(input.mouse1)) {
+                uiDraggingWindowId = -1;
+        }
+
+        if (uiDraggingWindowId > 0) {
+                mouseDelta := getMouseDelta()
+                uiWindows[uiDraggingWindowId].rect.x += mouseDelta.x;
+                uiWindows[uiDraggingWindowId].rect.y += mouseDelta.y;
+        }
+
+        // -- handle mouse events on windows
+        for i := 0; i < 3; i++ {
+                if uiWindows[i].rect.x < 0 {
+                        uiWindows[i].rect.x = 0
+                }
+                if uiWindows[i].rect.y < 8 {
+                        uiWindows[i].rect.y = 8
+                }
+                if uiWindows[i].rect.x > 300 {
+                        uiWindows[i].rect.x = 300
+                }
+                if uiWindows[i].rect.y > 240 {
+                        uiWindows[i].rect.y = 240
+                }
+                
+        
+                if uiWindows[i].closed {
+                        continue
+                }
+                if isLeftMouseReleased() && uiWindows[i].closing {
+                        uiWindows[i].closed = true
+                }
+                uiWindows[i].closing = false
+                if d_util.isMouseInRect(uiWindows[i].rect) {
+                        uiFocusWindowId = i
+                } 
+        }
+        
+        for i := 2; i >= 0; i-- {
+                if (uiWindows[i].closed || !uiWindows[i].showDecorations) {
+                        continue
+                }
+                outerRect := getWindowOuterRect(i)
+                titlebarRect := getWindowTitlebarRect(i)
+                closeRect := getWindowCloseRect(i)
+
+                if d_util.isMouseInRect(outerRect) && uiFocusWindowId < i {
+                        uiFocusWindowId = -1
+                        if input.isJustPressed(input.mouse1) && d_util.isMouseInRect(titlebarRect) {
+                                uiDraggingWindowId = i
+                        }
+                        if input.isPressed(input.mouse1) && d_util.isMouseInRect(closeRect) {
+                                uiWindows[i].closing = true
+                        }
+                        break;
+                }
+        }
+        
+        if (uiDraggingWindowId > 0) {
+                uiFocusWindowId = -1
+        }
+}
+fn drawDebugUiWindows() {
+        for i := 0; i < 3; i++ {
+                color := 0x0000FFFF;
+                if i == uiFocusWindowId {
+                        color = 0x00FF00FF
+                }               
+                d_util.drawRectLines(color, uiWindows[i].rect)
+                d_util.drawRectLines(color, getWindowOuterRect(i))
+        }
+}
+
+fn drawUiDecorations(winId: int, title: str) {
+        if uiWindows[winId].showDecorations == false {
+                return
+        
+        }
+        outerRect := getWindowOuterRect(winId)
+        closeBtnRect := getWindowCloseRect(winId)
+        uiSelTile(1, 0) /* select win trail */
+        for x := 0.0; x < outerRect.w; x += 8 {
+                if x + 8.0 > outerRect.w {
+                        x = outerRect.w - 8
+                }
+                uiTileset.draw(th.Transform{p: th.Vf2{outerRect.x+x, outerRect.y}, s: th.Vf2{0.5, 0.5}})
+        }
+
+        if uiWindows[winId].closing {
+                uiSelTile(0, 1) /* select close btn pressed */
+        } else {
+                uiSelTile(0, 0) /* select close btn */
+        }
+        uiTileset.draw(th.Transform{p: th.Vf2{outerRect.x, outerRect.y}, s: th.Vf2{0.5, 0.5}})
+
+        uiMainFont.draw(title, th.Vf2{outerRect.x+10, outerRect.y-1}, d_colors.cText, 1.6)
+        uiMainFont.draw(title, th.Vf2{outerRect.x+10+0.5, outerRect.y-1}, d_colors.cText, 1.6)
+
+
+        borderRect := outerRect
+        borderRect.x -= 0.5
+        borderRect.y -= 0.5
+        borderRect.w += 1
+        borderRect.h += 1
+        d_util.drawRectLines(0x000000FF, borderRect)
+}
+
+fn drawWindows() {
+        for i := 0; i < 3; i++ {
+                if (uiWindows[i].closed) {
+                        continue
+                }
+                uiProcessWindowId = i
+                switch i {
+                case 0: drawUiDecorations(i, "Tile window (why are you even able to read this?")
+                case 1: drawUiDecorations(i, "Controls toolbar")
+                case 2: drawUiDecorations(i, "Tile picker")
+                default: drawUiDecorations(i, " ")
+                }
+                switch i {
+                case 0: drawGridEditor()
+                case 1: drawBar()
+                case 2: drawPicker()
+                default:
+                }
+        }
+}
+
+fn main*() {
+        window.setup("title", 640, 480)
+        world.tileset = image.load("data/ts00_sky.png")
+        uiTileset = image.load("data/ts01_ui.png")
+        uiTrayIconTileset = image.load("data/ts02_trayicons.png")
+
+        screen := rect.mk(0, 0, 320, 240)
+        uiMainFont = font.mkCached(font.load("data/font_mono.ttf"), 16);
+        d_background.init()
+        setupUiWindows();
+        uiPrevMousePos = input.getMousePos()
+        for window.cycle(screen) {
+                d_background.draw(screen)
+                switch state {
+                case stateEditing:
+                        handleUiWindows()
+
+                        if input.isJustPressed(input.key_up) {
+                                worldViewOfsY -= 1;
+                        }
+                        if input.isJustPressed(input.key_down) {
+                                worldViewOfsY += 1;
+                        }
+                        if input.isJustPressed(input.key_left) {
+                                worldViewOfsX -= 1;
+                        }
+                        if input.isJustPressed(input.key_right) {
+                                worldViewOfsX += 1;
+                        }
+
+                        actField()
+
+                        drawWindows()
+
+                        uiPrevMousePos = input.getMousePos()
+                        uiLeftMouseDown = input.isPressed(input.mouse1)
+                case statePlaying:
+                        d_game.draw()
+                }
+        }
+}
+

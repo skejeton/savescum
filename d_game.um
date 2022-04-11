@@ -1,0 +1,111 @@
+import ("th.um"; "rect.um"; "canvas.um"; "input.um"
+        "d_world.um")
+
+type (
+        Character* = struct {
+                rect: rect.Rect
+                vel: th.Vf2
+        }
+)
+
+var (
+        world*: d_world.World
+        chara*: Character
+        camera: th.Vf2
+)
+
+fn centerPlayerOnCamera() {
+        camera.x = chara.rect.x-(320-chara.rect.w)/2;
+        camera.y = chara.rect.y-(240-chara.rect.h)/2;
+}
+
+fn cameraOffsetRect(r: rect.Rect): rect.Rect {
+        r.x -= camera.x
+        r.y -= camera.y
+        return r
+}
+
+fn moveCharacter() {
+        if input.isJustPressed(input.key_up) {
+                chara.vel.y = -11
+        }
+        if input.isPressed(input.key_left) {
+                chara.vel.x = -1
+        }
+        if input.isPressed(input.key_right) {
+                chara.vel.x = 1
+        }
+
+        chara.rect.x += chara.vel.x
+        chara.rect.y += chara.vel.y
+        chara.vel.y += 1
+        if chara.vel.y > 10 {
+                chara.vel.y = 10
+        }
+
+        chara.vel.x = 0
+}
+
+fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
+        x_left := r.x + r.w - along.x;
+        y_up := r.y + r.h - along.y;
+
+        x_right := along.x + along.w - r.x;
+        y_down := along.y + along.h - r.y;
+
+        var (min_x: real; min_y: real)
+
+        if fabs(x_left) < fabs(x_right) {
+                min_x = -x_left
+        } else {
+                min_x = x_right
+        }
+
+        if fabs(y_up) < fabs(y_down) {
+                min_y = -y_up
+        } else {
+                min_y = y_down
+        }
+
+        if fabs(min_x) < fabs(min_y) {
+                return th.Vf2{min_x, 0};
+        } 
+        return th.Vf2{0, min_y};
+}
+
+fn playerVsSolid(r: rect.Rect) {
+        snap := collCalcRectSnap(chara.rect, r)
+        chara.rect.x += snap.x
+        chara.rect.y += snap.y
+}
+
+fn playerSolveCollision() {
+        tangents := world.getTangentTiles(chara.rect)
+
+        for tangent in tangents {
+                tileRect := rect.Rect{tangent.x*16.0, tangent.y*16.0, 16, 16} 
+
+                playerVsSolid(tileRect)
+        }
+}
+
+fn drawRectTangents(r: rect.Rect) {
+        tangents := world.getTangentTiles(r)
+
+        for tangent in tangents {
+                tileRect := rect.Rect{tangent.x*16.0, tangent.y*16.0, 16, 16} 
+                tileRenderRect := cameraOffsetRect(tileRect)
+
+                canvas.drawRect(th.green, tileRenderRect)
+        }
+}
+
+fn draw*() {
+        moveCharacter();
+        centerPlayerOnCamera();
+        playerSolveCollision();
+
+        world.draw(camera)
+        drawRectTangents(chara.rect)
+        canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
+}

@@ -6,8 +6,10 @@
 //               0: the middleground layer, this is where the collisions are tested
 //               1: the foreground layer, this is drawn over the character, no collision checks  
 
-import ("image.um"; "map.um"; "th.um"; "std.um"; "csv.um"
-        "d_util.um"; "d_background.um")
+import (
+        "image.um"; "map.um"; "th.um"; "std.um"; "csv.um"; "rect.um"
+        "d_util.um"; "d_background.um"
+)
 
 const (
         chunkW* = 320/16*2
@@ -24,6 +26,10 @@ type (
         World* = struct {
                 tileset: image.Image
                 tilemap: [3]map.Map
+        }
+        Tangent* = struct {
+                x, y: int
+                id: int
         }
 )
 
@@ -57,6 +63,55 @@ fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
         chunk[tx][ty] = tile
 }
 
+
+fn (world: ^World) getTile(layer, tx, ty: int): int {
+        layer++
+        if layer < 0 || layer > 2 {
+                return 0;
+        }
+
+        // get or construct a chunk
+        chunk_pos := ChunkPos{d_util.floor(tx/real(chunkW)), d_util.floor(ty/real(chunkH))};
+        chunk := ^Chunk(world.tilemap[layer].get(chunk_pos))
+        if chunk == null {
+                return 0
+        }
+
+        // make tile positions local
+        tx = tx - chunk_pos.x * chunkW;
+        ty = ty - chunk_pos.y * chunkH;
+
+        return chunk[tx][ty]
+}
+
+
+//
+// getTangentTiles(
+//      r: Rectangle to find tangent tiles around
+// ): List of tangents, position of tile and it's id.
+//
+// NOTE: This function only checks middleground layer (layer 0)
+//
+fn (world: ^World) getTangentTiles(r: rect.Rect): []Tangent {
+        x, y, w, h := d_util.floor(r.x/16), d_util.floor(r.y/16), d_util.floor(r.w/16)+1, d_util.floor(r.h/16)+1
+        x2, y2 := x + w, y + h
+        inity := y
+        tangents := []Tangent{}
+
+        for x < x2 {
+                y = inity
+                for y < y2 {
+                        tile := world.getTile(0, x, y)
+                        if tile > 0 {
+                                tangents = append(tangents, Tangent{x, y, tile})
+                        }
+                        y++
+                }
+                x++
+        }
+
+        return tangents
+}
 
 fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int) {
         layerId++

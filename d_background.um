@@ -1,10 +1,14 @@
-import ("rect.um"; "image.um"; "canvas.um"; "th.um"
-        "d_util.um")
+import (
+        "rect.um"; "image.um"; "canvas.um"; "th.um"
+        "d_util.um"
+)
 
 backgroundOffsets := [4]int{0, 0, 0, 0}
+
 var (
         imgClouds: image.Image
 )
+
 
 fn init*() {
         imgClouds = image.load("data/bg00_sky.png")
