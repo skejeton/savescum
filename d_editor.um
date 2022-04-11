@@ -500,11 +500,15 @@ fn main*() {
 
                         drawWindows()
 
-                        uiPrevMousePos = input.getMousePos()
-                        uiLeftMouseDown = input.isPressed(input.mouse1)
                 case statePlaying:
                         d_game.draw()
+                        uiProcessWindowId = uiFocusWindowId
+                        if putTrayBtn(th.Vf2{0, 240-16}, 1, 1, true) {
+                                state = stateEditing
+                        }
                 }
+                uiPrevMousePos = input.getMousePos()
+                uiLeftMouseDown = input.isPressed(input.mouse1)
         }
 }
 
