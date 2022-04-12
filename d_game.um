@@ -39,9 +39,7 @@ fn moveCharacter() {
 
 
         chara.vel.y += 0.1
-        if chara.vel.y >= 0 {
-                chara.vel.y += 0.1
-        }
+
         if chara.vel.y > 5 {
                 chara.vel.y = 5
         }
@@ -155,11 +153,13 @@ fn draw*() {
         playerSolveCollision();
         centerPlayerOnCamera();
 
-        world.draw(camera)
+        world.drawLayer(camera, -1)
         drawRectTangents(chara.rect)
         if chara.onGround { 
                 canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
         } else {
                 canvas.drawRect(th.blue, cameraOffsetRect(chara.rect))
         }
+        world.drawLayer(camera, 0)
+        world.drawLayer(camera, 1)
 }
