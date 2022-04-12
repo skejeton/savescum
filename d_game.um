@@ -5,6 +5,7 @@ type (
         Character* = struct {
                 rect: rect.Rect
                 vel: th.Vf2
+                onGround: bool
         }
 )
 
@@ -15,8 +16,8 @@ var (
 )
 
 fn centerPlayerOnCamera() {
-        camera.x = chara.rect.x-(320-chara.rect.w)/2;
-        camera.y = chara.rect.y-(240-chara.rect.h)/2;
+        camera.x += ((chara.rect.x-(320-chara.rect.w)/2)-camera.x)/4;
+        camera.y += ((chara.rect.y-(240-chara.rect.h)/2)-camera.y)/4;
 }
 
 fn cameraOffsetRect(r: rect.Rect): rect.Rect {
@@ -26,8 +27,8 @@ fn cameraOffsetRect(r: rect.Rect): rect.Rect {
 }
 
 fn moveCharacter() {
-        if input.isJustPressed(input.key_up) {
-                chara.vel.y = -11
+        if input.isJustPressed(input.key_up) && chara.onGround {
+                chara.vel.y = -3.19
         }
         if input.isPressed(input.key_left) {
                 chara.vel.x = -1
@@ -36,14 +37,20 @@ fn moveCharacter() {
                 chara.vel.x = 1
         }
 
-        chara.rect.x += chara.vel.x
-        chara.rect.y += chara.vel.y
-        chara.vel.y += 1
-        if chara.vel.y > 10 {
-                chara.vel.y = 10
+
+        chara.vel.y += 0.1
+        if chara.vel.y >= 0 {
+                chara.vel.y += 0.1
+        }
+        if chara.vel.y > 5 {
+                chara.vel.y = 5
         }
 
+        chara.rect.x += chara.vel.x
+        chara.rect.y += chara.vel.y
+
         chara.vel.x = 0
+        chara.onGround = false
 }
 
 fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
@@ -73,39 +80,86 @@ fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
         return th.Vf2{0, min_y};
 }
 
+fn collSortRectsByProximity(recs: ^[]rect.Rect, along: th.Vf2) {
+    for i := 0; i < len(recs^); i++ {
+        closest := &recs[i];
+        mindist := real(99999999);
+        for j := i; j < len(recs^); j++ {
+            current := recs[j];
+            point := th.Vf2{current.x + current.w / 2, current.y + current.h / 2};
+            dist := point.distanceTo(along);
+            if dist < mindist {
+                mindist = dist;
+                closest = &recs[j];
+            }
+        }
+        tmp := closest^;
+        closest^ = recs[i];
+        recs[i] = tmp;
+    }
+}
+
 fn playerVsSolid(r: rect.Rect) {
         snap := collCalcRectSnap(chara.rect, r)
+        if snap.x != 0 {
+                chara.vel.x = 0
+        }
+        if snap.y != 0 {
+                chara.vel.y = 0
+        }
+
+        if (snap.y < 0) {
+                chara.onGround = true;
+        }
         chara.rect.x += snap.x
         chara.rect.y += snap.y
 }
 
-fn playerSolveCollision() {
+fn playerConstructColidingSolids(): []rect.Rect {
         tangents := world.getTangentTiles(chara.rect)
+        solids := []rect.Rect{}
 
         for tangent in tangents {
-                tileRect := rect.Rect{tangent.x*16.0, tangent.y*16.0, 16, 16} 
+                if (tangent.id == 1) || (tangent.id == 5) || (tangent.id == 7) {
+                        tileRect := rect.Rect{tangent.x*16.0, tangent.y*16.0, 16, 16} 
+                        solids = append(solids, tileRect)
+                }
+        }
 
-                playerVsSolid(tileRect)
+        collSortRectsByProximity(&solids, th.Vf2{chara.rect.x+chara.rect.w/2, chara.rect.y+chara.rect.h/2});
+        return solids       
+}
+
+fn playerSolveCollision() {
+        solids := playerConstructColidingSolids()
+
+        for solid in solids {
+                playerVsSolid(solid)
         }
 }
 
 fn drawRectTangents(r: rect.Rect) {
-        tangents := world.getTangentTiles(r)
+        solids := playerConstructColidingSolids()
 
-        for tangent in tangents {
-                tileRect := rect.Rect{tangent.x*16.0, tangent.y*16.0, 16, 16} 
-                tileRenderRect := cameraOffsetRect(tileRect)
-
-                canvas.drawRect(th.green, tileRenderRect)
+        i := 0
+        for solid in solids {
+                solid = cameraOffsetRect(solid)
+                canvas.drawRect(0x00FF0055, solid)
+                canvas.drawText(repr(i), th.Vf2{solid.x, solid.y}, th.white, 1);
+                i++
         }
 }
 
 fn draw*() {
         moveCharacter();
-        centerPlayerOnCamera();
         playerSolveCollision();
+        centerPlayerOnCamera();
 
         world.draw(camera)
         drawRectTangents(chara.rect)
-        canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
+        if chara.onGround { 
+                canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
+        } else {
+                canvas.drawRect(th.blue, cameraOffsetRect(chara.rect))
+        }
 }
