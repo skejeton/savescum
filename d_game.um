@@ -187,7 +187,7 @@ fn playerVsShape(s: Shape) {
         case shapeBlock:
                 if snap.x != 0 {
                         chara.vel.x = 0
-                } else if snap.y != 0 {
+                } else if (snap.y > 0 && chara.vel.y < 0) || (snap.y < 0 && chara.vel.y > 0) {
                         chara.vel.y = 0;
                 }
                 if snap.y < 0 {
