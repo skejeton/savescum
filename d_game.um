@@ -47,6 +47,13 @@ fn moveCharacter() {
         if input.isPressed(input.key_right) {
                 chara.vel.x = 1
         }
+        if chara.rect.y > 1e3 {
+                // NOTE: Respawn
+                chara.vel.y = 0;
+                chara.vel.x = 0;
+                chara.rect.x = 0;
+                chara.rect.y = 0;
+        }
 
 
         chara.vel.y += 0.1
@@ -115,45 +122,50 @@ fn collSortShapesByProximity(shapes: ^[]Shape, along: th.Vf2) {
 fn playerVsShape(s: Shape) {
         r := s.rect
         snap := collCalcRectSnap(chara.rect, r)
+        var (hit: real; cornerY: real) 
+
+        // Calc slope values
+        switch s.shape {
+        case shapeLeftSlope45:
+                if snap.x > 0 {
+                        s.shape = shapeBlock
+                } else {
+                        hit = 16-(chara.rect.x+chara.rect.w-r.x)
+                        cornerY = chara.rect.y+chara.rect.h-r.y
+                }
+        case shapeRightSlope45:
+                if snap.x < 0 {
+                        s.shape = shapeBlock
+                } else {
+                        hit = chara.rect.x-r.x
+                        cornerY = chara.rect.y+chara.rect.h-r.y
+                }
+        }
         
         // Not a valid collision (probably pushed back by other blocks?)
         if collRectVsRect(chara.rect, r) == false {
                 return;
         }
-
-        if chara.vel.y < 0 {
+        
+        // If jumping below the slope
+        if chara.vel.y < 0 && (cornerY-hit) > 0 {
                 s.shape = shapeBlock
         }
 
-        switch s.shape {
-        case shapeLeftSlope45:
-                if snap.x > 0 {
-                        s.shape = shapeBlock
-                }
-        case shapeRightSlope45:
-                if snap.x < 0 {
-                        s.shape = shapeBlock
-                }
-        }
-
+        // Resolve slope collision
         switch s.shape {
         case shapeBlock:
-
                 if snap.x != 0 {
                         chara.vel.x = 0
-                }
-                if snap.y != 0 {
+                } else if snap.y != 0 {
                         chara.vel.y = 0
                 }
-
-                if (snap.y < 0) {
+                if snap.y < 0 {
                         chara.onGround = true;
                 }
                 chara.rect.x += snap.x
                 chara.rect.y += snap.y
-        case shapeLeftSlope45:
-                hit := 16-(chara.rect.x+chara.rect.w-r.x)
-                cornerY := chara.rect.y+chara.rect.h-r.y
+        case shapeLeftSlope45, shapeRightSlope45:
                 if hit < 0 { 
                         hit = 0
                 }
@@ -162,19 +174,6 @@ fn playerVsShape(s: Shape) {
                         chara.vel.y = 0
                         chara.onGround = true
                 }
-        case shapeRightSlope45:
-                hit := chara.rect.x-r.x
-                cornerY := chara.rect.y+chara.rect.h-r.y
-
-                if hit < 0 { 
-                        hit = 0
-                }
-                if hit >= 0 && cornerY-hit > 0 {
-                        chara.rect.y -= cornerY-hit
-                        chara.vel.y = 0
-                        chara.onGround = true
-                }
-
         }
 }
 
