@@ -26,11 +26,28 @@ var (
         world*: d_world.World
         chara*: Character
         camera: th.Vf2
+        cameraPos: th.Vf2
+        cameraAntiPanVel: th.Vf2
+        cameraAntiPan: th.Vf2
 )
 
 fn centerPlayerOnCamera() {
-        camera.x += ((chara.rect.x-(320-chara.rect.w)/2)-camera.x)/4;
-        camera.y += ((chara.rect.y-(240-chara.rect.h)/2)-camera.y)/4;
+        if cameraAntiPan.x < -25 {
+                cameraAntiPan.x = -25
+        }
+        if cameraAntiPan.x > 25 {
+                cameraAntiPan.x = 25
+        }
+        if cameraAntiPan.y < -25 {
+                cameraAntiPan.y = -25
+        }
+        if cameraAntiPan.y > 25 {
+                cameraAntiPan.y = 25
+        }
+        cameraPos.x += ((chara.rect.x-(320-chara.rect.w)/2)-cameraPos.x)/4;
+        cameraPos.y += ((chara.rect.y-(240-chara.rect.h)/2)-cameraPos.y)/4;
+        camera.x = cameraPos.x + cameraAntiPan.x
+        camera.y = cameraPos.y + cameraAntiPan.y
 }
 
 fn cameraOffsetRect(r: rect.Rect): rect.Rect {
@@ -65,6 +82,12 @@ fn moveCharacter() {
                 chara.vel.y = 5
         }
 
+        cameraAntiPanVel.x += chara.vel.x;
+        cameraAntiPanVel.x /= 1.3;
+        cameraAntiPanVel.y = chara.vel.y;
+        cameraAntiPanVel.y /= 1.3;
+        cameraAntiPan.x += cameraAntiPanVel.x/5.0;
+        cameraAntiPan.y += cameraAntiPanVel.y/5.0;
         chara.rect.x += chara.vel.x
         chara.rect.y += chara.vel.y
 
