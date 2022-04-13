@@ -1,7 +1,18 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"
         "d_world.um")
 
+const (
+        shapeBlock              = 0
+        shapeLeftSlope45        = 1
+        shapeRightSlope45       = 2
+)
+
 type (
+        Shape* = struct {
+                rect: rect.Rect
+                shape: int
+        }
+
         Character* = struct {
                 rect: rect.Rect
                 vel: th.Vf2
@@ -78,53 +89,114 @@ fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
         return th.Vf2{0, min_y};
 }
 
-fn collSortRectsByProximity(recs: ^[]rect.Rect, along: th.Vf2) {
-    for i := 0; i < len(recs^); i++ {
-        closest := &recs[i];
+fn collRectVsRect(r1, r2: rect.Rect): bool {
+    return (r1.x + r1.w) > (r2.x) && (r1.y + r1.h) > (r2.y) && (r1.x) < (r2.x + r2.w) && (r1.y) < (r2.y + r2.h)
+}
+
+fn collSortShapesByProximity(shapes: ^[]Shape, along: th.Vf2) {
+    for i := 0; i < len(shapes^); i++ {
+        closest := &shapes[i];
         mindist := real(99999999);
-        for j := i; j < len(recs^); j++ {
-            current := recs[j];
+        for j := i; j < len(shapes^); j++ {
+            current := shapes[j].rect;
             point := th.Vf2{current.x + current.w / 2, current.y + current.h / 2};
             dist := point.distanceTo(along);
             if dist < mindist {
                 mindist = dist;
-                closest = &recs[j];
+                closest = &shapes[j];
             }
         }
         tmp := closest^;
-        closest^ = recs[i];
-        recs[i] = tmp;
+        closest^ = shapes[i];
+        shapes[i] = tmp;
     }
 }
 
-fn playerVsSolid(r: rect.Rect) {
+fn playerVsShape(s: Shape) {
+        r := s.rect
         snap := collCalcRectSnap(chara.rect, r)
-        if snap.x != 0 {
-                chara.vel.x = 0
-        }
-        if snap.y != 0 {
-                chara.vel.y = 0
+        
+        // Not a valid collision (probably pushed back by other blocks?)
+        if collRectVsRect(chara.rect, r) == false {
+                return;
         }
 
-        if (snap.y < 0) {
-                chara.onGround = true;
+        if chara.vel.y < 0 {
+                s.shape = shapeBlock
         }
-        chara.rect.x += snap.x
-        chara.rect.y += snap.y
-}
 
-fn playerConstructColidingSolids(): []rect.Rect {
-        tangents := world.getTangentTiles(chara.rect)
-        solids := []rect.Rect{}
-
-        for tangent in tangents {
-                if (tangent.id == 1) || (tangent.id == 5) || (tangent.id == 7) {
-                        tileRect := rect.Rect{tangent.x*16.0, tangent.y*16.0, 16, 16} 
-                        solids = append(solids, tileRect)
+        switch s.shape {
+        case shapeLeftSlope45:
+                if snap.x > 0 {
+                        s.shape = shapeBlock
+                }
+        case shapeRightSlope45:
+                if snap.x < 0 {
+                        s.shape = shapeBlock
                 }
         }
 
-        collSortRectsByProximity(&solids, th.Vf2{chara.rect.x+chara.rect.w/2, chara.rect.y+chara.rect.h/2});
+        switch s.shape {
+        case shapeBlock:
+
+                if snap.x != 0 {
+                        chara.vel.x = 0
+                }
+                if snap.y != 0 {
+                        chara.vel.y = 0
+                }
+
+                if (snap.y < 0) {
+                        chara.onGround = true;
+                }
+                chara.rect.x += snap.x
+                chara.rect.y += snap.y
+        case shapeLeftSlope45:
+                hit := 16-(chara.rect.x+chara.rect.w-r.x)
+                cornerY := chara.rect.y+chara.rect.h-r.y
+                if hit < 0 { 
+                        hit = 0
+                }
+                if hit >= 0 && cornerY-hit > 0 {
+                        chara.rect.y -= cornerY-hit
+                        chara.vel.y = 0
+                        chara.onGround = true
+                }
+        case shapeRightSlope45:
+                hit := chara.rect.x-r.x
+                cornerY := chara.rect.y+chara.rect.h-r.y
+
+                if hit < 0 { 
+                        hit = 0
+                }
+                if hit >= 0 && cornerY-hit > 0 {
+                        chara.rect.y -= cornerY-hit
+                        chara.vel.y = 0
+                        chara.onGround = true
+                }
+
+        }
+}
+
+fn playerConstructColidingSolids(): []Shape {
+        tangents := world.getTangentTiles(chara.rect)
+        solids := []Shape{}
+
+        for tangent in tangents {
+                shapeRect := rect.Rect{tangent.x*16.0, tangent.y*16.0, 16, 16} 
+                shapeType := -1
+
+                switch tangent.id {
+                case 1, 5, 7:   shapeType = shapeBlock;
+                case 9:         shapeType = shapeLeftSlope45;
+                case 10:        shapeType = shapeRightSlope45;
+                default:        break;
+                }
+                
+                solids = append(solids, Shape{shapeRect, shapeType})
+        }
+
+        collSortShapesByProximity(&solids, th.Vf2{chara.rect.x+chara.rect.w/2, chara.rect.y+chara.rect.h/2});
         return solids       
 }
 
@@ -132,7 +204,7 @@ fn playerSolveCollision() {
         solids := playerConstructColidingSolids()
 
         for solid in solids {
-                playerVsSolid(solid)
+                playerVsShape(solid);
         }
 }
 
@@ -141,9 +213,16 @@ fn drawRectTangents(r: rect.Rect) {
 
         i := 0
         for solid in solids {
-                solid = cameraOffsetRect(solid)
-                canvas.drawRect(0x00FF0055, solid)
-                canvas.drawText(repr(i), th.Vf2{solid.x, solid.y}, th.white, 1);
+                rec := cameraOffsetRect(solid.rect)
+                switch solid.shape {
+                case shapeBlock:
+                        canvas.drawRect(0x00FF0055, rec)
+                case shapeLeftSlope45:
+                        canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y+rec.h}, th.Vf2{rec.x+rec.w, rec.y}, 2);
+                case shapeRightSlope45:
+                        canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y}, th.Vf2{rec.x+rec.w, rec.y+rec.h}, 2);
+                }
+                canvas.drawText(repr(i), th.Vf2{rec.x, rec.y}, th.white, 1);
                 i++
         }
 }
@@ -154,7 +233,6 @@ fn draw*() {
         centerPlayerOnCamera();
 
         world.drawLayer(camera, -1)
-        drawRectTangents(chara.rect)
         if chara.onGround { 
                 canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
         } else {
@@ -162,4 +240,5 @@ fn draw*() {
         }
         world.drawLayer(camera, 0)
         world.drawLayer(camera, 1)
+        drawRectTangents(chara.rect)
 }

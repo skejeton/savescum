@@ -16,6 +16,8 @@ type (
 const (
         stateEditing = 0
         statePlaying = 1
+
+        fileScene = "data/sc00_test.csv"
 )
 
 var (
@@ -132,7 +134,7 @@ fn putBtn(text: str, r: rect.Rect): bool {
 }
 
 fn saveMap() { 
-        file := std.fopen("data/sc00_sky.csv", "w")
+        file := std.fopen(fileScene, "w")
         if file == null {
                 error("Can't save the scene")
         }
@@ -146,7 +148,7 @@ fn saveMap() {
 }
 
 fn loadMap() {
-        file := std.fopen("data/sc00_sky.csv", "r")
+        file := std.fopen(fileScene, "r")
         if file == null {
                 error("Can't load the scene")
         }
