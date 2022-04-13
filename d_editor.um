@@ -103,34 +103,53 @@ fn drawGridEditor() {
         }
 }
 
-fn putBtnBase(text: str, r: rect.Rect, colorMod: uint32): bool {
+fn putBtnBase(text: str, r: rect.Rect, held: bool): bool {
         // -- measure
         txtSize := d_util.measureText(uiMainFont, text)
         // center the text
         txtPos := th.Vf2{r.x+(r.w-txtSize.x)/2, r.y+(r.h-txtSize.y)/2}
-        color := d_colors.cPrimary + colorMod
+        color := d_colors.cPrimary 
         hovered := d_util.isMouseInRect(r) && uiProcessWindowId == uiFocusWindowId
+        pressed := hovered && input.isPressed(input.mouse1)
         nudged  := hovered && input.isJustPressed(input.mouse1)
-        if (hovered) {
+        if pressed || held {
+                color = 0xAD3E3EFF;
+        }
+        if hovered {
                 color += 0x11111100
         }
 
         // -- draw
-        canvas.drawRect(color, r); 
+        r1 := r
+        r1.w -= 0.5
+        r1.h -= 0.5
+        r2 := r1
+        r2.x += 0.5
+        r2.y += 0.5
+        r.x += 0.5
+        r.y += 0.5
+        r.w -= 1
+        r.h -= 1
+        r3 := r
+        r.w -= 0.5
+        r.h -= 0.5
+
+        
+        if pressed || held {
+                tmp := r1
+                r1 = r2
+                r2 = tmp
+        }
+        canvas.drawRect(0xD37A70FF, r1) 
+        canvas.drawRect(0x7C0000FF, r2) 
+        canvas.drawRect(0xAD3E3EFF, r3) 
+        canvas.drawRect(color, r) 
         uiMainFont.draw(text, txtPos, d_colors.cText, 1.6)
         return nudged
 }
 
 fn putBtn(text: str, r: rect.Rect): bool {
-
-        hovered := d_util.isMouseInRect(r) && uiProcessWindowId == uiFocusWindowId
-        pressed := hovered && input.isPressed(input.mouse1)
-        color := 0
-        if (pressed) {
-                color += 0x11111100
-        }
-
-        return putBtnBase(text, r, color)
+        return putBtnBase(text, r, false)
 }
 
 fn saveMap() { 
@@ -166,11 +185,11 @@ fn loadMap() {
 }
 
 fn drawLayerIcon(x, y: real) {
-        fills := [3]bool{worldSelLayer == -1, worldSelLayer == 0, worldSelLayer == 1};
+        fills := [3]bool{worldSelLayer == -1, worldSelLayer == 0, worldSelLayer == 1}
 
         // NOTE: If we choose to show all layers, the icon will show all boxes filled in
         if worldShowCurrentLayer == false {
-                fills = [3]bool{true, true, true};
+                fills = [3]bool{true, true, true}
         }
 
         x += 13
@@ -181,10 +200,10 @@ fn drawLayerIcon(x, y: real) {
                 y += 2
 
                 if l {
-                        canvas.drawRect(0xAAAAFFFF, rec)
+                        canvas.drawRect(0xf0b5afFF, rec)
                         d_util.drawRectLines(0xFFFFFFFF, rec)
                 } else {
-                        canvas.drawRect(d_colors.cBack, rec)
+                        canvas.drawRect(d_colors.cPrimary, rec)
                         d_util.drawRectLines(0xFFFFFFFF, rec)
                 }
         }
@@ -225,11 +244,7 @@ fn drawBar() {
         }
 
         putSelect := fn(s: str, r: ^rect.Rect, w: int, check: bool): bool {
-                var colorMod : uint32 = 0
-                if check {
-                        colorMod = 0x44223300
-                }
-                pressed := putBtnBase(s, d_util.rectChopRight(r, w), colorMod)
+                pressed := putBtnBase(s, d_util.rectChopRight(r, w), check)
                 d_util.rectChopRight(r, 1) // border
                 return pressed
         }
@@ -243,7 +258,7 @@ fn drawBar() {
                 state = statePlaying
         }
         if putTrayBtn(th.Vf2{area.x+16, area.y}, 0, 1, !uiWindows[2].closed) {
-                uiWindows[2].closed = !uiWindows[2].closed;
+                uiWindows[2].closed = !uiWindows[2].closed
         }
 
 
@@ -287,7 +302,7 @@ fn drawPicker() {
                         world.tileset.draw(d_util.posTrans(x, y))
                         
                         if (worldSelTileX == tx) && (worldSelTileY == ty) {
-                                canvas.drawRect(0x00FF0033, rect.Rect{x, y, 16, 16});
+                                canvas.drawRect(0x00FF0033, rect.Rect{x, y, 16, 16})
                         }
 
                         if uiFocusWindowId == 2 && d_util.isMouseInRect(rec) && input.isJustPressed(input.mouse1) { 
@@ -332,8 +347,8 @@ fn setupUiWindows() {
 fn getMouseDelta(): th.Vf2 {
         delta := input.getMousePos()
         
-        delta.x -= uiPrevMousePos.x;
-        delta.y -= uiPrevMousePos.y;
+        delta.x -= uiPrevMousePos.x
+        delta.y -= uiPrevMousePos.y
         return delta
 }
 
@@ -341,13 +356,13 @@ fn handleUiWindows() {
         // -- handle window dragging
         // no window is being dragged if we aren't holding the button
         if (!input.isPressed(input.mouse1)) {
-                uiDraggingWindowId = -1;
+                uiDraggingWindowId = -1
         }
 
         if (uiDraggingWindowId > 0) {
                 mouseDelta := getMouseDelta()
-                uiWindows[uiDraggingWindowId].rect.x += mouseDelta.x;
-                uiWindows[uiDraggingWindowId].rect.y += mouseDelta.y;
+                uiWindows[uiDraggingWindowId].rect.x += mouseDelta.x
+                uiWindows[uiDraggingWindowId].rect.y += mouseDelta.y
         }
 
         // -- handle mouse events on windows
@@ -394,7 +409,7 @@ fn handleUiWindows() {
                         if input.isPressed(input.mouse1) && d_util.isMouseInRect(closeRect) {
                                 uiWindows[i].closing = true
                         }
-                        break;
+                        break
                 }
         }
         
@@ -404,7 +419,7 @@ fn handleUiWindows() {
 }
 fn drawDebugUiWindows() {
         for i := 0; i < 3; i++ {
-                color := 0x0000FFFF;
+                color := 0x0000FFFF
                 if i == uiFocusWindowId {
                         color = 0x00FF00FF
                 }               
@@ -416,13 +431,17 @@ fn drawDebugUiWindows() {
 fn drawUiDecorations(winId: int, title: str) {
         if uiWindows[winId].showDecorations == false {
                 return
-        
         }
         outerRect := getWindowOuterRect(winId)
         closeBtnRect := getWindowCloseRect(winId)
-        uiSelTile(1, 0) /* select win trail */
-        for x := 0.0; x < outerRect.w; x += 8 {
+        for x := 8.0; x < outerRect.w; x += 8 {
+                if x < 16 {
+                        uiSelTile(1, 0) 
+                } else {
+                        uiSelTile(2, 0) 
+                } 
                 if x + 8.0 > outerRect.w {
+                        uiSelTile(3, 0) /* select win trail */
                         x = outerRect.w - 8
                 }
                 uiTileset.draw(th.Transform{p: th.Vf2{outerRect.x+x, outerRect.y}, s: th.Vf2{0.5, 0.5}})
@@ -475,9 +494,9 @@ fn main*() {
         uiTrayIconTileset = image.load("data/ts02_trayicons.png")
 
         screen := rect.mk(0, 0, 320, 240)
-        uiMainFont = font.mkCached(font.load("data/font_mono.ttf"), 16);
+        uiMainFont = font.mkCached(font.load("data/font_mono.ttf"), 16)
         d_background.init()
-        setupUiWindows();
+        setupUiWindows()
         uiPrevMousePos = input.getMousePos()
         for window.cycle(screen) {
                 d_background.draw(screen)
@@ -486,16 +505,16 @@ fn main*() {
                         handleUiWindows()
 
                         if input.isJustPressed(input.key_up) {
-                                worldViewOfsY -= 1;
+                                worldViewOfsY -= 1
                         }
                         if input.isJustPressed(input.key_down) {
-                                worldViewOfsY += 1;
+                                worldViewOfsY += 1
                         }
                         if input.isJustPressed(input.key_left) {
-                                worldViewOfsX -= 1;
+                                worldViewOfsX -= 1
                         }
                         if input.isJustPressed(input.key_right) {
-                                worldViewOfsX += 1;
+                                worldViewOfsX += 1
                         }
 
                         actField()

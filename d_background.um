@@ -30,7 +30,7 @@ fn draw*(screen: rect.Rect) {
         backgroundOffsets[3] -= 10
         for i := 0; i < len(backgroundOffsets); i++ {
                 if backgroundOffsets[i] <= -320 {
-                        backgroundOffsets[i] = 0;
+                        backgroundOffsets[i] = 0
                 }
         }
 }

@@ -44,8 +44,8 @@ fn centerPlayerOnCamera() {
         if cameraAntiPan.y > 25 {
                 cameraAntiPan.y = 25
         }
-        cameraPos.x += ((chara.rect.x-(320-chara.rect.w)/2)-cameraPos.x)/4;
-        cameraPos.y += ((chara.rect.y-(240-chara.rect.h)/2)-cameraPos.y)/4;
+        cameraPos.x += ((chara.rect.x-(320-chara.rect.w)/2)-cameraPos.x)/4
+        cameraPos.y += ((chara.rect.y-(240-chara.rect.h)/2)-cameraPos.y)/4
         camera.x = cameraPos.x + cameraAntiPan.x
         camera.y = cameraPos.y + cameraAntiPan.y
 }
@@ -69,10 +69,10 @@ fn moveCharacter() {
         }
         if chara.rect.y > 1e3 {
                 // NOTE: Respawn
-                chara.vel.y = 0;
-                chara.vel.x = 0;
-                chara.rect.x = 0;
-                chara.rect.y = 0;
+                chara.vel.y = 0
+                chara.vel.x = 0
+                chara.rect.x = 0
+                chara.rect.y = 0
         }
 
 
@@ -82,12 +82,12 @@ fn moveCharacter() {
                 chara.vel.y = 5
         }
 
-        cameraAntiPanVel.x += chara.vel.x;
-        cameraAntiPanVel.x /= 1.3;
-        cameraAntiPanVel.y = chara.vel.y;
-        cameraAntiPanVel.y /= 1.3;
-        cameraAntiPan.x += cameraAntiPanVel.x/5.0;
-        cameraAntiPan.y += cameraAntiPanVel.y/5.0;
+        cameraAntiPanVel.x += chara.vel.x
+        cameraAntiPanVel.x /= 1.3
+        cameraAntiPanVel.y = chara.vel.y
+        cameraAntiPanVel.y /= 1.3
+        cameraAntiPan.x += cameraAntiPanVel.x/5.0
+        cameraAntiPan.y += cameraAntiPanVel.y/5.0
         chara.rect.x += chara.vel.x
         chara.rect.y += chara.vel.y
 
@@ -95,11 +95,11 @@ fn moveCharacter() {
 }
 
 fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
-        x_left := r.x + r.w - along.x;
-        y_up := r.y + r.h - along.y;
+        x_left := r.x + r.w - along.x
+        y_up := r.y + r.h - along.y
 
-        x_right := along.x + along.w - r.x;
-        y_down := along.y + along.h - r.y;
+        x_right := along.x + along.w - r.x
+        y_down := along.y + along.h - r.y
 
         var (min_x: real; min_y: real)
 
@@ -116,9 +116,9 @@ fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
         }
 
         if fabs(min_x) < fabs(min_y) {
-                return th.Vf2{min_x, 0};
+                return th.Vf2{min_x, 0}
         } 
-        return th.Vf2{0, min_y};
+        return th.Vf2{0, min_y}
 }
 
 fn collRectVsRect(r1, r2: rect.Rect): bool {
@@ -127,20 +127,20 @@ fn collRectVsRect(r1, r2: rect.Rect): bool {
 
 fn collSortShapesByProximity(shapes: ^[]Shape, along: th.Vf2) {
         for i := 0; i < len(shapes^); i++ {
-                closest := &shapes[i];
-                mindist := real(99999999);
+                closest := &shapes[i]
+                mindist := real(99999999)
                 for j := i; j < len(shapes^); j++ {
-                        current := shapes[j].rect;
-                        point := th.Vf2{current.x + current.w / 2, current.y + current.h / 2};
-                        dist := point.distanceTo(along);
+                        current := shapes[j].rect
+                        point := th.Vf2{current.x + current.w / 2, current.y + current.h / 2}
+                        dist := point.distanceTo(along)
                         if dist < mindist {
-                                mindist = dist;
-                                closest = &shapes[j];
+                                mindist = dist
+                                closest = &shapes[j]
                         }
                 }
-                tmp := closest^;
-                closest^ = shapes[i];
-                shapes[i] = tmp;
+                tmp := closest^
+                closest^ = shapes[i]
+                shapes[i] = tmp
         }
 }
 
@@ -203,7 +203,7 @@ fn playerVsShape(s: Shape) {
         
         // Not a valid collision (probably pushed back by other blocks?)
         if collRectVsRect(chara.rect, r) == false {
-                return;
+                return
         }
         // Resolve slope collision
         switch s.shape {
@@ -211,10 +211,10 @@ fn playerVsShape(s: Shape) {
                 if snap.x != 0 {
                         chara.vel.x = 0
                 } else if (snap.y > 0 && chara.vel.y < 0) || (snap.y < 0 && chara.vel.y > 0) {
-                        chara.vel.y = 0;
+                        chara.vel.y = 0
                 }
                 if snap.y < 0 {
-                        chara.onGround = true;
+                        chara.onGround = true
                 }
                 chara.rect.x += snap.x
                 chara.rect.y += snap.y
@@ -250,20 +250,20 @@ fn playerConstructColidingSolids(): []Shape {
                 shapeType := -1
 
                 switch tangent.id {
-                case 1, 5, 7:   shapeType = shapeBlock;
-                case 9:         shapeType = shapeLeftUpSlope;
-                case 10:        shapeType = shapeRightUpSlope;
-                case 13:        shapeType = shapeLeftDownSlope;
-                case 14:        shapeType = shapeRightDownSlope;
+                case 1, 5, 7:   shapeType = shapeBlock
+                case 9:         shapeType = shapeLeftUpSlope
+                case 10:        shapeType = shapeRightUpSlope
+                case 13:        shapeType = shapeLeftDownSlope
+                case 14:        shapeType = shapeRightDownSlope
                 
                 // TODO: Investigate why uncommenting this causes a bug where you can pass through blocks
-                // default:        break;
+                // default:        break
                 }
                 
                 solids = append(solids, Shape{shapeRect, shapeType})
         }
 
-        collSortShapesByProximity(&solids, th.Vf2{chara.rect.x+chara.rect.w/2, chara.rect.y+chara.rect.h/2});
+        collSortShapesByProximity(&solids, th.Vf2{chara.rect.x+chara.rect.w/2, chara.rect.y+chara.rect.h/2})
         return solids       
 }
 
@@ -271,7 +271,7 @@ fn playerSolveCollision() {
         solids := playerConstructColidingSolids()
 
         for solid in solids {
-                playerVsShape(solid);
+                playerVsShape(solid)
         }
 }
 
@@ -285,19 +285,19 @@ fn drawRectTangents(r: rect.Rect) {
                 case shapeBlock:
                         canvas.drawRect(0x00FF0055, rec)
                 case shapeLeftUpSlope, shapeRightDownSlope:
-                        canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y+rec.h}, th.Vf2{rec.x+rec.w, rec.y}, 2);
+                        canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y+rec.h}, th.Vf2{rec.x+rec.w, rec.y}, 2)
                 case shapeRightUpSlope, shapeLeftDownSlope:
-                        canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y}, th.Vf2{rec.x+rec.w, rec.y+rec.h}, 2);
+                        canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y}, th.Vf2{rec.x+rec.w, rec.y+rec.h}, 2)
                 }
-                canvas.drawText(repr(i), th.Vf2{rec.x, rec.y}, th.white, 1);
+                canvas.drawText(repr(i), th.Vf2{rec.x, rec.y}, th.white, 1)
                 i++
         }
 }
 
 fn draw*() {
-        moveCharacter();
-        playerSolveCollision();
-        centerPlayerOnCamera();
+        moveCharacter()
+        playerSolveCollision()
+        centerPlayerOnCamera()
 
         world.drawLayer(camera, -1)
         if chara.onGround { 

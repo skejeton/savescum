@@ -1,5 +1,5 @@
 const (
-        cPrimary* = 0x661111FF
-        cBack* = 0x772022FF
+        cPrimary* = 0xBA5757FF
+        cBack* =  0x8f3535FF
         cText* = 0xFFFFEEFF
 )
