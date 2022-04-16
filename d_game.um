@@ -147,6 +147,8 @@ fn collSortShapesByProximity(shapes: ^[]Shape, along: th.Vf2) {
 fn playerVsShape(s: Shape) {
         r := s.rect
         snap := collCalcRectSnap(chara.rect, r)
+        slopemax := r.h
+
         var (hit: real; cornerY: real) 
 
         // Calc slope values
@@ -155,28 +157,28 @@ fn playerVsShape(s: Shape) {
                 if snap.x > 0 {
                         s.shape = shapeBlock
                 } else {
-                        hit = 16-(chara.rect.x+chara.rect.w-r.x)
+                        hit = slopemax-(r.h/r.w)*(chara.rect.x+chara.rect.w-r.x)
                         cornerY = chara.rect.y+chara.rect.h-r.y
                 }
         case shapeRightUpSlope:
                 if snap.x < 0 {
                         s.shape = shapeBlock
                 } else {
-                        hit = chara.rect.x-r.x
+                        hit = (r.h/r.w)*(chara.rect.x-r.x)
                         cornerY = chara.rect.y+chara.rect.h-r.y
                 }
         case shapeLeftDownSlope:
                 if snap.x > 0 {
                         s.shape = shapeBlock
                 } else {
-                        hit = chara.rect.x+chara.rect.w-r.x
+                        hit = (r.h/r.w)*(chara.rect.x+chara.rect.w-r.x)
                         cornerY = chara.rect.y-r.y
                 }
         case shapeRightDownSlope:
                 if snap.x < 0 {
                         s.shape = shapeBlock
                 } else {
-                        hit = 16-(chara.rect.x-r.x)
+                        hit = slopemax-(r.h/r.w)*(chara.rect.x-r.x)
                         cornerY = chara.rect.y-r.y
                 }
         }
@@ -191,7 +193,7 @@ fn playerVsShape(s: Shape) {
                         s.shape = shapeBlock
                 }
         case shapeLeftDownSlope, shapeRightDownSlope:
-                if cornerY < -1 {
+                if cornerY < 0 {
                         s.shape = shapeBlock
                 }
                 // If walking above the slope
@@ -255,7 +257,16 @@ fn playerConstructColidingSolids(): []Shape {
                 case 10:        shapeType = shapeRightUpSlope
                 case 13:        shapeType = shapeLeftDownSlope
                 case 14:        shapeType = shapeRightDownSlope
-                
+                case 4:         shapeType = shapeLeftUpSlope
+                                shapeRect.y += 8
+                                shapeRect.h /= 2;
+                case 8:         shapeType = shapeRightUpSlope
+                                shapeRect.y += 8
+                                shapeRect.h /= 2;
+                case 11:        shapeType = shapeRightDownSlope
+                                shapeRect.h /= 2;
+                case 12:        shapeType = shapeLeftDownSlope
+                                shapeRect.h /= 2;
                 // TODO: Investigate why uncommenting this causes a bug where you can pass through blocks
                 // default:        break
                 }
@@ -298,6 +309,8 @@ fn draw*() {
         moveCharacter()
         playerSolveCollision()
         centerPlayerOnCamera()
+
+        
 
         world.drawLayer(camera, -1)
         if chara.onGround { 

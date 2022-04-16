@@ -27,6 +27,11 @@ fn floor*(n: real): int {
         return trunc(n-int(n < 0 && real(trunc(n)) != n))
 }
 
+fn ceil*(n: real): int {
+        f := floor(n)
+        return f+int(n>f)
+}
+
 fn rectChopRight*(r: ^rect.Rect, by: int): rect.Rect {
         r.w -= by
         return rect.Rect{r.x+r.w, r.y, by, r.h}

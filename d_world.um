@@ -93,14 +93,14 @@ fn (world: ^World) getTile(layer, tx, ty: int): int {
 // NOTE: This function only checks middleground layer (layer 0)
 //
 fn (world: ^World) getTangentTiles(r: rect.Rect): []Tangent {
-        x, y, w, h := d_util.floor(r.x/16), d_util.floor(r.y/16), d_util.floor(r.w/16)+1, d_util.floor(r.h/16)+1
+        x, y, w, h := d_util.floor(r.x/16), d_util.floor(r.y/16), d_util.ceil(r.w/16), d_util.ceil(r.h/16)
         x2, y2 := x + w, y + h
         inity := y
         tangents := []Tangent{}
 
-        for x < x2 {
+        for x <= x2 {
                 y = inity
-                for y < y2 {
+                for y <= y2 {
                         tile := world.getTile(0, x, y)
                         if tile > 0 {
                                 tangents = append(tangents, Tangent{x, y, tile})
