@@ -16,20 +16,20 @@ fn init*() {
 
 fn draw*(screen: rect.Rect) {
         canvas.drawRect(0x000000FF, screen)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[0], -30), 0x333333FF)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[0]+320, -30), 0x333333FF)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[0], -60), 0x333333FF)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[0]+640, -60), 0x333333FF)
         imgClouds.draw(d_util.posTrans(backgroundOffsets[1], 0), 0x666666FF)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[1]+320, 0), 0x666666FF)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[2], 30), 0xAAAAAAFF)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[2]+320, 30), 0xAAAAAAFF)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[3], 60))
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[3]+320, 60))
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[1]+640, 0), 0x666666FF)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[2], 60), 0xAAAAAAFF)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[2]+640, 60), 0xAAAAAAFF)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[3], 120))
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[3]+640, 120))
         backgroundOffsets[0] -= 1
         backgroundOffsets[1] -= 3
         backgroundOffsets[2] -= 5
         backgroundOffsets[3] -= 10
         for i := 0; i < len(backgroundOffsets); i++ {
-                if backgroundOffsets[i] <= -320 {
+                if backgroundOffsets[i] <= -640 {
                         backgroundOffsets[i] = 0
                 }
         }

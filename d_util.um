@@ -14,13 +14,13 @@ fn isMouseInRect*(r: rect.Rect): bool {
 
 fn drawRectLines*(color: uint32, r: rect.Rect) {
         // top
-        canvas.drawRect(color, rect.Rect{r.x, r.y, r.w, 0.5})
+        canvas.drawRect(color, rect.Rect{r.x, r.y, r.w, 1})
         // bottom
-        canvas.drawRect(color, rect.Rect{r.x, r.y+r.h-0.5, r.w, 0.5})
+        canvas.drawRect(color, rect.Rect{r.x, r.y+r.h-1, r.w, 1})
         // left
-        canvas.drawRect(color, rect.Rect{r.x, r.y+0.5, 0.5, r.h-1})
+        canvas.drawRect(color, rect.Rect{r.x, r.y+1, 1, r.h-1})
         // right
-        canvas.drawRect(color, rect.Rect{r.x+r.w-0.5, r.y+0.5, 0.5, r.h-1})
+        canvas.drawRect(color, rect.Rect{r.x+r.w-1, r.y+1, 1, r.h-1})
 }
 
 fn floor*(n: real): int {
@@ -45,9 +45,9 @@ fn measureText*(f: font.Cached, text: str): th.Vf2 {
                 result.x += dims.x
                 result.y = dims.y
         }
-        result.x *= 1.6
+        result.x *= 3.2
         result.x -= 1
-        result.y *= 1.6
+        result.y *= 3.2
         result.y += 1
         return result
 }

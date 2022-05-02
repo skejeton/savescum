@@ -63,7 +63,6 @@ fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
         chunk[tx][ty] = tile
 }
 
-
 fn (world: ^World) getTile(layer, tx, ty: int): int {
         layer++
         if layer < 0 || layer > 2 {
@@ -93,7 +92,7 @@ fn (world: ^World) getTile(layer, tx, ty: int): int {
 // NOTE: This function only checks middleground layer (layer 0)
 //
 fn (world: ^World) getTangentTiles(r: rect.Rect): []Tangent {
-        x, y, w, h := d_util.floor(r.x/16), d_util.floor(r.y/16), d_util.ceil(r.w/16), d_util.ceil(r.h/16)
+        x, y, w, h := d_util.floor(r.x/32), d_util.floor(r.y/32), d_util.ceil(r.w/32), d_util.ceil(r.h/32)
         x2, y2 := x + w, y + h
         inity := y
         tangents := []Tangent{}
@@ -135,7 +134,7 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int) {
                                                 pos := tile2Pos(tileId)
 
                                                 world.tileset.crop(th.Vf2{pos.x/4, pos.y/4}, th.Vf2{pos.x/4+1/4.0, pos.y/4+1/4.0})
-                                                world.tileset.draw(d_util.posTrans(tx * 16 - pan.x, ty * 16 - pan.y))
+                                                world.tileset.draw(d_util.posTrans(tx * 32 - pan.x, ty * 32 - pan.y))
                                         }
                                 }
                         }

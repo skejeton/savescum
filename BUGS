@@ -1,4 +1,2 @@
 If you try to close tile picker with close button over tray icon, it won't close
 If you drag window and manage to hover over close button, the window will close
-Tile tangents are confidently incorrect
-Fix "slope ladder", when you are few pixels below the slope you can climb in it and snap to it

@@ -19,6 +19,7 @@ type (
                 rect: rect.Rect
                 vel: th.Vf2
                 onGround: bool
+                onSlope: bool
         }
 )
 
@@ -32,20 +33,20 @@ var (
 )
 
 fn centerPlayerOnCamera() {
-        if cameraAntiPan.x < -25 {
-                cameraAntiPan.x = -25
+        if cameraAntiPan.x < -50 {
+                cameraAntiPan.x = -50
         }
-        if cameraAntiPan.x > 25 {
-                cameraAntiPan.x = 25
+        if cameraAntiPan.x > 50 {
+                cameraAntiPan.x = 50
         }
-        if cameraAntiPan.y < -25 {
-                cameraAntiPan.y = -25
+        if cameraAntiPan.y < -50 {
+                cameraAntiPan.y = -50
         }
-        if cameraAntiPan.y > 25 {
-                cameraAntiPan.y = 25
+        if cameraAntiPan.y > 50 {
+                cameraAntiPan.y = 50
         }
-        cameraPos.x += ((chara.rect.x-(320-chara.rect.w)/2)-cameraPos.x)/4
-        cameraPos.y += ((chara.rect.y-(240-chara.rect.h)/2)-cameraPos.y)/4
+        cameraPos.x += ((chara.rect.x-(640-chara.rect.w)/2)-cameraPos.x)/4
+        cameraPos.y += ((chara.rect.y-(480-chara.rect.h)/2)-cameraPos.y)/4
         camera.x = cameraPos.x + cameraAntiPan.x
         camera.y = cameraPos.y + cameraAntiPan.y
 }
@@ -58,14 +59,20 @@ fn cameraOffsetRect(r: rect.Rect): rect.Rect {
 
 fn moveCharacter() {
         chara.vel.x = 0
+        if chara.onSlope {
+                chara.vel.y += 2.2
+        } else {
+                chara.vel.y += 0.1
+        }
+
         if input.isPressed(input.key_up) && chara.onGround {
-                chara.vel.y = -3.19
+                chara.vel.y = -4.36
         }
         if input.isPressed(input.key_left) {
-                chara.vel.x = -1
+                chara.vel.x = -2
         }
         if input.isPressed(input.key_right) {
-                chara.vel.x = 1
+                chara.vel.x = 2
         }
         if chara.rect.y > 1e3 {
                 // NOTE: Respawn
@@ -75,23 +82,21 @@ fn moveCharacter() {
                 chara.rect.y = 0
         }
 
-
-        chara.vel.y += 0.1
-
-        if chara.vel.y > 5 {
-                chara.vel.y = 5
+        if chara.vel.y > 10 {
+                chara.vel.y = 10
         }
 
         cameraAntiPanVel.x += chara.vel.x
-        cameraAntiPanVel.x /= 1.3
+        cameraAntiPanVel.x /= 2.6
         cameraAntiPanVel.y = chara.vel.y
-        cameraAntiPanVel.y /= 1.3
+        cameraAntiPanVel.y /= 2.6
         cameraAntiPan.x += cameraAntiPanVel.x/5.0
         cameraAntiPan.y += cameraAntiPanVel.y/5.0
         chara.rect.x += chara.vel.x
         chara.rect.y += chara.vel.y
 
         chara.onGround = false
+        chara.onSlope = false
 }
 
 fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
@@ -147,68 +152,72 @@ fn collSortShapesByProximity(shapes: ^[]Shape, along: th.Vf2) {
 fn playerVsShape(s: Shape) {
         r := s.rect
         snap := collCalcRectSnap(chara.rect, r)
-        slopemax := r.h
-
-        var (hit: real; cornerY: real) 
-
-        // Calc slope values
-        switch s.shape {
-        case shapeLeftUpSlope:
-                if snap.x > 0 {
-                        s.shape = shapeBlock
-                } else {
-                        hit = slopemax-(r.h/r.w)*(chara.rect.x+chara.rect.w-r.x)
-                        cornerY = chara.rect.y+chara.rect.h-r.y
-                }
-        case shapeRightUpSlope:
-                if snap.x < 0 {
-                        s.shape = shapeBlock
-                } else {
-                        hit = (r.h/r.w)*(chara.rect.x-r.x)
-                        cornerY = chara.rect.y+chara.rect.h-r.y
-                }
-        case shapeLeftDownSlope:
-                if snap.x > 0 {
-                        s.shape = shapeBlock
-                } else {
-                        hit = (r.h/r.w)*(chara.rect.x+chara.rect.w-r.x)
-                        cornerY = chara.rect.y-r.y
-                }
-        case shapeRightDownSlope:
-                if snap.x < 0 {
-                        s.shape = shapeBlock
-                } else {
-                        hit = slopemax-(r.h/r.w)*(chara.rect.x-r.x)
-                        cornerY = chara.rect.y-r.y
-                }
-        }
-
-        switch s.shape {
-        case shapeLeftUpSlope, shapeRightUpSlope:
-                if cornerY > 17 {
-                        s.shape = shapeBlock
-                }
-                // If jumping below the slope
-                if chara.vel.y < 0 && (cornerY-hit) > 0 {
-                        s.shape = shapeBlock
-                }
-        case shapeLeftDownSlope, shapeRightDownSlope:
-                if cornerY < 0 {
-                        s.shape = shapeBlock
-                }
-                // If walking above the slope
-                if chara.vel.y > 0 && (hit-cornerY) > 16 {
-                        s.shape = shapeBlock
-                }
-        }
- 
-        
+                
         // Not a valid collision (probably pushed back by other blocks?)
         if collRectVsRect(chara.rect, r) == false {
                 return
         }
-        // Resolve slope collision
+        
         switch s.shape {
+        case shapeLeftUpSlope:
+                cornerX := chara.rect.x + chara.rect.w - r.x;
+                if cornerX > r.w {
+                        cornerX = r.w
+                }
+                cornerY := chara.rect.y + chara.rect.h - r.y;
+                hitY := r.h - ((r.h/r.w) * (cornerX))
+                if hitY > r.h {
+                        hitY = r.h
+                }
+                
+                if cornerY > hitY {
+                        chara.vel.y = 0;
+                        chara.onGround = true;
+                        chara.onSlope = true;
+                        chara.rect.y += hitY-cornerY;
+                }
+        case shapeRightUpSlope:
+                cornerX := chara.rect.x - r.x;
+                if cornerX < 0 {
+                        cornerX = 0;
+                }
+                cornerY := chara.rect.y + chara.rect.h - r.y;
+                hitY := (r.h/r.w) * (cornerX)
+
+                if cornerY > hitY {
+                        chara.vel.y = 0;
+                        chara.onGround = true;
+                        chara.onSlope = true;
+                        chara.rect.y += hitY-cornerY;
+                }
+        case shapeLeftDownSlope:
+                cornerX := chara.rect.x + chara.rect.w - r.x;
+                if cornerX > r.w {
+                        cornerX = r.w
+                }
+                cornerY := chara.rect.y - r.y;
+                hitY := (r.h/r.w) * (cornerX)
+
+                if cornerY < hitY {
+                        if chara.vel.y < 0 {
+                                chara.vel.y = 0;
+                        }
+                        chara.rect.y += hitY-cornerY;
+                }
+        case shapeRightDownSlope:
+                cornerX := chara.rect.x - r.x;
+                if cornerX < 0 {
+                        cornerX = 0;
+                }
+                cornerY := chara.rect.y - r.y;
+                hitY := r.h - ((r.h/r.w) * (cornerX))
+
+                if cornerY < hitY {
+                        if chara.vel.y < 0 {
+                                chara.vel.y = 0;
+                        }
+                        chara.rect.y += hitY-cornerY;
+                }
         case shapeBlock:
                 if snap.x != 0 {
                         chara.vel.x = 0
@@ -220,35 +229,16 @@ fn playerVsShape(s: Shape) {
                 }
                 chara.rect.x += snap.x
                 chara.rect.y += snap.y
-        case shapeLeftUpSlope, shapeRightUpSlope:
-                if hit < 0 { 
-                        hit = 0
-                }
-                if cornerY-hit > 0 {
-                        chara.rect.y -= cornerY-hit
-                        chara.vel.y = 0
-                        chara.onGround = true
-                }
-        case shapeLeftDownSlope, shapeRightDownSlope:
-                if hit > 16 { 
-                        hit = 16
-                }
-                if hit-cornerY > 0 {
-                        chara.rect.y += hit-cornerY
-                        if (chara.vel.y < 0) {
-                                chara.vel.y = 0
-                        }
-                }
-
         }
 }
 
 fn playerConstructColidingSolids(): []Shape {
-        tangents := world.getTangentTiles(chara.rect)
+        tangents := world.getTangentTiles(rect.Rect{chara.rect.x-1, chara.rect.y-1, chara.rect.w+1, chara.rect.h+1})
         solids := []Shape{}
+        nonBlockSolids := []Shape{}
 
         for tangent in tangents {
-                shapeRect := rect.Rect{tangent.x*16.0, tangent.y*16.0, 16, 16} 
+                shapeRect := rect.Rect{tangent.x*32.0, tangent.y*32.0, 32, 32} 
                 shapeType := -1
 
                 switch tangent.id {
@@ -257,11 +247,15 @@ fn playerConstructColidingSolids(): []Shape {
                 case 10:        shapeType = shapeRightUpSlope
                 case 13:        shapeType = shapeLeftDownSlope
                 case 14:        shapeType = shapeRightDownSlope
+                case 15:        shapeType = shapeLeftUpSlope
+                                shapeRect.h /= 2;
+                case 16:        shapeType = shapeRightUpSlope
+                                shapeRect.h /= 2;
                 case 4:         shapeType = shapeLeftUpSlope
-                                shapeRect.y += 8
+                                shapeRect.y += 16;
                                 shapeRect.h /= 2;
                 case 8:         shapeType = shapeRightUpSlope
-                                shapeRect.y += 8
+                                shapeRect.y += 16
                                 shapeRect.h /= 2;
                 case 11:        shapeType = shapeRightDownSlope
                                 shapeRect.h /= 2;
@@ -271,11 +265,18 @@ fn playerConstructColidingSolids(): []Shape {
                 // default:        break
                 }
                 
-                solids = append(solids, Shape{shapeRect, shapeType})
+                if shapeType == shapeBlock {
+                        solids = append(solids, Shape{shapeRect, shapeType})
+                } else {
+                        nonBlockSolids = append(nonBlockSolids, Shape{shapeRect, shapeType})
+                }
         }
 
+
+        //collSortShapesByProximity(&nonBlockSolids, th.Vf2{chara.rect.x+chara.rect.w/2, chara.rect.y+chara.rect.h/2})
+        solids = append(solids, nonBlockSolids)
         collSortShapesByProximity(&solids, th.Vf2{chara.rect.x+chara.rect.w/2, chara.rect.y+chara.rect.h/2})
-        return solids       
+        return solids
 }
 
 fn playerSolveCollision() {
@@ -309,8 +310,6 @@ fn draw*() {
         moveCharacter()
         playerSolveCollision()
         centerPlayerOnCamera()
-
-        
 
         world.drawLayer(camera, -1)
         if chara.onGround { 
