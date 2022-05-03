@@ -24,6 +24,7 @@ type (
                 y: int
         }
         World* = struct {
+                playerSpawnPos: th.Vf2
                 tileset: image.Image
                 tilemap: [3]map.Map
         }
@@ -152,9 +153,10 @@ fn (world: ^World) draw*(pan: th.Vf2) {
 fn (world: ^World) save*(): str {
         const filename = "scn.csv"
         data := make([][]str, 0)
-        version := make([]str, 0)
-        version = append(version, lastVersion)
-        data = append(data, version)
+        // ver
+        data = append(data, []str{lastVersion})
+        // player pos
+        data = append(data, []str{std.itoa(trunc(world.playerSpawnPos.x)), std.itoa(trunc(world.playerSpawnPos.y))})
 
         // Start from -1, because that's the background layer, which maps to index 0
         layerNo := -1
@@ -189,7 +191,9 @@ fn (world: ^World) load*(data: str) {
                 error("Scene version mismatch")
         }
 
-        row := 1
+        world.playerSpawnPos = th.Vf2{real(std.atoi(csvData[1][0])), real(std.atoi(csvData[1][1]))}
+
+        row := 2
         
         // NOTE: I check first column of the csv data because csv parser reports adds bogus row with empty string
         for row < len(csvData) && csvData[row][0] != "" {
