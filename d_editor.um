@@ -1,7 +1,7 @@
 import (
         "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"; "font.um"; "csv.um"
         "utf8.um"; "map.um"; 
-        "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"
+        "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"
 )
 
 type (
@@ -248,7 +248,7 @@ fn drawBar() {
                 d_util.rectChopRight(r, 1) // border
                 return pressed
         }
-
+        
         canvas.drawRect(d_colors.cBack, uiWindows[1].rect)
         area := uiWindows[1].rect
         
@@ -499,6 +499,7 @@ fn main*() {
         setupUiWindows()
         uiPrevMousePos = input.getMousePos()
         for window.cycle(screen) {
+                d_fps.update()
                 d_background.draw(screen)
                 switch state {
                 case stateEditing:
@@ -530,6 +531,7 @@ fn main*() {
                 }
                 uiPrevMousePos = input.getMousePos()
                 uiLeftMouseDown = input.isPressed(input.mouse1)
+                uiMainFont.draw(std.itoa(trunc(d_fps.getFps()))+"fps", th.Vf2{0, 0}, d_colors.cText, 3.2) 
         }
 
 }

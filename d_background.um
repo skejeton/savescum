@@ -15,13 +15,13 @@ fn init*() {
 }
 
 fn draw*(screen: rect.Rect) {
-        canvas.drawRect(0x000000FF, screen)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[0], -60), 0x333333FF)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[0]+640, -60), 0x333333FF)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[1], 0), 0x666666FF)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[1]+640, 0), 0x666666FF)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[2], 60), 0xAAAAAAFF)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[2]+640, 60), 0xAAAAAAFF)
+        canvas.drawRect(0x001133FF, screen)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[0], -60), 0xFFFFFF66)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[0]+640, -60), 0xFFFFFF66)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[1], 0), 0xFFFFFF99)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[1]+640, 0), 0xFFFFFF99)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[2], 60), 0xFFFFFFAA)
+        imgClouds.draw(d_util.posTrans(backgroundOffsets[2]+640, 60), 0xFFFFFFAA)
         imgClouds.draw(d_util.posTrans(backgroundOffsets[3], 120))
         imgClouds.draw(d_util.posTrans(backgroundOffsets[3]+640, 120))
         backgroundOffsets[0] -= 1
