@@ -76,10 +76,10 @@ fn moveCharacter() {
         }
         if chara.rect.y > 1e3 {
                 // NOTE: Respawn
-                chara.vel.y = 0
                 chara.vel.x = 0
-                chara.rect.x = 0
-                chara.rect.y = 0
+                chara.vel.y = 0
+                chara.rect.x = world.playerSpawnPos.x * 32
+                chara.rect.y = world.playerSpawnPos.y * 32
         }
 
         if chara.vel.y > 10 {

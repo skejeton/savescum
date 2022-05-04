@@ -32,6 +32,7 @@ var (
         uiProcessWindowId: int          // window currently processing (drawing)
         uiFocusWindowId: int            // window currently focused on (mouse over)
         uiDraggingWindowId: int         // window currently dragging
+        uiDragPoint: th.Vf2
         uiMainFont: font.Cached
 
         worldViewOfsX: int
@@ -56,8 +57,7 @@ fn uiSelTrayTile(x, y: int) {
 }
 
 fn actField() {
-
-        if uiFocusWindowId == 0 && (input.isPressed(input.mouse1) || input.isPressed(input.mouse3)) {
+        if uiFocusWindowId == 0 && (input.isPressed(input.mouse1) || input.isPressed(input.mouse3))  {
                 pos := input.getMousePos()
 
                 tx := trunc(pos.x / 32) + worldViewOfsX
@@ -371,8 +371,9 @@ fn setupUiWindows() {
         uiWindows[1].rect = rect.Rect{0, 480-32, 640, 32}        
         uiWindows[2].rect = rect.Rect{480, 20, 146, 408}
         uiWindows[2].showDecorations = true
-        uiWindows[3].rect = rect.Rect{20, 20, 160, 120}
+        uiWindows[3].rect = rect.Rect{50, 50, 160, 120}
         uiWindows[3].showDecorations = true
+        uiWindows[3].closed = true
 }
 
 fn getMouseDelta(): th.Vf2 {
@@ -391,11 +392,21 @@ fn handleUiWindows() {
         }
 
         if (uiDraggingWindowId > 0) {
-                mouseDelta := getMouseDelta()
-                uiWindows[uiDraggingWindowId].rect.x += mouseDelta.x
-                uiWindows[uiDraggingWindowId].rect.y += mouseDelta.y
+                mousePos := input.getMousePos()
+                uiWindows[uiDraggingWindowId].rect.x = mousePos.x-uiDragPoint.x
+                uiWindows[uiDraggingWindowId].rect.y = mousePos.y-uiDragPoint.y
         }
 
+        for i := 0; i < 4; i++ {
+                if !uiWindows[i].closed {
+                        if uiWindows[i].showDecorations && d_util.isMouseInRect(getWindowOuterRect(i)) {
+                                uiFocusWindowId = -1
+                        } 
+                        if d_util.isMouseInRect(uiWindows[i].rect) {
+                                uiFocusWindowId = i
+                        } 
+                }
+        }
         // -- handle mouse events on windows
         for i := 0; i < 4; i++ {
                 if uiWindows[i].rect.x < 0 {
@@ -419,9 +430,6 @@ fn handleUiWindows() {
                         uiWindows[i].closed = true
                 }
                 uiWindows[i].closing = false
-                if d_util.isMouseInRect(uiWindows[i].rect) {
-                        uiFocusWindowId = i
-                } 
         }
         
         for i := 3; i >= 0; i-- {
@@ -435,16 +443,17 @@ fn handleUiWindows() {
                 if d_util.isMouseInRect(outerRect) && uiFocusWindowId < i {
                         uiFocusWindowId = -1
                         if input.isJustPressed(input.mouse1) && d_util.isMouseInRect(titlebarRect) {
+                                uiDragPoint = input.getMousePos().sub(th.Vf2{uiWindows[i].rect.x, uiWindows[i].rect.y})
                                 uiDraggingWindowId = i
                         }
-                        if input.isPressed(input.mouse1) && d_util.isMouseInRect(closeRect) {
+                        if input.isPressed(input.mouse1) && d_util.isMouseInRect(closeRect) && uiDraggingWindowId < 0 {
                                 uiWindows[i].closing = true
                         }
                         break
                 }
         }
         
-        if (uiDraggingWindowId > 0) {
+        if (uiDraggingWindowId >= 0) {
                 uiFocusWindowId = -1
         }
 }
@@ -563,7 +572,7 @@ fn main*() {
                 case statePlaying:
                         d_game.draw()
                         uiProcessWindowId = uiFocusWindowId
-                        if putTrayBtn(th.Vf2{0, 480-32}, 1, 1, true) {
+                        if putTrayBtn(th.Vf2{0, 480-32}, 2, 1, true) {
                                 state = stateEditing
                         }
                 }
