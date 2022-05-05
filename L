@@ -1,21 +1,21 @@
 #!/bin/sh
 case $1 in
         play)
-                ../../tophat root tophat.dat
+                ../../tophat main tophat.dat/main.um
         ;;
         check)
-                ../../tophat check root tophat.dat
+                ../../tophat check main tophat.dat/main.um
                 
                 for d in test/*; do
-                        TEST_PFX="%d/" ../../tophat check root "$d"
+                        TEST_PFX="%d/" ../../tophat check main "$d/main.um"
                 done
         ;;
         test)
                 if [ -z "$2" ]; then
                         echo -e "Specify the test. \n$0 $1 test_name" 
                         exit 1
-                elif [[ -d "test/$2" ]]; then 
-                        TEST_PFX="test/$2/" ../../tophat root "test/$2"
+                elif [[ -d "test/$2" && -f "test/$2/main.um" ]]; then 
+                        TEST_PFX="test/$2/" ../../tophat main "test/$2/main.um"
                 else
                         echo "No test \"$2\"." 
                         exit 2
