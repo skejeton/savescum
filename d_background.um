@@ -9,7 +9,6 @@ var (
         imgClouds: image.Image
 )
 
-
 fn init*() {
         imgClouds = image.load("data/bg00_sky.png")
 }

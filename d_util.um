@@ -1,5 +1,5 @@
 import (
-        "th.um"; "font.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um"
+        "std.um"; "th.um"; "font.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um"
 )
 
 fn posTrans*(x, y: th.fu): th.Transform {
@@ -9,6 +9,25 @@ fn posTrans*(x, y: th.fu): th.Transform {
 fn isMouseInRect*(r: rect.Rect): bool {
         p := input.getMousePos()
         return p.x >= r.x && p.y >= r.y && p.x <= (r.x+r.w) && p.y <= (r.y+r.h)
+}
+
+fn readFileStr*(path: str): str {
+        file := std.fopen(path, "r")
+        if file == null {
+                error("Failed to open file")
+        }
+        std.fseek(file, 0, std.seekEnd)
+        datasiz := std.ftell(file)
+        std.fseek(file, 0, std.seekBegin)
+        buffer := make([]uint8, datasiz)
+        std.fread(file, buffer)
+        data := ""
+        
+        for b in buffer {
+                data += char(b)
+        }
+        
+        return data
 }
 
 fn drawRectLines*(color: uint32, r: rect.Rect) {

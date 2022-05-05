@@ -1,7 +1,7 @@
 import (
         "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"; "font.um"; "csv.um"
         "utf8.um"; "map.um"; 
-        "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"
+        "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"; "d_script.um"
 )
 
 type (
@@ -238,13 +238,11 @@ fn putTrayBtn(pos: th.Vf2, ix, iy: int, active: bool): bool {
         trayBtnRect := rect.Rect{pos.x, pos.y, 32, 32}
 
         if active || (isLeftMouseReleased() || input.isPressed(input.mouse1)) && (d_util.isMouseInRect(trayBtnRect) && uiFocusWindowId == uiProcessWindowId) {
-                uiSelTrayTile(1, 0)
-                uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{1, 1}})
+                putBtnBase(" ", trayBtnRect, true)
                 uiSelTrayTile(ix, iy)
                 uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{1, 1}}, 0x999999FF)
         } else {
-                uiSelTrayTile(0, 0)
-                uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{1, 1}})
+                putBtnBase(" ", trayBtnRect, false)
                 uiSelTrayTile(ix, iy)
                 uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{1, 1}})
         }
@@ -271,7 +269,7 @@ fn drawBar() {
         
         if putTrayBtn(th.Vf2{area.x, area.y}, 1, 1, false) {
                 d_game.world = world
-                d_game.chara = d_game.Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
+                d_game.init()
                 state = statePlaying
         }
         if putTrayBtn(th.Vf2{area.x+32, area.y}, 0, 1, !uiWindows[2].closed) {
@@ -570,13 +568,14 @@ fn main*() {
                                 uiSelTrayTile(2, 0)
                                 uiTrayIconTileset.draw(th.Transform{p: input.getMousePos(), s: th.Vf2{1, 1}}, th.white)
                         }
-
+                        
                 case statePlaying:
                         d_game.draw()
                         uiProcessWindowId = uiFocusWindowId
                         if putTrayBtn(th.Vf2{0, 480-32}, 2, 1, true) {
                                 state = stateEditing
                         }
+                        d_script.update()
                 }
 
                 uiPrevMousePos = input.getMousePos()

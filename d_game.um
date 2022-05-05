@@ -24,6 +24,7 @@ type (
 )
 
 var (
+        sceneId*: int
         world*: d_world.World
         chara*: Character
         camera: th.Vf2
@@ -74,7 +75,7 @@ fn moveCharacter() {
         if input.isPressed(input.key_right) {
                 chara.vel.x = 2
         }
-        if chara.rect.y > 1e3 {
+        if chara.rect.y > 2e3 {
                 // NOTE: Respawn
                 chara.vel.x = 0
                 chara.vel.y = 0
@@ -304,6 +305,15 @@ fn drawRectTangents(r: rect.Rect) {
                 canvas.drawText(repr(i), th.Vf2{rec.x, rec.y}, th.white, 1)
                 i++
         }
+}
+
+fn init*() {
+        chara = Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
+
+        cameraPos.x = chara.rect.x-(640-chara.rect.w)/2
+        cameraPos.y = chara.rect.y-(480-chara.rect.h)/2
+        
+        sceneId = 0
 }
 
 fn draw*() {
