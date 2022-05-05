@@ -1,7 +1,7 @@
 import (
         "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"; "font.um"; "csv.um"
         "utf8.um"; "map.um"; 
-        "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"
+        "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"
 )
 
 type (
@@ -60,14 +60,14 @@ fn actField() {
         if uiFocusWindowId == 0 && (input.isPressed(input.mouse1) || input.isPressed(input.mouse3))  {
                 pos := input.getMousePos()
 
-                tx := trunc(pos.x / 32) + worldViewOfsX
-                ty := trunc(pos.y / 32) + worldViewOfsY
+                tx := trunc(pos.x / world.tileset.tileSizeX) + worldViewOfsX
+                ty := trunc(pos.y / world.tileset.tileSizeY) + worldViewOfsY
 
                 painting := input.isPressed(input.mouse1)
                 
                 if !uiRelocatingPlayer {
                         if painting {
-                                world.setTile(worldSelLayer, tx, ty, d_world.pos2Tile(worldSelTileX, worldSelTileY))
+                                world.setTile(worldSelLayer, tx, ty, world.tileset.tileToPos(worldSelTileX, worldSelTileY))
                         } else {
                                 world.setTile(worldSelLayer, tx, ty, 0)
                         }
@@ -87,33 +87,33 @@ fn drawGridEditor() {
         ny := 480/16
 
         for cx := 0; cx < nx; cx++ {
-                x := cx * 32
+                x := cx * world.tileset.tileSizeX
                 canvas.drawRect(0xFFFFFF11, rect.Rect{x, 0, 1, 480})
         }
         for cy := 0; cy < ny; cy++ {
-                y := cy * 32
+                y := cy * world.tileset.tileSizeY
                 canvas.drawRect(0xFFFFFF11, rect.Rect{0, y, 640, 1})        
         }
 
  
         // draw world
         if worldShowCurrentLayer {
-                world.drawLayer(th.Vf2{worldViewOfsX * 32, worldViewOfsY * 32}, worldSelLayer)
+                world.drawLayer(th.Vf2{worldViewOfsX * world.tileset.tileSizeX, worldViewOfsY * world.tileset.tileSizeY}, worldSelLayer)
         } else {
-                world.draw(th.Vf2{worldViewOfsX * 32, worldViewOfsY * 32})
+                world.draw(th.Vf2{worldViewOfsX * world.tileset.tileSizeX, worldViewOfsY * world.tileset.tileSizeY})
         }
 
 
         // draw tile highlight
         if uiFocusWindowId == 0 {
                 pos := input.getMousePos()
-                tx := trunc(pos.x / 32) 
-                ty := trunc(pos.y / 32)
-                canvas.drawRect(0x00FF0011, rect.Rect{tx*32, ty*32, 32, 32}) 
+                tx := trunc(pos.x / world.tileset.tileSizeX) 
+                ty := trunc(pos.y / world.tileset.tileSizeY)
+                canvas.drawRect(0x00FF0011, rect.Rect{tx*world.tileset.tileSizeX, ty*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}) 
         }
 
         uiSelTrayTile(2, 0)
-        uiTrayIconTileset.draw(th.Transform{p: world.playerSpawnPos.add(th.Vf2{-worldViewOfsX, -worldViewOfsY}).mul(th.Vf2{32.0, 32.0}), s: th.Vf2{1, 1}}, th.white)
+        uiTrayIconTileset.draw(th.Transform{p: world.playerSpawnPos.add(th.Vf2{-worldViewOfsX, -worldViewOfsY}).mul(th.Vf2{world.tileset.tileSizeX, world.tileset.tileSizeY}), s: th.Vf2{1, 1}}, th.white)
 }
 
 fn putBtnBase(text: str, r: rect.Rect, held: bool): bool {
@@ -197,8 +197,8 @@ fn loadMap() {
         
         world.load(data)
 
-        worldViewOfsX = trunc(world.playerSpawnPos.x)-trunc(640/32/2)
-        worldViewOfsY = trunc(world.playerSpawnPos.y)-trunc(480/32/2)
+        worldViewOfsX = trunc(world.playerSpawnPos.x)-trunc(640/world.tileset.tileSizeX/2)
+        worldViewOfsY = trunc(world.playerSpawnPos.y)-trunc(480/world.tileset.tileSizeY/2)
 }
 
 fn drawLayerIcon(x, y: real) {
@@ -271,7 +271,7 @@ fn drawBar() {
         
         if putTrayBtn(th.Vf2{area.x, area.y}, 1, 1, false) {
                 d_game.world = world
-                d_game.chara = d_game.Character{rect: rect.Rect{world.playerSpawnPos.x*32, world.playerSpawnPos.y*32, 32, 32}}
+                d_game.chara = d_game.Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
                 state = statePlaying
         }
         if putTrayBtn(th.Vf2{area.x+32, area.y}, 0, 1, !uiWindows[2].closed) {
@@ -311,17 +311,17 @@ fn drawPicker() {
         canvas.drawRect(d_colors.cBack, uiWindows[2].rect)
 
         // selected tile
-        tsw := 4
-        tsh := 5
+        tsw := world.tileset.tileCountX
+        tsh := world.tileset.tileCountY
         
         for tx := 0; tx < tsw; tx++ {
                 for ty := 0; ty < tsh; ty++ {
-                        x := uiWindows[2].rect.x + 2 + tx * 36
-                        y := uiWindows[2].rect.y + 2 + ty * 36
+                        x := uiWindows[2].rect.x + 2 + tx * (world.tileset.tileSizeX + 4)
+                        y := uiWindows[2].rect.y + 2 + ty * (world.tileset.tileSizeY + 4)
                                 
-                        rec := rect.Rect{x, y, 32, 32}
-                        world.tileset.crop(th.Vf2{tx/real(tsw), ty/real(tsh)}, th.Vf2{tx/real(tsw)+1/real(tsw), ty/real(tsh)+1/real(tsh)})
-                        world.tileset.draw(d_util.posTrans(x, y))
+                        rec := rect.Rect{x, y, world.tileset.tileSizeX, world.tileset.tileSizeY}
+                        world.tileset.selectTile(tx, ty)
+                        world.tileset.image.draw(d_util.posTrans(x, y))
                         
                         if (worldSelTileX == tx) && (worldSelTileY == ty) {
                                 canvas.drawRect(0x00FF0033, rec)
@@ -333,8 +333,6 @@ fn drawPicker() {
                         }
                 }
         }
-
-        world.tileset.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
 }
 
 fn drawPlayerPlacer() {
@@ -535,7 +533,7 @@ fn drawWindows() {
 
 fn main*() {
         window.setup("title", 640, 480)
-        world.tileset = image.load("data/ts00_sky.png")
+        world.tileset = d_tileset.fromImage(image.load("data/ts00_sky.png"), 32, 32)
         uiTileset = image.load("data/ts01_ui.png")
         uiTrayIconTileset = image.load("data/ts02_trayicons.png")
 

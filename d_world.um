@@ -8,7 +8,7 @@
 
 import (
         "image.um"; "map.um"; "th.um"; "std.um"; "csv.um"; "rect.um"
-        "d_util.um"
+        "d_util.um"; "d_tileset.um"
 )
 
 const (
@@ -25,7 +25,7 @@ type (
         }
         World* = struct {
                 playerSpawnPos: th.Vf2
-                tileset: image.Image
+                tileset: d_tileset.Tileset
                 tilemap: [3]map.Map
         }
         Tangent* = struct {
@@ -33,15 +33,6 @@ type (
                 id: int
         }
 )
-
-fn pos2Tile*(x, y: int): int {
-        return y * 4 + x + 1
-}
-
-fn tile2Pos*(pos: int): th.Vf2 {
-        pos -= 1
-        return th.Vf2{pos%4, pos/4}
-}
 
 fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
         layer++
@@ -93,7 +84,7 @@ fn (world: ^World) getTile(layer, tx, ty: int): int {
 // NOTE: This function only checks middleground layer (layer 0)
 //
 fn (world: ^World) getTangentTiles(r: rect.Rect): []Tangent {
-        x, y, w, h := d_util.floor(r.x/32), d_util.floor(r.y/32), d_util.ceil(r.w/32), d_util.ceil(r.h/32)
+        x, y, w, h := d_util.floor(r.x/world.tileset.tileSizeX), d_util.floor(r.y/world.tileset.tileSizeY), d_util.ceil(r.w/world.tileset.tileSizeX), d_util.ceil(r.h/world.tileset.tileSizeY)
         x2, y2 := x + w, y + h
         inity := y
         tangents := []Tangent{}
@@ -132,10 +123,8 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int) {
                                         tileId := chunk[cx][cy]
 
                                         if tileId > 0 {
-                                                pos := tile2Pos(tileId)
-
-                                                world.tileset.crop(th.Vf2{pos.x/4, pos.y/5}, th.Vf2{pos.x/4+1/4.0, pos.y/5+1/5.0})
-                                                world.tileset.draw(d_util.posTrans(tx * 32 - pan.x, ty * 32 - pan.y))
+                                                world.tileset.selectTilePos(tileId)
+                                                world.tileset.image.draw(d_util.posTrans(tx * world.tileset.tileSizeX - pan.x, ty * world.tileset.tileSizeY - pan.y))
                                         }
                                 }
                         }

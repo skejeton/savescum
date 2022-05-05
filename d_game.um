@@ -78,8 +78,8 @@ fn moveCharacter() {
                 // NOTE: Respawn
                 chara.vel.x = 0
                 chara.vel.y = 0
-                chara.rect.x = world.playerSpawnPos.x * 32
-                chara.rect.y = world.playerSpawnPos.y * 32
+                chara.rect.x = world.playerSpawnPos.x * world.tileset.tileSizeX
+                chara.rect.y = world.playerSpawnPos.y * world.tileset.tileSizeY
         }
 
         if chara.vel.y > 10 {
@@ -238,7 +238,7 @@ fn playerConstructColidingSolids(): []Shape {
         nonBlockSolids := []Shape{}
 
         for tangent in tangents {
-                shapeRect := rect.Rect{tangent.x*32.0, tangent.y*32.0, 32, 32} 
+                shapeRect := rect.Rect{tangent.x*world.tileset.tileSizeX, tangent.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY} 
                 shapeType := -1
 
                 switch tangent.id {
@@ -252,10 +252,10 @@ fn playerConstructColidingSolids(): []Shape {
                 case 16:        shapeType = shapeRightUpSlope
                                 shapeRect.h /= 2;
                 case 4:         shapeType = shapeLeftUpSlope
-                                shapeRect.y += 16;
+                                shapeRect.y += world.tileset.tileSizeY/2;
                                 shapeRect.h /= 2;
                 case 8:         shapeType = shapeRightUpSlope
-                                shapeRect.y += 16
+                                shapeRect.y += world.tileset.tileSizeY/2;
                                 shapeRect.h /= 2;
                 case 11:        shapeType = shapeRightDownSlope
                                 shapeRect.h /= 2;
