@@ -51,4 +51,4 @@ Loading Prefix
 
 | ``TEST_PFX`` variable will be set to location relative to the root directory of the project.
 | Make use of ``tophat.dat/d_pfx.um`` to acquire a file loading prefix.
-| Example: ``image.load(d_pfx.pfx()+"cute_rabbit.png")``, where ``"cute_rabbit.png"`` is relative the directory of the test.
+| Example: ``image.load(d_pfx.pfx()+"cute_rabbit.png")``, where ``"cute_rabbit.png"`` is relative to the directory of the test.
