@@ -3,6 +3,13 @@ case $1 in
         play)
                 ../../tophat root tophat.dat
         ;;
+        check)
+                ../../tophat check root tophat.dat
+                
+                for d in test/*; do
+                        TEST_PFX="%d/" ../../tophat check root "$d"
+                done
+        ;;
         test)
                 if [ -z "$2" ]; then
                         echo -e "Specify the test. \n$0 $1 test_name" 
