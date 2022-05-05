@@ -190,11 +190,15 @@ fn loadMap() {
         buffer := make([]uint8, datasiz)
         std.fread(file, buffer)
         data := ""
+        
         for b in buffer {
                 data += char(b)
         }
         
         world.load(data)
+
+        worldViewOfsX = trunc(world.playerSpawnPos.x)-trunc(640/32/2)
+        worldViewOfsY = trunc(world.playerSpawnPos.y)-trunc(480/32/2)
 }
 
 fn drawLayerIcon(x, y: real) {
@@ -308,7 +312,7 @@ fn drawPicker() {
 
         // selected tile
         tsw := 4
-        tsh := 4
+        tsh := 5
         
         for tx := 0; tx < tsw; tx++ {
                 for ty := 0; ty < tsh; ty++ {
@@ -412,8 +416,8 @@ fn handleUiWindows() {
                 if uiWindows[i].rect.x < 0 {
                         uiWindows[i].rect.x = 0
                 }
-                if uiWindows[i].rect.y < 8 {
-                        uiWindows[i].rect.y = 8
+                if uiWindows[i].rect.y < 16 {
+                        uiWindows[i].rect.y = 16
                 }
                 if uiWindows[i].rect.x > 600 {
                         uiWindows[i].rect.x = 600

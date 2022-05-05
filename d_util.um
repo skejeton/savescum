@@ -11,7 +11,6 @@ fn isMouseInRect*(r: rect.Rect): bool {
         return p.x >= r.x && p.y >= r.y && p.x <= (r.x+r.w) && p.y <= (r.y+r.h)
 }
 
-
 fn drawRectLines*(color: uint32, r: rect.Rect) {
         // top
         canvas.drawRect(color, rect.Rect{r.x, r.y, r.w, 1})

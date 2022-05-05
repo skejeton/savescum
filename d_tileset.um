@@ -1,0 +1,7 @@
+import ("image.um")
+
+type (
+        Tileset* = struct {
+                image: image.Image
+        }
+)

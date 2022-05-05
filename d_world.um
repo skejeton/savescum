@@ -8,7 +8,7 @@
 
 import (
         "image.um"; "map.um"; "th.um"; "std.um"; "csv.um"; "rect.um"
-        "d_util.um"; "d_background.um"
+        "d_util.um"
 )
 
 const (
@@ -134,7 +134,7 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int) {
                                         if tileId > 0 {
                                                 pos := tile2Pos(tileId)
 
-                                                world.tileset.crop(th.Vf2{pos.x/4, pos.y/4}, th.Vf2{pos.x/4+1/4.0, pos.y/4+1/4.0})
+                                                world.tileset.crop(th.Vf2{pos.x/4, pos.y/5}, th.Vf2{pos.x/4+1/4.0, pos.y/5+1/5.0})
                                                 world.tileset.draw(d_util.posTrans(tx * 32 - pan.x, ty * 32 - pan.y))
                                         }
                                 }
@@ -151,7 +151,6 @@ fn (world: ^World) draw*(pan: th.Vf2) {
 }
 
 fn (world: ^World) save*(): str {
-        const filename = "scn.csv"
         data := make([][]str, 0)
         // ver
         data = append(data, []str{lastVersion})

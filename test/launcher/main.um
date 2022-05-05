@@ -1,0 +1,16 @@
+import ("std.um"; "t_ex.um"; "../../d_pfx.um")
+
+fn main() {
+        lf := t_ex.load(d_pfx.pfx()+"local.txt")
+        gf := t_ex.load("data/global.txt")
+        
+        if lf != "I'm a local file!\n" {
+                error("Invalid local file")
+        } 
+        
+        if gf != "I'm a global file!\n" {
+                error("Invalid global file")
+        }
+
+        printf("Ok\n")
+}

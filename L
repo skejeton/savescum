@@ -1,0 +1,15 @@
+#!/bin/sh
+case $1 in
+        play)
+                ../../tophat
+        ;;
+        test)
+                if [ -z "$2" ]; then
+                        echo -e "Specify the test. \n$0 $1 test_name" 
+                elif [[ -d "test/$2" ]]; then 
+                        TEST_PFX="test/$2/" ../../tophat root "test/$2"
+                else
+                        echo "No test \"$2\"." 
+                fi
+        ;;
+esac
