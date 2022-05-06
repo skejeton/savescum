@@ -1,5 +1,5 @@
 import (
-        "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"; "font.um"; "csv.um"
+        "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"; "csv.um"
         "utf8.um"; "map.um"; 
         "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"; "d_script.um"; "d_font.um"
 )

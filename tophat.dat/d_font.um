@@ -3,12 +3,12 @@ import (
 )
 
 type (
-    Font* = struct {
-        handle: th.uu
-        cache: map.Map
-        size: th.fu
-        height: th.fu
-    }
+        Font* = struct {
+                handle: th.uu
+                cache: map.Map
+                size: th.fu
+                height: th.fu
+        }
 )
 
 fn cfontload(path: str): th.uu
