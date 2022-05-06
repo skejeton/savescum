@@ -1,7 +1,7 @@
 import (
         "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"; "font.um"; "csv.um"
         "utf8.um"; "map.um"; 
-        "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"; "d_script.um"
+        "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"; "d_script.um"; "d_font.um"
 )
 
 type (
@@ -33,7 +33,7 @@ var (
         uiFocusWindowId: int            // window currently focused on (mouse over)
         uiDraggingWindowId: int         // window currently dragging
         uiDragPoint: th.Vf2
-        uiMainFont: font.Cached
+        uiMainFont: d_font.Font
 
         worldViewOfsX: int
         worldViewOfsY: int
@@ -118,7 +118,7 @@ fn drawGridEditor() {
 
 fn putBtnBase(text: str, r: rect.Rect, held: bool): bool {
         // -- measure
-        txtSize := d_util.measureText(uiMainFont, text)
+        txtSize := uiMainFont.measure(text)
         // center the text
         txtPos := th.Vf2{trunc(r.x+(r.w-txtSize.x)/2), trunc(r.y+(r.h-txtSize.y)/2)}
         color := d_colors.cPrimary 
@@ -157,7 +157,7 @@ fn putBtnBase(text: str, r: rect.Rect, held: bool): bool {
         canvas.drawRect(0x7C0000FF, r2) 
         canvas.drawRect(0xAD3E3EFF, r3) 
         canvas.drawRect(color, r) 
-        uiMainFont.draw(text, txtPos, d_colors.cText, 3.2)
+        uiMainFont.draw(text, txtPos, d_colors.cText)
         return nudged
 }
 
@@ -335,12 +335,12 @@ fn drawPicker() {
 
 fn drawPlayerPlacer() {
         canvas.drawRect(d_colors.cBack, uiWindows[3].rect)
-        uiMainFont.draw("Player at x"+std.itoa(trunc(world.playerSpawnPos.x))+" y"+std.itoa(trunc(world.playerSpawnPos.y)), th.Vf2{uiWindows[3].rect.x+10, uiWindows[3].rect.y+10}, d_colors.cText, 3.2);
+        uiMainFont.draw("Player at x"+std.itoa(trunc(world.playerSpawnPos.x))+" y"+std.itoa(trunc(world.playerSpawnPos.y)), th.Vf2{uiWindows[3].rect.x+10, uiWindows[3].rect.y+10}, d_colors.cText);
         if !uiRelocatingPlayer {
                 uiRelocatingPlayer = putBtn("Relocate", rect.Rect{uiWindows[3].rect.x + 10, uiWindows[3].rect.y + 40, uiWindows[3].rect.w - 20, 30})
         } else {
                 uiRelocatingPlayer = !putBtnBase("Relocate", rect.Rect{uiWindows[3].rect.x + 10, uiWindows[3].rect.y + 40, uiWindows[3].rect.w - 20, 30}, true)
-                uiMainFont.draw("Click on the grid\nTo place player", th.Vf2{uiWindows[3].rect.x+10, uiWindows[3].rect.y+80}, d_colors.cText, 3.2);
+                uiMainFont.draw("Click on the grid\nTo place player", th.Vf2{uiWindows[3].rect.x+10, uiWindows[3].rect.y+80}, d_colors.cText);
         }
 }
 
@@ -494,8 +494,8 @@ fn drawUiDecorations(winId: int, title: str) {
         }
         uiTileset.draw(th.Transform{p: th.Vf2{outerRect.x, outerRect.y}, s: th.Vf2{1, 1}})
 
-        uiMainFont.draw(title, th.Vf2{outerRect.x+18, outerRect.y-1}, d_colors.cText, 3.2)
-        uiMainFont.draw(title, th.Vf2{outerRect.x+18+1, outerRect.y-1}, d_colors.cText, 3.2)
+        uiMainFont.draw(title, th.Vf2{outerRect.x+18, outerRect.y-1}, d_colors.cText)
+        uiMainFont.draw(title, th.Vf2{outerRect.x+18+1, outerRect.y-1}, d_colors.cText)
 
 
         borderRect := outerRect
@@ -536,7 +536,7 @@ fn main*() {
         uiTrayIconTileset = image.load("data/ts02_trayicons.png")
 
         screen := rect.mk(0, 0, 640, 480)
-        uiMainFont = font.mkCached(font.load("data/font_mono.ttf"), 16)
+        uiMainFont = d_font.loadFont("data/font_mono.ttf", 16)
         d_background.init()
         setupUiWindows()
         uiPrevMousePos = input.getMousePos()
@@ -580,7 +580,7 @@ fn main*() {
 
                 uiPrevMousePos = input.getMousePos()
                 uiLeftMouseDown = input.isPressed(input.mouse1)
-                uiMainFont.draw(std.itoa(trunc(d_fps.getFps()))+"fps", th.Vf2{0, 0}, d_colors.cText, 3.2) 
+                uiMainFont.draw(std.itoa(trunc(d_fps.getFps()))+"fps", th.Vf2{0, 0}, d_colors.cText) 
         }
 
 }

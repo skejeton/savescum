@@ -24,9 +24,9 @@ fn setScene(id: int) {
 fn update*() {
         switch d_game.sceneId {
         case 0:
-               if d_game.chara.rect.y > 1e3 {
+                if d_game.chara.rect.y > 1e3 {
                         setScene(1)
-               } 
+                } 
         case 1:
                 
         }

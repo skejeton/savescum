@@ -1,4 +1,5 @@
 #!/bin/sh
+
 case $1 in
         play)
                 ../../tophat main tophat.dat/main.um

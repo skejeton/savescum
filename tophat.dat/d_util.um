@@ -54,18 +54,3 @@ fn rectChopRight*(r: ^rect.Rect, by: int): rect.Rect {
         r.w -= by
         return rect.Rect{r.x+r.w, r.y, by, r.h}
 }
-
-fn measureText*(f: font.Cached, text: str): th.Vf2 {
-        result := th.Vf2{0, 0}
-        runes := utf8.decode(text)
-        for rune in runes {
-                dims := f.runeDims(rune)
-                result.x += dims.x
-                result.y = dims.y
-        }
-        result.x *= 3.2
-        result.x -= 1
-        result.y *= 3.2
-        result.y += 1
-        return result
-}
