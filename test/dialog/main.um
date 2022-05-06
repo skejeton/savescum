@@ -1,0 +1,62 @@
+import (
+        "window.um"; "rect.um"; "th.um"; "canvas.um"; "utf8.um"
+        "../../tophat.dat/d_font.um"
+)
+
+var (
+        mainFont: d_font.Font
+        dialogMessage: str
+        dialogCursor: int
+        appearTimer: real
+        messageLen: int
+)
+
+fn dialogSetup() {
+        dialogMessage = "古池や蛙飛び込む水の音\nふるいけやかわずとびこむみずのおと\nThis is a test message\ntest\ntest\ntest\ntest"
+        messageLen = utf8.realLength(dialogMessage)
+        dialogCursor = 0
+        appearTimer = 0
+}
+
+fn sliceUtf8(s: str, size: int): str {
+        ofs := 0
+        for size > 0 && ofs < len(s) {
+                rune := utf8.getNextRune(s, ofs)
+                ofs += rune.size()
+                size -= 1
+        }
+        return slice(s, 0, ofs)
+}
+
+
+
+fn dialogDraw() {
+        if dialogCursor > messageLen {
+                dialogCursor = messageLen
+        }
+        msg := sliceUtf8(dialogMessage, dialogCursor)
+        if msg == "" {
+                return
+        }
+        boxSize := mainFont.measure(msg)
+        box := rect.Rect{0, 0, boxSize.x, boxSize.y}
+
+        canvas.drawRect(th.black, box)
+        mainFont.draw(msg, th.Vf2{0, 0}, th.white)
+}
+
+fn main() {
+        window.setup("title", 640, 480)
+        screen := rect.mk(0, 0, 640, 480)
+        mainFont = d_font.loadFont("data/font_mono.ttf", 16)
+        dialogSetup()
+
+        for window.cycle(screen) {
+                appearTimer += th.delta/1000.0;
+                if appearTimer > 0.1 {
+                        dialogCursor += 1
+                        appearTimer = 0
+                }
+                dialogDraw()
+        }
+}
