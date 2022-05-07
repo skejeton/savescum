@@ -71,7 +71,7 @@ fn (f: ^Font) draw(text: str, pos: th.Vf2, color: uint32) {
 
                 if rune == uint32('\n') {
                         y += f.height
-                        x = 0
+                        x = pos.x
                 } else {
                         glyph := f.getGlyph(rune)
                         glyph.draw(th.Transform{p: th.Vf2{x, y}, s: th.Vf2{1, 1}}, color)
