@@ -46,14 +46,14 @@ fn (d: ^Dialog) getBox(): rect.Rect {
 
 fn (d: ^Dialog) draw() {
         msg := sliceUtf8(d.message, d.cursor)
-        if msg == "" {
-                return
-        }
+
 
         box := d.getBox()
 
         d_util.drawRectNinepatch(ninepatchImg, rect.Rect{24, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, box)
-        mainFont.draw(msg, th.Vf2{box.x+64+16, box.y+8}, th.white)
+        if msg != "" {
+                mainFont.draw(msg, th.Vf2{box.x+64+16, box.y+8}, th.white)
+        }
 
         d.face.draw(th.Transform{p: th.Vf2{box.x+8, box.y+8}, s: th.Vf2{1, 1}})
 }
