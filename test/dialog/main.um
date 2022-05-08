@@ -1,24 +1,28 @@
 import (
-        "window.um"; "rect.um"; "th.um"; "canvas.um"; "utf8.um"; "image.um"
+        "std.um"; "window.um"; "rect.um"; "th.um"; "canvas.um"; "utf8.um"; "image.um"
         "../../tophat.dat/d_font.um"; "../../tophat.dat/d_util.um"; "../../tophat.dat/d_pfx.um"
 )
 
+type (
+        Dialog = struct {
+                position: th.Vf2
+                face: image.Image
+                message: str
+                messageLen: int
+                cursor: int
+                appearTimer: real
+        }
+)
+
 var (
+        dialog: Dialog
         mainFont: d_font.Font
         ninepatchImg: image.Image
         boru: image.Image
-        dialogMessage: str
-        dialogCursor: int
-        appearTimer: real
-        messageLen: int
 )
 
-fn dialogSetup() {
-        dialogMessage = "古池や蛙飛び込む水の音\nふるいけやかわずとびこむみずのおと\nThis is a test message\ntest\ntest\ntest\ntest"
-        messageLen = utf8.realLength(dialogMessage)
-        ninepatchImg = image.load(d_pfx.pfx()+"../ninepatch/medium.png")
-        dialogCursor = 0
-        appearTimer = 0
+fn setup(message: str, face: image.Image): Dialog {
+        return Dialog{face: face, message: message, messageLen: utf8.realLength(message), cursor: 0, appearTimer: 0}
 }
 
 fn sliceUtf8(s: str, size: int): str {
@@ -31,25 +35,35 @@ fn sliceUtf8(s: str, size: int): str {
         return slice(s, 0, ofs)
 }
 
-fn getBox(): rect.Rect {
-        boxSize := mainFont.measure(dialogMessage)
-        boxSize.x += 16
+fn (d: ^Dialog) getBox(): rect.Rect {
+        boxSize := mainFont.measure(d.message)
+        boxSize.x += 16+64
         boxSize.y += 16
-        box := rect.Rect{60, 60, boxSize.x, boxSize.y}
+        box := rect.Rect{d.position.x, d.position.y, boxSize.x, boxSize.y}
+        box.y -= boxSize.y
         return box
 }
 
-fn dialogDraw() {
-        if dialogCursor > messageLen {
-                dialogCursor = messageLen
-        }
-        msg := sliceUtf8(dialogMessage, dialogCursor)
+fn (d: ^Dialog) draw() {
+        msg := sliceUtf8(d.message, d.cursor)
         if msg == "" {
                 return
         }
 
-        d_util.drawRectNinepatch(ninepatchImg, rect.Rect{24, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, getBox())
-        mainFont.draw(msg, th.Vf2{68, 68}, th.white)
+        box := d.getBox()
+
+        d_util.drawRectNinepatch(ninepatchImg, rect.Rect{24, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, box)
+        mainFont.draw(msg, th.Vf2{box.x+64+16, box.y+8}, th.white)
+
+        d.face.draw(th.Transform{p: th.Vf2{box.x+8, box.y+8}, s: th.Vf2{1, 1}})
+}
+
+fn (d: ^Dialog) update() {
+        d.appearTimer += th.delta/1000.0;
+        for d.appearTimer > 0.1 {
+                d.cursor += 1
+                d.appearTimer = d.appearTimer - 0.1
+        }
 }
 
 fn main() {
@@ -57,17 +71,17 @@ fn main() {
         screen := rect.mk(0, 0, 640, 480)
         mainFont = d_font.loadFont("data/font_mono.ttf", 16)
         boru = image.load(d_pfx.pfx()+"boru.png")
-
-        dialogSetup()
+        boruFace := image.load(d_pfx.pfx()+"boruFACE.png")
+        ninepatchImg = image.load(d_pfx.pfx()+"../ninepatch/medium.png")
+        dialog := setup(
+                "古池や蛙飛び込む水の音\nふるいけやかわずとびこむみずのおと\nThis is a test message\ntest\ntest\ntest\ntest",
+                boruFace)
+        dialog.position = th.Vf2{60-10, 60+120}
 
         for window.cycle(screen) {
                 canvas.drawRect(th.black, rect.Rect{0, 0, 640, 640})
-                appearTimer += th.delta/1000.0;
-                if appearTimer > 0.1 {
-                        dialogCursor += 1
-                        appearTimer = 0
-                }
                 boru.draw(th.Transform{p: th.Vf2{60-10, 60+120}, s: th.Vf2{1, 1}})
-                dialogDraw()
+                dialog.update()
+                dialog.draw()
         }
 }

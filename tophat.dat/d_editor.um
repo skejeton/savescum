@@ -83,8 +83,8 @@ fn actField() {
 
 fn drawGridEditor() {
         // draw grid
-        nx := 640/16
-        ny := 480/16
+        nx := 640/32
+        ny := 480/32
 
         for cx := 0; cx < nx; cx++ {
                 x := cx * world.tileset.tileSizeX

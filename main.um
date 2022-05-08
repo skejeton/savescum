@@ -1,0 +1,7 @@
+import (
+        "tophat.dat/d_editor.um"
+)
+
+fn main() {
+        d_editor.main()
+}
