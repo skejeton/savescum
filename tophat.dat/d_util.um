@@ -93,3 +93,8 @@ fn drawRectNinepatch*(img: image.Image, outer, inner, dest: rect.Rect) {
                 dst.y = dest.y
         }
 }
+
+fn imageCropRect*(img: image.Image, rec: rect.Rect) {
+        size := img.getDims()
+        img.crop(th.Vf2{rec.x/size.x, rec.y/size.y}, th.Vf2{(rec.x + rec.w)/size.x, (rec.y + rec.h)/size.y})
+}

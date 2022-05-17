@@ -1,4 +1,5 @@
 #!/bin/sh
+#-*- sh -*-
 
 case $1 in
         play)

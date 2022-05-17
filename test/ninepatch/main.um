@@ -9,8 +9,8 @@ fn main() {
         img := image.load(d_pfx.pfx()+"medium.png")
 
         for window.cycle(screen) {
-                d_util.drawRectNinepatch(img, rect.Rect{24, 24, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{10, 10, 200, 200})
                 d_util.drawRectNinepatch(img, rect.Rect{0, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{220, 10, 200, 200})
                 d_util.drawRectNinepatch(img, rect.Rect{24, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{10, 220, 200, 200})
+                d_util.drawRectNinepatch(img, rect.Rect{24*2, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{10, 10, 200, 200})
         }
 }
