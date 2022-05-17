@@ -1,5 +1,9 @@
 {
-    "settings": {
-        "tab_size": 8
-    },
+        "folders": [
+                "."
+        ],
+        "settings": {
+                "tab_size": 8
+        },
 }
+

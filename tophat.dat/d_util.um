@@ -56,9 +56,7 @@ fn rectChopRight*(r: ^rect.Rect, by: int): rect.Rect {
 }
 
 //
-// drawRectNinepatch
-//
-// Draws nine-patch rectangle.
+// Draws nine-patch rectangle
 //
 // img: Source image
 // outer: Outer rectangle of source
@@ -94,7 +92,49 @@ fn drawRectNinepatch*(img: image.Image, outer, inner, dest: rect.Rect) {
         }
 }
 
+//
+// Crops the input image by specified rectangle in pixels
+// 
+// img: Input image
+// rec: Cropping rectangle, in pixels
+//
 fn imageCropRect*(img: image.Image, rec: rect.Rect) {
         size := img.getDims()
         img.crop(th.Vf2{rec.x/size.x, rec.y/size.y}, th.Vf2{(rec.x + rec.w)/size.x, (rec.y + rec.h)/size.y})
+}
+
+//
+// Returns lowest number among a, b
+//
+fn fmin*(a, b: real): real {
+        if a < b {
+                return a
+        }
+        return b
+}
+
+//
+// Returns highest number among a, b
+//
+fn fmax*(a, b: real): real {
+        if a > b {
+                return a
+        }
+        return b
+}
+
+// 
+// Takes `size` characters (Runes) out of UTF-8 string `s` and returns the slice
+// 
+// s: Input UTF-8 encoded string
+// size: Amount of UTF-8 encoded runes to take
+//
+fn chopUtf8*(s: str, size: int): str {
+        ofs := 0
+        for size > 0 && ofs < len(s) {
+                rune := utf8.getNextRune(s, ofs)
+                ofs += rune.size()
+                size -= 1
+        }
+        return slice(s, 0, ofs)
 }

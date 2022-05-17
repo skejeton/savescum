@@ -1,122 +1,78 @@
 import (
-        "std.um"; "window.um"; "rect.um"; "th.um"; "canvas.um"; "utf8.um"; "image.um"; "input.um"
-        "../../tophat.dat/d_font.um"; "../../tophat.dat/d_util.um"; "../../tophat.dat/d_pfx.um"
+        "std.um"; "window.um"; "rect.um"; "image.um"; "canvas.um"; "th.um"; "input.um"
+        "../../tophat.dat/d_pfx.um"; "../../tophat.dat/d_font.um"; "../../tophat.dat/d_dialog.um"
 )
 
-type (
-        Dialog = struct {
-                // Face of the entity.
-                face: image.Image
-                // Foreground color (color of text).
-                fgColor: uint32
-                // Should point to position of source entity.
-                position: th.Vf2
-                // Text appearing in the dialog.
-                message: str
-                // Time for next character to appear in secs.
-                speed: real
-
-                messageLen: int
-                cursor: int
-                appearTimer: real
-        }
+const (
+        maxDlgs = 3
+        message = "古池や蛙飛び込む水の音\nふるいけやかわずとびこむみずのおと\nThis is a test message\ntest\ntest\ntest\ntest"
 )
 
-var (
-        dialog: Dialog
-        mainFont: d_font.Font
-        ninepatchImg: image.Image
-        boru: image.Image
-)
+fn setupDlg1(): d_dialog.Dialog {
+        dialogMessage      := message
+        dialogSpeed        := 0.2
+        dialogFgColor      := 0xFFFFFFFF
+        dialogFont         := d_font.loadFont("data/font_mono.ttf", 16)
+        dialogFace         := image.load(d_pfx.pfx()+"boruFACE.png")
+        dialogSprite       := image.load(d_pfx.pfx()+"../ninepatch/medium.png")
+        dialogSpriteOffset := th.Vf2{0, 0}
 
-fn setup(message: str, face: image.Image, fgColor: uint32): Dialog {
-        return Dialog{face: face, fgColor: fgColor, message: message, messageLen: utf8.realLength(message), cursor: 0, appearTimer: 0}
+        return d_dialog.setup(dialogMessage, dialogSpeed, dialogFace, dialogSprite, dialogSpriteOffset, dialogFgColor, dialogFont) 
 }
 
-fn sliceUtf8(s: str, size: int): str {
-        ofs := 0
-        for size > 0 && ofs < len(s) {
-                rune := utf8.getNextRune(s, ofs)
-                ofs += rune.size()
-                size -= 1
-        }
-        return slice(s, 0, ofs)
+fn setupDlg2(): d_dialog.Dialog {
+        dialogMessage      := message
+        dialogSpeed        := 0.1
+        dialogFgColor      := 0xFFFFEEFF
+        dialogFont         := d_font.loadFont("data/font_mono.ttf", 16)
+        dialogFace         := image.load(d_pfx.pfx()+"boruFACE.png")
+        dialogSprite       := image.load(d_pfx.pfx()+"../ninepatch/medium.png")
+        dialogSpriteOffset := th.Vf2{24, 0}
+
+        return d_dialog.setup(dialogMessage, dialogSpeed, dialogFace, dialogSprite, dialogSpriteOffset, dialogFgColor, dialogFont) 
 }
 
-fn fmin(a, b: real): real {
-        if a < b {
-                return a
-        }
-        return b
-}
+fn setupDlg3(): d_dialog.Dialog {
+        dialogMessage      := message
+        dialogSpeed        := 0.05
+        dialogFgColor      := 0xAAAA22FF
+        dialogFont         := d_font.loadFont("data/font_mono.ttf", 16)
+        dialogFace         := image.load(d_pfx.pfx()+"boruFACE.png")
+        dialogSprite       := image.load(d_pfx.pfx()+"../ninepatch/medium.png")
+        dialogSpriteOffset := th.Vf2{48, 0}
 
-fn fmax(a, b: real): real {
-        if a > b {
-                return a
-        }
-        return b
-}
-
-fn (d: ^Dialog) getBox(): rect.Rect {
-        boxSize := mainFont.measure(d.message)
-        boxSize.x += 16+64
-        boxSize.y += 16
-        box := rect.Rect{d.position.x-boxSize.x/2, d.position.y, boxSize.x, boxSize.y}
-        box.y -= boxSize.y+7
-        if box.x < 0 {
-                box.x = 0
-        }
-        if box.x > 640-boxSize.x {
-                box.x = 640-boxSize.x
-        }
-
-        box.x += fmin(d.position.x-8-4, 0) + fmax(d.position.x-640+8+4, 0)
-
-        return box
-}
-
-fn (d: ^Dialog) draw() {
-        // PRECALC VALUES //
-        rnNpRectOuter := rect.mk(24*2, 0, 24, 24)
-        rnNpRectInner := rect.mk(8, 8, 8, 8)
-        rnRectBubbles := rect.mk(8+24*2, 24, 8, 8)
-        rnBox := d.getBox()
-
-        // RENDER FRAME & FACE //
-        d_util.drawRectNinepatch(ninepatchImg, rnNpRectOuter, rnNpRectInner, rnBox)
-        d.face.draw(th.Transform{p: th.Vf2{rnBox.x+8, rnBox.y+8}, s: th.Vf2{1, 1}})
- 
-        // RENDER BUBBLE //
-        d_util.imageCropRect(ninepatchImg, rnRectBubbles)
-        ninepatchImg.draw(th.Transform{p: th.Vf2{d.position.x-4, d.position.y-8}, s: th.Vf2{1, 1}})
-
-        // RENDER MESSAGE //
-        msg := sliceUtf8(d.message, d.cursor)
-        mainFont.draw(msg, th.Vf2{rnBox.x+64+16, rnBox.y+8}, d.fgColor)
-}
-
-fn (d: ^Dialog) update() {
-        d.appearTimer += th.delta/1000.0;
-        for d.appearTimer > 0.1 {
-                d.cursor += 1
-                d.appearTimer = d.appearTimer - 0.1
-        }
+        return d_dialog.setup(dialogMessage, dialogSpeed, dialogFace, dialogSprite, dialogSpriteOffset, dialogFgColor, dialogFont) 
 }
 
 fn main() {
         window.setup("title", 640, 480)
         screen := rect.mk(0, 0, 640, 480)
-        mainFont = d_font.loadFont("data/font_mono.ttf", 16)
-        boruFace := image.load(d_pfx.pfx()+"boruFACE.png")
-        ninepatchImg = image.load(d_pfx.pfx()+"../ninepatch/medium.png")
-        dialog := setup(
-                "古池や蛙飛び込む水の音\nふるいけやかわずとびこむみずのおと\nThis is a test message\ntest\ntest\ntest\ntest",
-                boruFace, th.black)
+        dlg := setupDlg1()
+        cdlg := 0
 
         for window.cycle(screen) {
-                canvas.drawRect(th.white, rect.Rect{0, 0, 640, 640})
-                dialog.update()
-                dialog.position = input.getMousePos()
-                dialog.draw()
+                if input.isJustPressed(input.mouse1) {
+                        cdlg += 1
+                        if cdlg >= maxDlgs {
+                                cdlg = 0
+                        }
+
+                        switch cdlg {
+                        case 0: dlg = setupDlg1()
+                        case 1: dlg = setupDlg2()
+                        case 2: dlg = setupDlg3()
+                        }
+                }
+
+                canvas.drawRect(th.white, rect.mk(0, 0, 640, 480))
+
+                dlg.position = input.getMousePos()
+                dlg.update()
+                dlg.draw()
+
+                canvas.drawText(std.itoa(cdlg), th.Vf2{2, 2}, th.black, 2)
         }
 }
+
+
+

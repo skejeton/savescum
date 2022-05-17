@@ -1,0 +1,79 @@
+import (
+        "rect.um"; "th.um"; "canvas.um"; "utf8.um"; "image.um"
+        "d_font.um"; "d_util.um"
+)
+
+type (
+        Dialog* = struct {
+                // Face of the entity.
+                face: image.Image
+                // Sprite of the dialog box.
+                sprite: image.Image
+                // Texture offset of the dialog box.
+                spriteOffset: th.Vf2
+                // Should point to position of source entity.
+                position: th.Vf2 
+                // Foreground color (color of text).
+                fgColor: uint32
+                // Font of the dialog box.
+                messageFont: d_font.Font
+                // Text appearing in the dialog.
+                message: str
+                // Time for next character to appear in seconds.
+                speed: real
+
+                messageLen: int
+                cursor: int
+                appearTimer: real
+        }
+)
+
+fn setup*(message: str, speed: real, face: image.Image, sprite: image.Image, spriteOffset: th.Vf2, fgColor: uint32, messageFont: d_font.Font): Dialog {
+        return Dialog{message: message, speed: speed, face: face, sprite: sprite, spriteOffset: spriteOffset, fgColor: fgColor, messageFont: messageFont}
+}
+
+fn (d: ^Dialog) getBox(): rect.Rect {
+        boxSize := d.messageFont.measure(d.message)
+        boxSize.x += 16+64
+        boxSize.y += 16
+        box := rect.Rect{d.position.x-boxSize.x/2, d.position.y, boxSize.x, boxSize.y}
+        box.y -= boxSize.y+7
+        if box.x < 0 {
+                box.x = 0
+        }
+        if box.x > 640-boxSize.x {
+                box.x = 640-boxSize.x
+        }
+
+        box.x += d_util.fmin(d.position.x-8-4, 0) + d_util.fmax(d.position.x-640+8+4, 0)
+
+        return box
+}
+
+fn (d: ^Dialog) draw*() {
+        // PRECALC VALUES //
+        rnNpRectOuter := rect.mk(d.spriteOffset.x+0, d.spriteOffset.y+0, 24, 24)
+        rnRectBubbles := rect.mk(d.spriteOffset.x+8, d.spriteOffset.y+24, 8, 8)
+        rnNpRectInner := rect.mk(8, 8, 8, 8)
+        rnBox := d.getBox()
+
+        // RENDER FRAME & FACE //
+        d_util.drawRectNinepatch(d.sprite, rnNpRectOuter, rnNpRectInner, rnBox)
+        d.face.draw(th.Transform{p: th.Vf2{rnBox.x+8, rnBox.y+8}, s: th.Vf2{1, 1}})
+ 
+        // RENDER BUBBLE //
+        d_util.imageCropRect(d.sprite, rnRectBubbles)
+        d.sprite.draw(th.Transform{p: th.Vf2{d.position.x-4, d.position.y-8}, s: th.Vf2{1, 1}})
+
+        // RENDER MESSAGE //
+        msg := d_util.chopUtf8(d.message, d.cursor)
+        d.messageFont.draw(msg, th.Vf2{rnBox.x+64+16, rnBox.y+8}, d.fgColor)
+}
+
+fn (d: ^Dialog) update*() {
+        d.appearTimer += th.delta/1000.0;
+        for d.appearTimer > d.speed {
+                d.cursor += 1
+                d.appearTimer = d.appearTimer - d.speed
+        }
+}
