@@ -1,5 +1,5 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"
-        "d_world.um")
+        "d_world.um"; "d_dialog.um")
 
 const (
         shapeBlock              = 0
@@ -27,6 +27,7 @@ var (
         sceneId*: int
         world*: d_world.World
         chara*: Character
+        dialog*: d_dialog.Dialog
         camera: th.Vf2
         cameraPos: th.Vf2
         cameraAntiPanVel: th.Vf2
@@ -312,15 +313,18 @@ fn init*() {
 
         cameraPos.x = chara.rect.x-(640-chara.rect.w)/2
         cameraPos.y = chara.rect.y-(480-chara.rect.h)/2
-        
-        sceneId = 0
 }
 
 fn draw*() {
+        // UPDATE PLAYER & CAMERA //
         moveCharacter()
         playerSolveCollision()
         centerPlayerOnCamera()
 
+        // UPDATE DIALOG //
+        dialog.update()
+
+        // RENDER WORLD //
         world.drawLayer(camera, -1)
         if chara.onGround { 
                 canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
@@ -329,5 +333,15 @@ fn draw*() {
         }
         world.drawLayer(camera, 0)
         world.drawLayer(camera, 1)
+
+        // RENDER DIALOG //
+        tempPos := dialog.position
+        dialog.position = tempPos.sub(camera)
+        dialog.draw()
+        dialog.position = tempPos
+
+/*
+        // DEBUG OVERYALS //
         drawRectTangents(chara.rect)
+*/
 }

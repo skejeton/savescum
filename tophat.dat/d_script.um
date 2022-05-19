@@ -2,14 +2,30 @@
         Scripted events for game
 */
 
-import ("d_game.um"; "d_util.um")
+import ("image.um"; "th.um"
+        "d_game.um"; "d_util.um"; "d_dialog.um"; "d_font.um")
+
+var (
+        dialogActivated: bool
+)
+
+fn dialogSetupReceptionist(message: str): d_dialog.Dialog {
+        speed        := 0.1
+        fgColor      := 0xFFFFFFFF
+        font         := d_font.loadFont("data/font_mono.ttf", 16)
+        face         := image.load("data/sp00_receptionist.png")
+        sprite       := image.load("data/ts03_dialog.png")
+        spriteOffset := th.Vf2{0, 0}
+
+        return d_dialog.setup(message, speed, face, sprite, spriteOffset, fgColor, font) 
+}
 
 fn initScript() {
         switch d_game.sceneId {
         case 0:
-        
+                
         case 1:
-                d_game.chara.vel.y = 10;
+                d_game.chara.vel.y = 5;
         }
 }
 
@@ -28,6 +44,10 @@ fn update*() {
                         setScene(1)
                 } 
         case 1:
-                
+                if d_game.chara.onGround && !dialogActivated {
+                        d_game.dialog = dialogSetupReceptionist("Ohh hey... Another one bites the dust?")
+                        d_game.dialog.position = th.Vf2{32*14, 32*18}
+                        dialogActivated = true
+                }
         }
 }
