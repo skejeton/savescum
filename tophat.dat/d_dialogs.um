@@ -29,6 +29,8 @@ type (
                 personas: map.Map
                 list: []Dialog
                 camera: th.Vf2
+                // The pressure to skip the dialog
+                pressure: real
         }
 )
 
@@ -39,6 +41,10 @@ type (
 fn initDialog*(persona: ^Persona, emote: int, position: th.Vf2, message: str): Dialog {
         return Dialog{persona: persona, emote: emote, position: position, message: message,
                       messageLen: utf8.realLength(message), cursor: 0, appearTimer: 0}
+}
+
+fn (d: ^Dialog) isFinished(): bool {
+        return d.cursor >= len(d.message)
 }
 
 fn (d: ^Dialog) getBoximgOffset(): th.Vf2 {
@@ -153,9 +159,24 @@ fn (d: ^Dialogs) setCamPos*(pos: th.Vf2) {
         d.camera = pos
 }
 
-fn (d: ^Dialogs) close*() {
+fn (d: ^Dialogs) advance*(press: bool) {
         if len(d.list) > 0 {
-                d.list = delete(d.list, len(d.list)-1)
+                dialog := &d.list[len(d.list)-1]
+                initPressure := d.pressure
+                if press {
+                        d.pressure += th.delta/10000.0
+                        if d.pressure > 3 {
+                                d.pressure = 3
+                        }
+                } else {
+                        d.pressure = 0
+                }
+
+                if dialog.isFinished() && initPressure == 0 && d.pressure != 0 {
+                        d.list = delete(d.list, len(d.list)-1)
+                }
+
+                dialog.appearTimer += d.pressure
         }
 }
 
@@ -175,6 +196,7 @@ fn (d: ^Dialogs) draw*() {
                         offs := d.list[x].getBoximgOffset()
                         d_util.drawRectNinepatch(d.list[x].persona.boximg, rect.mk(offs.x+48, offs.y, 48, 48), rect.mk(16, 16, 16, 16), box)
                 }
+
                 d.list[x].position = prevPos
         }
 }

@@ -345,9 +345,7 @@ fn draw*() {
         world.drawLayer(camera, 0)
         world.drawLayer(camera, 1)
 
-        if input.isPressed('x') {
-                dialogs.close()
-        }
+        dialogs.advance(input.isPressed('x'))
 
         // RENDER DIALOG //
         dialogs.draw()

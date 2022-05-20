@@ -41,9 +41,7 @@ fn main() {
         for window.cycle(screen) {
                 dialogs.setCamPos(camera)
                 moveCamera()
-                if input.isJustPressed('x') {
-                        dialogs.close()
-                }
+                dialogs.advance(input.isPressed('x'))
                 dialogs.update()
                 dialogs.draw()
                 canvas.drawRect(th.red, rect.Rect{-camera.x, -camera.y, 5, 5})
