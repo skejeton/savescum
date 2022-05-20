@@ -1,5 +1,5 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"
-        "d_world.um"; "d_dialog.um")
+        "d_world.um"; "d_dialogs.um")
 
 const (
         shapeBlock              = 0
@@ -27,14 +27,14 @@ var (
         sceneId*: int
         world*: d_world.World
         chara*: Character
-        dialog*: d_dialog.Dialog
+        dialogs*: d_dialogs.Dialogs
         camera: th.Vf2
         cameraPos: th.Vf2
         cameraAntiPanVel: th.Vf2
         cameraAntiPan: th.Vf2
 )
 
-fn centerPlayerOnCamera() {
+fn controlCamera() {
         if cameraAntiPan.x < -50 {
                 cameraAntiPan.x = -50
         }
@@ -47,10 +47,16 @@ fn centerPlayerOnCamera() {
         if cameraAntiPan.y > 50 {
                 cameraAntiPan.y = 50
         }
-        cameraPos.x += ((chara.rect.x-(640-chara.rect.w)/2)-cameraPos.x)/4
-        cameraPos.y += ((chara.rect.y-(480-chara.rect.h)/2)-cameraPos.y)/4
-        camera.x = cameraPos.x + cameraAntiPan.x
-        camera.y = cameraPos.y + cameraAntiPan.y
+
+        if ok, pos := dialogs.getTopPos(); ok {
+                cameraPos.x += (pos.x-cameraPos.x)/20
+                cameraPos.y += (pos.y-cameraPos.y)/20
+        } else {
+                cameraPos.x += ((chara.rect.x)-cameraPos.x)/4
+                cameraPos.y += ((chara.rect.y)-cameraPos.y)/4
+        }
+        camera.x = cameraPos.x + cameraAntiPan.x - (640-chara.rect.w)/2
+        camera.y = cameraPos.y + cameraAntiPan.y - (480-chara.rect.h)/2
 }
 
 fn cameraOffsetRect(r: rect.Rect): rect.Rect {
@@ -309,6 +315,8 @@ fn drawRectTangents(r: rect.Rect) {
 }
 
 fn init*() {
+        dialogs = d_dialogs.init()
+        d_game.dialogs.register("receptionist" , "data/ts03_dialog.png", 0, "data/sp00_receptionist.png", 0, "data/font_mono.ttf", 16, 0xFFFFFFFF, 0.1 , []str{})
         chara = Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
 
         cameraPos.x = chara.rect.x-(640-chara.rect.w)/2
@@ -317,12 +325,15 @@ fn init*() {
 
 fn draw*() {
         // UPDATE PLAYER & CAMERA //
-        moveCharacter()
-        playerSolveCollision()
-        centerPlayerOnCamera()
+        if ok, _ := dialogs.getTopPos(); !ok {
+                moveCharacter()
+                playerSolveCollision()
+        }
+        controlCamera()
 
         // UPDATE DIALOG //
-        dialog.update()
+        dialogs.setCamPos(camera)
+        dialogs.update()
 
         // RENDER WORLD //
         world.drawLayer(camera, -1)
@@ -334,11 +345,12 @@ fn draw*() {
         world.drawLayer(camera, 0)
         world.drawLayer(camera, 1)
 
+        if input.isPressed('x') {
+                dialogs.close()
+        }
+
         // RENDER DIALOG //
-        tempPos := dialog.position
-        dialog.position = tempPos.sub(camera)
-        dialog.draw()
-        dialog.position = tempPos
+        dialogs.draw()
 
 /*
         // DEBUG OVERYALS //

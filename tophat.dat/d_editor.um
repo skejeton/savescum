@@ -270,6 +270,7 @@ fn drawBar() {
         if putTrayBtn(th.Vf2{area.x, area.y}, 1, 1, false) {
                 d_game.world = world
                 d_game.init()
+                d_script.init()
                 state = statePlaying
         }
         if putTrayBtn(th.Vf2{area.x+32, area.y}, 0, 1, !uiWindows[2].closed) {

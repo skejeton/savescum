@@ -1,6 +1,7 @@
 Entities & Dialogs
 ------------------
 
+* B: Fix crusty font/rendering at certain positions
 * F: Make scriptable dialogs, possibly introduce tokens into dialogue system to handle hypertext.
         "#{emote:happy}Hello! #{emote:}I'm some guy."
                 Will first set emote to happy, after that write "Hello! ", set the emote to default, and write "I'm some guy."
