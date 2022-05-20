@@ -1,5 +1,5 @@
-import ("map.um"; "image.um"; "th.um"; "rect.um"; "canvas.um"
-        "d_dialog.um"; "d_font.um"; "d_util.um")
+import ("map.um"; "utf8.um"; "image.um"; "th.um"; "rect.um"; "canvas.um"; "window.um"
+        "d_font.um"; "d_util.um")
 
 type (
         Persona* = struct {
@@ -14,14 +14,96 @@ type (
                 emotes: map.Map // str -> int
         }
 
+        Dialog* = struct {
+                persona: ^Persona
+                emote: int
+                position: th.Vf2
+                message: str
+
+                messageLen: int
+                cursor: int
+                appearTimer: real
+        }
+
         Dialogs* = struct {
                 personas: map.Map
-                list: []d_dialog.Dialog
+                list: []Dialog
+                camera: th.Vf2
         }
 )
 
+////////////////////////
+/////// DIALOG
+////
+
+fn initDialog*(persona: ^Persona, emote: int, position: th.Vf2, message: str): Dialog {
+        return Dialog{persona: persona, emote: emote, position: position, message: message,
+                      messageLen: utf8.realLength(message), cursor: 0, appearTimer: 0}
+}
+
+fn (d: ^Dialog) getBoximgOffset(): th.Vf2 {
+        return th.Vf2{0, d.persona.boximgY*48}
+}
+
+fn (d: ^Dialog) getBox*(): rect.Rect {
+        boxSize := d.persona.font.measure(d.message)
+        boxSize.x += 16+64+8
+        boxSize.y += 16
+        if boxSize.y < 64+16 {
+                boxSize.y = 64+16
+        }
+
+        box := rect.Rect{d.position.x-boxSize.x/2, d.position.y, boxSize.x, boxSize.y}
+        box.y -= boxSize.y+7
+        if box.x < 0 {
+                box.x = 0
+        }
+        if box.x > window.w-boxSize.x {
+                box.x = window.w-boxSize.x
+        }
+
+        box.x += d_util.fmin(d.position.x-8-4, 0) + d_util.fmax(d.position.x-window.w+8+4, 0)
+
+        return box
+}
+
+fn (d: ^Dialog) draw*() {
+
+        // PRECALC VALUES //
+        rnSpriteOffset := d.getBoximgOffset()
+        rnNpRectOuter := rect.mk(rnSpriteOffset.x, rnSpriteOffset.y, 48, 48)
+        rnRectBubbles := rect.mk(rnSpriteOffset.x+48*2, rnSpriteOffset.y+24, 24, 24)
+        rnNpRectInner := rect.mk(16, 16, 16, 16)
+        rnBox := d.getBox()
+
+        // RENDER FRAME & FACE //
+        d_util.drawRectNinepatch(d.persona.boximg, rnNpRectOuter, rnNpRectInner, rnBox)
+        d_util.imageCropRect(d.persona.faceimg, rect.Rect{d.emote*64, d.persona.faceimgY*64, 64, 64})
+        d.persona.faceimg.draw(th.Transform{p: th.Vf2{rnBox.x+8, rnBox.y+8}, s: th.Vf2{1, 1}})
+ 
+        // RENDER BUBBLE //
+        d_util.imageCropRect(d.persona.boximg, rnRectBubbles)
+        d.persona.boximg.draw(th.Transform{p: th.Vf2{d.position.x-4, d.position.y-8}, s: th.Vf2{1, 1}})
+
+        // RENDER MESSAGE //
+        msg := d_util.chopUtf8(d.message, d.cursor)
+        d.persona.font.draw(msg, th.Vf2{rnBox.x+64+16, rnBox.y+8}, d.persona.fontColor)
+}
+
+fn (d: ^Dialog) update*() {
+        d.appearTimer += th.delta/1000.0;
+        for d.appearTimer > d.persona.speed {
+                d.cursor += 1
+                d.appearTimer = d.appearTimer - d.persona.speed
+        }
+}
+
+////////////////////////
+/////// DIALOGS
+////
+
 fn init*(): Dialogs {
-        return Dialogs{list: make([]d_dialog.Dialog, 0)}
+        return Dialogs{list: make([]Dialog, 0)}
 }
 
 fn (d: ^Dialogs) register*(name: str, boximgPath: str, boximgY: int, faceimgPath: str, faceimgY: int, fontPath: str, fontH: int, fontColor: uint32, speed: real, emotes: []str) {
@@ -42,27 +124,36 @@ fn (d: ^Dialogs) register*(name: str, boximgPath: str, boximgY: int, faceimgPath
         d.personas.set(name, persona)
 }
 
-
 fn (d: ^Dialogs) say*(name, emotion: str, message: str, pos: th.Vf2) {
         persona := ^Persona(d.personas.get(name))
         // TODO: Fallback text if persona doesn't exist
         if persona != null {
-                emotePos := 0
+                emote := 0
                 if len(emotion) > 0 {
-                        emote := ^int(persona.emotes.get(emotion))
-                        if emote != null { 
-                                emotePos = emote^*64
+                        if emotePtr := ^int(persona.emotes.get(emotion)); emotePtr != null { 
+                                emote = emotePtr^
                         }
                 }
 
-                d_util.imageCropRect(persona.faceimg, rect.Rect{emotePos, persona.faceimgY*64, 64, 64})
-                dialog := d_dialog.setup(message, persona.speed, persona.faceimg, persona.boximg, th.Vf2{0, persona.boximgY*48}, persona.fontColor, &persona.font)
+                dialog := initDialog(persona, emote, th.Vf2{0, persona.boximgY*48}, message)
                 dialog.position = pos
                 d.list = append(d.list, dialog)
         }
 }
 
-fn (d: ^Dialogs) close() {
+// Returns (success, position of top dialog)
+fn (d: ^Dialogs) getTopPos*(): (bool, th.Vf2) {
+        if len(d.list) > 0 {
+                return true, d.list[len(d.list)-1].position
+        }
+        return false, th.Vf2{0, 0}
+}
+
+fn (d: ^Dialogs) setCamPos*(pos: th.Vf2) {
+        d.camera = pos
+}
+
+fn (d: ^Dialogs) close*() {
         if len(d.list) > 0 {
                 d.list = delete(d.list, len(d.list)-1)
         }
@@ -76,11 +167,14 @@ fn (d: ^Dialogs) update*() {
 
 fn (d: ^Dialogs) draw*() {
         for x, _ in d.list {
+                prevPos := d.list[x].position
+                d.list[x].position = d.list[x].position.sub(d.camera)
                 d.list[x].draw()
                 if x == len(d.list)-1 {
                         box := d.list[x].getBox()
-                        offs := d.list[x].spriteOffset
-                        d_util.drawRectNinepatch(d.list[x].sprite, rect.mk(offs.x+48, offs.y, 48, 48), rect.mk(16, 16, 16, 16), box)
+                        offs := d.list[x].getBoximgOffset()
+                        d_util.drawRectNinepatch(d.list[x].persona.boximg, rect.mk(offs.x+48, offs.y, 48, 48), rect.mk(16, 16, 16, 16), box)
                 }
+                d.list[x].position = prevPos
         }
 }

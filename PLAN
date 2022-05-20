@@ -1,13 +1,8 @@
 Entities & Dialogs
 ------------------
-* Make a dialog system that will handle many dialogs at once
-        Allow the system to specify entity, emotion.
-* Make "active" dialogs, which will focus on the dialog at the top of the sta
-        Highlight them in a way that's visible. 
-        Pan the camera to the dialog on the top of the stack.
-        Remove dialog from the top once certain key has been pressed.
 
-* Make interactible, static entity that will show a dialog message.
+* F: Make scriptable dialogs, possibly introduce tokens into dialogue system to handle hypertext.
+        "#{emote:happy}Hello! #{emote:}I'm some guy."
+                Will first set emote to happy, after that write "Hello! ", set the emote to default, and write "I'm some guy."
 
-
-
+* F: Make interactible, static entity that will show a dialog message.
