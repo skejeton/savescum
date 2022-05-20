@@ -1,0 +1,19 @@
+type (
+        Prs* = struct {
+                name: str
+                box: str
+                boxY: int
+                image: str
+                imageY: int
+                font: str
+                fontH: int
+                fontColor: uint32
+                speed: real
+        } 
+)
+
+const personas* = [4]Prs{
+        Prs{"triangle" , "defbox.png", 0, "faces.png", 0, "data/font_mono.ttf", 16, 0xFFFFFFFF, 0.1},
+        Prs{"rectangle", "defbox.png", 1, "faces.png", 1, "data/font_mono.ttf", 16, 0xFFAA00FF, 0.2},
+        Prs{"star"     , "defbox.png", 2, "faces.png", 2, "data/font_mono.ttf", 16, 0x0000FFFF, 0.3},
+        Prs{"circle"   , "defbox.png", 3, "faces.png", 3, "data/font_mono.ttf", 16, 0x000000FF, 0.4}}

@@ -1,0 +1,62 @@
+import ("map.um"; "image.um"; "th.um"; "rect.um"
+        "d_dialog.um"; "d_font.um"; "d_util.um")
+
+type (
+        Persona* = struct {
+                name: str
+                boximg: image.Image
+                boximgY: int
+                faceimg: image.Image
+                faceimgY: int
+                font: d_font.Font
+                fontColor: uint32
+                speed: real
+        }
+
+        Dialogs* = struct {
+                personas: map.Map
+                list: []d_dialog.Dialog
+        }
+)
+
+fn init*(): Dialogs {
+        return Dialogs{list: make([]d_dialog.Dialog, 0)}
+}
+
+fn (d: ^Dialogs) register*(name: str, boximgPath: str, boximgY: int, faceimgPath: str, faceimgY: int, fontPath: str, fontH: int, fontColor: uint32, speed: real) {
+        persona := new(Persona)
+        persona.name = name
+        persona.boximg = image.load(boximgPath)
+        persona.boximgY = boximgY
+        persona.faceimg = image.load(faceimgPath)
+        d_util.imageCropRect(persona.faceimg, rect.Rect{0, faceimgY*64, 64, 64})
+        persona.faceimgY = faceimgY
+        persona.font = d_font.loadFont(fontPath, fontH)
+        persona.fontColor = fontColor
+        persona.speed = speed
+
+        d.personas.set(name, persona)
+}
+
+
+fn (d: ^Dialogs) say*(name, emotion: str, message: str, pos: th.Vf2) {
+        persona := ^Persona(d.personas.get(name))
+        // TODO: Fallback text if persona doesn't exist
+        if persona != null {
+                dialog := d_dialog.setup(message, persona.speed, persona.faceimg, persona.boximg, th.Vf2{0, persona.boximgY*48}, persona.fontColor, &persona.font)
+                dialog.position = pos
+                d.list = append(d.list, dialog)
+        }
+}
+
+fn (d: ^Dialogs) update*() {
+        for x, _ in d.list {
+                d.list[x].update()
+        }
+}
+
+fn (d: ^Dialogs) draw*() {
+        for x, _ in d.list {
+                d.list[x].draw()
+        }
+}

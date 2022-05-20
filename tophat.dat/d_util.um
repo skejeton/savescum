@@ -72,6 +72,11 @@ fn drawRectNinepatch*(img: image.Image, outer, inner, dest: rect.Rect) {
 
         imgDims := img.getDims()
 
+        // failsafe
+        if imgDims.x == 0 || imgDims.y == 0 {
+                return
+        }
+
         for x := 0; x < 3; x++ {
                 ssX := stepSrc[x].x
                 sdX := stepDst[x].x
@@ -80,7 +85,7 @@ fn drawRectNinepatch*(img: image.Image, outer, inner, dest: rect.Rect) {
                         sdY := stepDst[y].y
 
                         img.crop(th.Vf2{src.x/imgDims.x, src.y/imgDims.y}, th.Vf2{(src.x+ssX)/imgDims.x, (src.y+ssY)/imgDims.y})
-                        img.draw(th.Transform{p: th.Vf2{dst.x, dst.y}, s: th.Vf2{((ssX+1)/imgDims.x)*sdX, ((ssY+1)/imgDims.y)*sdY}})
+                        img.draw(th.Transform{p: th.Vf2{dst.x, dst.y}, s: th.Vf2{sdX/ssX, sdY/ssY}})
 
                         src.y += ssY
                         dst.y += sdY

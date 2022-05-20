@@ -1,0 +1,29 @@
+import ("rect.um"; "window.um"; "th.um"; "canvas.um"
+        "t_preset.um"; "../../tophat.dat/d_dialogs.um"; "../../tophat.dat/d_pfx.um")
+
+var (
+        dialogs: d_dialogs.Dialogs
+)
+
+
+fn main() {
+        dialogs = d_dialogs.init()
+        window.setup("Dialogs test", 640, 480)
+        screen := rect.mk(0, 0, 640, 480)
+
+        for persona in t_preset.personas {
+                dialogs.register(persona.name, d_pfx.pfx()+persona.box, persona.boxY, d_pfx.pfx()+persona.image, persona.imageY, persona.font, persona.fontH, persona.fontColor, persona.speed)
+        }
+
+        dialogs.say("triangle",  "default", "Hello, I'm a triangle :)\nI am all out of trianglus", th.Vf2{200, 200})
+        dialogs.say("rectangle", "default", "I'm a square, really dumb but very cool",             th.Vf2{220, 400})
+        dialogs.say("star",      "default", "I'm a star, very nice but you dont like",             th.Vf2{500, 300})
+        dialogs.say("circle",    "default", "I'm a very round cicrle, hello :)",                   th.Vf2{600, 100})
+        dialogs.say("blob",      "default", "I dont exist haha",                                   th.Vf2{100, 100})
+
+        for window.cycle(screen) {
+                dialogs.update()
+                dialogs.draw()
+                canvas.drawRect(th.red, rect.Rect{200, 200, 5, 5})
+        }
+}

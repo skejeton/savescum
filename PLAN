@@ -1,7 +1,13 @@
 Entities & Dialogs
 ------------------
-Show a dialog in the world (Scriptable)
-Make interactible, static entity that will show a dialog message.
+* Make a dialog system that will handle many dialogs at once
+        Allow the system to specify entity, emotion.
+* Make "active" dialogs, which will focus on the dialog at the top of the sta
+        Highlight them in a way that's visible. 
+        Pan the camera to the dialog on the top of the stack.
+        Remove dialog from the top once certain key has been pressed.
+
+* Make interactible, static entity that will show a dialog message.
 
 
 
