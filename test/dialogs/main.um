@@ -20,7 +20,7 @@ fn main() {
         dialogs.say("triangle",  "happy", "Hello, I'm a triangle :)\nI am all out of trianglus", th.Vf2{200, 200})
         dialogs.say("rectangle", "sad", "I'm a square, really dumb but very big",                th.Vf2{220, 400})
         dialogs.say("star",      "think", "I'm a star, very nice but you dont like",             th.Vf2{500, 300})
-        dialogs.say("circle",    "happy", "I'm a very round cicrle, hello :)",                   th.Vf2{600, 100})
+        dialogs.say("circle",    "", "I'm a very round cicrle, hello :)",                   th.Vf2{600, 100})
         dialogs.say("blob",      "", "I dont exist haha",                                        th.Vf2{100, 100})
 
         for window.cycle(screen) {
