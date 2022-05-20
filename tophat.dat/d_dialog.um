@@ -33,7 +33,7 @@ fn setup*(message: str, speed: real, face: image.Image, sprite: image.Image, spr
         return Dialog{message: message, speed: speed, face: face, sprite: sprite, spriteOffset: spriteOffset, fgColor: fgColor, messageFont: messageFont, active: true}
 }
 
-fn (d: ^Dialog) getBox(): rect.Rect {
+fn (d: ^Dialog) getBox*(): rect.Rect {
         boxSize := d.messageFont.measure(d.message)
         boxSize.x += 16+64+8
         boxSize.y += 16
@@ -59,7 +59,7 @@ fn (d: ^Dialog) draw*() {
         if d.active {
                 // PRECALC VALUES //
                 rnNpRectOuter := rect.mk(d.spriteOffset.x, d.spriteOffset.y, 48, 48)
-                rnRectBubbles := rect.mk(d.spriteOffset.x+48, d.spriteOffset.y+24, 24, 24)
+                rnRectBubbles := rect.mk(d.spriteOffset.x+48*2, d.spriteOffset.y+24, 24, 24)
                 rnNpRectInner := rect.mk(16, 16, 16, 16)
                 rnBox := d.getBox()
 
