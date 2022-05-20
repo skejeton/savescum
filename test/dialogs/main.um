@@ -31,11 +31,11 @@ fn main() {
                 dialogs.register(persona.name, d_pfx.pfx()+persona.box, persona.boxY, d_pfx.pfx()+persona.image, persona.imageY, persona.font, persona.fontH, persona.fontColor, persona.speed, persona.emotes)
         }
 
-        dialogs.say("triangle", "happy", "Hello, I'm a triangle :)\nI am all out of trianglus\n:)\n:)\n:)", th.Vf2{200, 200})
-        dialogs.say("triangle", "sad", "Yes", th.Vf2{0, 0})
-        dialogs.say("rectangle", "sad", "I'm a square, really dumb but very big", th.Vf2{220, 400})
-        dialogs.say("star", "think", "I'm a star, very nice but you dont like", th.Vf2{500, 300})
-        dialogs.say("circle", "", "I'm a very round cicrle, hello :)", th.Vf2{600, 100})
+        dialogs.say("triangle", "happy", "#{sp:1}Привет 8)#{sp:0.05}Я весь из треугольников\n:)\n:)\n:)", th.Vf2{200, 200})
+        dialogs.say("triangle", "sad", "Yes#{emote:}", th.Vf2{0, 0})
+        dialogs.say("rectangle", "sad", "I'm a square, really dumb but very #{emote:}big", th.Vf2{220, 400})
+        dialogs.say("star", "think", "I'm a star, very nice #{emote:sad}but you dont like", th.Vf2{500, 300})
+        dialogs.say("circle", "", "#{sp:0.05}I'm a very round cicrle,#{sp:0.2} hello :)", th.Vf2{600, 100})
         dialogs.say("blob", "", "I dont exist haha", th.Vf2{100, 100})
 
         for window.cycle(screen) {

@@ -1,5 +1,5 @@
-import ("map.um"; "utf8.um"; "image.um"; "th.um"; "rect.um"; "canvas.um"; "window.um"
-        "d_font.um"; "d_util.um")
+import ("std.um"; "map.um"; "utf8.um"; "image.um"; "th.um"; "rect.um"; "canvas.um"; "window.um"
+        "d_font.um"; "d_util.um"; "d_typer.um")
 
 type (
         Persona* = struct {
@@ -18,10 +18,9 @@ type (
                 persona: ^Persona
                 emote: int
                 position: th.Vf2
-                message: str
 
-                messageLen: int
-                cursor: int
+                speed: real
+                typer: d_typer.Typer
                 appearTimer: real
         }
 
@@ -35,16 +34,29 @@ type (
 )
 
 ////////////////////////
+/////// PERSONA
+////
+
+fn (p: ^Persona) getEmote*(emotion: str): int {
+        emote := 0
+        if len(emotion) > 0 {
+                if emotePtr := ^int(p.emotes.get(emotion)); emotePtr != null { 
+                        emote = emotePtr^
+                }
+        }
+        return emote
+}
+
+////////////////////////
 /////// DIALOG
 ////
 
 fn initDialog*(persona: ^Persona, emote: int, position: th.Vf2, message: str): Dialog {
-        return Dialog{persona: persona, emote: emote, position: position, message: message,
-                      messageLen: utf8.realLength(message), cursor: 0, appearTimer: 0}
+        return Dialog{persona: persona, speed: persona.speed, emote: emote, position: position, typer: d_typer.init(message), appearTimer: 0}
 }
 
 fn (d: ^Dialog) isFinished(): bool {
-        return d.cursor >= len(d.message)
+        return d.typer.isFinished()
 }
 
 fn (d: ^Dialog) getBoximgOffset(): th.Vf2 {
@@ -52,7 +64,7 @@ fn (d: ^Dialog) getBoximgOffset(): th.Vf2 {
 }
 
 fn (d: ^Dialog) getBox*(): rect.Rect {
-        boxSize := d.persona.font.measure(d.message)
+        boxSize := d.persona.font.measure(d.typer.fullMessage)
         boxSize.x += 16+64+8
         boxSize.y += 16
         if boxSize.y < 64+16 {
@@ -92,16 +104,7 @@ fn (d: ^Dialog) draw*() {
         d.persona.boximg.draw(th.Transform{p: th.Vf2{d.position.x-4, d.position.y-8}, s: th.Vf2{1, 1}})
 
         // RENDER MESSAGE //
-        msg := d_util.chopUtf8(d.message, d.cursor)
-        d.persona.font.draw(msg, th.Vf2{rnBox.x+64+16, rnBox.y+8}, d.persona.fontColor)
-}
-
-fn (d: ^Dialog) update*() {
-        d.appearTimer += th.delta/1000.0;
-        for d.appearTimer > d.persona.speed {
-                d.cursor += 1
-                d.appearTimer = d.appearTimer - d.persona.speed
-        }
+        d.persona.font.draw(d.typer.message, th.Vf2{trunc(rnBox.x+64+16), trunc(rnBox.y+8)}, d.persona.fontColor)
 }
 
 ////////////////////////
@@ -134,14 +137,7 @@ fn (d: ^Dialogs) say*(name, emotion: str, message: str, pos: th.Vf2) {
         persona := ^Persona(d.personas.get(name))
         // TODO: Fallback text if persona doesn't exist
         if persona != null {
-                emote := 0
-                if len(emotion) > 0 {
-                        if emotePtr := ^int(persona.emotes.get(emotion)); emotePtr != null { 
-                                emote = emotePtr^
-                        }
-                }
-
-                dialog := initDialog(persona, emote, th.Vf2{0, persona.boximgY*48}, message)
+                dialog := initDialog(persona, persona.getEmote(emotion), th.Vf2{0, persona.boximgY*48}, message)
                 dialog.position = pos
                 d.list = append(d.list, dialog)
         }
@@ -182,7 +178,22 @@ fn (d: ^Dialogs) advance*(press: bool) {
 
 fn (d: ^Dialogs) update*() {
         for x, _ in d.list {
-                d.list[x].update()
+                dialog := &d.list[x]
+
+                dialog.appearTimer += th.delta/1000.0;
+                for dialog.appearTimer > dialog.speed {
+                        switch s, c := dialog.typer.advance(); s {
+                        case 0:
+                                break;
+                        case 2: 
+                                if c.verb == "emote" {
+                                        dialog.emote = dialog.persona.getEmote(c.noun)
+                                } else if c.verb == "sp" {
+                                        dialog.speed = std.atof(c.noun)
+                                }
+                        }
+                        dialog.appearTimer = dialog.appearTimer - dialog.speed
+                }
         }
 }
 
