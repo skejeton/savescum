@@ -1,5 +1,5 @@
 import (
-        "rect.um"; "image.um"; "canvas.um"; "th.um"
+        "rect.um"; "image.um"; "canvas.um"; "th.um"; "window.um"
         "d_util.um"
 )
 
@@ -13,16 +13,19 @@ fn init*() {
         imgClouds = image.load("data/bg00_sky.png")
 }
 
+fn drawCloudStrip(scroll: int, y: int, colorMod: uint32) {
+    times := trunc(window.w/640)+1
+    for i := 0; i < times; i++ {
+        imgClouds.draw(d_util.posTrans(scroll+i*640, y), colorMod)
+    }
+}
+
 fn draw*(screen: rect.Rect) {
         canvas.drawRect(0x001133FF, screen)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[0], -60), 0xFFFFFF66)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[0]+640, -60), 0xFFFFFF66)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[1], 0), 0xFFFFFF99)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[1]+640, 0), 0xFFFFFF99)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[2], 60), 0xFFFFFFAA)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[2]+640, 60), 0xFFFFFFAA)
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[3], 120))
-        imgClouds.draw(d_util.posTrans(backgroundOffsets[3]+640, 120))
+        drawCloudStrip(backgroundOffsets[0], window.h-480-60, 0xFFFFFF66);
+        drawCloudStrip(backgroundOffsets[1], window.h-480, 0xFFFFFF99);
+        drawCloudStrip(backgroundOffsets[2], window.h-480+60, 0xFFFFFFAA);
+        drawCloudStrip(backgroundOffsets[3], window.h-480+120, 0xFFFFFFFF);
         backgroundOffsets[0] -= 1
         backgroundOffsets[1] -= 3
         backgroundOffsets[2] -= 5

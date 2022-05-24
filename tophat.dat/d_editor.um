@@ -83,16 +83,16 @@ fn actField() {
 
 fn drawGridEditor() {
         // draw grid
-        nx := 640/32
-        ny := 480/32
+        nx := window.w/32
+        ny := window.h/32
 
         for cx := 0; cx < nx; cx++ {
                 x := cx * world.tileset.tileSizeX
-                canvas.drawRect(0xFFFFFF11, rect.Rect{x, 0, 1, 480})
+                canvas.drawRect(0xFFFFFF11, rect.Rect{x, 0, 1, window.h})
         }
         for cy := 0; cy < ny; cy++ {
                 y := cy * world.tileset.tileSizeY
-                canvas.drawRect(0xFFFFFF11, rect.Rect{0, y, 640, 1})        
+                canvas.drawRect(0xFFFFFF11, rect.Rect{0, y, window.w, 1})        
         }
 
  
@@ -197,8 +197,8 @@ fn loadMap() {
         
         world.load(data)
 
-        worldViewOfsX = trunc(world.playerSpawnPos.x)-trunc(640/world.tileset.tileSizeX/2)
-        worldViewOfsY = trunc(world.playerSpawnPos.y)-trunc(480/world.tileset.tileSizeY/2)
+        worldViewOfsX = trunc(world.playerSpawnPos.x)-trunc(window.w/world.tileset.tileSizeX/2)
+        worldViewOfsY = trunc(world.playerSpawnPos.y)-trunc(window.h/world.tileset.tileSizeY/2)
 }
 
 fn drawLayerIcon(x, y: real) {
@@ -416,11 +416,11 @@ fn handleUiWindows() {
                 if uiWindows[i].rect.y < 16 {
                         uiWindows[i].rect.y = 16
                 }
-                if uiWindows[i].rect.x > 600 {
-                        uiWindows[i].rect.x = 600
+                if uiWindows[i].rect.x > window.w-40 {
+                        uiWindows[i].rect.x = window.w-40
                 }
-                if uiWindows[i].rect.y > 480 {
-                        uiWindows[i].rect.y = 480
+                if uiWindows[i].rect.y > window.h {
+                        uiWindows[i].rect.y = window.h
                 }
                 
         
@@ -508,6 +508,8 @@ fn drawUiDecorations(winId: int, title: str) {
 }
 
 fn drawWindows() {
+        uiWindows[1].rect = rect.Rect{0, window.h-32, window.w, 32}        
+        uiWindows[0].rect = rect.Rect{0, 0, window.w, window.h}
         for i := 0; i < 4; i++ {
                 if (uiWindows[i].closed) {
                         continue
@@ -536,7 +538,7 @@ fn main*() {
         uiTileset = image.load("data/ts01_ui.png")
         uiTrayIconTileset = image.load("data/ts02_trayicons.png")
 
-        screen := rect.mk(0, 0, 640, 480)
+        screen := rect.mk(0, 0, window.w, window.h)
         uiMainFont = d_font.loadFont("data/font_mono.ttf", 16)
         d_background.init()
         setupUiWindows()
@@ -573,7 +575,7 @@ fn main*() {
                 case statePlaying:
                         d_game.draw()
                         uiProcessWindowId = uiFocusWindowId
-                        if putTrayBtn(th.Vf2{0, 480-32}, 2, 1, true) {
+                        if putTrayBtn(th.Vf2{0, window.h-32}, 2, 1, true) {
                                 state = stateEditing
                         }
                         d_script.update()
@@ -582,6 +584,7 @@ fn main*() {
                 uiPrevMousePos = input.getMousePos()
                 uiLeftMouseDown = input.isPressed(input.mouse1)
                 uiMainFont.draw(std.itoa(trunc(d_fps.getFps()))+"fps", th.Vf2{0, 0}, d_colors.cText) 
+                screen = rect.mk(0, 0, window.w, window.h)
         }
 
 }

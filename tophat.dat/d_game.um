@@ -1,4 +1,4 @@
-import ("th.um"; "rect.um"; "canvas.um"; "input.um"
+import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
         "d_world.um"; "d_dialogs.um")
 
 const (
@@ -55,8 +55,8 @@ fn controlCamera() {
                 cameraPos.x += ((chara.rect.x)-cameraPos.x)/4
                 cameraPos.y += ((chara.rect.y)-cameraPos.y)/4
         }
-        camera.x = cameraPos.x + cameraAntiPan.x - (640-chara.rect.w)/2
-        camera.y = cameraPos.y + cameraAntiPan.y - (480-chara.rect.h)/2
+        camera.x = cameraPos.x + cameraAntiPan.x - (window.w-chara.rect.w)/2
+        camera.y = cameraPos.y + cameraAntiPan.y - (window.h-chara.rect.h)/2
 }
 
 fn cameraOffsetRect(r: rect.Rect): rect.Rect {
@@ -319,8 +319,8 @@ fn init*() {
         d_game.dialogs.register("receptionist" , "data/ts03_dialog.png", 0, "data/sp00_receptionist.png", 0, "data/font_mono.ttf", 16, 0xFFFFFFFF, 0.1 , []str{"smirk"})
         chara = Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
 
-        cameraPos.x = chara.rect.x-(640-chara.rect.w)/2
-        cameraPos.y = chara.rect.y-(480-chara.rect.h)/2
+        cameraPos.x = chara.rect.x-(window.w-chara.rect.w)/2
+        cameraPos.y = chara.rect.y-(window.h-chara.rect.h)/2
 }
 
 fn draw*() {
