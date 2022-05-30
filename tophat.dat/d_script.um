@@ -2,7 +2,7 @@
         Scripted events for game
 */
 
-import ("image.um"; "th.um"
+import ("image.um"; "th.um"; "rect.um"
         "d_game.um"; "d_util.um"; "d_dialogs.um"; "d_font.um")
 
 var (
@@ -13,6 +13,7 @@ fn init*() {
         switch d_game.sceneId {
         case 0:
         case 1:
+                d_game.entities = append(d_game.entities, d_game.Character{rect: rect.mk(32*14, 32*19, 32, 32)})
                 d_game.chara.vel.y = 5;
         }
 }
@@ -32,8 +33,9 @@ fn update*() {
                         setScene(1)
                 } 
         case 1:
+                
                 if d_game.chara.onGround && !dialogActivated {
-                        d_game.dialogs.say("receptionist", "", "Ohh hey... #{emote:smirk}#{sp:0.05}Another one bites the dust?", th.Vf2{32*14, 32*18})
+                        d_game.dialogs.say("receptionist", "", "Ohh hey... #{emote:smirk}#{sp:0.05}Another one bites the dust?", th.Vf2{32*14, 32*19})
                         dialogActivated = true
                 }
         }

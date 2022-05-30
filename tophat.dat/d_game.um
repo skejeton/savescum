@@ -24,6 +24,7 @@ type (
 )
 
 var (
+        entities*: []Character
         sceneId*: int
         world*: d_world.World
         chara*: Character
@@ -34,7 +35,14 @@ var (
         cameraAntiPan: th.Vf2
 )
 
-fn controlCamera() {
+fn cameraControl() {
+        cameraAntiPanVel.x += chara.vel.x
+        cameraAntiPanVel.x /= 2.6
+        cameraAntiPanVel.y = chara.vel.y
+        cameraAntiPanVel.y /= 2.6
+        cameraAntiPan.x += cameraAntiPanVel.x/5.0
+        cameraAntiPan.y += cameraAntiPanVel.y/5.0
+
         if cameraAntiPan.x < -50 {
                 cameraAntiPan.x = -50
         }
@@ -65,14 +73,7 @@ fn cameraOffsetRect(r: rect.Rect): rect.Rect {
         return r
 }
 
-fn moveCharacter() {
-        chara.vel.x = 0
-        if chara.onSlope {
-                chara.vel.y += 2.2
-        } else {
-                chara.vel.y += 0.1
-        }
-
+fn playerControl() {
         if input.isPressed(input.key_up) && chara.onGround {
                 chara.vel.y = -4.36
         }
@@ -82,6 +83,7 @@ fn moveCharacter() {
         if input.isPressed(input.key_right) {
                 chara.vel.x = 2
         }
+
         if chara.rect.y > 2e3 {
                 // NOTE: Respawn
                 chara.vel.x = 0
@@ -89,22 +91,25 @@ fn moveCharacter() {
                 chara.rect.x = world.playerSpawnPos.x * world.tileset.tileSizeX
                 chara.rect.y = world.playerSpawnPos.y * world.tileset.tileSizeY
         }
+}
 
-        if chara.vel.y > 10 {
-                chara.vel.y = 10
+fn entPhysics(ent: ^Character) {
+        if ent.onSlope {
+                ent.vel.y += 2.2
+        } else {
+                ent.vel.y += 0.1
         }
 
-        cameraAntiPanVel.x += chara.vel.x
-        cameraAntiPanVel.x /= 2.6
-        cameraAntiPanVel.y = chara.vel.y
-        cameraAntiPanVel.y /= 2.6
-        cameraAntiPan.x += cameraAntiPanVel.x/5.0
-        cameraAntiPan.y += cameraAntiPanVel.y/5.0
-        chara.rect.x += chara.vel.x
-        chara.rect.y += chara.vel.y
+        if ent.vel.y > 10 {
+                ent.vel.y = 10
+        }
 
-        chara.onGround = false
-        chara.onSlope = false
+        ent.rect.x += ent.vel.x
+        ent.rect.y += ent.vel.y
+
+        ent.onGround = false
+        ent.onSlope = false
+        ent.vel.x = 0
 }
 
 fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
@@ -157,91 +162,91 @@ fn collSortShapesByProximity(shapes: ^[]Shape, along: th.Vf2) {
         }
 }
 
-fn playerVsShape(s: Shape) {
+fn entVsShape(ent: ^Character, s: Shape) {
         r := s.rect
-        snap := collCalcRectSnap(chara.rect, r)
+        snap := collCalcRectSnap(ent.rect, r)
                 
         // Not a valid collision (probably pushed back by other blocks?)
-        if collRectVsRect(chara.rect, r) == false {
+        if collRectVsRect(ent.rect, r) == false {
                 return
         }
         
         switch s.shape {
         case shapeLeftUpSlope:
-                cornerX := chara.rect.x + chara.rect.w - r.x;
+                cornerX := ent.rect.x + ent.rect.w - r.x;
                 if cornerX > r.w {
                         cornerX = r.w
                 }
-                cornerY := chara.rect.y + chara.rect.h - r.y;
+                cornerY := ent.rect.y + ent.rect.h - r.y;
                 hitY := r.h - ((r.h/r.w) * (cornerX))
                 if hitY > r.h {
                         hitY = r.h
                 }
                 
                 if cornerY > hitY {
-                        chara.vel.y = 0;
-                        chara.onGround = true;
-                        chara.onSlope = true;
-                        chara.rect.y += hitY-cornerY;
+                        ent.vel.y = 0;
+                        ent.onGround = true;
+                        ent.onSlope = true;
+                        ent.rect.y += hitY-cornerY;
                 }
         case shapeRightUpSlope:
-                cornerX := chara.rect.x - r.x;
+                cornerX := ent.rect.x - r.x;
                 if cornerX < 0 {
                         cornerX = 0;
                 }
-                cornerY := chara.rect.y + chara.rect.h - r.y;
+                cornerY := ent.rect.y + ent.rect.h - r.y;
                 hitY := (r.h/r.w) * (cornerX)
 
                 if cornerY > hitY {
-                        chara.vel.y = 0;
-                        chara.onGround = true;
-                        chara.onSlope = true;
-                        chara.rect.y += hitY-cornerY;
+                        ent.vel.y = 0;
+                        ent.onGround = true;
+                        ent.onSlope = true;
+                        ent.rect.y += hitY-cornerY;
                 }
         case shapeLeftDownSlope:
-                cornerX := chara.rect.x + chara.rect.w - r.x;
+                cornerX := ent.rect.x + ent.rect.w - r.x;
                 if cornerX > r.w {
                         cornerX = r.w
                 }
-                cornerY := chara.rect.y - r.y;
+                cornerY := ent.rect.y - r.y;
                 hitY := (r.h/r.w) * (cornerX)
 
                 if cornerY < hitY {
-                        if chara.vel.y < 0 {
-                                chara.vel.y = 0;
+                        if ent.vel.y < 0 {
+                                ent.vel.y = 0;
                         }
-                        chara.rect.y += hitY-cornerY;
+                        ent.rect.y += hitY-cornerY;
                 }
         case shapeRightDownSlope:
-                cornerX := chara.rect.x - r.x;
+                cornerX := ent.rect.x - r.x;
                 if cornerX < 0 {
                         cornerX = 0;
                 }
-                cornerY := chara.rect.y - r.y;
+                cornerY := ent.rect.y - r.y;
                 hitY := r.h - ((r.h/r.w) * (cornerX))
 
                 if cornerY < hitY {
-                        if chara.vel.y < 0 {
-                                chara.vel.y = 0;
+                        if ent.vel.y < 0 {
+                                ent.vel.y = 0;
                         }
-                        chara.rect.y += hitY-cornerY;
+                        ent.rect.y += hitY-cornerY;
                 }
         case shapeBlock:
                 if snap.x != 0 {
-                        chara.vel.x = 0
-                } else if (snap.y > 0 && chara.vel.y < 0) || (snap.y < 0 && chara.vel.y > 0) {
-                        chara.vel.y = 0
+                        ent.vel.x = 0
+                } else if (snap.y > 0 && ent.vel.y < 0) || (snap.y < 0 && ent.vel.y > 0) {
+                        ent.vel.y = 0
                 }
                 if snap.y < 0 {
-                        chara.onGround = true
+                        ent.onGround = true
                 }
-                chara.rect.x += snap.x
-                chara.rect.y += snap.y
+                ent.rect.x += snap.x
+                ent.rect.y += snap.y
         }
 }
 
-fn playerConstructColidingSolids(): []Shape {
-        tangents := world.getTangentTiles(rect.Rect{chara.rect.x-1, chara.rect.y-1, chara.rect.w+1, chara.rect.h+1})
+fn entConstructColidingSolids(ent: ^Character): []Shape {
+        tangents := world.getTangentTiles(rect.Rect{ent.rect.x-1, ent.rect.y-1, ent.rect.w+1, ent.rect.h+1})
         solids := []Shape{}
         nonBlockSolids := []Shape{}
 
@@ -281,22 +286,22 @@ fn playerConstructColidingSolids(): []Shape {
         }
 
 
-        //collSortShapesByProximity(&nonBlockSolids, th.Vf2{chara.rect.x+chara.rect.w/2, chara.rect.y+chara.rect.h/2})
+        //collSortShapesByProximity(&nonBlockSolids, th.Vf2{ent.rect.x+ent.rect.w/2, ent.rect.y+ent.rect.h/2})
         solids = append(solids, nonBlockSolids)
-        collSortShapesByProximity(&solids, th.Vf2{chara.rect.x+chara.rect.w/2, chara.rect.y+chara.rect.h/2})
+        collSortShapesByProximity(&solids, th.Vf2{ent.rect.x+ent.rect.w/2, ent.rect.y+ent.rect.h/2})
         return solids
 }
 
-fn playerSolveCollision() {
-        solids := playerConstructColidingSolids()
+fn entSolveCollision(ent: ^Character) {
+        solids := entConstructColidingSolids(ent)
 
         for solid in solids {
-                playerVsShape(solid)
+                entVsShape(ent, solid)
         }
 }
 
 fn drawRectTangents(r: rect.Rect) {
-        solids := playerConstructColidingSolids()
+        solids := entConstructColidingSolids(&chara)
 
         i := 0
         for solid in solids {
@@ -321,15 +326,42 @@ fn init*() {
 
         cameraPos.x = chara.rect.x-(window.w-chara.rect.w)/2
         cameraPos.y = chara.rect.y-(window.h-chara.rect.h)/2
+        entities = make([]Character, 0)
+}
+
+fn updateEntities() {
+        for i := 0; i < len(entities); i++ {
+                entPhysics(&entities[i])
+                entSolveCollision(&entities[i])
+        }
+
+        if ok, _ := dialogs.getTopPos(); !ok {
+                playerControl()
+        }
+        entPhysics(&chara)
+        entSolveCollision(&chara)
+}
+
+fn drawEntities() {
+        for i := 0; i < len(entities); i++ {
+                if entities[i].onGround {
+                        canvas.drawRect(th.red, cameraOffsetRect(entities[i].rect))
+                } else {
+                        canvas.drawRect(th.blue, cameraOffsetRect(entities[i].rect))
+                }
+        }
+
+        if chara.onGround { 
+                canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
+        } else {
+                canvas.drawRect(th.blue, cameraOffsetRect(chara.rect))
+        }
 }
 
 fn draw*() {
         // UPDATE PLAYER & CAMERA //
-        if ok, _ := dialogs.getTopPos(); !ok {
-                moveCharacter()
-                playerSolveCollision()
-        }
-        controlCamera()
+        updateEntities()
+        cameraControl()
 
         // UPDATE DIALOG //
         dialogs.setCamPos(camera)
@@ -337,11 +369,8 @@ fn draw*() {
 
         // RENDER WORLD //
         world.drawLayer(camera, -1)
-        if chara.onGround { 
-                canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
-        } else {
-                canvas.drawRect(th.blue, cameraOffsetRect(chara.rect))
-        }
+        drawEntities()
+
         world.drawLayer(camera, 0)
         world.drawLayer(camera, 1)
 

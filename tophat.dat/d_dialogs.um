@@ -71,7 +71,7 @@ fn (d: ^Dialog) getBox*(): rect.Rect {
                 boxSize.y = 64+16
         }
 
-        box := rect.Rect{d.position.x-boxSize.x/2, d.position.y, boxSize.x, boxSize.y}
+        box := rect.Rect{d.position.x-boxSize.x/2, d.position.y-12, boxSize.x, boxSize.y}
         box.y -= boxSize.y+7
         if box.x < 0 {
                 box.x = 0
@@ -101,10 +101,13 @@ fn (d: ^Dialog) draw*() {
  
         // RENDER BUBBLE //
         d_util.imageCropRect(d.persona.boximg, rnRectBubbles)
-        d.persona.boximg.draw(th.Transform{p: th.Vf2{d.position.x-4, d.position.y-8}, s: th.Vf2{1, 1}})
+        d.persona.boximg.draw(th.Transform{p: th.Vf2{d.position.x-12, d.position.y-24}, s: th.Vf2{1, 1}})
 
         // RENDER MESSAGE //
         d.persona.font.draw(d.typer.message, th.Vf2{trunc(rnBox.x+64+16), trunc(rnBox.y+8)}, d.persona.fontColor)
+        
+        // RENDER DEBUG //
+        canvas.drawRect(th.red, rect.mk(d.position.x, d.position.y, 2, 2))
 }
 
 ////////////////////////
