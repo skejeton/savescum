@@ -534,15 +534,23 @@ fn drawWindows() {
 
 fn main*() {
         window.setup("title", 640, 480)
+        uiMainFont = d_font.loadFont("data/font_mono.ttf", 16)
+        uiMainFont.draw("LOADING...", th.Vf2{30, 30}, th.black);
+        screen := rect.mk(0, 0, 640, 480)
+        window.cycle(screen);
+
         world.tileset = d_tileset.fromImage(image.load("data/ts00_sky.png"), 32, 32)
         uiTileset = image.load("data/ts01_ui.png")
         uiTrayIconTileset = image.load("data/ts02_trayicons.png")
 
-        screen := rect.mk(0, 0, window.w, window.h)
-        uiMainFont = d_font.loadFont("data/font_mono.ttf", 16)
         d_background.init()
         setupUiWindows()
         uiPrevMousePos = input.getMousePos()
+
+        window.w = 640
+        window.h = 480
+
+        loadMap()
         for window.cycle(screen) {
                 d_fps.update()
                 d_background.draw(screen)
