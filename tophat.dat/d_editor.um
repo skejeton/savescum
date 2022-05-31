@@ -27,7 +27,7 @@ var (
         uiPrevMousePos: th.Vf2
         uiTileset: image.Image
         uiTrayIconTileset: image.Image
-        uiWindows: [4]Window
+        uiWindows: [5]Window
         uiRelocatingPlayer: bool
         uiProcessWindowId: int          // window currently processing (drawing)
         uiFocusWindowId: int            // window currently focused on (mouse over)
@@ -279,6 +279,9 @@ fn drawBar() {
         if putTrayBtn(th.Vf2{area.x+64, area.y}, 3, 1, !uiWindows[3].closed) {
                 uiWindows[3].closed = !uiWindows[3].closed
         }
+        if putTrayBtn(th.Vf2{area.x+96, area.y}, 0, 2, !uiWindows[4].closed) {
+                uiWindows[4].closed = !uiWindows[4].closed
+        }
 
 
 
@@ -369,12 +372,18 @@ fn getWindowCloseRect(win: int): rect.Rect {
 
 fn setupUiWindows() {
         uiWindows[0].rect = rect.Rect{0, 0, 640, 480}
-        uiWindows[1].rect = rect.Rect{0, 480-32, 640, 32}        
+
+        uiWindows[1].rect = rect.Rect{0, 448, 640, 32}        
+
         uiWindows[2].rect = rect.Rect{480, 20, 146, 408}
         uiWindows[2].showDecorations = true
+
         uiWindows[3].rect = rect.Rect{50, 50, 160, 120}
         uiWindows[3].showDecorations = true
         uiWindows[3].closed = true
+
+        uiWindows[4].rect = rect.Rect{330, 20, 146, 408}
+        uiWindows[4].showDecorations = true
 }
 
 fn getMouseDelta(): th.Vf2 {
@@ -398,7 +407,7 @@ fn handleUiWindows() {
                 uiWindows[uiDraggingWindowId].rect.y = mousePos.y-uiDragPoint.y
         }
 
-        for i := 0; i < 4; i++ {
+        for i := 0; i < len(uiWindows); i++ {
                 if !uiWindows[i].closed {
                         if uiWindows[i].showDecorations && d_util.isMouseInRect(getWindowOuterRect(i)) {
                                 uiFocusWindowId = -1
@@ -409,7 +418,7 @@ fn handleUiWindows() {
                 }
         }
         // -- handle mouse events on windows
-        for i := 0; i < 4; i++ {
+        for i := 0; i < len(uiWindows); i++ {
                 if uiWindows[i].rect.x < 0 {
                         uiWindows[i].rect.x = 0
                 }
@@ -433,7 +442,7 @@ fn handleUiWindows() {
                 uiWindows[i].closing = false
         }
         
-        for i := 3; i >= 0; i-- {
+        for i := len(uiWindows)-1; i >= 0; i-- {
                 if (uiWindows[i].closed || !uiWindows[i].showDecorations) {
                         continue
                 }
@@ -510,7 +519,7 @@ fn drawUiDecorations(winId: int, title: str) {
 fn drawWindows() {
         uiWindows[1].rect = rect.Rect{0, window.h-32, window.w, 32}        
         uiWindows[0].rect = rect.Rect{0, 0, window.w, window.h}
-        for i := 0; i < 4; i++ {
+        for i := 0; i < len(uiWindows); i++ {
                 if (uiWindows[i].closed) {
                         continue
                 }
@@ -520,6 +529,7 @@ fn drawWindows() {
                 case 1: drawUiDecorations(i, "Controls toolbar")
                 case 2: drawUiDecorations(i, "Tile picker")
                 case 3: drawUiDecorations(i, "Player placer")
+                case 4: drawUiDecorations(i, "Entity list")
                 default: drawUiDecorations(i, " ")
                 }
                 switch i {
