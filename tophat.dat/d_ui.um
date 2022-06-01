@@ -1,0 +1,47 @@
+import (
+        "map.um"
+        "th.um"; "rect.um"; "canvas.um";
+        "d_font.um"
+)
+
+type (
+        Window = struct {
+                title: str
+                rect: rect.Rect
+        }
+)
+
+var (
+        v_font: d_font.Font
+        v_windows: map.Map /* str -> Window */
+)
+
+fn init*(font: d_font.Font) {
+        v_font = font
+        v_windows = map.Map{}
+}
+
+fn rectInset(r: rect.Rect, by: real): rect.Rect {
+        return rect.Rect{r.x+by, r.y+by, r.w-by*2, r.h-by*2}
+}
+
+fn drawWindow(w: ^Window) {
+        canvas.drawRect(th.black, w.rect)
+        canvas.drawRect(th.white, rectInset(w.rect, 1))
+        v_font.draw(w.title, th.Vf2{w.rect.x, w.rect.y}, th.black)
+}
+
+fn putWindow*(title: str, r: rect.Rect) {
+        if ^Window(v_windows.get(title)) == null {
+                v_windows.set(title, Window{title: title, rect: r})
+        }
+}
+
+fn finish*() {
+        for bucket in v_windows {
+                for window in bucket {
+                        drawWindow(^Window(window.val))
+                }
+        }
+}
+
