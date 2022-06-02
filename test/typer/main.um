@@ -2,6 +2,7 @@ import ("../../tophat.dat/d_typer.um")
 
 fn main() {
         typer := d_typer.init("Ohh hey... #{emote:smirk}Another one bites the dust?")
+
         for true {
                 switch s, c := typer.advance(); s {
                 case d_typer.typerLetter:

@@ -1,6 +1,6 @@
 import (
         "map.um"
-        "th.um"; "rect.um"; "canvas.um";
+        "th.um"; "rect.um"; "canvas.um"; "input.um"
         "d_font.um"
 )
 
@@ -14,15 +14,33 @@ type (
 var (
         v_font: d_font.Font
         v_windows: map.Map /* str -> Window */
+        v_windowsStack: []^Window
+        v_windowDragging: ^Window
+        v_mousePos: th.Vf2
+        v_leftMouseDown: bool
+        v_leftMouseJustDown: bool
 )
 
 fn init*(font: d_font.Font) {
         v_font = font
         v_windows = map.Map{}
+        v_windowsStack = make([]^Window, 0)
+}
+
+// Must be called every frame of ui, paired with `end`
+fn begin*() {
+        // setup input
+        v_mousePos := input.getMousePos()
+        v_leftMouseDown = input.isPressed(input.mouse1)
+        v_leftMouseJustDown = input.isJustPressed(input.mouse1)
 }
 
 fn rectInset(r: rect.Rect, by: real): rect.Rect {
         return rect.Rect{r.x+by, r.y+by, r.w-by*2, r.h-by*2}
+}
+
+fn isRectInPoint(r: rect.Rect, p: th.Vf2): bool {
+        return p.x > r.x && p.y > r.y && p.x < (r.x+r.w) && p.y < (r.y+r.h);
 }
 
 fn drawWindow(w: ^Window) {
@@ -34,14 +52,57 @@ fn drawWindow(w: ^Window) {
 fn putWindow*(title: str, r: rect.Rect) {
         if ^Window(v_windows.get(title)) == null {
                 v_windows.set(title, Window{title: title, rect: r})
+                v_windowsStack = append(v_windowsStack, ^Window(v_windows.get(title)))
+        }
+
+}
+
+// Must be called every frame of ui, paired with `begin`
+fn end*() {
+        // intercept drag
+        windowDraggingIndex := -1
+
+        if v_leftMouseJustDown {
+                for i, window in v_windowsStack {
+                        if isRectInPoint(window.rect, v_mousePos) {
+                                v_windowDragging = window
+                                windowDraggingIndex = i
+                        }
+                }
+        }
+
+        if windowDraggingIndex >= 0 {
+                printf("Dragging %d\n", windowDraggingIndex)
+                // assert(v_windowDragging != null)
+                v_windowsStack = delete(v_windowsStack, windowDraggingIndex)
+                v_windowsStack = append(v_windowsStack, v_windowDragging)
+        }
+
+        // drag
+        newMousePos := input.getMousePos()
+        mouseDelta := newMousePos.sub(v_mousePos)
+
+        if v_windowDragging != null {
+                if v_leftMouseDown {
+                        v_windowDragging.rect.x += mouseDelta.x
+                        v_windowDragging.rect.y += mouseDelta.y
+                } else {
+                        v_windowDragging = null
+                }
+        }
+
+        v_mousePos = newMousePos
+
+        // draw
+        for window in v_windowsStack {
+                drawWindow(window)
         }
 }
 
-fn finish*() {
-        for bucket in v_windows {
-                for window in bucket {
-                        drawWindow(^Window(window.val))
-                }
-        }
-}
+// DRAGGING
+// 1. Check if left mouse button is down
+// 2. Iterate through windows
+// 3. Check if we intersect with the window
+// 4. Initiate window dragging
+// 5. Drag the dragged window by specified mouse delta in following frames
 
