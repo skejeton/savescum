@@ -1,18 +1,26 @@
-import ("window.um"; "rect.um"; "../../tophat.dat/d_ui.um"; "../../tophat.dat/d_font.um")
+import (
+        "window.um"; "rect.um"
+        "../../tophat.dat/d_ui.um"; "../../tophat.dat/d_font.um"
+)
 
 fn main() {
         window.setup("Ahoy", 640, 480)
         screen := rect.Rect{0, 0, 640, 480}
         d_ui.init(d_font.loadFont("data/font_mono.ttf", 16))
 
-        // sdfsdf
         for (window.cycle(screen)) {
                 screen.w = window.w
                 screen.h = window.h
 
                 d_ui.begin()
-                d_ui.putWindow("I am become GUI", rect.Rect{40, 40, 200, 300})
-                d_ui.putWindow("The destroyer of sanity", rect.Rect{80, 80, 200, 300})
+                
+                d_ui.beginGroup()
+                        d_ui.beginWindow("A", rect.Rect{40, 40, 200, 300})
+                        d_ui.endWindow()
+                        d_ui.beginWindow("B", rect.Rect{80, 80, 200, 300})
+                        d_ui.endWindow()
+                d_ui.endGroup()
+
                 d_ui.end()
         }
 }

@@ -94,6 +94,18 @@ fn (d: ^Dialog) draw*() {
         rnNpRectInner := rect.mk(16, 16, 16, 16)
         rnBox := d.getBox()
 
+        // RENDER X //
+        if d.isFinished() {
+                size := th.Vf2{25, 25}
+                pos := th.Vf2{rnBox.x, rnBox.y - size.y - 5}
+                textSize := d.persona.font.measure("x")
+                textPos := pos.add(size.sub(textSize).div(th.Vf2{2.0, 2.0}))
+
+                d_util.drawRectNinepatch(d.persona.boximg, rnNpRectOuter, rnNpRectInner, rect.mk(pos.x, pos.y, size.x, size.y))
+                d.persona.font.draw("x", textPos, d.persona.fontColor)
+        }        
+
+
         // RENDER FRAME & FACE //
         d_util.drawRectNinepatch(d.persona.boximg, rnNpRectOuter, rnNpRectInner, rnBox)
         d_util.imageCropRect(d.persona.faceimg, rect.Rect{d.emote*64, d.persona.faceimgY*64, 64, 64})
@@ -104,10 +116,10 @@ fn (d: ^Dialog) draw*() {
         d.persona.boximg.draw(th.Transform{p: th.Vf2{d.position.x-12, d.position.y-24}, s: th.Vf2{1, 1}})
 
         // RENDER MESSAGE //
-        d.persona.font.draw(d.typer.message, th.Vf2{trunc(rnBox.x+64+16), trunc(rnBox.y+8)}, d.persona.fontColor)
-        
+        d.persona.font.draw(d.typer.message, th.Vf2{trunc(rnBox.x+64+16), trunc(rnBox.y+8)}, d.persona.fontColor)       
+
         // RENDER DEBUG //
-        canvas.drawRect(th.red, rect.mk(d.position.x, d.position.y, 2, 2))
+        // canvas.drawRect(th.red, rect.mk(d.position.x, d.position.y, 2, 2))
 }
 
 ////////////////////////

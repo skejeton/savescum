@@ -7,13 +7,17 @@ import (
 type (
         Window = struct {
                 title: str
+        }
+
+        Group = struct {
                 rect: rect.Rect
+                windows: []^Window      
         }
 )
 
 var (
         v_font: d_font.Font
-        v_windows: map.Map /* str -> Window */
+        v_windows: map.Map // str -> Window
         v_windowsStack: []^Window
         v_windowDragging: ^Window
         v_mousePos: th.Vf2
@@ -43,17 +47,73 @@ fn isRectInPoint(r: rect.Rect, p: th.Vf2): bool {
         return p.x > r.x && p.y > r.y && p.x < (r.x+r.w) && p.y < (r.y+r.h);
 }
 
+
 fn drawWindow(w: ^Window) {
-        canvas.drawRect(th.black, w.rect)
-        canvas.drawRect(th.white, rectInset(w.rect, 1))
-        v_font.draw(w.title, th.Vf2{w.rect.x, w.rect.y}, th.black)
+        if w.adjacent != null {
+                // frame
+                canvas.drawRect(th.black, rectInset(w.rect, -1))
+                canvas.drawRect(th.white, w.rect)
+
+                // titlebar
+                canvas.drawRect(th.blue, rect.mk(w.rect.x, w.rect.y, w.rect.w, v_font.height))
+
+                x := 0.0
+
+                it := w
+                for it != null {
+                        tabRect := rectInset(rect.mk(w.rect.x+x, w.rect.y, v_font.measure(it.title).x, v_font.height), 0)
+                        if tabRect.w < 50 {
+                                tabRect.w = 50 
+                        }
+
+                        if v_leftMouseJustDown && isRectInPoint(tabRect, v_mousePos) {
+                                w.invisible = true
+                                it.invisible = false
+                        }
+
+                        if it.invisible && isRectInPoint(tabRect, v_mousePos) {
+                                canvas.drawRect(th.black & ~0x44, tabRect) // lit
+                        } else if it.invisible {
+                                canvas.drawRect(th.black & ~0x77, tabRect) // faded
+                        } else {
+                                canvas.drawRect(th.black, tabRect) // solid
+                        }
+
+                        x += tabRect.w
+                        x += 1 // margin
+
+                        v_font.draw(it.title, th.Vf2{tabRect.x+2, tabRect.y+2}, th.white)
+
+                        it = it.adjacent
+
+                        if w == it {
+                                error("cycle")
+                                break // somehow there's a cycle, abort
+                        }
+                }
+        } else if w.invisible == false {
+                // frame
+                canvas.drawRect(th.black, rectInset(w.rect, -1))
+                canvas.drawRect(th.white, w.rect)
+
+                // titlebar
+                canvas.drawRect(th.blue, rect.mk(w.rect.x, w.rect.y, w.rect.w, v_font.height))
+                v_font.draw(w.title, th.Vf2{w.rect.x, w.rect.y}, th.white)
+        }
 }
 
-fn putWindow*(title: str, r: rect.Rect) {
-        if ^Window(v_windows.get(title)) == null {
+fn beginWindow*(title: str, r: rect.Rect): ^Window {
+        window := ^Window(v_windows.get(title))
+        if window == null {
                 v_windows.set(title, Window{title: title, rect: r})
-                v_windowsStack = append(v_windowsStack, ^Window(v_windows.get(title)))
+                window = ^Window(v_windows.get(title))
+                v_windowsStack = append(v_windowsStack, window)
         }
+
+        return window
+}
+
+fn endWindow*() {
 
 }
 
@@ -63,7 +123,7 @@ fn end*() {
         windowDraggingIndex := -1
 
         if v_leftMouseJustDown {
-                for i, window in v_windowsStack {
+                for i, group in v_windowsStack {
                         if isRectInPoint(window.rect, v_mousePos) {
                                 v_windowDragging = window
                                 windowDraggingIndex = i
@@ -72,7 +132,6 @@ fn end*() {
         }
 
         if windowDraggingIndex >= 0 {
-                printf("Dragging %d\n", windowDraggingIndex)
                 // assert(v_windowDragging != null)
                 v_windowsStack = delete(v_windowsStack, windowDraggingIndex)
                 v_windowsStack = append(v_windowsStack, v_windowDragging)
@@ -105,4 +164,8 @@ fn end*() {
 // 3. Check if we intersect with the window
 // 4. Initiate window dragging
 // 5. Drag the dragged window by specified mouse delta in following frames
-
+//
+// DOCKING TABS
+// 1. Iterate through windows
+// 2. Check if mouse is above another window
+// 3. Attach to that another window
