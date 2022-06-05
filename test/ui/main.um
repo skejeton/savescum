@@ -14,8 +14,10 @@ fn main() {
 
                 d_ui.begin()
                 
+                d_ui.setJoinWindows(true)
                 d_ui.beginWindow("A", rect.Rect{40, 40, 200, 300})
                 d_ui.beginWindow("B", rect.Rect{80, 80, 200, 300})
+                d_ui.setJoinWindows(false)
 
                 d_ui.setJoinWindows(true)
                 d_ui.beginWindow("C", rect.Rect{120, 40, 200, 300})

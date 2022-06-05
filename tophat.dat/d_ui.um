@@ -108,11 +108,11 @@ fn begin*() {
         groupZoneSetJoin(&v_groupZone, false)
 }
 
-fn putButton(pos: ^th.Vf2, text: str, highlight: bool): bool {
+fn putButton(pos: ^th.Vf2, text: str, highlight: bool, canBeHovered: bool): bool {
         const padding = th.Vf2{10, 2}
         textSize := v_font.measure(text)
         r := rect.Rect{pos.x, pos.y, textSize.x + padding.x*2, textSize.y + padding.y*2}
-        hovered := rectInPoint(r, v_mousePos)
+        hovered := rectInPoint(r, v_mousePos) && canBeHovered
         pressed := hovered && v_mouseLeftDown
         orMultiple := int(!highlight)
         
@@ -132,6 +132,15 @@ fn putButton(pos: ^th.Vf2, text: str, highlight: bool): bool {
         return hovered && v_mouseLeftNudged
 }
 
+fn getActiveGroup(): int {
+        for i := len(v_groupZone.stack)-1; i >= 0; i-- {
+                if rectInPoint(v_groupZone.stack[i].rect, v_mousePos) {
+                        return i
+                }
+        }
+        return -1
+}
+
 fn end*() {
         // Move windows
         if !v_mouseLeftDown {
@@ -139,15 +148,13 @@ fn end*() {
         }
 
         if v_mouseLeftNudged {
-                for i := len(v_groupZone.stack)-1; i >= 0; i-- {
-                        if rectInPoint(v_groupZone.stack[i].rect, v_mousePos) {
-                                group := v_groupZone.stack[i]
-                                v_groupZone.stack = delete(v_groupZone.stack, i)
-                                v_groupZone.stack = append(v_groupZone.stack, group)
-                                        
-                                v_groupDraggingIndex = len(v_groupZone.stack)-1
-                                break
-                        }
+                groupIndex := getActiveGroup()
+                if groupIndex >= 0 { 
+                        group := v_groupZone.stack[groupIndex]
+                        v_groupZone.stack = delete(v_groupZone.stack, groupIndex)
+                        v_groupZone.stack = append(v_groupZone.stack, group)
+                                
+                        v_groupDraggingIndex = len(v_groupZone.stack)-1
                 }
         }
         
@@ -158,10 +165,9 @@ fn end*() {
                 group.rect.y += v_mouseDelta.y
         }
         
-        
 
         // Draw windows
-        for group in v_groupZone.stack {
+        for groupIndex, group in v_groupZone.stack {
                 r := group.rect 
 
                 canvas.drawRect(th.black, rect.mk(r.x - 1, r.y - 1, r.w + 2, r.h + 2))
@@ -172,7 +178,7 @@ fn end*() {
                 newCurrent := group.current
 
                 for i, win in group.windows {
-                        if (putButton(&pos, win.title, group.current == i)) {
+                        if putButton(&pos, win.title, group.current == i, groupIndex == getActiveGroup()) {
                                 newCurrent = i
                         }
                 }

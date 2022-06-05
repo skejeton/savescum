@@ -1,7 +1,6 @@
 import (
         "tophat.dat/d_editor.um"
 )
-//@NOCHECKIN 
 
 fn main() {
         d_editor.main()
