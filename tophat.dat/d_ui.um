@@ -108,20 +108,21 @@ fn begin*() {
         groupZoneSetJoin(&v_groupZone, false)
 }
 
-fn putButton(pos: ^th.Vf2, text: str, highlight: bool, canBeHovered: bool): bool {
+fn putButton(pos: ^th.Vf2, text: str, toggled: bool, canHover: bool): bool {
         const padding = th.Vf2{10, 2}
         textSize := v_font.measure(text)
         r := rect.Rect{pos.x, pos.y, textSize.x + padding.x*2, textSize.y + padding.y*2}
-        hovered := rectInPoint(r, v_mousePos) && canBeHovered
+        hovered := rectInPoint(r, v_mousePos) && canHover
         pressed := hovered && v_mouseLeftDown
-        orMultiple := int(!highlight)
         
         if pressed {
-                canvas.drawRect(th.blue | (0x000000 * orMultiple), r)
+                canvas.drawRect(th.blue | 0xDDDDDD, r)
+        } else if toggled {
+                canvas.drawRect(th.blue | 0xAAAAAA, r)
         } else if hovered {
-                canvas.drawRect(th.blue | (0x333333 * orMultiple), r)
+                canvas.drawRect(th.blue | 0x999999, r)
         } else {
-                canvas.drawRect(th.blue | (0x666666 * orMultiple), r)
+                canvas.drawRect(th.blue | 0x666666, r)
         }
 
 
@@ -172,7 +173,8 @@ fn end*() {
 
                 canvas.drawRect(th.black, rect.mk(r.x - 1, r.y - 1, r.w + 2, r.h + 2))
                 canvas.drawRect(th.white, rect.mk(r.x    , r.y    , r.w    , r.h    ))
-                
+                canvas.drawRect(th.blue & 0x999999FF, rect.mk(r.x, r.y, r.w, v_font.height + 4));
+
                 pos := th.Vf2{r.x, r.y}
 
                 newCurrent := group.current
