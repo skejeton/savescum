@@ -130,7 +130,8 @@ fn putButton(pos: ^th.Vf2, text: str, toggled: bool, canHover: bool): bool {
 
         pos.x += r.w+1
 
-        return hovered && v_mouseLeftNudged
+        // TODO(skejeton): Return various input states instead of single boolean
+        return hovered && v_mouseLeftDown
 }
 
 fn getActiveGroup(): int {
@@ -158,14 +159,6 @@ fn end*() {
                         v_groupDraggingIndex = len(v_groupZone.stack)-1
                 }
         }
-        
-        if v_groupDraggingIndex >= 0 {
-                group := v_groupZone.stack[v_groupDraggingIndex]
-
-                group.rect.x += v_mouseDelta.x
-                group.rect.y += v_mouseDelta.y
-        }
-        
 
         // Draw windows
         for groupIndex, group in v_groupZone.stack {
@@ -181,11 +174,21 @@ fn end*() {
 
                 for i, win in group.windows {
                         if putButton(&pos, win.title, group.current == i, groupIndex == getActiveGroup()) {
+                                // Deny drag (because button press)
+                                v_groupDraggingIndex = -1
                                 newCurrent = i
                         }
                 }
 
                 group.current = newCurrent
+        }
+        
+        // Apply drag
+        if v_groupDraggingIndex >= 0 {
+                group := v_groupZone.stack[v_groupDraggingIndex]
+
+                group.rect.x += v_mouseDelta.x
+                group.rect.y += v_mouseDelta.y
         }
 }
 
@@ -205,7 +208,13 @@ fn beginWindow*(title: str, r: rect.Rect) {
 // 4. Initiate window dragging
 // 5. Drag the dragged window by specified mouse delta in following frames
 //
-// DOCKING TABS
+// JOINING TABS
 // 1. Iterate through windows
-// 2. Check if mouse is above another window
+// 2. Check if mouse is above another window's titlebar
 // 3. Attach to that another window
+//
+// SPLITTING TABS
+// 1. Iterate through windows
+// 2. Check if mouse is pressed on any certain tab
+// 3. Save it as a held tab
+// 4. When held tab goes out of titlebar, move it to a new group
