@@ -15,18 +15,18 @@ fn main() {
                 d_ui.begin()
                 
                 d_ui.setJoinWindows(true)
-                d_ui.beginWindow("A", rect.Rect{40, 40, 200, 300})
-                d_ui.beginWindow("B", rect.Rect{80, 80, 200, 300})
+                d_ui.beginWindow("Saw", rect.Rect{40, 40, 200, 300})
+                d_ui.beginWindow("Screwdriver", rect.Rect{80, 80, 200, 300})
                 d_ui.setJoinWindows(false)
 
                 d_ui.setJoinWindows(true)
-                d_ui.beginWindow("C", rect.Rect{120, 40, 200, 300})
-                d_ui.beginWindow("D", rect.Rect{160, 80, 200, 300})
+                d_ui.beginWindow("Drill", rect.Rect{120, 40, 300, 300})
+                d_ui.beginWindow("Shovel", rect.Rect{160, 80, 200, 350})
                 d_ui.setJoinWindows(false)
 
                 d_ui.setJoinWindows(true)
-                d_ui.beginWindow("E", rect.Rect{160, 40, 200, 300})
-                d_ui.beginWindow("F", rect.Rect{160, 80, 200, 300})
+                d_ui.beginWindow("Screw", rect.Rect{160, 40, 250, 350})
+                d_ui.beginWindow("Nail", rect.Rect{160, 80, 230, 350})
                 d_ui.setJoinWindows(false)
 
                 d_ui.end()

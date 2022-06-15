@@ -37,6 +37,8 @@ var (
         
         v_groupZone: GroupZone
         v_groupDraggingIndex: int
+        v_windowDetachCandidateName: str
+        v_groupDockingCandidateIndex: int
 
         v_mousePos: th.Vf2
         v_mouseDelta: th.Vf2
@@ -97,6 +99,18 @@ fn groupZoneAcquire(zone: ^GroupZone, title: str, r: rect.Rect): ^Group {
 fn groupZoneSetJoin(zone: ^GroupZone, set: bool) {
         zone.join = set
         zone.firstJoin = true
+}
+
+fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
+        dst := zone.stack[dstIdx]
+        src := zone.stack[srcIdx]
+
+        for window in src.windows {
+                zone.map.set(window.title, dst)
+                dst.windows = append(dst.windows, window)
+        }
+
+        zone.stack = delete(zone.stack, srcIdx)
 }
 
 ///////////////////////
@@ -166,10 +180,44 @@ fn isValidGroupDocking(group_a: ^Group, group_b: ^Group): bool {
         return getGroupHoverInfo(group_a) == groupHoverInfoOnTitlebar && getGroupHoverInfo(group_b) == groupHoverInfoOnTitlebar       
 }
 
+fn isDocking(): bool {
+        return v_groupDraggingIndex >= 0 && v_groupDockingCandidateIndex >= 0 && isValidGroupDocking(v_groupZone.stack[v_groupDraggingIndex], v_groupZone.stack[v_groupDockingCandidateIndex])
+}
+
 fn end*() {
         // Move windows
         if !v_mouseLeftDown {
+                // Finalize docking
+                if isDocking() {
+                        groupZoneDockGroups(&v_groupZone, v_groupDraggingIndex, v_groupDockingCandidateIndex)
+                }
                 v_groupDraggingIndex = -1
+        }
+
+        if v_windowDetachCandidateName != "" && (getActiveGroup() == -1 || getGroupHoverInfo(v_groupZone.stack[getActiveGroup()]) != groupHoverInfoOnTitlebar) {
+                group := ^Group(v_groupZone.map.get(v_windowDetachCandidateName))
+                if group != null {
+                        removalIndex := -1
+                        removalRect := rect.mk(0, 0, 30, 30)
+
+                        for windowIndex, window in group.windows {
+                                if window.title == v_windowDetachCandidateName {
+                                        removalIndex = windowIndex
+                                        removalRect = window.rect
+                                        break
+                                }
+                        }
+
+                        if removalIndex >= 0 {
+                                group.windows = delete(group.windows, removalIndex)
+                                destPos := input.getMousePos().sub(th.Vf2{10, 10})
+                                removalRect.x = destPos.x
+                                removalRect.y = destPos.y
+                                v_groupZone.map.set(v_windowDetachCandidateName, null);
+                                groupZoneAcquire(&v_groupZone, v_windowDetachCandidateName, removalRect)
+                                v_groupDraggingIndex = len(v_groupZone.stack)-1
+                        }
+                }
         }
 
         if v_mouseLeftNudged {
@@ -183,22 +231,25 @@ fn end*() {
                 }
         }
 
-        // Apply drag
-        groupDockingCandidateIndex := -1
+        v_groupDockingCandidateIndex = -1
         if v_groupDraggingIndex >= 0 {
+                // Apply drag
                 group := v_groupZone.stack[v_groupDraggingIndex]
 
                 group.rect.x += v_mouseDelta.x
                 group.rect.y += v_mouseDelta.y
 
+                // Find other docking candidates
                 for i := len(v_groupZone.stack)-1; i >= 0; i-- {
                         if i != v_groupDraggingIndex && rectInPoint(v_groupZone.stack[i].rect, v_mousePos) {
-                                groupDockingCandidateIndex = i
+                                v_groupDockingCandidateIndex = i
                                 break
                         }
                 }
         }
 
+
+        v_windowDetachCandidateName = ""
         // Draw windows
         for groupIndex, group in v_groupZone.stack {
                 r := group.rect 
@@ -206,30 +257,35 @@ fn end*() {
                 pos := th.Vf2{r.x, r.y}
                 newCurrent := group.current
 
-                if v_groupDraggingIndex == groupIndex && groupDockingCandidateIndex >= 0 && isValidGroupDocking(v_groupZone.stack[v_groupDraggingIndex], v_groupZone.stack[groupDockingCandidateIndex]) {
-                        canvas.drawRect(th.white&0x77, r)
+                tabs := []Window{}
+                tabs = append(tabs, group.windows)
+
+                if v_groupDraggingIndex >= 0 && v_groupDockingCandidateIndex == groupIndex && isDocking() {
+                        group := v_groupZone.stack[v_groupDraggingIndex]
+                        tabs = append(tabs, group.windows)
+                }
+
+
+                if v_groupDraggingIndex == groupIndex && v_groupDockingCandidateIndex >= 0 && isDocking() {
+                        canvas.drawRect(th.black&0x77, r)
                 } else {
                         canvas.drawRect(th.black, rect.mk(r.x - 1, r.y - 1, r.w + 2, r.h + 2))
                         canvas.drawRect(th.white, rect.mk(r.x    , r.y    , r.w    , r.h    ))
                         canvas.drawRect(th.blue & 0x999999FF, titlebarRect);
 
-                        for i, win in group.windows {
-                                if putButton(&pos, win.title, group.current == i, groupIndex == getActiveGroup()) {
-                                        // Deny drag (because button press)
-                                        v_groupDraggingIndex = -1
-                                        newCurrent = i
+                        if len(tabs) > 1 {
+                                for i, win in tabs {
+                                        if putButton(&pos, win.title, group.current == i, groupIndex == getActiveGroup()) {
+                                                // Deny drag (because button press)
+                                                v_windowDetachCandidateName = win.title
+                                                v_groupDraggingIndex = -1
+                                                newCurrent = i
+                                        }
                                 }
+                        } else if len(tabs) == 1 {
+                                v_font.draw(group.windows[0].title, pos.add(th.Vf2{10, 2}), th.white)
                         }
                 }
-
-                if v_groupDraggingIndex >= 0 && groupDockingCandidateIndex == groupIndex && isValidGroupDocking(v_groupZone.stack[v_groupDraggingIndex], v_groupZone.stack[groupDockingCandidateIndex]) {
-                        group := v_groupZone.stack[v_groupDraggingIndex]
-
-                        for i, win in group.windows {
-                                putButton(&pos, win.title, false, false);
-                        }
-                }
-
                 group.current = newCurrent
         }
 }
