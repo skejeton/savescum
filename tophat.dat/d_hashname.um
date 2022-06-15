@@ -1,0 +1,34 @@
+//
+// Names for hashes
+//
+
+const (
+        prefixes = [17]str{"MO", "NO", "NE", "BRE", "BOR", "BU", "DAL", "PER",
+                           "SOR", "KO", "NOG", "KRO", "FER", "RAL", "LOA", "ROI", "FU"}
+        suffices = [17]str{"ETH", "YOR", "KKA", "TTU", "KIRK", "KER", "HAR", "KROK",
+                           "ROT", "TER", "FI", "AKKEN", "FOK", "TROL", "VARG", "LYR", "SIR"}
+) 
+
+
+fn xorshift(x: uint): uint {
+	x = x ~ (x << 13)
+	x = x ~ (x >> 7)
+	x = x ~ (x << 17);
+	return x + 1
+}
+
+fn name*(hash: uint): str {
+        s := ""
+        hash = xorshift(hash)
+        s += prefixes[hash%17]
+        hash = xorshift(hash)
+        s += prefixes[hash%17]
+        hash = xorshift(hash)
+        s += "-"
+        s += prefixes[hash%17]
+        hash = xorshift(hash)
+        s += prefixes[hash%17]
+        hash = xorshift(hash)
+        s += suffices[hash%17]
+        return s
+}

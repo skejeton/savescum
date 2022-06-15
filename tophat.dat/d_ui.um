@@ -24,6 +24,10 @@ type (
                 join: bool
                 firstJoin: bool
         }
+
+        GroupDocking = struct {
+
+        }
 )
 
 const (
