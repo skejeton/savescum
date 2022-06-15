@@ -82,12 +82,13 @@ fn groupZoneAcquire(zone: ^GroupZone, title: str, r: rect.Rect): ^Group {
         group := ^Group(zone.map.get(title))
 
         if group == null {
-                zone.map.set(title, groupCreateFromWindow(Window{title: title, rect: r}))
-                group = ^Group(zone.map.get(title))
-
                 if len(zone.stack) > 0 && zone.join && !zone.firstJoin {
+                        zone.map.set(title, zone.stack[len(zone.stack)-1])
+                        group = ^Group(zone.map.get(title))
                         groupAppendWindow(zone.stack[len(zone.stack)-1], Window{title: title, rect: r})
                 } else {
+                        zone.map.set(title, groupCreateFromWindow(Window{title: title, rect: r}))
+                        group = ^Group(zone.map.get(title))
                         zone.firstJoin = false
                         zone.stack = append(zone.stack, group)
                 }
@@ -191,6 +192,7 @@ fn end*() {
                 if isDocking() {
                         groupZoneDockGroups(&v_groupZone, v_groupDraggingIndex, v_groupDockingCandidateIndex)
                 }
+                v_windowDetachCandidateName = ""
                 v_groupDraggingIndex = -1
         }
 
@@ -216,6 +218,7 @@ fn end*() {
                                 v_groupZone.map.set(v_windowDetachCandidateName, null);
                                 groupZoneAcquire(&v_groupZone, v_windowDetachCandidateName, removalRect)
                                 v_groupDraggingIndex = len(v_groupZone.stack)-1
+                                v_windowDetachCandidateName = ""
                         }
                 }
         }
@@ -249,7 +252,6 @@ fn end*() {
         }
 
 
-        v_windowDetachCandidateName = ""
         // Draw windows
         for groupIndex, group in v_groupZone.stack {
                 r := group.rect 
@@ -277,13 +279,15 @@ fn end*() {
                                 for i, win in tabs {
                                         if putButton(&pos, win.title, group.current == i, groupIndex == getActiveGroup()) {
                                                 // Deny drag (because button press)
-                                                v_windowDetachCandidateName = win.title
+                                                if v_windowDetachCandidateName == "" {
+                                                        v_windowDetachCandidateName = win.title
+                                                }
                                                 v_groupDraggingIndex = -1
                                                 newCurrent = i
                                         }
                                 }
                         } else if len(tabs) == 1 {
-                                v_font.draw(group.windows[0].title, pos.add(th.Vf2{10, 2}), th.white)
+                                v_font.draw(tabs[0].title, pos.add(th.Vf2{10, 2}), th.white)
                         }
                 }
                 group.current = newCurrent
