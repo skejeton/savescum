@@ -1,7 +1,7 @@
 import (
         "map.um"
-        "th.um"; "rect.um"; "canvas.um"; "input.um"
-        "d_font.um"; "d_util.um"
+        "th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
+        "d_font.um"; "d_util.um"; 
 )
 
 type (
@@ -58,14 +58,14 @@ fn rectInset(r: rect.Rect, by: real): rect.Rect {
 
 ///////////////////////
 // Group
-fn groupCreateFromWindow(window: Window): Group {
+fn groupCreateFromWindow(win: Window): Group {
         windows := make([]Window, 1)
-        windows[0] = window
-        return Group{windows: windows, current: 0, rect: window.rect}
+        windows[0] = win
+        return Group{windows: windows, current: 0, rect: win.rect}
 }
 
-fn groupAppendWindow(group: ^Group, window: Window) {
-        group.windows = append(group.windows, window) 
+fn groupAppendWindow(group: ^Group, win: Window) {
+        group.windows = append(group.windows, win) 
 }
 
 fn groupCreateFromScratch(r: rect.Rect): Group {
@@ -106,9 +106,9 @@ fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
         dst := zone.stack[dstIdx]
         src := zone.stack[srcIdx]
 
-        for window in src.windows {
-                zone.map.set(window.title, dst)
-                dst.windows = append(dst.windows, window)
+        for win in src.windows {
+                zone.map.set(win.title, dst)
+                dst.windows = append(dst.windows, win)
         }
 
         zone.stack = delete(zone.stack, srcIdx)
@@ -153,7 +153,7 @@ fn putButton(pos: ^th.Vf2, text: str, toggled: bool, canHover: bool): bool {
         pos.x += r.w+1
 
         // TODO(skejeton): Return various input states instead of single boolean
-        return hovered && v_mouseLeftDown
+        return hovered && v_mouseLeftNudged
 }
 
 fn getActiveGroup(): int {
@@ -202,10 +202,10 @@ fn end*() {
                         removalIndex := -1
                         removalRect := rect.mk(0, 0, 30, 30)
 
-                        for windowIndex, window in group.windows {
-                                if window.title == v_windowDetachCandidateName {
+                        for windowIndex, win in group.windows {
+                                if win.title == v_windowDetachCandidateName {
                                         removalIndex = windowIndex
-                                        removalRect = window.rect
+                                        removalRect = win.rect
                                         break
                                 }
                         }
@@ -236,12 +236,6 @@ fn end*() {
 
         v_groupDockingCandidateIndex = -1
         if v_groupDraggingIndex >= 0 {
-                // Apply drag
-                group := v_groupZone.stack[v_groupDraggingIndex]
-
-                group.rect.x += v_mouseDelta.x
-                group.rect.y += v_mouseDelta.y
-
                 // Find other docking candidates
                 for i := len(v_groupZone.stack)-1; i >= 0; i-- {
                         if i != v_groupDraggingIndex && rectInPoint(v_groupZone.stack[i].rect, v_mousePos) {
@@ -255,6 +249,8 @@ fn end*() {
         // Draw windows
         for groupIndex, group in v_groupZone.stack {
                 r := group.rect 
+                window.beginScissorRect(rectInset(r, 1))
+
                 titlebarRect := rect.mk(r.x, r.y, r.w, v_font.height + 4)
                 pos := th.Vf2{r.x, r.y}
                 newCurrent := group.current
@@ -279,10 +275,7 @@ fn end*() {
                                 for i, win in tabs {
                                         if putButton(&pos, win.title, group.current == i, groupIndex == getActiveGroup()) {
                                                 // Deny drag (because button press)
-                                                if v_windowDetachCandidateName == "" {
-                                                        v_windowDetachCandidateName = win.title
-                                                }
-                                                v_groupDraggingIndex = -1
+                                                v_windowDetachCandidateName = win.title
                                                 newCurrent = i
                                         }
                                 }
@@ -290,7 +283,21 @@ fn end*() {
                                 v_font.draw(tabs[0].title, pos.add(th.Vf2{10, 2}), th.white)
                         }
                 }
+
+                window.endScissor()
                 group.current = newCurrent
+        }
+ 
+        if v_windowDetachCandidateName != "" {
+                v_groupDraggingIndex = -1
+        }
+
+        if v_groupDraggingIndex >= 0 {
+                // Apply drag
+                group := v_groupZone.stack[v_groupDraggingIndex]
+
+                group.rect.x += v_mouseDelta.x
+                group.rect.y += v_mouseDelta.y
         }
 }
 
