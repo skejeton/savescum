@@ -1,0 +1,2 @@
+all:
+	./L test ui

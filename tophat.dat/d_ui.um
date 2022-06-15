@@ -16,6 +16,8 @@ type (
                 rect: rect.Rect
         }
         
+        GroupHoverInfo = int
+
         GroupZone = struct {
                 map: map.Map
                 stack: []^Group 
@@ -24,12 +26,17 @@ type (
         }
 )
 
+const (
+        groupHoverInfoNone = GroupHoverInfo(0)
+        groupHoverInfoOnBody = GroupHoverInfo(1)
+        groupHoverInfoOnTitlebar = GroupHoverInfo(2)
+)
+
 var (
         v_font: d_font.Font
         
         v_groupZone: GroupZone
         v_groupDraggingIndex: int
-        v_groupLastTitle: str
 
         v_mousePos: th.Vf2
         v_mouseDelta: th.Vf2
@@ -143,6 +150,22 @@ fn getActiveGroup(): int {
         return -1
 }
 
+fn getGroupHoverInfo(group: ^Group): GroupHoverInfo {
+        r := group.rect 
+        titlebarRect := rect.mk(r.x, r.y, r.w, v_font.height + 4)
+        
+        if rectInPoint(titlebarRect, input.getMousePos()) {
+                return groupHoverInfoOnTitlebar
+        } else if rectInPoint(r, input.getMousePos()) {
+                return groupHoverInfoOnBody
+        } 
+        return groupHoverInfoNone
+}
+
+fn isValidGroupDocking(group_a: ^Group, group_b: ^Group): bool {
+        return getGroupHoverInfo(group_a) == groupHoverInfoOnTitlebar && getGroupHoverInfo(group_b) == groupHoverInfoOnTitlebar       
+}
+
 fn end*() {
         // Move windows
         if !v_mouseLeftDown {
@@ -160,35 +183,54 @@ fn end*() {
                 }
         }
 
-        // Draw windows
-        for groupIndex, group in v_groupZone.stack {
-                r := group.rect 
-
-                canvas.drawRect(th.black, rect.mk(r.x - 1, r.y - 1, r.w + 2, r.h + 2))
-                canvas.drawRect(th.white, rect.mk(r.x    , r.y    , r.w    , r.h    ))
-                canvas.drawRect(th.blue & 0x999999FF, rect.mk(r.x, r.y, r.w, v_font.height + 4));
-
-                pos := th.Vf2{r.x, r.y}
-
-                newCurrent := group.current
-
-                for i, win in group.windows {
-                        if putButton(&pos, win.title, group.current == i, groupIndex == getActiveGroup()) {
-                                // Deny drag (because button press)
-                                v_groupDraggingIndex = -1
-                                newCurrent = i
-                        }
-                }
-
-                group.current = newCurrent
-        }
-        
         // Apply drag
+        groupDockingCandidateIndex := -1
         if v_groupDraggingIndex >= 0 {
                 group := v_groupZone.stack[v_groupDraggingIndex]
 
                 group.rect.x += v_mouseDelta.x
                 group.rect.y += v_mouseDelta.y
+
+                for i := len(v_groupZone.stack)-1; i >= 0; i-- {
+                        if i != v_groupDraggingIndex && rectInPoint(v_groupZone.stack[i].rect, v_mousePos) {
+                                groupDockingCandidateIndex = i
+                                break
+                        }
+                }
+        }
+
+        // Draw windows
+        for groupIndex, group in v_groupZone.stack {
+                r := group.rect 
+                titlebarRect := rect.mk(r.x, r.y, r.w, v_font.height + 4)
+                pos := th.Vf2{r.x, r.y}
+                newCurrent := group.current
+
+                if v_groupDraggingIndex == groupIndex && groupDockingCandidateIndex >= 0 && isValidGroupDocking(v_groupZone.stack[v_groupDraggingIndex], v_groupZone.stack[groupDockingCandidateIndex]) {
+                        canvas.drawRect(th.white&0x77, r)
+                } else {
+                        canvas.drawRect(th.black, rect.mk(r.x - 1, r.y - 1, r.w + 2, r.h + 2))
+                        canvas.drawRect(th.white, rect.mk(r.x    , r.y    , r.w    , r.h    ))
+                        canvas.drawRect(th.blue & 0x999999FF, titlebarRect);
+
+                        for i, win in group.windows {
+                                if putButton(&pos, win.title, group.current == i, groupIndex == getActiveGroup()) {
+                                        // Deny drag (because button press)
+                                        v_groupDraggingIndex = -1
+                                        newCurrent = i
+                                }
+                        }
+                }
+
+                if v_groupDraggingIndex >= 0 && groupDockingCandidateIndex == groupIndex && isValidGroupDocking(v_groupZone.stack[v_groupDraggingIndex], v_groupZone.stack[groupDockingCandidateIndex]) {
+                        group := v_groupZone.stack[v_groupDraggingIndex]
+
+                        for i, win in group.windows {
+                                putButton(&pos, win.title, false, false);
+                        }
+                }
+
+                group.current = newCurrent
         }
 }
 
