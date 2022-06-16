@@ -1,6 +1,6 @@
 import (
         "window.um"; "rect.um"; "th.um"; "canvas.um"; "image.um";
-        "../../tophat.dat/d_util.um"; "../../tophat.dat/d_pfx.um"
+        "../../src/d_util.um"; "../../src/d_pfx.um"
 )
 
 fn main() {

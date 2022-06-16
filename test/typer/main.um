@@ -1,4 +1,4 @@
-import ("../../tophat.dat/d_typer.um")
+import ("../../src/d_typer.um")
 
 fn main() {
         typer := d_typer.init("Ohh hey... #{emote:smirk}Another one bites the dust?")

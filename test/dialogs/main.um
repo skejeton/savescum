@@ -1,5 +1,5 @@
 import ("rect.um"; "window.um"; "th.um"; "canvas.um"; "input.um"
-        "t_preset.um"; "../../tophat.dat/d_dialogs.um"; "../../tophat.dat/d_pfx.um")
+        "t_preset.um"; "../../src/d_dialogs.um"; "../../src/d_pfx.um")
 
 var (
         dialogs: d_dialogs.Dialogs

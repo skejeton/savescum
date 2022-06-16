@@ -1,6 +1,6 @@
 import (
         "window.um"; "rect.um"
-        "../../tophat.dat/d_ui.um"; "../../tophat.dat/d_font.um"
+        "../../src/d_ui.um"; "../../src/d_font.um"
 )
 
 fn main() {

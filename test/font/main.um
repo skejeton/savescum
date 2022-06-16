@@ -1,5 +1,5 @@
 import (
-        "../../tophat.dat/d_font.um"; "window.um"; "rect.um"; "th.um"; "canvas.um"; "image.um"; "map.um"; "utf8.um"
+        "../../src/d_font.um"; "window.um"; "rect.um"; "th.um"; "canvas.um"; "image.um"; "map.um"; "utf8.um"
 )
 
 
@@ -10,7 +10,6 @@ fn main() {
         font := d_font.loadFont("data/font_mono.ttf", 16)
 
         for window.cycle(screen) {
-            txt := "dfassdfsadf"
                 txt := "古池や蛙飛び込む水の音\nふるいけやかわずとびこむみずのおと\nold pond\nfrog leaps in\nwater's sound\n\n初しぐれ猿も小蓑をほしげ也\nはつしぐれさるもこみのをほしげなり\nthe first cold shower\neven the monkey seems to want\na little coat of straw"
                 size := font.measure(txt)
                 canvas.drawRect(th.black, rect.Rect{0, 0, size.x, size.y})

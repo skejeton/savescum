@@ -1,5 +1,5 @@
 import ("window.um"; "canvas.um"; "rect.um"; "image.um"; "th.um"; "std.um";
-        "../../tophat.dat/d_tileset.um"; "../../tophat.dat/d_util.um"; "../../tophat.dat/d_pfx.um")
+        "../../src/d_tileset.um"; "../../src/d_util.um"; "../../src/d_pfx.um")
 
 type T = struct {x, y: int}
 

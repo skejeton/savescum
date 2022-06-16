@@ -1,5 +1,5 @@
 import (
-        "tophat.dat/d_editor.um"
+        "src/d_editor.um"
 )
 
 fn main() {

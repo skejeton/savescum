@@ -3,10 +3,10 @@
 
 case $1 in
         play)
-                ../../tophat main tophat.dat/main.um
+                ../../tophat main src/main.um
         ;;
         check)
-                ../../tophat check main tophat.dat/main.um
+                ../../tophat check main src/main.um
                 
                 for d in test/*; do
                         TEST_PFX="%d/" ../../tophat check main "$d/main.um"
