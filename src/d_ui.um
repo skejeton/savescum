@@ -24,10 +24,6 @@ type (
                 join: bool
                 firstJoin: bool
         }
-
-        GroupDocking = struct {
-
-        }
 )
 
 const (
@@ -40,14 +36,15 @@ var (
         v_font: d_font.Font
         
         v_groupZone: GroupZone
-        v_groupDraggingIndex: int
-        v_windowDetachCandidateName: str
-        v_groupDockingCandidateIndex: int
 
         v_mousePos: th.Vf2
         v_mouseDelta: th.Vf2
         v_mouseLeftDown: bool
-        v_mouseLeftNudged: bool 
+        v_mouseLeftNudged: bool
+
+        v_groupDraggingIndex: int
+        v_groupDockingCandidateIndex: int
+        v_windowDetachCandidateName: str
 )
 
 ///////////////////////
@@ -74,6 +71,15 @@ fn groupAppendWindow(group: ^Group, win: Window) {
 
 fn groupCreateFromScratch(r: rect.Rect): Group {
         return Group{windows: make([]Window, 0), current: 0, rect: r}
+}
+
+fn groupGetWindowIndexByName(group: ^Group, name: str): int {
+        for windowIndex, win in group.windows {
+                if win.title == name {
+                        return windowIndex
+                }
+        }
+        return -1
 }
 
 ///////////////////////
@@ -189,6 +195,17 @@ fn isDocking(): bool {
         return v_groupDraggingIndex >= 0 && v_groupDockingCandidateIndex >= 0 && isValidGroupDocking(v_groupZone.stack[v_groupDraggingIndex], v_groupZone.stack[v_groupDockingCandidateIndex])
 }
 
+fn getGroupVisibleTabs(groupIndex: int): []Window {
+        tabs := v_groupZone.stack[groupIndex].windows
+
+        if v_groupDraggingIndex >= 0 && v_groupDockingCandidateIndex == groupIndex && isDocking() {
+                group := v_groupZone.stack[v_groupDraggingIndex]
+                tabs = append(tabs, group.windows)
+        }
+        
+        return tabs
+}
+
 fn end*() {
         // Move windows
         if !v_mouseLeftDown {
@@ -203,22 +220,14 @@ fn end*() {
         if v_windowDetachCandidateName != "" && (getActiveGroup() == -1 || getGroupHoverInfo(v_groupZone.stack[getActiveGroup()]) != groupHoverInfoOnTitlebar) {
                 group := ^Group(v_groupZone.map.get(v_windowDetachCandidateName))
                 if group != null {
-                        removalIndex := -1
-                        removalRect := rect.mk(0, 0, 30, 30)
-
-                        for windowIndex, win in group.windows {
-                                if win.title == v_windowDetachCandidateName {
-                                        removalIndex = windowIndex
-                                        removalRect = win.rect
-                                        break
-                                }
-                        }
-
+                        removalIndex := groupGetWindowIndexByName(group, v_windowDetachCandidateName)
                         if removalIndex >= 0 {
-                                group.windows = delete(group.windows, removalIndex)
+                                removalRect := group.windows[removalIndex].rect
                                 destPos := input.getMousePos().sub(th.Vf2{10, 10})
                                 removalRect.x = destPos.x
                                 removalRect.y = destPos.y
+
+                                group.windows = delete(group.windows, removalIndex)
                                 v_groupZone.map.set(v_windowDetachCandidateName, null);
                                 groupZoneAcquire(&v_groupZone, v_windowDetachCandidateName, removalRect)
                                 v_groupDraggingIndex = len(v_groupZone.stack)-1
@@ -259,14 +268,7 @@ fn end*() {
                 pos := th.Vf2{r.x, r.y}
                 newCurrent := group.current
 
-                tabs := []Window{}
-                tabs = append(tabs, group.windows)
-
-                if v_groupDraggingIndex >= 0 && v_groupDockingCandidateIndex == groupIndex && isDocking() {
-                        group := v_groupZone.stack[v_groupDraggingIndex]
-                        tabs = append(tabs, group.windows)
-                }
-
+                tabs := getGroupVisibleTabs(groupIndex)
 
                 if v_groupDraggingIndex == groupIndex && v_groupDockingCandidateIndex >= 0 && isDocking() {
                         canvas.drawRect(th.black&0x77, r)
