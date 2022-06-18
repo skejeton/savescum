@@ -245,6 +245,18 @@ fn end*() {
                 v_windowDetachCandidateName = ""
                 v_groupDraggingIndex = -1
         }
+ 
+        if v_windowDetachCandidateName != "" {
+                v_groupDraggingIndex = -1
+        }
+
+        if v_groupDraggingIndex >= 0 {
+                // Apply drag
+                group := v_groupZone.stack[v_groupDraggingIndex]
+
+                group.rect.x += v_mouseDelta.x
+                group.rect.y += v_mouseDelta.y
+        }
 
         if v_windowDetachCandidateName != "" && (getActiveGroup() == -1 || getGroupHoverInfo(v_groupZone.stack[getActiveGroup()]) != groupHoverInfoOnTitlebar) {
                 group := ^Group(v_groupZone.map.get(v_windowDetachCandidateName))
@@ -296,6 +308,7 @@ fn end*() {
         }
 
 
+
         // Draw windows
         for groupIndex, group in v_groupZone.stack {
                 r := group.rect 
@@ -342,18 +355,6 @@ fn end*() {
                 }
 
                 group.current = newCurrent
-        }
- 
-        if v_windowDetachCandidateName != "" {
-                v_groupDraggingIndex = -1
-        }
-
-        if v_groupDraggingIndex >= 0 {
-                // Apply drag
-                group := v_groupZone.stack[v_groupDraggingIndex]
-
-                group.rect.x += v_mouseDelta.x
-                group.rect.y += v_mouseDelta.y
         }
 }
 
