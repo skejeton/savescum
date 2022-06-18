@@ -85,7 +85,7 @@ fn (f: ^Font) draw(text: str, pos: th.Vf2, color: uint32): rect.Rect {
                                 advance += cgetkern(f.handle, rune, runes[i+1])
                         }
                         advance *= f.size/5.0
-                        x += advance
+                        x += trunc(advance)
                 }
         }
         if x > maxW {

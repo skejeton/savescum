@@ -18,11 +18,22 @@ type (
         
         GroupHoverInfo = int
 
+        VisibleTab = struct {
+                title: str
+                ghost: bool
+        }
+
         GroupZone = struct {
                 map: map.Map
                 stack: []^Group 
                 join: bool
                 firstJoin: bool
+        }
+
+        InputState = struct {
+                nudged: bool
+                held: bool
+                relased: bool
         }
 )
 
@@ -41,9 +52,10 @@ var (
         v_mouseDelta: th.Vf2
         v_mouseLeftDown: bool
         v_mouseLeftNudged: bool
+        v_mouseLeftReleased: bool
 
-        v_groupDraggingIndex: int
-        v_groupDockingCandidateIndex: int
+        v_groupDraggingIndex: int = -1
+        v_groupDockingCandidateIndex: int = -1
         v_windowDetachCandidateName: str
 )
 
@@ -55,6 +67,10 @@ fn rectInPoint(r: rect.Rect, p: th.Vf2): bool {
 
 fn rectInset(r: rect.Rect, by: real): rect.Rect {
         return rect.mk(r.x-by, r.y-by, r.w+by*2, r.h+by*2)
+}
+
+fn rectMove(r: rect.Rect, by: th.Vf2): rect.Rect {
+        return rect.Rect{r.x+by.x, r.y+by.y, r.w, r.h}
 }
 
 ///////////////////////
@@ -135,12 +151,18 @@ fn begin*() {
         newMousePos := input.getMousePos()
         v_mouseDelta = newMousePos.sub(v_mousePos)
         v_mousePos = newMousePos
+        v_mouseLeftReleased = v_mouseLeftDown && !input.isPressed(input.mouse1)
         v_mouseLeftDown = input.isPressed(input.mouse1)
         v_mouseLeftNudged = input.isJustPressed(input.mouse1)
+
         groupZoneSetJoin(&v_groupZone, false)
 }
 
-fn putButton(pos: ^th.Vf2, text: str, toggled: bool, canHover: bool): bool {
+fn createInputState(hovered: bool): InputState {
+        return InputState{relased: hovered && v_mouseLeftReleased, nudged: hovered && v_mouseLeftNudged, held: hovered && v_mouseLeftDown}
+}
+
+fn putButton(pos: ^th.Vf2, text: str, toggled: bool, canHover: bool, baseColor: uint32): InputState {
         const padding = th.Vf2{10, 2}
         textSize := v_font.measure(text)
         r := rect.Rect{pos.x, pos.y, textSize.x + padding.x*2, textSize.y + padding.y*2}
@@ -148,13 +170,13 @@ fn putButton(pos: ^th.Vf2, text: str, toggled: bool, canHover: bool): bool {
         pressed := hovered && v_mouseLeftDown
         
         if pressed {
-                canvas.drawRect(th.blue | 0xDDDDDD, r)
+                canvas.drawRect(baseColor | 0x44444400, r)
         } else if toggled {
-                canvas.drawRect(th.blue | 0xAAAAAA, r)
+                canvas.drawRect(baseColor | 0x33333300, r)
         } else if hovered {
-                canvas.drawRect(th.blue | 0x999999, r)
+                canvas.drawRect(baseColor | 0x22222200, r)
         } else {
-                canvas.drawRect(th.blue | 0x666666, r)
+                canvas.drawRect(baseColor, r)
         }
 
 
@@ -162,8 +184,7 @@ fn putButton(pos: ^th.Vf2, text: str, toggled: bool, canHover: bool): bool {
 
         pos.x += r.w+1
 
-        // TODO(skejeton): Return various input states instead of single boolean
-        return hovered && v_mouseLeftNudged
+        return createInputState(hovered)
 }
 
 fn getActiveGroup(): int {
@@ -195,12 +216,20 @@ fn isDocking(): bool {
         return v_groupDraggingIndex >= 0 && v_groupDockingCandidateIndex >= 0 && isValidGroupDocking(v_groupZone.stack[v_groupDraggingIndex], v_groupZone.stack[v_groupDockingCandidateIndex])
 }
 
-fn getGroupVisibleTabs(groupIndex: int): []Window {
-        tabs := v_groupZone.stack[groupIndex].windows
+fn convertWindowListToVisibleTabs(list: []Window, ghost: bool): []VisibleTab {
+        result := make([]VisibleTab, len(list))
+        for i, win in list {
+                result[i].title = win.title
+                result[i].ghost = ghost
+        }
+        return result
+}
+
+fn getGroupVisibleTabs(groupIndex: int): []VisibleTab {
+        tabs := convertWindowListToVisibleTabs(v_groupZone.stack[groupIndex].windows, false)
 
         if v_groupDraggingIndex >= 0 && v_groupDockingCandidateIndex == groupIndex && isDocking() {
-                group := v_groupZone.stack[v_groupDraggingIndex]
-                tabs = append(tabs, group.windows)
+                tabs = append(tabs, convertWindowListToVisibleTabs(v_groupZone.stack[v_groupDraggingIndex].windows, true))
         }
         
         return tabs
@@ -221,9 +250,17 @@ fn end*() {
                 group := ^Group(v_groupZone.map.get(v_windowDetachCandidateName))
                 if group != null {
                         removalIndex := groupGetWindowIndexByName(group, v_windowDetachCandidateName)
+
+                        // Move selected tab index accordingly
+                        if removalIndex == group.current {
+                                group.current = 0
+                        } else if removalIndex < group.current {
+                                group.current -= 1
+                        }
+
                         if removalIndex >= 0 {
                                 removalRect := group.windows[removalIndex].rect
-                                destPos := input.getMousePos().sub(th.Vf2{10, 10})
+                                destPos := v_mousePos.sub(th.Vf2{10, 10})
                                 removalRect.x = destPos.x
                                 removalRect.y = destPos.y
 
@@ -262,35 +299,48 @@ fn end*() {
         // Draw windows
         for groupIndex, group in v_groupZone.stack {
                 r := group.rect 
-                window.beginScissorRect(rectInset(r, 1))
 
                 titlebarRect := rect.mk(r.x, r.y, r.w, v_font.height + 4)
-                pos := th.Vf2{r.x, r.y}
+                pos := th.Vf2{r.x+20, r.y}
                 newCurrent := group.current
 
                 tabs := getGroupVisibleTabs(groupIndex)
 
-                if v_groupDraggingIndex == groupIndex && v_groupDockingCandidateIndex >= 0 && isDocking() {
-                        canvas.drawRect(th.black&0x77, r)
+                if v_groupDockingCandidateIndex < groupIndex && isDocking() {
+                        canvas.drawRect(th.black&0x22, r)
                 } else {
-                        canvas.drawRect(th.black, rect.mk(r.x - 1, r.y - 1, r.w + 2, r.h + 2))
+                        canvas.drawRect(0x00000022, rectMove(rectInset(r, 2), th.Vf2{0, 1}))
+                        canvas.drawRect(0xAA5555FF, rectInset(r, 1))
+                        window.beginScissorRect(rectInset(r, 1))
                         canvas.drawRect(th.white, rect.mk(r.x    , r.y    , r.w    , r.h    ))
-                        canvas.drawRect(th.blue & 0x999999FF, titlebarRect);
+                        canvas.drawRect(0xAA5555FF, titlebarRect);
 
                         if len(tabs) > 1 {
-                                for i, win in tabs {
-                                        if putButton(&pos, win.title, group.current == i, groupIndex == getActiveGroup()) {
-                                                // Deny drag (because button press)
-                                                v_windowDetachCandidateName = win.title
+                                for i, tab in tabs {
+                                        baseColor := 0xCC555555
+                                        if tab.ghost {
+                                                baseColor = 0x00000055
+                                        }
+                                        state := putButton(&pos, tab.title, group.current == i, groupIndex == getActiveGroup(), baseColor)
+
+                                        // Deny drag (because button press)
+                                        if state.nudged {
+                                                v_windowDetachCandidateName = tab.title
+                                        }
+                                        if state.relased {
                                                 newCurrent = i
                                         }
                                 }
                         } else if len(tabs) == 1 {
                                 v_font.draw(tabs[0].title, pos.add(th.Vf2{10, 2}), th.white)
                         }
+                        
+                        v_font.draw("|||||", th.Vf2{trunc(r.x)+3, trunc(r.y)+1}, 0xFFAAAAFF)
+                        v_font.draw("Contents of "+tabs[group.current].title, th.Vf2{r.x+10, r.y+30}, th.black)
+
+                        window.endScissor()
                 }
 
-                window.endScissor()
                 group.current = newCurrent
         }
  

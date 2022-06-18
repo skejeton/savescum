@@ -1,32 +1,35 @@
 import (
-        "window.um"; "rect.um"
+        "window.um"; "rect.um"; "canvas.um"; "th.um"
         "../../src/d_ui.um"; "../../src/d_font.um"
 )
 
 fn main() {
         window.setup("Ahoy", 640, 480)
         screen := rect.Rect{0, 0, 640, 480}
-        d_ui.init(d_font.loadFont("data/font_mono.ttf", 16))
+        d_ui.init(d_font.loadFont("data/font_sans.ttf", 16))
 
         for (window.cycle(screen)) {
                 screen.w = window.w
                 screen.h = window.h
 
+
+                canvas.drawRect(0xFFAAAAFF, screen)
                 d_ui.begin()
                 
+
                 d_ui.setJoinWindows(true)
-                d_ui.beginWindow("Screwdriver", rect.Rect{80, 80, 200, 300})
-                d_ui.beginWindow("Saw", rect.Rect{40, 40, 200, 300})
+                d_ui.beginWindow("Toolbox", rect.Rect{80, 80, 200, 300})
+                d_ui.beginWindow("Million dollars", rect.Rect{40, 40, 200, 300})
                 d_ui.setJoinWindows(false)
 
                 d_ui.setJoinWindows(true)
-                d_ui.beginWindow("Drill", rect.Rect{120, 40, 300, 300})
-                d_ui.beginWindow("Shovel", rect.Rect{160, 80, 200, 350})
+                d_ui.beginWindow("\\t", rect.Rect{120, 40, 300, 300})
+                d_ui.beginWindow("tABS? nice", rect.Rect{160, 80, 200, 350})
                 d_ui.setJoinWindows(false)
 
                 d_ui.setJoinWindows(true)
-                d_ui.beginWindow("Screw", rect.Rect{160, 40, 250, 350})
-                d_ui.beginWindow("Nail", rect.Rect{160, 80, 230, 350})
+                d_ui.beginWindow("technology indeed", rect.Rect{160, 40, 250, 350})
+                d_ui.beginWindow("Something Dumb", rect.Rect{160, 80, 230, 350})
                 d_ui.setJoinWindows(false)
 
                 d_ui.end()
