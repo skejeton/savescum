@@ -14,6 +14,9 @@ type (
                 windows: []Window
                 current: uint
                 rect: rect.Rect
+                tabWidth: real //width of tabs total
+                tabScroll: real //horizontal scroll offset 
+                scrolling: bool
         }
         
         GroupHoverInfo = int
@@ -50,6 +53,8 @@ var (
 
         v_mousePos: th.Vf2
         v_mouseDelta: th.Vf2
+        v_mouseRightDown: bool
+        v_mouseRightNudged: bool
         v_mouseLeftDown: bool
         v_mouseLeftNudged: bool
         v_mouseLeftReleased: bool
@@ -151,6 +156,10 @@ fn begin*() {
         newMousePos := input.getMousePos()
         v_mouseDelta = newMousePos.sub(v_mousePos)
         v_mousePos = newMousePos
+
+        v_mouseRightDown = input.isPressed(input.mouse3)
+        v_mouseRightNudged = input.isJustPressed(input.mouse3)
+
         v_mouseLeftReleased = v_mouseLeftDown && !input.isPressed(input.mouse1)
         v_mouseLeftDown = input.isPressed(input.mouse1)
         v_mouseLeftNudged = input.isJustPressed(input.mouse1)
@@ -162,8 +171,7 @@ fn createInputState(hovered: bool): InputState {
         return InputState{relased: hovered && v_mouseLeftReleased, nudged: hovered && v_mouseLeftNudged, held: hovered && v_mouseLeftDown}
 }
 
-fn putButton(pos: ^th.Vf2, text: str, toggled: bool, canHover: bool, baseColor: uint32): InputState {
-        const padding = th.Vf2{10, 2}
+fn putButton(pos: ^th.Vf2, text: str, toggled: bool, canHover: bool, baseColor: uint32, padding: th.Vf2 = th.Vf2{10, 2}): InputState {
         textSize := v_font.measure(text)
         r := rect.Rect{pos.x, pos.y, textSize.x + padding.x*2, textSize.y + padding.y*2}
         hovered := rectInPoint(r, v_mousePos) && canHover
@@ -289,10 +297,12 @@ fn end*() {
                 groupIndex := getActiveGroup()
                 if groupIndex >= 0 { 
                         group := v_groupZone.stack[groupIndex]
-                        v_groupZone.stack = delete(v_groupZone.stack, groupIndex)
-                        v_groupZone.stack = append(v_groupZone.stack, group)
-                                
-                        v_groupDraggingIndex = len(v_groupZone.stack)-1
+                        if !group.scrolling {
+                                v_groupZone.stack = delete(v_groupZone.stack, groupIndex)
+                                v_groupZone.stack = append(v_groupZone.stack, group)
+                                        
+                                v_groupDraggingIndex = len(v_groupZone.stack)-1
+                        }
                 }
         }
 
@@ -322,11 +332,34 @@ fn end*() {
                 if v_groupDockingCandidateIndex < groupIndex && isDocking() {
                         canvas.drawRect(th.black&0x22, r)
                 } else {
+                        // Scroll tab bar
+                        if groupIndex == getActiveGroup() && v_mouseRightNudged && rectInPoint(titlebarRect, input.getMousePos()) {
+                                group.scrolling = true
+                        }
+                        if !v_mouseRightDown {
+                                group.scrolling = false
+                        }
+                        if group.scrolling {
+                                group.tabScroll += v_mouseDelta.x
+                        }
+                        if -group.tabScroll < 0 {
+                                group.tabScroll = 0
+                        }
+                        if -group.tabScroll > group.tabWidth-titlebarRect.w {
+                                if group.tabWidth-titlebarRect.w > 0 {
+                                        group.tabScroll = -(group.tabWidth-titlebarRect.w)
+                                } else {
+                                        group.tabScroll = 0
+                                }
+                        }
+
                         canvas.drawRect(0x00000022, rectMove(rectInset(r, 2), th.Vf2{0, 1}))
                         canvas.drawRect(0xAA5555FF, rectInset(r, 1))
                         window.beginScissorRect(rectInset(r, 1))
                         canvas.drawRect(th.white, rect.mk(r.x    , r.y    , r.w    , r.h    ))
                         canvas.drawRect(0xAA5555FF, titlebarRect);
+                                
+                        pos.x += group.tabScroll
 
                         if len(tabs) > 1 {
                                 for i, tab in tabs {
@@ -337,7 +370,7 @@ fn end*() {
                                         state := putButton(&pos, tab.title, group.current == i, groupIndex == getActiveGroup(), baseColor)
 
                                         // Deny drag (because button press)
-                                        if state.nudged {
+                                        if !group.scrolling && state.nudged && rectInPoint(rectMove(titlebarRect, th.Vf2{20, 0}), input.getMousePos()) {
                                                 v_windowDetachCandidateName = tab.title
                                         }
                                         if state.relased {
@@ -347,8 +380,12 @@ fn end*() {
                         } else if len(tabs) == 1 {
                                 v_font.draw(tabs[0].title, pos.add(th.Vf2{10, 2}), th.white)
                         }
+
+                        group.tabWidth = pos.x-r.x-group.tabScroll
+  
                         
-                        v_font.draw("|||||", th.Vf2{trunc(r.x)+3, trunc(r.y)+1}, 0xFFAAAAFF)
+                        pos = th.Vf2{trunc(r.x-1), trunc(r.y)}
+                        putButton(&pos, " |||||", false, false, 0xAA5555FF, th.Vf2{0, 2})
                         v_font.draw("Contents of "+tabs[group.current].title, th.Vf2{r.x+10, r.y+30}, th.black)
 
                         window.endScissor()
