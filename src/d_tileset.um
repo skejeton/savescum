@@ -35,7 +35,7 @@ fn (ts: ^Tileset) selectTilePos*(pos: int) {
         ts.selectTile(pos%ts.tileCountX, pos/ts.tileCountX)
 }
 
-fn (ts: ^Tileset) isTileValid(pos: int): bool {
+fn (ts: ^Tileset) isTileValid*(pos: int): bool {
         if pos < 1 || pos > (ts.tileCountX*ts.tileCountY) {
                 return false
         }

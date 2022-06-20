@@ -55,7 +55,7 @@ fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
         chunk[tx][ty] = tile
 }
 
-fn (world: ^World) getTile(layer, tx, ty: int): int {
+fn (world: ^World) getTile*(layer, tx, ty: int): int {
         layer++
         if layer < 0 || layer > 2 {
                 return 0
@@ -83,7 +83,7 @@ fn (world: ^World) getTile(layer, tx, ty: int): int {
 //
 // NOTE: This function only checks middleground layer (layer 0)
 //
-fn (world: ^World) getTangentTiles(r: rect.Rect): []Tangent {
+fn (world: ^World) getTangentTiles*(r: rect.Rect): []Tangent {
         x, y, w, h := d_util.floor(r.x/world.tileset.tileSizeX), d_util.floor(r.y/world.tileset.tileSizeY), d_util.ceil(r.w/world.tileset.tileSizeX), d_util.ceil(r.h/world.tileset.tileSizeY)
         x2, y2 := x + w, y + h
         inity := y

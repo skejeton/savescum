@@ -32,7 +32,7 @@ fn loadFont*(path: str, size: th.fu): Font {
                 height: size}
 }
 
-fn (f: ^Font) measure(text: str): th.Vf2 {
+fn (f: ^Font) measure*(text: str): th.Vf2 {
         runes := utf8.decode(text)
         x, y, maxW := 0.0, 0.0, 0.0
 
@@ -63,7 +63,7 @@ fn (f: ^Font) measure(text: str): th.Vf2 {
 }
 
 // Returns the rect of the font
-fn (f: ^Font) draw(text: str, pos: th.Vf2, color: uint32): rect.Rect {
+fn (f: ^Font) draw*(text: str, pos: th.Vf2, color: uint32): rect.Rect {
         runes := utf8.decode(text)
         x, y, maxW := pos.x, pos.y, 0.0
 
