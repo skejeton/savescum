@@ -5,7 +5,7 @@ import (
 type (
         Font* = struct {
                 handle: th.uu
-                cache: map.Map
+                cache: map[uint32]image.Image
                 size: th.fu
                 height: th.fu
         }
@@ -17,16 +17,16 @@ fn cgetkern(font: th.uu, runeA, runeB: uint32): th.fu
 fn cgetadvance(font: th.uu, rune: uint32): th.fu
 
 fn (f: ^Font) getGlyph(rune: uint32): image.Image {
-        gl := ^image.Image(f.cache.get(rune))
-        if gl != null {
-                return gl^
+        if validkey(f.cache, rune) {
+                return f.cache[rune]
         }
-        f.cache.set(rune, image.Image{crenderglyph(f.handle, rune, f.size/5.0)})
-        return ^image.Image(f.cache.get(rune))^
+        f.cache[rune] = image.Image{crenderglyph(f.handle, rune, f.size/5.0)}
+        return f.cache[rune]
 }
 
 fn loadFont*(path: str, size: th.fu): Font {
         return Font{
+                cache: map[uint32]image.Image{},
                 size: size,
                 handle: cfontload(path),
                 height: size}

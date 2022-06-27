@@ -26,7 +26,7 @@ type (
         World* = struct {
                 playerSpawnPos: th.Vf2
                 tileset: d_tileset.Tileset
-                tilemap: [3]map.Map
+                tilemap: [3]map[ChunkPos]Chunk
         }
         Tangent* = struct {
                 x, y: int
@@ -42,11 +42,8 @@ fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
 
         // get or construct a chunk
         chunk_pos := ChunkPos{d_util.floor(tx/real(chunkW)), d_util.floor(ty/real(chunkH))}
-        chunk := ^Chunk(world.tilemap[layer].get(chunk_pos))
-        if chunk == null {
-                chunk = new(Chunk)
-                world.tilemap[layer].set(chunk_pos, chunk)
-        }
+
+        chunk := &world.tilemap[layer][chunk_pos]
 
         // make tile positions local
         tx = tx - chunk_pos.x * chunkW
@@ -61,12 +58,12 @@ fn (world: ^World) getTile*(layer, tx, ty: int): int {
                 return 0
         }
 
-        // get or construct a chunk
         chunk_pos := ChunkPos{d_util.floor(tx/real(chunkW)), d_util.floor(ty/real(chunkH))}
-        chunk := ^Chunk(world.tilemap[layer].get(chunk_pos))
-        if chunk == null {
+        if !validkey(world.tilemap[layer], chunk_pos) {
                 return 0
         }
+
+        chunk := &world.tilemap[layer][chunk_pos]
 
         // make tile positions local
         tx = tx - chunk_pos.x * chunkW
@@ -112,23 +109,19 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int) {
         
         layer := &world.tilemap[layerId]
 
-        for bucket in layer {
-                for item in bucket {
-                        pos := ChunkPos(item.key)
-                        chunk := ^Chunk(item.val)
-                        for cx := 0; cx < chunkW; cx++ {
-                                for cy := 0; cy < chunkH; cy++ {
-                                        tx := cx + pos.x * chunkW
-                                        ty := cy + pos.y * chunkH
-                                        tileId := chunk[cx][cy]
+        for pos, _ in layer {
+                chunk := &layer[pos]
+                for cx := 0; cx < chunkW; cx++ {
+                        for cy := 0; cy < chunkH; cy++ {
+                                tx := cx + pos.x * chunkW
+                                ty := cy + pos.y * chunkH
+                                tileId := chunk[cx][cy]
 
-                                        if tileId > 0 {
-                                                world.tileset.selectTilePos(tileId)
-                                                world.tileset.image.draw(d_util.posTrans(tx * world.tileset.tileSizeX - pan.x, ty * world.tileset.tileSizeY - pan.y))
-                                        }
+                                if tileId > 0 {
+                                        world.tileset.selectTilePos(tileId)
+                                        world.tileset.image.draw(d_util.posTrans(tx * world.tileset.tileSizeX - pan.x, ty * world.tileset.tileSizeY - pan.y))
                                 }
                         }
-
                 }
         }
 }
@@ -149,19 +142,15 @@ fn (world: ^World) save*(): str {
         // Start from -1, because that's the background layer, which maps to index 0
         layerNo := -1
         for layer in world.tilemap {
-                for bucket in layer {
-                        for item in bucket {
-                                pos := ChunkPos(item.key)
-                                chunk := ^Chunk(item.val)
-                                data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y), std.itoa(layerNo)})
-                                
-                                for ty := 0; ty < chunkH; ty++ {
-                                        row := make([]str, 0)
-                                        for tx := 0; tx < chunkW; tx++ {
-                                                row = append(row, std.itoa(chunk[tx][ty]))
-                                        }
-                                        data = append(data, row)
+                for pos, chunk in layer { 
+                        data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y), std.itoa(layerNo)})
+                        
+                        for ty := 0; ty < chunkH; ty++ {
+                                row := make([]str, 0)
+                                for tx := 0; tx < chunkW; tx++ {
+                                        row = append(row, std.itoa(chunk[tx][ty]))
                                 }
+                                data = append(data, row)
                         }
                 }
                 layerNo++
@@ -173,7 +162,7 @@ fn (world: ^World) save*(): str {
 fn (world: ^World) load*(data: str) {
         csvData := csv.parse(data)
 
-        world.tilemap = [3]map.Map{map.Map{}, map.Map{}, map.Map{}}
+        world.tilemap = [3]map[ChunkPos]Chunk{map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}}
 
         if csvData[0][0] != lastVersion {
                 error("Scene version mismatch")
@@ -192,7 +181,7 @@ fn (world: ^World) load*(data: str) {
                 if layer < 0 || layer > 2 {
                         continue
                 }
-                chunk := new(Chunk)
+                var chunk: Chunk
                 for y := 0; y < chunkH; y++ {
                         for x := 0; x < chunkW; x++ {
                                 tileId := std.atoi(csvData[row+y][x])
@@ -201,7 +190,7 @@ fn (world: ^World) load*(data: str) {
                 }
                 row += chunkH
 
-                world.tilemap[layer].set(chunkPos, chunk)
+                world.tilemap[layer][chunkPos] = chunk
         }
 }
 

@@ -1,5 +1,4 @@
 import (
-        "map.um"
         "th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
         "d_font.um"; "d_util.um"; 
 )
@@ -27,7 +26,7 @@ type (
         }
 
         GroupZone = struct {
-                map: map.Map
+                groups: map[str]^Group // Window name to group
                 stack: []^Group 
                 join: bool
                 firstJoin: bool
@@ -106,22 +105,24 @@ fn groupGetWindowIndexByName(group: ^Group, name: str): int {
 ///////////////////////
 // Group Zone
 fn groupZoneInit(): GroupZone {
-        return GroupZone{stack: make([]^Group, 0)}
+        return GroupZone{groups: map[str]^Group{}, stack: make([]^Group, 0)}
 }
 
 fn groupZoneAcquire(zone: ^GroupZone, title: str, r: rect.Rect): ^Group {
-        group := ^Group(zone.map.get(title))
+        group := zone.groups[title]
 
         if group == null {
                 if len(zone.stack) > 0 && zone.join && !zone.firstJoin {
-                        zone.map.set(title, zone.stack[len(zone.stack)-1])
-                        group = ^Group(zone.map.get(title))
+                        zone.groups[title] = zone.stack[len(zone.stack)-1]
+                        group = zone.groups[title]
                         groupAppendWindow(zone.stack[len(zone.stack)-1], Window{title: title, rect: r})
                 } else {
-                        zone.map.set(title, groupCreateFromWindow(Window{title: title, rect: r}))
-                        group = ^Group(zone.map.get(title))
+                        newGroup := new(Group)
+                        newGroup ^= groupCreateFromWindow(Window{title: title, rect: r})
+                        zone.groups[title] = newGroup
+                        group = zone.groups[title]
                         zone.firstJoin = false
-                        zone.stack = append(zone.stack, group)
+                        zone.stack = append(zone.stack, newGroup)
                 }
         }
         
@@ -138,7 +139,7 @@ fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
         src := zone.stack[srcIdx]
 
         for win in src.windows {
-                zone.map.set(win.title, dst)
+                zone.groups[win.title] = dst
                 dst.windows = append(dst.windows, win)
         }
 
@@ -267,7 +268,7 @@ fn end*() {
         }
 
         if v_windowDetachCandidateName != "" && (getActiveGroup() == -1 || getGroupHoverInfo(v_groupZone.stack[getActiveGroup()]) != groupHoverInfoOnTitlebar) {
-                group := ^Group(v_groupZone.map.get(v_windowDetachCandidateName))
+                group := v_groupZone.groups[v_windowDetachCandidateName]
                 if group != null {
                         removalIndex := groupGetWindowIndexByName(group, v_windowDetachCandidateName)
 
@@ -285,7 +286,7 @@ fn end*() {
                                 removalRect.y = destPos.y
 
                                 group.windows = delete(group.windows, removalIndex)
-                                v_groupZone.map.set(v_windowDetachCandidateName, null);
+                                v_groupZone.groups[v_windowDetachCandidateName] = null;
                                 groupZoneAcquire(&v_groupZone, v_windowDetachCandidateName, removalRect)
                                 v_groupDraggingIndex = len(v_groupZone.stack)-1
                                 v_windowDetachCandidateName = ""

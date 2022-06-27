@@ -11,7 +11,7 @@ type (
                 font: d_font.Font
                 fontColor: uint32
                 speed: real
-                emotes: map.Map // str -> int
+                emotes: map[str]int // str -> int
         }
 
         Dialog* = struct {
@@ -25,7 +25,7 @@ type (
         }
 
         Dialogs* = struct {
-                personas: map.Map
+                personas: map[str]Persona
                 list: []Dialog
                 camera: th.Vf2
                 // The pressure to skip the dialog
@@ -39,10 +39,8 @@ type (
 
 fn (p: ^Persona) getEmote*(emotion: str): int {
         emote := 0
-        if len(emotion) > 0 {
-                if emotePtr := ^int(p.emotes.get(emotion)); emotePtr != null { 
-                        emote = emotePtr^
-                }
+        if validkey(p.emotes, emotion) { 
+                emote = p.emotes[emotion]
         }
         return emote
 }
@@ -127,11 +125,11 @@ fn (d: ^Dialog) draw*() {
 ////
 
 fn init*(): Dialogs {
-        return Dialogs{list: make([]Dialog, 0)}
+        return Dialogs{personas: map[str]Persona{}, list: make([]Dialog, 0)}
 }
 
 fn (d: ^Dialogs) register*(name: str, boximgPath: str, boximgY: int, faceimgPath: str, faceimgY: int, fontPath: str, fontH: int, fontColor: uint32, speed: real, emotes: []str) {
-        persona := new(Persona)
+        var persona: Persona
         persona.name = name
         persona.boximg = image.load(boximgPath)
         persona.boximgY = boximgY
@@ -140,21 +138,24 @@ fn (d: ^Dialogs) register*(name: str, boximgPath: str, boximgY: int, faceimgPath
         persona.font = d_font.loadFont(fontPath, fontH)
         persona.fontColor = fontColor
         persona.speed = speed
+        persona.emotes = map[str]int{}
 
         for id, emote in emotes {
-                persona.emotes.set(emote, int(id+1))
+                persona.emotes[emote] = int(id+1)
         }
 
-        d.personas.set(name, persona)
+        d.personas[name] = persona
 }
 
 fn (d: ^Dialogs) say*(name, emotion: str, message: str, pos: th.Vf2) {
-        persona := ^Persona(d.personas.get(name))
         // TODO: Fallback text if persona doesn't exist
-        if persona != null {
+        if validkey(d.personas, name) {
+                persona := &d.personas[name]
                 dialog := initDialog(persona, persona.getEmote(emotion), th.Vf2{0, persona.boximgY*48}, message)
                 dialog.position = pos
                 d.list = append(d.list, dialog)
+        } else {
+                printf("Hell! The persona doesn't exist!");
         }
 }
 
