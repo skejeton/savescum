@@ -360,7 +360,12 @@ fn end*() {
                         canvas.drawRect(th.white, rect.mk(r.x    , r.y    , r.w    , r.h    ))
                         canvas.drawRect(0xAA5555FF, titlebarRect);
                                 
-                        pos.x += group.tabScroll
+                        if v_groupDockingCandidateIndex == groupIndex && isDocking() {
+                                pos.x -= group.tabWidth-20
+                        } else {
+                                pos.x += group.tabScroll
+                        }
+                        originX := pos.x
 
                         if len(tabs) > 1 {
                                 for i, tab in tabs {
@@ -382,7 +387,9 @@ fn end*() {
                                 v_font.draw(tabs[0].title, pos.add(th.Vf2{10, 2}), th.white)
                         }
 
-                        group.tabWidth = pos.x-r.x-group.tabScroll
+                        if !(v_groupDockingCandidateIndex == groupIndex && isDocking()) {
+                                group.tabWidth = pos.x-originX+20
+                        }
   
                         
                         pos = th.Vf2{trunc(r.x-1), trunc(r.y)}
