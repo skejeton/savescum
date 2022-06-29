@@ -52,8 +52,9 @@ var (
 
         v_mousePos: th.Vf2
         v_mouseDelta: th.Vf2
-        v_mouseRightDown: bool
-        v_mouseRightNudged: bool
+        v_mouseMiddleDown: bool
+        v_mouseMiddleNudged: bool
+        v_mouseMiddleScroll: int
         v_mouseLeftDown: bool
         v_mouseLeftNudged: bool
         v_mouseLeftReleased: bool
@@ -158,8 +159,9 @@ fn begin*() {
         v_mouseDelta = newMousePos.sub(v_mousePos)
         v_mousePos = newMousePos
 
-        v_mouseRightDown = input.isPressed(input.mouse3)
-        v_mouseRightNudged = input.isJustPressed(input.mouse3)
+        v_mouseMiddleDown = input.isPressed(input.mouse2)
+        v_mouseMiddleNudged = input.isJustPressed(input.mouse2)
+        v_mouseMiddleScroll = int(input.isJustPressed(input.mouse_up)) - int(input.isJustPressed(input.mouse_down));
 
         v_mouseLeftReleased = v_mouseLeftDown && !input.isPressed(input.mouse1)
         v_mouseLeftDown = input.isPressed(input.mouse1)
@@ -294,6 +296,8 @@ fn end*() {
                 }
         }
 
+
+
         if v_mouseLeftNudged {
                 groupIndex := getActiveGroup()
                 if groupIndex >= 0 { 
@@ -334,12 +338,16 @@ fn end*() {
                         canvas.drawRect(th.black&0x22, r)
                 } else {
                         // Scroll tab bar
-                        if groupIndex == getActiveGroup() && v_mouseRightNudged && rectInPoint(titlebarRect, input.getMousePos()) {
-                                group.scrolling = true
+                        if groupIndex == getActiveGroup() && rectInPoint(titlebarRect, input.getMousePos()) {
+                                if v_mouseMiddleNudged {
+                                        group.scrolling = true
+                                }
+                                group.tabScroll += v_mouseMiddleScroll * 10
                         }
-                        if !v_mouseRightDown {
+                        if !v_mouseMiddleDown {
                                 group.scrolling = false
                         }
+
                         if group.scrolling {
                                 group.tabScroll += v_mouseDelta.x
                         }
