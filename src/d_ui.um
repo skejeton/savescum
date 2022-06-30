@@ -17,6 +17,13 @@ type (
                 tabScroll: real //horizontal scroll offset 
                 scrolling: bool
         }
+
+        Cutting = int
+
+        RectCut = struct {
+                rectStack: []rect.Rect
+                side: int
+        }
         
         GroupHoverInfo = int
 
@@ -40,6 +47,11 @@ type (
 )
 
 const (
+        cuttingLeft = Cutting(0)
+        cuttingRight = Cutting(1)
+        cuttingTop = Cutting(2)
+        cuttingBottom = Cutting(3)
+
         groupHoverInfoNone = GroupHoverInfo(0)
         groupHoverInfoOnBody = GroupHoverInfo(1)
         groupHoverInfoOnTitlebar = GroupHoverInfo(2)
@@ -76,6 +88,30 @@ fn rectInset(r: rect.Rect, by: real): rect.Rect {
 
 fn rectMove(r: rect.Rect, by: th.Vf2): rect.Rect {
         return rect.Rect{r.x+by.x, r.y+by.y, r.w, r.h}
+}
+
+///////////////////////
+// Cutting
+fn cuttingCut(c: Cutting, r: ^rect.Rect, req: th.Vf2): rect.Rect {
+        result := rect.Rect{-1e7, -1e7, 0, 0}
+        switch c {
+        case cuttingLeft:
+                result = rect.mk(r.x, r.y, req.x, r.h)
+                r.x += req.x;
+                r.w -= req.x;
+        case cuttingRight:
+                result = rect.mk(r.x+r.w-req.x, r.y, req.x, r.h)
+                r.w -= req.x;
+        case cuttingTop:
+                result = rect.mk(r.x, r.y, r.w, req.y)
+                r.y += req.y;
+                r.h -= req.y;
+        case cuttingBottom:
+                result = rect.mk(r.x, r.y+r.h-req.y, r.w, req.y)
+                r.h -= req.y;
+        }
+        return result
+
 }
 
 ///////////////////////
@@ -409,6 +445,24 @@ fn end*() {
 
                 group.current = newCurrent
         }
+
+
+        {
+                testRect := rect.mk(50, 50, 250, 250)
+                
+                rects := []rect.Rect{
+                        cuttingCut(cuttingLeft, &testRect, th.Vf2{64, 64}),
+                        cuttingCut(cuttingTop, &testRect, th.Vf2{64, 64}),
+                        cuttingCut(cuttingRight, &testRect, th.Vf2{64, 64}),
+                        cuttingCut(cuttingBottom, &testRect, th.Vf2{64, 64})}
+                colors := []uint32{th.red, th.green, th.yellow, th.magenta}
+
+                canvas.drawRect(th.blue, testRect)
+                for i := 0; i < len(rects); i++ {
+                        canvas.drawRect(colors[i], rects[i])
+                }
+        }
+
 }
 
 fn setJoinWindows*(set: bool) {
