@@ -462,23 +462,10 @@ fn end*() {
                         return th.Vf2{64, 64}.add(th.Vf2{std.rand()%32-16, std.rand()%32-16})
                 }
 
-                i := th.time/1000
-
-
-
-                rects := []rect.Rect{
-                        cuttingCut(sv(i+0), &testRect, rv(i+0)),
-                        cuttingCut(sv(i+1), &testRect, rv(i+1)),
-                        cuttingCut(sv(i+2), &testRect, rv(i+2)),
-                        cuttingCut(sv(i+3), &testRect, rv(i+3)),
-                        cuttingCut(sv(i+4), &testRect, rv(i+4)),
-                        cuttingCut(sv(i+5), &testRect, rv(i+5)),
-                        cuttingCut(sv(i+6), &testRect, rv(i+6)),
-                        cuttingCut(sv(i+7), &testRect, rv(i+7))}
+                c := th.time/1000
                 colors := []uint32{th.red, th.green, th.yellow, th.magenta, th.black, th.white, th.blue, th.cyan}
-
-                for i := 0; i < len(rects); i++ {
-                        canvas.drawRect(colors[i], rects[i])
+                for i := 0; i < len(colors); i++ {
+                        canvas.drawRect(colors[i], cuttingCut(sv(i+c), &testRect, rv(i+c)))
                 }
                 canvas.drawRect(0x777777FF, testRect)
         }
