@@ -1,4 +1,5 @@
 import (
+        "std.um"
         "th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
         "d_font.um"; "d_util.um"; 
 )
@@ -448,19 +449,38 @@ fn end*() {
 
 
         {
-                testRect := rect.mk(50, 50, 250, 250)
+                testRect := rect.mk(0, 0, 400, 400)
                 
-                rects := []rect.Rect{
-                        cuttingCut(cuttingLeft, &testRect, th.Vf2{64, 64}),
-                        cuttingCut(cuttingTop, &testRect, th.Vf2{64, 64}),
-                        cuttingCut(cuttingRight, &testRect, th.Vf2{64, 64}),
-                        cuttingCut(cuttingBottom, &testRect, th.Vf2{64, 64})}
-                colors := []uint32{th.red, th.green, th.yellow, th.magenta}
 
-                canvas.drawRect(th.blue, testRect)
+                sv := fn(i: int): Cutting {
+                        std.srand(i)
+                        return []Cutting{cuttingLeft, cuttingRight, cuttingTop, cuttingBottom}[(std.rand()>>5)%4]
+                }
+
+                rv := fn(i: int): th.Vf2 {
+                        std.srand(i)
+                        return th.Vf2{64, 64}.add(th.Vf2{std.rand()%32-16, std.rand()%32-16})
+                }
+
+                i := th.time/1000
+
+
+
+                rects := []rect.Rect{
+                        cuttingCut(sv(i+0), &testRect, rv(i+0)),
+                        cuttingCut(sv(i+1), &testRect, rv(i+1)),
+                        cuttingCut(sv(i+2), &testRect, rv(i+2)),
+                        cuttingCut(sv(i+3), &testRect, rv(i+3)),
+                        cuttingCut(sv(i+4), &testRect, rv(i+4)),
+                        cuttingCut(sv(i+5), &testRect, rv(i+5)),
+                        cuttingCut(sv(i+6), &testRect, rv(i+6)),
+                        cuttingCut(sv(i+7), &testRect, rv(i+7))}
+                colors := []uint32{th.red, th.green, th.yellow, th.magenta, th.black, th.white, th.blue, th.cyan}
+
                 for i := 0; i < len(rects); i++ {
                         canvas.drawRect(colors[i], rects[i])
                 }
+                canvas.drawRect(0x777777FF, testRect)
         }
 
 }
