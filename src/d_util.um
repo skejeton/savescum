@@ -23,8 +23,8 @@ fn readFileStr*(path: str): str {
         std.fread(file, buffer)
         data := ""
         
-        for b in buffer {
-                data += char(b)
+        for i in buffer {
+                data += char(buffer[i])
         }
         
         return data

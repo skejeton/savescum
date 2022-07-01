@@ -176,7 +176,7 @@ fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
         dst := zone.stack[dstIdx]
         src := zone.stack[srcIdx]
 
-        for win in src.windows {
+        for i, win in src.windows {
                 zone.groups[win.title] = dst
                 dst.windows = append(dst.windows, win)
         }

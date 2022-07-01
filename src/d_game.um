@@ -250,7 +250,7 @@ fn entConstructColidingSolids(ent: ^Character): []Shape {
         solids := []Shape{}
         nonBlockSolids := []Shape{}
 
-        for tangent in tangents {
+        for i, tangent in tangents {
                 shapeRect := rect.Rect{tangent.x*world.tileset.tileSizeX, tangent.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY} 
                 shapeType := -1
 
@@ -295,7 +295,7 @@ fn entConstructColidingSolids(ent: ^Character): []Shape {
 fn entSolveCollision(ent: ^Character) {
         solids := entConstructColidingSolids(ent)
 
-        for solid in solids {
+        for i, solid in solids {
                 entVsShape(ent, solid)
         }
 }
@@ -304,7 +304,7 @@ fn drawRectTangents(r: rect.Rect) {
         solids := entConstructColidingSolids(&chara)
 
         i := 0
-        for solid in solids {
+        for i, solid in solids {
                 rec := cameraOffsetRect(solid.rect)
                 switch solid.shape {
                 case shapeBlock:

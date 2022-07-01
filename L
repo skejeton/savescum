@@ -12,6 +12,11 @@ case $1 in
                         TEST_PFX="%d/" ../../tophat check main "$d/main.um"
                 done
         ;;
+        testall)
+                for d in test/*; do
+                        ./L test `basename $d`
+                done
+        ;;
         test)
                 if [ -z "$2" ]; then
                         echo -e "Specify the test. \n$0 $1 test_name" 

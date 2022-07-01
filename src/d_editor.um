@@ -1,6 +1,6 @@
 import (
         "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"; "csv.um"
-        "utf8.um"; "map.um"; 
+        "utf8.um"; 
         "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"; "d_script.um"; "d_font.um"
 )
 
@@ -172,8 +172,8 @@ fn saveMap() {
         }
         dataStr := world.save()
         data := make([]uint8, 0)
-        for c in dataStr {
-                data = append(data, uint8(c))
+        for i in dataStr {
+                data = append(data, uint8(dataStr[i]))
         }
         std.fwrite(file, data)
         std.fclose(file)
@@ -191,8 +191,8 @@ fn loadMap() {
         std.fread(file, buffer)
         data := ""
         
-        for b in buffer {
-                data += char(b)
+        for i in buffer {
+                data += char(buffer[i])
         }
         
         world.load(data)
@@ -211,7 +211,7 @@ fn drawLayerIcon(x, y: real) {
 
         x += 26
 
-        for l in fills {
+        for i, l in fills {
                 rec := rect.Rect{x-20, y, 20, 12}
                 x -= 2
                 y += 4

@@ -1,5 +1,5 @@
 import (
-        "th.um"; "rect.um"; "image.um"; "map.um"; "utf8.um"
+        "th.um"; "rect.um"; "image.um"; "utf8.um"
 )
 
 type (

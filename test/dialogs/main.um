@@ -27,7 +27,7 @@ fn main() {
 
         personas := t_preset.getPersonas()
 
-        for persona in personas {
+        for i, persona in personas {
                 dialogs.register(persona.name, d_pfx.pfx()+persona.box, persona.boxY, d_pfx.pfx()+persona.image, persona.imageY, persona.font, persona.fontH, persona.fontColor, persona.speed, persona.emotes)
         }
 

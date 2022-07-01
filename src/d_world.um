@@ -7,7 +7,7 @@
 //               1: the foreground layer, this is drawn over the character, no collision checks  
 
 import (
-        "image.um"; "map.um"; "th.um"; "std.um"; "csv.um"; "rect.um"
+        "image.um"; "th.um"; "std.um"; "csv.um"; "rect.um"
         "d_util.um"; "d_tileset.um"
 )
 
@@ -141,7 +141,8 @@ fn (world: ^World) save*(): str {
 
         // Start from -1, because that's the background layer, which maps to index 0
         layerNo := -1
-        for layer in world.tilemap {
+        for i in world.tilemap {
+                layer := &world.tilemap[i]
                 for pos, chunk in layer { 
                         data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y), std.itoa(layerNo)})
                         

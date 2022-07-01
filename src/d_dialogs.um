@@ -1,4 +1,4 @@
-import ("std.um"; "map.um"; "utf8.um"; "image.um"; "th.um"; "rect.um"; "canvas.um"; "window.um"
+import ("std.um"; "utf8.um"; "image.um"; "th.um"; "rect.um"; "canvas.um"; "window.um"
         "d_font.um"; "d_util.um"; "d_typer.um")
 
 type (
@@ -193,7 +193,7 @@ fn (d: ^Dialogs) advance*(press: bool) {
 }
 
 fn (d: ^Dialogs) update*() {
-        for x, _ in d.list {
+        for x in d.list {
                 dialog := &d.list[x]
 
                 dialog.appearTimer += th.delta/1000.0;
@@ -214,7 +214,7 @@ fn (d: ^Dialogs) update*() {
 }
 
 fn (d: ^Dialogs) draw*() {
-        for x, _ in d.list {
+        for x in d.list {
                 prevPos := d.list[x].position
                 d.list[x].position = d.list[x].position.sub(d.camera)
                 d.list[x].draw()

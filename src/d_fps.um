@@ -8,8 +8,8 @@ var (
 
 fn avgFps() {
         fps = 0
-        for i in record {
-                fps += i
+        for i, datum in record {
+                fps += datum
         }
         fps /= 60
 }

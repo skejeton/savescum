@@ -10,7 +10,7 @@ fn main() {
         ts := []T{T{0, 0}, T{2, 2}, T{1, 0}, T{5, 5}, T{0, 4}}
         
         for window.cycle(screen) {
-                for t in ts {
+                for _, t in ts {
                         tileset.selectTile(t.x, t.y)
                         tileset.image.draw(d_util.posTrans(t.x*32, t.y*32))
                         d_util.drawRectLines(th.red, rect.Rect{t.x*32, t.y*32, 32, 32})
