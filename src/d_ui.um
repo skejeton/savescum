@@ -11,6 +11,7 @@ type (
         }
 
         Group = struct {
+                index: int
                 windows: []Window
                 current: uint
                 rect: rect.Rect
@@ -45,7 +46,87 @@ type (
                 held: bool
                 relased: bool
         }
+
+        DrawCommand = struct {
+                color: uint32
+                rect: rect.Rect
+                text: str
+        }
+
+        DrawLayer = struct {
+                commands: []DrawCommand
+                index: int // Layer ordering for sorting
+        }
+
+        DrawCtx = struct {
+                layers: []DrawLayer 
+        }
 )
+
+fn layerFromCommand(index: int, cmd: DrawCommand): DrawLayer {
+        return DrawLayer{index: index, commands: []DrawCommand{cmd}}
+}
+
+fn drawCtxInit(): DrawCtx {
+        return DrawCtx{layers: []DrawLayer{}}
+}
+
+fn (lay: ^DrawLayer) putCommand(cmd: DrawCommand) {
+        lay.commands = append(lay.commands, cmd);
+}
+
+fn (ctx: ^DrawCtx) clear() {
+        ctx.layers = []DrawLayer{}
+}
+
+fn (ctx: ^DrawCtx) putCommand(index: int, cmd: DrawCommand) {
+        pushIndex := 0
+
+        for i in ctx.layers {
+                if ctx.layers[i].index > index {
+                        break
+                }
+                if ctx.layers[i].index == index { // found exact layer
+                        ctx.layers[i].putCommand(cmd)
+                        return
+                }
+                pushIndex += 1
+        }
+
+        if pushIndex == len(ctx.layers) {
+                ctx.layers = append(ctx.layers, layerFromCommand(index, cmd))
+        } else {
+                newLayers := make([]DrawLayer, 0)
+                for i in ctx.layers {
+                        if i == pushIndex {
+                                newLayers = append(newLayers, layerFromCommand(index, cmd))
+                        }
+                        newLayers = append(newLayers, ctx.layers[i])
+                }
+                ctx.layers = newLayers
+        }
+}
+
+fn (ctx: ^DrawCtx) render(font: d_font.Font) {
+        for i in ctx.layers {
+                layer := &ctx.layers[i]
+                for j, cmd in layer.commands {
+                        if cmd.text != "" { // draw text
+                                printf("TODO")
+                        } else { // draw rect
+                                canvas.drawRect(cmd.color, cmd.rect)
+                        }
+                }
+        }
+}
+
+fn commandRect(color: uint32, r: rect.Rect): DrawCommand {
+        return DrawCommand{color: color, rect: r, text: ""}
+}
+
+fn commandText(color: uint32, r: rect.Rect, t: str): DrawCommand {
+        return DrawCommand{color: color, rect: r, text: t}
+}
 
 const (
         cuttingLeft = Cutting(0)
@@ -60,6 +141,7 @@ const (
 
 var (
         v_font: d_font.Font
+        v_drawCtx: DrawCtx
         
         v_groupZone: GroupZone
         v_lastGroup: ^Group
@@ -162,11 +244,24 @@ fn groupZoneAcquire(zone: ^GroupZone, title: str, r: rect.Rect): ^Group {
                         zone.groups[title] = newGroup
                         group = zone.groups[title]
                         zone.firstJoin = false
+                        newGroup.index = len(zone.stack)
                         zone.stack = append(zone.stack, newGroup)
                 }
         }
         
         return group
+}
+
+fn groupZoneMoveToFront(zone: ^GroupZone, groupIndex: int): int {
+        group := zone.stack[groupIndex]
+        zone.stack = delete(zone.stack, groupIndex)
+        zone.stack = append(zone.stack, group)
+
+        for i in zone.stack { // reassign correct window indices
+                zone.stack[i].index = i
+        }
+
+        return group.index
 }
 
 fn groupZoneSetJoin(zone: ^GroupZone, set: bool) {
@@ -191,6 +286,7 @@ fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
 fn init*(font: d_font.Font) {
         v_font = font
         v_groupZone = groupZoneInit()
+        v_drawCtx = drawCtxInit()
 }
 
 fn begin*() {
@@ -345,10 +441,7 @@ fn end*() {
                 if groupIndex >= 0 { 
                         group := v_groupZone.stack[groupIndex]
                         if !group.scrolling {
-                                v_groupZone.stack = delete(v_groupZone.stack, groupIndex)
-                                v_groupZone.stack = append(v_groupZone.stack, group)
-                                        
-                                v_groupDraggingIndex = len(v_groupZone.stack)-1
+                                v_groupDraggingIndex = groupZoneMoveToFront(&v_groupZone, groupIndex)
                         }
                 }
         }
@@ -363,6 +456,9 @@ fn end*() {
                         }
                 }
         }
+
+        v_drawCtx.render(v_font)
+        v_drawCtx.clear()
 }
 
 fn setJoinWindows*(set: bool) {
@@ -389,9 +485,9 @@ fn drawGroup(group: ^Group) {
         )
 
         r := group.rect
-        canvas.drawRect(c_shadow, rectMove(rectInset(r, 2), th.Vf2{0, 1}))
-        canvas.drawRect(c_body, r)
-        canvas.drawRect(c_decor, getWindowDecorationRectFromRect(r))
+        v_drawCtx.putCommand(group.index, commandRect(c_shadow, rectMove(rectInset(r, 2), th.Vf2{0, 1})))
+        v_drawCtx.putCommand(group.index, commandRect(c_body, r))
+        v_drawCtx.putCommand(group.index, commandRect(c_decor, getWindowDecorationRectFromRect(r)))
 }
 
 fn beginWindow*(title: str, r: rect.Rect) {
