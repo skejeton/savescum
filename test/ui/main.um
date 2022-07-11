@@ -19,6 +19,8 @@ fn main() {
 
                 d_ui.setJoinWindows(true)
                 d_ui.beginWindow("Toolbox", rect.Rect{80, 80, 200, 300})
+                d_ui.putButton("Chips ahoy");
+
                 d_ui.beginWindow("Million dollars", rect.Rect{40, 40, 200, 300})
                 d_ui.setJoinWindows(false)
 
