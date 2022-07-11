@@ -112,7 +112,8 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
                 layer := &ctx.layers[i]
                 for j, cmd in layer.commands {
                         if cmd.text != "" { // draw text
-                                printf("TODO")
+                                size := font.measure(cmd.text)
+                                font.draw(cmd.text, th.Vf2{cmd.rect.x+(cmd.rect.w-size.x)/2, cmd.rect.y+(cmd.rect.h-size.y)/2}, cmd.color)
                         } else { // draw rect
                                 canvas.drawRect(cmd.color, cmd.rect)
                         }
@@ -129,6 +130,11 @@ fn commandText(color: uint32, r: rect.Rect, t: str): DrawCommand {
 }
 
 const (
+        c_shadow = 0x00000022
+        c_decor = 0xAA5555FF
+        c_item = 0x993333FF
+        c_body = th.white
+
         cuttingLeft = Cutting(0)
         cuttingRight = Cutting(1)
         cuttingTop = Cutting(2)
@@ -346,6 +352,12 @@ fn getWindowDecorationRectFromRect(r: rect.Rect): rect.Rect {
         return rect.mk(r.x, r.y, r.w, v_font.height + 4)
 }
 
+fn getWindowContentRectFromRect(r: rect.Rect): rect.Rect {
+        deco := getWindowDecorationRectFromRect(r)
+        r.y += deco.h
+        return rectInset(r, -1)
+}
+
 fn getGroupHoverInfo(group: ^Group): GroupHoverInfo {
         titlebarRect := getWindowDecorationRectFromRect(group.rect)
         
@@ -478,11 +490,7 @@ fn getLastWindowRect(): ^rect.Rect {
 }
 
 fn drawGroup(group: ^Group) {
-        const (
-                c_shadow = 0x00000022
-                c_decor = 0xAA5555FF
-                c_body = th.white
-        )
+
 
         r := group.rect
         v_drawCtx.putCommand(group.index, commandRect(c_shadow, rectMove(rectInset(r, 2), th.Vf2{0, 1})))
@@ -502,9 +510,11 @@ fn beginWindow*(title: str, r: rect.Rect) {
 }
 
 fn putButton*(text: str) {
-        r := getLastWindowRect()
-        if r == null {
-
+        if r := getLastWindowRect(); r != null {
+                windowRect := getWindowContentRectFromRect(r^)
+                buttonRect := cuttingCut(cuttingTop, &windowRect, th.Vf2{0, v_font.height})
+                v_drawCtx.putCommand(v_lastGroup.index, commandRect(c_item, buttonRect))
+                v_drawCtx.putCommand(v_lastGroup.index, commandText(c_body, buttonRect, text))
         }
 }
 
