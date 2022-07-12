@@ -22,11 +22,6 @@ type (
 
         Cutting = int
 
-        RectCut = struct {
-                rectStack: []rect.Rect
-                side: int
-        }
-        
         GroupHoverInfo = int
 
         VisibleTab = struct {
@@ -61,6 +56,20 @@ type (
         DrawCtx = struct {
                 layers: []DrawLayer 
         }
+
+        Layout = struct {
+                index: int
+                rect: rect.Rect
+                cutter: Cutting
+                ctx: ^DrawCtx
+        }
+)
+
+const (
+        cuttingLeft = Cutting(0)
+        cuttingRight = Cutting(1)
+        cuttingTop = Cutting(2)
+        cuttingBottom = Cutting(3)
 )
 
 fn layerFromCommand(index: int, cmd: DrawCommand): DrawLayer {
@@ -69,6 +78,14 @@ fn layerFromCommand(index: int, cmd: DrawCommand): DrawLayer {
 
 fn drawCtxInit(): DrawCtx {
         return DrawCtx{layers: []DrawLayer{}}
+}
+
+fn commandRect(color: uint32, r: rect.Rect): DrawCommand {
+        return DrawCommand{color: color, rect: r, text: ""}
+}
+
+fn commandText(color: uint32, r: rect.Rect, t: str): DrawCommand {
+        return DrawCommand{color: color, rect: r, text: t}
 }
 
 fn (lay: ^DrawLayer) putCommand(cmd: DrawCommand) {
@@ -121,48 +138,6 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
         }
 }
 
-fn commandRect(color: uint32, r: rect.Rect): DrawCommand {
-        return DrawCommand{color: color, rect: r, text: ""}
-}
-
-fn commandText(color: uint32, r: rect.Rect, t: str): DrawCommand {
-        return DrawCommand{color: color, rect: r, text: t}
-}
-
-const (
-        c_shadow = 0x00000022
-        c_decor = 0xAA5555FF
-        c_item = 0x993333FF
-        c_body = th.white
-
-        cuttingLeft = Cutting(0)
-        cuttingRight = Cutting(1)
-        cuttingTop = Cutting(2)
-        cuttingBottom = Cutting(3)
-
-        groupHoverInfoNone = GroupHoverInfo(0)
-        groupHoverInfoOnBody = GroupHoverInfo(1)
-        groupHoverInfoOnTitlebar = GroupHoverInfo(2)
-)
-
-var (
-        v_font: d_font.Font
-        v_drawCtx: DrawCtx
-        
-        v_groupZone: GroupZone
-        v_lastGroup: ^Group
-        v_lastWindow: str
-
-        v_mousePos: th.Vf2
-        v_mouseDelta: th.Vf2
-        v_mouseMiddleDown: bool
-        v_mouseMiddleNudged: bool
-        v_mouseMiddleScroll: int
-        v_mouseLeftDown: bool
-        v_mouseLeftNudged: bool
-        v_mouseLeftReleased: bool
-
-
 ///////////////////////
 // Utility
 fn rectInPoint(r: rect.Rect, p: th.Vf2): bool {
@@ -170,7 +145,7 @@ fn rectInPoint(r: rect.Rect, p: th.Vf2): bool {
 }
 
 fn rectInset(r: rect.Rect, by: real): rect.Rect {
-        return rect.mk(r.x+by, r.y+by, r.y-by*2, r.h-by*2)
+        return rect.mk(r.x+by, r.y+by, r.w-by*2, r.h-by*2)
 }
 
 fn rectMove(r: rect.Rect, by: th.Vf2): rect.Rect {
@@ -284,6 +259,51 @@ fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
 }
 
 ///////////////////////
+// Layout
+fn layoutInit(ctx: ^DrawCtx, index: int, cutter: Cutting = cuttingLeft, r: rect.Rect = rect.Rect{0, 0, 0, 0}): Layout {
+        return Layout{ctx: ctx, cutter: cutter, rect: r, index: index}
+}
+
+fn (lay: ^Layout) getRect(reqSize: th.Vf2): rect.Rect {
+        return cuttingCut(lay.cutter, &lay.rect, reqSize)
+}
+
+fn (lay: ^Layout) putCommand(cmd: DrawCommand) {
+        lay.ctx.putCommand(lay.index, cmd)
+}
+
+
+const (
+        c_shadow = 0x00000022
+        c_decor = 0xAA5555FF
+        c_item = 0x993333FF
+        c_body = th.white
+
+        groupHoverInfoNone = GroupHoverInfo(0)
+        groupHoverInfoOnBody = GroupHoverInfo(1)
+        groupHoverInfoOnTitlebar = GroupHoverInfo(2)
+)
+
+var (
+        v_font: d_font.Font
+        v_drawCtx: DrawCtx
+        
+        v_groupZone: GroupZone
+        v_lastGroup: ^Group
+        v_lastWindow: str
+
+        v_mousePos: th.Vf2
+        v_mouseDelta: th.Vf2
+        v_mouseMiddleDown: bool
+        v_mouseMiddleNudged: bool
+        v_mouseMiddleScroll: int
+        v_mouseLeftDown: bool
+        v_mouseLeftNudged: bool
+        v_mouseLeftReleased: bool
+)
+
+
+///////////////////////
 // UI
 fn init*(font: d_font.Font) {
         v_font = font
@@ -327,37 +347,53 @@ fn setJoinWindows*(set: bool) {
         groupZoneSetJoin(&v_groupZone, set)
 }
 
-fn getLastWindowRect(): ^rect.Rect {
+fn isLastWindowVisible(): bool {
         if (v_lastGroup == null) {
-                return null
+                return false
         }
 
-        if (v_lastWindow == v_lastGroup.windows[v_lastGroup.current].title) {
-                return null
+        if (v_lastWindow != v_lastGroup.windows[v_lastGroup.current].title) {
+                return false
         }  
 
-        return &v_lastGroup.rect
+        return true
+}
+
+fn getLastWindowContentRect(): rect.Rect {
+        if isLastWindowVisible() {
+                return getWindowContentRectFromRect(v_lastGroup.rect);
+        }
+
+        error("Last window wasn't visible");
+        return rect.mk(0, 0, 0, 0)
+}
+
+fn _putButton(lay: ^Layout, text: str) {
+        size := v_font.measure(text) 
+        size.x += 10 // padding
+        buttonRect := lay.getRect(size)
+        lay.putCommand(commandRect(c_item, buttonRect))
+        lay.putCommand(commandText(c_body, buttonRect, text))
+        lay.getRect(th.Vf2{1, 1}) // padding
 }
 
 fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
+
         windowRect := group.rect
         contentRect := getWindowContentRectFromRect(group.rect)
         titlebarRect := getWindowDecorationRectFromRect(group.rect)
 
-        ctx.putCommand(group.index, commandRect(c_shadow, rectMove(rectInset(windowRect, -1), th.Vf2{0, 1})))
-        ctx.putCommand(group.index, commandRect(c_decor, windowRect))
-        ctx.putCommand(group.index, commandRect(c_body, contentRect))
+        lay := layoutInit(ctx, group.index)
+
+        lay.putCommand(commandRect(c_shadow, rectMove(rectInset(windowRect, -1), th.Vf2{0, 1})))
+        lay.putCommand(commandRect(c_decor, windowRect))
+        lay.putCommand(commandRect(c_body, contentRect))
+
+        lay.rect = titlebarRect
 
         for i, w in group.windows {
-                text := w.title
-                size := v_font.measure(text)
-                size.x += 10
-                buttonRect := cuttingCut(cuttingLeft, &titlebarRect, size)
-                ctx.putCommand(group.index, commandRect(c_item, buttonRect))
-                ctx.putCommand(group.index, commandText(c_body, buttonRect, text))
-                cuttingCut(cuttingLeft, &titlebarRect, th.Vf2{1, 0})
+                _putButton(&lay, w.title)
         }
-
 }
 
 fn beginWindow*(title: str, r: rect.Rect) {
@@ -366,17 +402,14 @@ fn beginWindow*(title: str, r: rect.Rect) {
 
         // Prevent drawing the group multiple times by checking if
         // the current window is the one displayed in the group.
-        if getLastWindowRect() != null {
+        if isLastWindowVisible() {
                 drawGroup(&v_drawCtx, v_lastGroup);
         }
 }
 
 fn putButton*(text: str) {
-        if r := getLastWindowRect(); r != null {
-                contentRect := getWindowContentRectFromRect(r^)
-                buttonRect := cuttingCut(cuttingTop, &contentRect, th.Vf2{0, v_font.height})
-                v_drawCtx.putCommand(v_lastGroup.index, commandRect(c_item, buttonRect))
-                v_drawCtx.putCommand(v_lastGroup.index, commandText(c_body, buttonRect, text))
+        if isLastWindowVisible() {
+                _putButton(&layoutInit(&v_drawCtx, v_lastGroup.index, cuttingTop, getLastWindowContentRect()), text)
         }
 }
 
