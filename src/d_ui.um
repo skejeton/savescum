@@ -162,10 +162,6 @@ var (
         v_mouseLeftNudged: bool
         v_mouseLeftReleased: bool
 
-        v_groupDraggingIndex: int = -1
-        v_groupDockingCandidateIndex: int = -1
-        v_windowDetachCandidateName: str
-)
 
 ///////////////////////
 // Utility
@@ -174,7 +170,7 @@ fn rectInPoint(r: rect.Rect, p: th.Vf2): bool {
 }
 
 fn rectInset(r: rect.Rect, by: real): rect.Rect {
-        return rect.mk(r.x-by, r.y-by, r.w+by*2, r.h+by*2)
+        return rect.mk(r.x+by, r.y+by, r.y-by*2, r.h-by*2)
 }
 
 fn rectMove(r: rect.Rect, by: th.Vf2): rect.Rect {
@@ -311,43 +307,6 @@ fn begin*() {
         groupZoneSetJoin(&v_groupZone, false)
 }
 
-fn createInputState(hovered: bool): InputState {
-        return InputState{relased: hovered && v_mouseLeftReleased, nudged: hovered && v_mouseLeftNudged, held: hovered && v_mouseLeftDown}
-}
-
-fn drawButton(pos: ^th.Vf2, text: str, toggled: bool, canHover: bool, baseColor: uint32, padding: th.Vf2 = th.Vf2{10, 2}): InputState {
-        textSize := v_font.measure(text)
-        r := rect.Rect{pos.x, pos.y, textSize.x + padding.x*2, textSize.y + padding.y*2}
-        hovered := rectInPoint(r, v_mousePos) && canHover
-        pressed := hovered && v_mouseLeftDown
-        
-        if pressed {
-                canvas.drawRect(baseColor | 0x44444400, r)
-        } else if toggled {
-                canvas.drawRect(baseColor | 0x33333300, r)
-        } else if hovered {
-                canvas.drawRect(baseColor | 0x22222200, r)
-        } else {
-                canvas.drawRect(baseColor, r)
-        }
-
-
-        v_font.draw(text, pos.add(padding), th.white)
-
-        pos.x += r.w+1
-
-        return createInputState(hovered)
-}
-
-fn getActiveGroup(): int {
-        for i := len(v_groupZone.stack)-1; i >= 0; i-- {
-                if rectInPoint(v_groupZone.stack[i].rect, v_mousePos) {
-                        return i
-                }
-        }
-        return -1
-}
-
 fn getWindowDecorationRectFromRect(r: rect.Rect): rect.Rect {
         return rect.mk(r.x, r.y, r.w, v_font.height + 4)
 }
@@ -355,120 +314,11 @@ fn getWindowDecorationRectFromRect(r: rect.Rect): rect.Rect {
 fn getWindowContentRectFromRect(r: rect.Rect): rect.Rect {
         deco := getWindowDecorationRectFromRect(r)
         r.y += deco.h
-        return rectInset(r, -1)
-}
-
-fn getGroupHoverInfo(group: ^Group): GroupHoverInfo {
-        titlebarRect := getWindowDecorationRectFromRect(group.rect)
-        
-        if rectInPoint(titlebarRect, input.getMousePos()) {
-                return groupHoverInfoOnTitlebar
-        } else if rectInPoint(group.rect, input.getMousePos()) {
-                return groupHoverInfoOnBody
-        } 
-        return groupHoverInfoNone
-}
-
-fn isValidGroupDocking(group_a: ^Group, group_b: ^Group): bool {
-        return getGroupHoverInfo(group_a) == groupHoverInfoOnTitlebar && getGroupHoverInfo(group_b) == groupHoverInfoOnTitlebar       
-}
-
-fn isDocking(): bool {
-        return v_groupDraggingIndex >= 0 && v_groupDockingCandidateIndex >= 0 && isValidGroupDocking(v_groupZone.stack[v_groupDraggingIndex], v_groupZone.stack[v_groupDockingCandidateIndex])
-}
-
-fn convertWindowListToVisibleTabs(list: []Window, ghost: bool): []VisibleTab {
-        result := make([]VisibleTab, len(list))
-        for i, win in list {
-                result[i].title = win.title
-                result[i].ghost = ghost
-        }
-        return result
-}
-
-fn getGroupVisibleTabs(groupIndex: int): []VisibleTab {
-        tabs := convertWindowListToVisibleTabs(v_groupZone.stack[groupIndex].windows, false)
-
-        if v_groupDraggingIndex >= 0 && v_groupDockingCandidateIndex == groupIndex && isDocking() {
-                tabs = append(tabs, convertWindowListToVisibleTabs(v_groupZone.stack[v_groupDraggingIndex].windows, true))
-        }
-        
-        return tabs
+        r.h -= deco.h
+        return rectInset(r, 1)
 }
 
 fn end*() {
-        // Move windows
-        if !v_mouseLeftDown {
-                // Finalize docking
-                if isDocking() {
-                        groupZoneDockGroups(&v_groupZone, v_groupDraggingIndex, v_groupDockingCandidateIndex)
-                }
-                v_windowDetachCandidateName = ""
-                v_groupDraggingIndex = -1
-        }
- 
-        if v_windowDetachCandidateName != "" {
-                v_groupDraggingIndex = -1
-        }
-
-        if v_groupDraggingIndex >= 0 {
-                // Apply drag
-                group := v_groupZone.stack[v_groupDraggingIndex]
-
-                group.rect.x += v_mouseDelta.x
-                group.rect.y += v_mouseDelta.y
-        }
-
-        if v_windowDetachCandidateName != "" && (getActiveGroup() == -1 || getGroupHoverInfo(v_groupZone.stack[getActiveGroup()]) != groupHoverInfoOnTitlebar) {
-                group := v_groupZone.groups[v_windowDetachCandidateName]
-                if group != null {
-                        removalIndex := groupGetWindowIndexByName(group, v_windowDetachCandidateName)
-
-                        // Move selected tab index accordingly
-                        if removalIndex == group.current {
-                                group.current = 0
-                        } else if removalIndex < group.current {
-                                group.current -= 1
-                        }
-
-                        if removalIndex >= 0 {
-                                removalRect := group.windows[removalIndex].rect
-                                destPos := v_mousePos.sub(th.Vf2{10, 10})
-                                removalRect.x = destPos.x
-                                removalRect.y = destPos.y
-
-                                group.windows = delete(group.windows, removalIndex)
-                                v_groupZone.groups[v_windowDetachCandidateName] = null;
-                                groupZoneAcquire(&v_groupZone, v_windowDetachCandidateName, removalRect)
-                                v_groupDraggingIndex = len(v_groupZone.stack)-1
-                                v_windowDetachCandidateName = ""
-                        }
-                }
-        }
-
-
-
-        if v_mouseLeftNudged {
-                groupIndex := getActiveGroup()
-                if groupIndex >= 0 { 
-                        group := v_groupZone.stack[groupIndex]
-                        if !group.scrolling {
-                                v_groupDraggingIndex = groupZoneMoveToFront(&v_groupZone, groupIndex)
-                        }
-                }
-        }
-
-        v_groupDockingCandidateIndex = -1
-        if v_groupDraggingIndex >= 0 {
-                // Find other docking candidates
-                for i := len(v_groupZone.stack)-1; i >= 0; i-- {
-                        if i != v_groupDraggingIndex && rectInPoint(v_groupZone.stack[i].rect, v_mousePos) {
-                                v_groupDockingCandidateIndex = i
-                                break
-                        }
-                }
-        }
-
         v_drawCtx.render(v_font)
         v_drawCtx.clear()
 }
@@ -489,13 +339,25 @@ fn getLastWindowRect(): ^rect.Rect {
         return &v_lastGroup.rect
 }
 
-fn drawGroup(group: ^Group) {
+fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
+        windowRect := group.rect
+        contentRect := getWindowContentRectFromRect(group.rect)
+        titlebarRect := getWindowDecorationRectFromRect(group.rect)
 
+        ctx.putCommand(group.index, commandRect(c_shadow, rectMove(rectInset(windowRect, -1), th.Vf2{0, 1})))
+        ctx.putCommand(group.index, commandRect(c_decor, windowRect))
+        ctx.putCommand(group.index, commandRect(c_body, contentRect))
 
-        r := group.rect
-        v_drawCtx.putCommand(group.index, commandRect(c_shadow, rectMove(rectInset(r, 2), th.Vf2{0, 1})))
-        v_drawCtx.putCommand(group.index, commandRect(c_body, r))
-        v_drawCtx.putCommand(group.index, commandRect(c_decor, getWindowDecorationRectFromRect(r)))
+        for i, w in group.windows {
+                text := w.title
+                size := v_font.measure(text)
+                size.x += 10
+                buttonRect := cuttingCut(cuttingLeft, &titlebarRect, size)
+                ctx.putCommand(group.index, commandRect(c_item, buttonRect))
+                ctx.putCommand(group.index, commandText(c_body, buttonRect, text))
+                cuttingCut(cuttingLeft, &titlebarRect, th.Vf2{1, 0})
+        }
+
 }
 
 fn beginWindow*(title: str, r: rect.Rect) {
@@ -505,14 +367,14 @@ fn beginWindow*(title: str, r: rect.Rect) {
         // Prevent drawing the group multiple times by checking if
         // the current window is the one displayed in the group.
         if getLastWindowRect() != null {
-                drawGroup(v_lastGroup);
+                drawGroup(&v_drawCtx, v_lastGroup);
         }
 }
 
 fn putButton*(text: str) {
         if r := getLastWindowRect(); r != null {
-                windowRect := getWindowContentRectFromRect(r^)
-                buttonRect := cuttingCut(cuttingTop, &windowRect, th.Vf2{0, v_font.height})
+                contentRect := getWindowContentRectFromRect(r^)
+                buttonRect := cuttingCut(cuttingTop, &contentRect, th.Vf2{0, v_font.height})
                 v_drawCtx.putCommand(v_lastGroup.index, commandRect(c_item, buttonRect))
                 v_drawCtx.putCommand(v_lastGroup.index, commandText(c_body, buttonRect, text))
         }
