@@ -22,13 +22,6 @@ type (
 
         Cutting = int
 
-        GroupHoverInfo = int
-
-        VisibleTab = struct {
-                title: str
-                ghost: bool
-        }
-
         GroupZone = struct {
                 /* base */
                 groups: map[str]^Group // Window name to group
@@ -380,10 +373,6 @@ const (
         c_decor = 0xAA5555FF
         c_item = 0x993333FF
         c_body = th.white
-
-        groupHoverInfoNone = GroupHoverInfo(0)
-        groupHoverInfoOnBody = GroupHoverInfo(1)
-        groupHoverInfoOnTitlebar = GroupHoverInfo(2)
 )
 
 var (
