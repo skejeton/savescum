@@ -30,16 +30,31 @@ type (
         }
 
         GroupZone = struct {
+                /* base */
                 groups: map[str]^Group // Window name to group
                 stack: []^Group 
                 join: bool
                 firstJoin: bool
+
+                /* ux */
+                draggingIndex: int // window currently dragging, -1 for none
+                activeIndex: int // window currently focused on, -1 for none
+        }
+
+        ButtonState = struct {
+                down: bool
+                pressed: bool
+                released: bool       
         }
 
         InputState = struct {
-                nudged: bool
-                held: bool
-                relased: bool
+                mousePos: th.Vf2
+                mouseDelta: th.Vf2
+                mouseScroll: int
+
+                mouseMiddle: ButtonState
+                mouseLeft: ButtonState
+                mouseRight: ButtonState
         }
 
         DrawCommand = struct {
@@ -63,6 +78,13 @@ type (
                 cutter: Cutting
                 ctx: ^DrawCtx
         }
+
+        SequenceLayout = struct {
+                start: th.Vf2
+                end: th.Vf2
+                lineHeight: th.fu
+                maxX: th.fu
+        }
 )
 
 const (
@@ -71,6 +93,42 @@ const (
         cuttingTop = Cutting(2)
         cuttingBottom = Cutting(3)
 )
+
+////////////////////////////
+// SequenceLayotu
+
+fn sequenceLayoutInit(pos: th.Vf2): SequenceLayout {
+        return SequenceLayout{start: pos, end: pos}
+}
+
+fn (lay: ^SequenceLayout) newLine() {
+        lay.end = th.Vf2{lay.start.x, lay.end.y + lay.lineHeight}
+        lay.lineHeight = 0
+}
+
+fn (lay: ^SequenceLayout) getRect(): rect.Rect {
+        return rect.mk(lay.start.x, lay.start.y, lay.maxX-lay.start.x, (lay.end.y-lay.start.y)+lay.lineHeight)
+}
+
+fn (lay: ^SequenceLayout) put(size: th.Vf2) {
+        if (lay.lineHeight < size.y) {
+                lay.lineHeight = size.y
+        }
+
+        lay.end.x += size.x;
+
+        if (lay.maxX < lay.end.x) {
+                lay.maxX = lay.end.x;
+        }
+}
+
+fn (lay: ^SequenceLayout) padding(by: th.fu) {
+        by = by - (trunc(lay.end.x-lay.start.x) % trunc(by))
+        lay.put(th.Vf2{by, 0})
+}
+
+/////////////////////////////
+// Draw*
 
 fn layerFromCommand(index: int, cmd: DrawCommand): DrawLayer {
         return DrawLayer{index: index, commands: []DrawCommand{cmd}}
@@ -292,14 +350,7 @@ var (
         v_lastGroup: ^Group
         v_lastWindow: str
 
-        v_mousePos: th.Vf2
-        v_mouseDelta: th.Vf2
-        v_mouseMiddleDown: bool
-        v_mouseMiddleNudged: bool
-        v_mouseMiddleScroll: int
-        v_mouseLeftDown: bool
-        v_mouseLeftNudged: bool
-        v_mouseLeftReleased: bool
+        v_inputState: InputState
 )
 
 
@@ -311,19 +362,84 @@ fn init*(font: d_font.Font) {
         v_drawCtx = drawCtxInit()
 }
 
+fn populateMouseButton(previous: ButtonState, button: char): ButtonState {
+        return ButtonState{
+                down: input.isPressed(button),
+                pressed: input.isJustPressed(button),
+                released: previous.down && !input.isPressed(button)}
+}
+
+fn populateInputState(previous: InputState): InputState {
+        var output: InputState
+
+        output.mouseLeft = populateMouseButton(previous.mouseLeft, input.mouse1);
+        output.mouseMiddle = populateMouseButton(previous.mouseMiddle, input.mouse2);
+        output.mouseRight = populateMouseButton(previous.mouseRight, input.mouse3);
+
+        output.mousePos = input.getMousePos()
+        output.mouseDelta = output.mousePos.sub(previous.mousePos)
+        output.mouseScroll = int(input.isJustPressed(input.mouse_up)) - int(input.isJustPressed(input.mouse_down));
+
+        return output
+}
+
+fn dbgPrintText(lay: ^SequenceLayout, label: str, color: uint32) {
+        size := v_font.measure(label)
+        r := rect.mk(lay.end.x, lay.end.y, size.x, size.y)
+
+        v_drawCtx.putCommand(99, commandText(color, r, label))
+        lay.put(v_font.measure(label))
+}
+
+fn dbgPrintBool(lay: ^SequenceLayout, label: str, value: bool) {
+        dbgPrintText(lay, label, [2]uint32{th.white & 0xFFFFFF99, th.green}[int(value)])
+}
+
+fn dbgPrintButtonState(lay: ^SequenceLayout, label: str, state: ButtonState) {
+        size := th.Vf2{0, 0}
+
+        dbgPrintText(lay, label, th.white);
+
+        dbgPrintBool(lay, " down ", state.down)
+        dbgPrintBool(lay, "pressed ", state.pressed)
+        dbgPrintBool(lay, "released", state.released)
+
+        lay.newLine()
+}
+
+fn dbgPrintInputState(pos: th.Vf2, state: InputState) {
+        lay := sequenceLayoutInit(pos)
+        dbgPrintButtonState(&lay, "MouseLeft", state.mouseLeft);
+        dbgPrintButtonState(&lay, "MouseMiddle", state.mouseMiddle);
+        dbgPrintButtonState(&lay, "MouseRight", state.mouseRight);
+
+        dbgPrintText(&lay, "MouseDelta", th.white);
+        dbgPrintText(&lay, "x"+std.ftoa(state.mouseDelta.x, 0), th.white & 0xFFFFFF99)
+        lay.padding(150)
+        dbgPrintText(&lay, "y"+std.ftoa(state.mouseDelta.y, 0), th.white & 0xFFFFFF99)
+        lay.newLine()
+
+        dbgPrintText(&lay, "MousePos", th.white);
+        dbgPrintText(&lay, "x"+std.ftoa(state.mousePos.x, 0), th.white & 0xFFFFFF99)
+        lay.padding(150)
+        dbgPrintText(&lay, "y"+std.ftoa(state.mousePos.y, 0), th.white & 0xFFFFFF99)
+        lay.newLine()
+
+        dbgPrintText(&lay, "MouseScroll", th.white);
+        dbgPrintText(&lay, std.itoa(state.mouseScroll), th.white & 0xFFFFFF99)
+        lay.newLine()
+
+        // make lighter on hover
+        if (rectInPoint(lay.getRect(), state.mousePos)) {
+                v_drawCtx.putCommand(98, commandRect(th.black&0x33, lay.getRect()))
+        } else {
+                v_drawCtx.putCommand(98, commandRect(th.black&0xBB, lay.getRect()))
+        }
+}
+
 fn begin*() {
-        newMousePos := input.getMousePos()
-        v_mouseDelta = newMousePos.sub(v_mousePos)
-        v_mousePos = newMousePos
-
-        v_mouseMiddleDown = input.isPressed(input.mouse2)
-        v_mouseMiddleNudged = input.isJustPressed(input.mouse2)
-        v_mouseMiddleScroll = int(input.isJustPressed(input.mouse_up)) - int(input.isJustPressed(input.mouse_down));
-
-        v_mouseLeftReleased = v_mouseLeftDown && !input.isPressed(input.mouse1)
-        v_mouseLeftDown = input.isPressed(input.mouse1)
-        v_mouseLeftNudged = input.isJustPressed(input.mouse1)
-
+        v_inputState = populateInputState(v_inputState);
+        dbgPrintInputState(th.Vf2{10, 10}, v_inputState);
         groupZoneSetJoin(&v_groupZone, false)
 }
 
