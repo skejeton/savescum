@@ -296,6 +296,20 @@ fn groupZoneMoveToFront(zone: ^GroupZone, groupIndex: int): int {
                 zone.stack[i].index = i
         }
 
+        // TODO: Do a better job at updating the indexes, or have them static instead,
+        //       Alter natively, use pointers instead.
+        if zone.activeIndex == groupIndex {
+                zone.activeIndex = group.index
+        } else if zone.activeIndex > groupIndex {
+                zone.activeIndex -= 1
+        }
+
+        if zone.draggingIndex == groupIndex {
+                zone.draggingIndex = group.index
+        } else if zone.draggingIndex > groupIndex {
+                zone.draggingIndex -= 1
+        }
+
         return group.index
 }
 
@@ -314,6 +328,36 @@ fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
         }
 
         zone.stack = delete(zone.stack, srcIdx)
+}
+
+fn groupZoneLocateActiveWindow(zone: ^GroupZone, at: th.Vf2): int {
+        id := -1
+        for i in zone.stack {
+                if rectInPoint(zone.stack[i].rect, at) {
+                        id = i
+                }
+        }
+        return id
+}
+
+fn groupZoneHandleInput(zone: ^GroupZone, inputState: InputState) {
+        zone.activeIndex = groupZoneLocateActiveWindow(zone, inputState.mousePos)
+
+        if inputState.mouseLeft.down == false  {
+                zone.draggingIndex = -1
+        }
+
+        if zone.activeIndex >= 0 {
+                if inputState.mouseLeft.pressed {
+                        zone.draggingIndex = zone.activeIndex
+                        groupZoneMoveToFront(zone, zone.draggingIndex)
+                }
+        }
+
+        // apply drag
+        if zone.draggingIndex >= 0 {
+                zone.stack[zone.draggingIndex].rect = rectMove(zone.stack[zone.draggingIndex].rect, inputState.mouseDelta)
+        }
 }
 
 ///////////////////////
@@ -431,7 +475,7 @@ fn dbgPrintInputState(pos: th.Vf2, state: InputState) {
 
         // make lighter on hover
         if (rectInPoint(lay.getRect(), state.mousePos)) {
-                v_drawCtx.putCommand(98, commandRect(th.black&0x33, lay.getRect()))
+                v_drawCtx.putCommand(98, commandRect(th.black&0x11, lay.getRect()))
         } else {
                 v_drawCtx.putCommand(98, commandRect(th.black&0xBB, lay.getRect()))
         }
@@ -439,6 +483,7 @@ fn dbgPrintInputState(pos: th.Vf2, state: InputState) {
 
 fn begin*() {
         v_inputState = populateInputState(v_inputState);
+        groupZoneHandleInput(&v_groupZone, v_inputState)
         dbgPrintInputState(th.Vf2{10, 10}, v_inputState);
         groupZoneSetJoin(&v_groupZone, false)
 }
