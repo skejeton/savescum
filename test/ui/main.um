@@ -30,6 +30,7 @@ fn main() {
                         d_ui.beginWindow("technology indeed", rect.Rect{160, 40, 250, 350})
                                 d_ui.putButton("Chips ahoy");
                         d_ui.beginWindow("Something Dumb", rect.Rect{160, 80, 230, 350})
+                        d_ui.beginWindow("Something Cool", rect.Rect{160, 80, 230, 350})
                                 d_ui.putButton("Chips ahoy");
                 d_ui.setJoinWindows(false)
 

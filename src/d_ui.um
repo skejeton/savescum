@@ -85,6 +85,9 @@ const (
         cuttingRight = Cutting(1)
         cuttingTop = Cutting(2)
         cuttingBottom = Cutting(3)
+
+        magicColorBeginScissorRect = 0x5B248E00
+        magicColorEndScissorRect = 0x896A4100
 )
 
 ////////////////////////////
@@ -135,6 +138,14 @@ fn commandRect(color: uint32, r: rect.Rect): DrawCommand {
         return DrawCommand{color: color, rect: r, text: ""}
 }
 
+fn commandBeginScissorRect(r: rect.Rect): DrawCommand {
+        return DrawCommand{color: magicColorBeginScissorRect, rect: r}
+}
+
+fn commandEndScissorRect(): DrawCommand {
+        return DrawCommand{color: magicColorEndScissorRect}
+}
+
 fn commandText(color: uint32, r: rect.Rect, t: str): DrawCommand {
         return DrawCommand{color: color, rect: r, text: t}
 }
@@ -179,7 +190,11 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
         for i in ctx.layers {
                 layer := &ctx.layers[i]
                 for j, cmd in layer.commands {
-                        if cmd.text != "" { // draw text
+                        if cmd.color == magicColorBeginScissorRect {
+                                window.beginScissorRect(cmd.rect)
+                        } else if cmd.color == magicColorEndScissorRect {
+                                window.endScissor()
+                        } else if cmd.text != "" { // draw text
                                 size := font.measure(cmd.text)
                                 font.draw(cmd.text, th.Vf2{cmd.rect.x+(cmd.rect.w-size.x)/2, cmd.rect.y+(cmd.rect.h-size.y)/2}, cmd.color)
                         } else { // draw rect
@@ -511,7 +526,7 @@ fn isLastWindowVisible(): bool {
 
 fn getLastWindowContentRect(): rect.Rect {
         if isLastWindowVisible() {
-                return getWindowContentRectFromRect(v_lastGroup.rect);
+                return rectInset(getWindowContentRectFromRect(v_lastGroup.rect), 5);
         }
 
         error("Last window wasn't visible");
@@ -535,6 +550,8 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
 
         lay := layoutInit(ctx, group.index)
 
+        lay.putCommand(commandBeginScissorRect(group.rect))
+
         lay.putCommand(commandRect(c_shadow, rectMove(rectInset(windowRect, -1), th.Vf2{0, 1})))
         lay.putCommand(commandRect(c_decor, windowRect))
         lay.putCommand(commandRect(c_body, contentRect))
@@ -544,6 +561,8 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
         for i, w in group.windows {
                 _putButton(&lay, w.title)
         }
+
+        lay.putCommand(commandEndScissorRect())
 }
 
 fn beginWindow*(title: str, r: rect.Rect) {
