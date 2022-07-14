@@ -1,32 +1,54 @@
 #!/bin/sh
 #-*- sh -*-
 
-case $1 in
+ARGS=( $@ )
+SILENT=""
+NARG=0
+PROG_NAME=$0
+
+# $1 offset
+getarg() {
+        echo ${ARGS[$NARG + $1]}
+}
+
+# $1 test name
+target_test() {
+        if [ -z "$1" ]; then
+                echo -e "Specify the test. \n$PROG_NAME test test_name" 
+                exit 1
+        elif [[ -d "test/$1" && -f "test/$1/main.um" ]]; then 
+                TEST_PFX="test/$1/" ../../tophat $SILENT main "test/$1/main.um"
+        else
+                echo "No test \"$1\"." 
+                exit 2
+        fi
+}
+
+case `getarg 0` in
+        silent)
+                NARG=1
+                SILENT=silent
+        ;; 
+esac
+
+case `getarg 0` in
         play)
-                ../../tophat main src/main.um
+                ../../tophat $SILENT main src/main.um
         ;;
         check)
-                ../../tophat check main src/main.um
+                ../../tophat $SILENT check main src/main.um
                 
                 for d in test/*; do
-                        TEST_PFX="%d/" ../../tophat check main "$d/main.um"
+                        TEST_PFX="%d/" ../../tophat $SILENT check main "$d/main.um"
                 done
         ;;
         testall)
                 for d in test/*; do
-                        ./L test `basename $d`
+                        SILENT=$SILENT ./L test `basename $d`
                 done
         ;;
         test)
-                if [ -z "$2" ]; then
-                        echo -e "Specify the test. \n$0 $1 test_name" 
-                        exit 1
-                elif [[ -d "test/$2" && -f "test/$2/main.um" ]]; then 
-                        TEST_PFX="test/$2/" ../../tophat main "test/$2/main.um"
-                else
-                        echo "No test \"$2\"." 
-                        exit 2
-                fi
+                target_test `getarg 1`
         ;;
         *)
                 echo "Use commands: test, check, play"

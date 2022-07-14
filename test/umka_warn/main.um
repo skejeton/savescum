@@ -1,0 +1,16 @@
+fn something(preempt: bool): int {
+  for true {
+    x := 42
+
+    if preempt {
+      break
+    }
+
+    return x
+  }
+  return 0
+}
+
+fn main() {
+  something(false)
+}

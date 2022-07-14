@@ -1,8 +1,9 @@
 import (
         "std.um"
         "th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
-        "d_font.um"; "d_util.um"; 
+        "d_font.um"; 
 )
+
 
 type (
         Window = struct {
@@ -30,8 +31,9 @@ type (
                 firstJoin: bool
 
                 /* ux */
-                draggingIndex: int // window currently dragging, -1 for none
-                activeIndex: int // window currently focused on, -1 for none
+                draggingGroup: ^Group // window currently dragging
+                activeGroup: ^Group // window currently focused on
+                dockingGroup:  ^Group // window we may attach to
         }
 
         ButtonState = struct {
@@ -86,12 +88,19 @@ const (
         cuttingTop = Cutting(2)
         cuttingBottom = Cutting(3)
 
+        c_shadow = 0x00000022
+        c_decor = 0x752f29FF
+        c_item = 0x993333FF
+        c_held = 0xC24444FF
+        c_over = 0xAD4545FF
+        c_body = th.white
+
         magicColorBeginScissorRect = 0x5B248E00
         magicColorEndScissorRect = 0x896A4100
 )
 
 ////////////////////////////
-// SequenceLayotu
+// SequenceLayout
 
 fn sequenceLayoutInit(pos: th.Vf2): SequenceLayout {
         return SequenceLayout{start: pos, end: pos}
@@ -254,19 +263,6 @@ fn groupAppendWindow(group: ^Group, win: Window) {
         group.windows = append(group.windows, win) 
 }
 
-fn groupCreateFromScratch(r: rect.Rect): Group {
-        return Group{windows: make([]Window, 0), current: 0, rect: r}
-}
-
-fn groupGetWindowIndexByName(group: ^Group, name: str): int {
-        for windowIndex, win in group.windows {
-                if win.title == name {
-                        return windowIndex
-                }
-        }
-        return -1
-}
-
 ///////////////////////
 // Group Zone
 fn groupZoneInit(): GroupZone {
@@ -295,28 +291,18 @@ fn groupZoneAcquire(zone: ^GroupZone, title: str, r: rect.Rect): ^Group {
         return group
 }
 
+fn groupZoneReassignIndices(zone: ^GroupZone) {
+        for i in zone.stack { 
+                zone.stack[i].index = i
+        }
+}
+
 fn groupZoneMoveToFront(zone: ^GroupZone, groupIndex: int): int {
         group := zone.stack[groupIndex]
         zone.stack = delete(zone.stack, groupIndex)
         zone.stack = append(zone.stack, group)
 
-        for i in zone.stack { // reassign correct window indices
-                zone.stack[i].index = i
-        }
-
-        // TODO: Do a better job at updating the indexes, or have them static instead,
-        //       Alter natively, use pointers instead.
-        if zone.activeIndex == groupIndex {
-                zone.activeIndex = group.index
-        } else if zone.activeIndex > groupIndex {
-                zone.activeIndex -= 1
-        }
-
-        if zone.draggingIndex == groupIndex {
-                zone.draggingIndex = group.index
-        } else if zone.draggingIndex > groupIndex {
-                zone.draggingIndex -= 1
-        }
+        groupZoneReassignIndices(zone)
 
         return group.index
 }
@@ -336,35 +322,67 @@ fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
         }
 
         zone.stack = delete(zone.stack, srcIdx)
+
+        groupZoneReassignIndices(zone)
 }
 
-fn groupZoneLocateActiveWindow(zone: ^GroupZone, at: th.Vf2): int {
-        id := -1
+fn groupZoneLocateActiveGroup(zone: ^GroupZone, at: th.Vf2): ^Group {
+        var group: ^Group = null
         for i in zone.stack {
                 if rectInPoint(zone.stack[i].rect, at) {
-                        id = i
+                        group = zone.stack[i]
                 }
         }
-        return id
+        return group
+}
+
+// FIXME: this is here because group zone needs it
+//        but it relies on v_font which is a static variable
+//        i need to pass it to group zone instead
+fn getWindowDecorationRectFromRect(r: rect.Rect): rect.Rect
+
+fn groupZoneLocateDockingCandidate(zone: ^GroupZone, at: th.Vf2): ^Group {
+        var group: ^Group = null
+        for i in zone.stack {
+                if zone.draggingGroup != null && i == zone.draggingGroup.index {
+                        continue 
+                }
+
+                if rectInPoint(zone.stack[i].rect, at) {
+                        group = zone.stack[i]
+                }
+        }
+
+        if group != null && rectInPoint(getWindowDecorationRectFromRect(group.rect), at) {
+                return group
+        }
+
+        return null
 }
 
 fn groupZoneHandleInput(zone: ^GroupZone, inputState: InputState) {
-        zone.activeIndex = groupZoneLocateActiveWindow(zone, inputState.mousePos)
+        // apply drag
+        zone.dockingGroup = null
+        if zone.draggingGroup != null {
+                zone.draggingGroup.rect = rectMove(zone.draggingGroup.rect, inputState.mouseDelta)
+                zone.dockingGroup = groupZoneLocateDockingCandidate(zone, inputState.mousePos)
+        }
+
+        zone.activeGroup = groupZoneLocateActiveGroup(zone, inputState.mousePos)
+
+        if inputState.mouseLeft.released && zone.draggingGroup != null && zone.dockingGroup != null {
+                groupZoneDockGroups(zone, zone.draggingGroup.index, zone.dockingGroup.index)
+        }
 
         if inputState.mouseLeft.down == false  {
-                zone.draggingIndex = -1
+                zone.draggingGroup = null
         }
 
-        if zone.activeIndex >= 0 {
+        if zone.activeGroup != null {
                 if inputState.mouseLeft.pressed {
-                        zone.draggingIndex = zone.activeIndex
-                        groupZoneMoveToFront(zone, zone.draggingIndex)
+                        zone.draggingGroup = zone.activeGroup
+                        groupZoneMoveToFront(zone, zone.draggingGroup.index)
                 }
-        }
-
-        // apply drag
-        if zone.draggingIndex >= 0 {
-                zone.stack[zone.draggingIndex].rect = rectMove(zone.stack[zone.draggingIndex].rect, inputState.mouseDelta)
         }
 }
 
@@ -381,14 +399,6 @@ fn (lay: ^Layout) getRect(reqSize: th.Vf2): rect.Rect {
 fn (lay: ^Layout) putCommand(cmd: DrawCommand) {
         lay.ctx.putCommand(lay.index, cmd)
 }
-
-
-const (
-        c_shadow = 0x00000022
-        c_decor = 0xAA5555FF
-        c_item = 0x993333FF
-        c_body = th.white
-)
 
 var (
         v_font: d_font.Font
@@ -439,14 +449,17 @@ fn dbgPrintText(lay: ^SequenceLayout, label: str, color: uint32) {
         lay.put(v_font.measure(label))
 }
 
+fn dbgPrintSect(lay: ^SequenceLayout, label: str) {
+        dbgPrintText(lay, label, th.white)
+        lay.padding(50)
+}
+
 fn dbgPrintBool(lay: ^SequenceLayout, label: str, value: bool) {
         dbgPrintText(lay, label, [2]uint32{th.white & 0xFFFFFF99, th.green}[int(value)])
 }
 
 fn dbgPrintButtonState(lay: ^SequenceLayout, label: str, state: ButtonState) {
-        size := th.Vf2{0, 0}
-
-        dbgPrintText(lay, label, th.white);
+        dbgPrintSect(lay, label);
 
         dbgPrintBool(lay, " down ", state.down)
         dbgPrintBool(lay, "pressed ", state.pressed)
@@ -455,40 +468,57 @@ fn dbgPrintButtonState(lay: ^SequenceLayout, label: str, state: ButtonState) {
         lay.newLine()
 }
 
-fn dbgPrintInputState(pos: th.Vf2, state: InputState) {
+fn dbgPrintInputState(lay: ^SequenceLayout, state: InputState) {
+        dbgPrintButtonState(lay, "MouseLeft", state.mouseLeft);
+        dbgPrintButtonState(lay, "MouseMiddle", state.mouseMiddle);
+        dbgPrintButtonState(lay, "MouseRight", state.mouseRight);
+
+        dbgPrintSect(lay, "MouseDelta");
+        dbgPrintText(lay, "x"+std.ftoa(state.mouseDelta.x, 0), th.white & 0xFFFFFF99)
+        lay.padding(150)
+        dbgPrintText(lay, "y"+std.ftoa(state.mouseDelta.y, 0), th.white & 0xFFFFFF99)
+        lay.newLine()
+
+        dbgPrintSect(lay, "MousePos");
+        dbgPrintText(lay, "x"+std.ftoa(state.mousePos.x, 0), th.white & 0xFFFFFF99)
+        lay.padding(150)
+        dbgPrintText(lay, "y"+std.ftoa(state.mousePos.y, 0), th.white & 0xFFFFFF99)
+        lay.newLine()
+
+        dbgPrintSect(lay, "MouseScroll");
+        dbgPrintText(lay, std.itoa(state.mouseScroll), th.white & 0xFFFFFF99)
+        lay.newLine()
+}
+
+fn dbgPrintGroup(lay: ^SequenceLayout, label: str, group: ^Group) {
+        dbgPrintSect(lay, label);
+        if group != null {
+                dbgPrintText(lay, std.itoa(group.index), th.white & 0xFFFFFF99)
+        } else {
+                dbgPrintText(lay, "null", th.white & 0xFFFFFF99)
+        }
+        lay.newLine()
+}
+
+fn dbgMain(pos: th.Vf2) {
         lay := sequenceLayoutInit(pos)
-        dbgPrintButtonState(&lay, "MouseLeft", state.mouseLeft);
-        dbgPrintButtonState(&lay, "MouseMiddle", state.mouseMiddle);
-        dbgPrintButtonState(&lay, "MouseRight", state.mouseRight);
-
-        dbgPrintText(&lay, "MouseDelta", th.white);
-        dbgPrintText(&lay, "x"+std.ftoa(state.mouseDelta.x, 0), th.white & 0xFFFFFF99)
-        lay.padding(150)
-        dbgPrintText(&lay, "y"+std.ftoa(state.mouseDelta.y, 0), th.white & 0xFFFFFF99)
-        lay.newLine()
-
-        dbgPrintText(&lay, "MousePos", th.white);
-        dbgPrintText(&lay, "x"+std.ftoa(state.mousePos.x, 0), th.white & 0xFFFFFF99)
-        lay.padding(150)
-        dbgPrintText(&lay, "y"+std.ftoa(state.mousePos.y, 0), th.white & 0xFFFFFF99)
-        lay.newLine()
-
-        dbgPrintText(&lay, "MouseScroll", th.white);
-        dbgPrintText(&lay, std.itoa(state.mouseScroll), th.white & 0xFFFFFF99)
-        lay.newLine()
+        dbgPrintInputState(&lay, v_inputState)
+        dbgPrintGroup(&lay, "DockingGroup", v_groupZone.dockingGroup)
+        dbgPrintGroup(&lay, "DraggingGroup", v_groupZone.draggingGroup)
+        dbgPrintGroup(&lay, "ActiveGroup", v_groupZone.activeGroup)
 
         // make lighter on hover
-        if (rectInPoint(lay.getRect(), state.mousePos)) {
-                v_drawCtx.putCommand(98, commandRect(th.black&0x11, lay.getRect()))
+        if (rectInPoint(lay.getRect(), v_inputState.mousePos)) {
+                v_drawCtx.putCommand(98, commandRect(th.black&0x11, rectInset(lay.getRect(), -5)))
         } else {
-                v_drawCtx.putCommand(98, commandRect(th.black&0xBB, lay.getRect()))
+                v_drawCtx.putCommand(98, commandRect(th.black&0xBB, rectInset(lay.getRect(), -5)))
         }
 }
 
 fn begin*() {
         v_inputState = populateInputState(v_inputState);
         groupZoneHandleInput(&v_groupZone, v_inputState)
-        dbgPrintInputState(th.Vf2{10, 10}, v_inputState);
+        dbgMain(th.Vf2{10, 10});
         groupZoneSetJoin(&v_groupZone, false)
 }
 
@@ -524,8 +554,12 @@ fn isLastWindowVisible(): bool {
         return true
 }
 
+fn isLastWindowRendered(): bool {
+        return isLastWindowVisible() && (v_lastGroup == v_groupZone.dockingGroup || v_groupZone.dockingGroup == null)
+}
+
 fn getLastWindowContentRect(): rect.Rect {
-        if isLastWindowVisible() {
+        if isLastWindowRendered() {
                 return rectInset(getWindowContentRectFromRect(v_lastGroup.rect), 5);
         }
 
@@ -533,35 +567,81 @@ fn getLastWindowContentRect(): rect.Rect {
         return rect.mk(0, 0, 0, 0)
 }
 
-fn _putButton(lay: ^Layout, text: str) {
-        size := v_font.measure(text) 
-        size.x += 10 // padding
-        buttonRect := lay.getRect(size)
-        lay.putCommand(commandRect(c_item, buttonRect))
-        lay.putCommand(commandText(c_body, buttonRect, text))
-        lay.getRect(th.Vf2{1, 1}) // padding
+fn isActive(): bool {
+        return v_groupZone.activeGroup == v_lastGroup
 }
 
-fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
+fn isMouseOver(r: rect.Rect): bool {
+        return isActive() && rectInPoint(r, v_inputState.mousePos)
+}
 
+fn invalidateClick() {
+        v_groupZone.draggingGroup = null
+}
+
+fn _putButtonToggle(lay: ^Layout, text: str, out: bool): bool {
+        size := v_font.measure(text) 
+        size.x += 10 // padding
+        size.y += 5
+        buttonRect := lay.getRect(size)
+        pressed := false
+
+        color := c_item
+
+        if out {
+                color = c_held
+        }
+
+        if isMouseOver(buttonRect) {
+                color = c_over
+                if v_inputState.mouseLeft.pressed {
+                        invalidateClick()
+                        pressed = true
+                }
+                if v_inputState.mouseLeft.down {
+                        color = c_held
+                }
+        }
+
+        lay.putCommand(commandRect(color, buttonRect))
+        lay.putCommand(commandText(c_body, buttonRect, text))
+        lay.getRect(th.Vf2{1, 1}) // padding
+        return pressed
+}
+
+fn _putButton(lay: ^Layout, text: str): bool {
+        return _putButtonToggle(lay, text, false)
+}
+
+// FIXME: this relies on groupZone which is external
+fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
         windowRect := group.rect
         contentRect := getWindowContentRectFromRect(group.rect)
         titlebarRect := getWindowDecorationRectFromRect(group.rect)
 
         lay := layoutInit(ctx, group.index)
 
-        lay.putCommand(commandBeginScissorRect(group.rect))
-
+        // Draw shadow
         lay.putCommand(commandRect(c_shadow, rectMove(rectInset(windowRect, -1), th.Vf2{0, 1})))
+
+        // Begin scissor
+        lay.putCommand(commandBeginScissorRect(group.rect))
         lay.putCommand(commandRect(c_decor, windowRect))
         lay.putCommand(commandRect(c_body, contentRect))
 
         lay.rect = titlebarRect
 
-        for i, w in group.windows {
-                _putButton(&lay, w.title)
+        if _putButton(&lay, "||||") {
+                v_groupZone.draggingGroup = group
         }
 
+        for i, w in group.windows {
+                if _putButtonToggle(&lay, w.title, group.current == i) {
+                        group.current = i
+                }
+        }
+
+        // End scissor
         lay.putCommand(commandEndScissorRect())
 }
 
@@ -571,13 +651,15 @@ fn beginWindow*(title: str, r: rect.Rect) {
 
         // Prevent drawing the group multiple times by checking if
         // the current window is the one displayed in the group.
-        if isLastWindowVisible() {
+        if isLastWindowRendered() {
                 drawGroup(&v_drawCtx, v_lastGroup);
+        } else if isLastWindowVisible() {
+                v_drawCtx.putCommand(v_lastGroup.index, commandRect(c_shadow, v_lastGroup.rect))
         }
 }
 
 fn putButton*(text: str) {
-        if isLastWindowVisible() {
+        if isLastWindowRendered() {
                 _putButton(&layoutInit(&v_drawCtx, v_lastGroup.index, cuttingTop, getLastWindowContentRect()), text)
         }
 }

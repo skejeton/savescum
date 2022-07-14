@@ -1,6 +1,5 @@
 import (
-        "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"; "csv.um"
-        "utf8.um"; 
+        "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
         "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"; "d_script.um"; "d_font.um"
 )
 
@@ -390,14 +389,6 @@ fn setupUiWindows() {
         uiWindows[4].showDecorations = true
 }
 
-fn getMouseDelta(): th.Vf2 {
-        delta := input.getMousePos()
-        
-        delta.x -= uiPrevMousePos.x
-        delta.y -= uiPrevMousePos.y
-        return delta
-}
-
 fn handleUiWindows() {
         // -- handle window dragging
         // no window is being dragged if we aren't holding the button
@@ -472,7 +463,7 @@ fn handleUiWindows() {
         }
 }
 
-fn drawDebugUiWindows() {
+fn _drawDebugUiWindows() {
         for i := 0; i < 4; i++ {
                 color := 0x0000FFFF
                 if i == uiFocusWindowId {
@@ -488,7 +479,6 @@ fn drawUiDecorations(winId: int, title: str) {
                 return
         }
         outerRect := getWindowOuterRect(winId)
-        closeBtnRect := getWindowCloseRect(winId)
         for x := 16.0; x < outerRect.w; x += 16 {
                 if x < 16 {
                         uiSelTile(1, 0) 

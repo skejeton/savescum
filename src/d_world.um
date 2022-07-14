@@ -7,7 +7,7 @@
 //               1: the foreground layer, this is drawn over the character, no collision checks  
 
 import (
-        "image.um"; "th.um"; "std.um"; "csv.um"; "rect.um"
+        "th.um"; "std.um"; "csv.um"; "rect.um"
         "d_util.um"; "d_tileset.um"
 )
 

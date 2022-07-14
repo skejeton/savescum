@@ -2,8 +2,8 @@
         Scripted events for game
 */
 
-import ("image.um"; "th.um"; "rect.um"
-        "d_game.um"; "d_util.um"; "d_dialogs.um"; "d_font.um")
+import ("th.um"; "rect.um"
+        "d_game.um"; "d_util.um")
 
 var (
         dialogActivated: bool

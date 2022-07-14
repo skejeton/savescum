@@ -1,4 +1,4 @@
-import ("th.um"; "image.um"; "rect.um")
+import ("th.um"; "image.um")
 
 type (
         Tileset* = struct {

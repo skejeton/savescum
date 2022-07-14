@@ -1,12 +1,12 @@
 import (
-        "window.um"; "rect.um"; "canvas.um"; "th.um"
-        "../../src/d_ui.um"; "../../src/d_font.um"
+        "window.um"; "rect.um"; "canvas.um"
+        ui = "../../src/d_ui.um"; font = "../../src/d_font.um"
 )
 
 fn main() {
-        window.setup("Ahoy", 640, 480)
-        screen := rect.Rect{0, 0, 640, 480}
-        d_ui.init(d_font.loadFont("data/font_sans.ttf", 16))
+        window.setup("Ahoy", 800, 600)
+        var screen: rect.Rect
+        ui.init(font.loadFont("data/font_sans.ttf", 16))
 
         for (window.cycle(screen)) {
                 screen.w = window.w
@@ -14,26 +14,26 @@ fn main() {
 
 
                 canvas.drawRect(0xFFAAAAFF, screen)
-                d_ui.begin()
+                ui.begin()
                 
-                d_ui.setJoinWindows(true)
-                        d_ui.beginWindow("Toolbox", rect.Rect{80, 80, 200, 300})
-                        d_ui.beginWindow("Million dollars", rect.Rect{40, 40, 200, 300})
-                d_ui.setJoinWindows(false)
+                ui.setJoinWindows(true)
+                        ui.beginWindow("Toolbox", rect.Rect{200, 80, 200, 300})
+                        ui.beginWindow("Million dollars", rect.Rect{160, 40, 200, 300})
+                ui.setJoinWindows(false)
 
-                d_ui.setJoinWindows(true)
-                        d_ui.beginWindow("\\t", rect.Rect{120, 40, 300, 300})
-                        d_ui.beginWindow("tABS? nice", rect.Rect{160, 80, 200, 350})
-                d_ui.setJoinWindows(false)
+                ui.setJoinWindows(true)
+                        ui.beginWindow("\\t", rect.Rect{240, 40, 300, 300})
+                        ui.beginWindow("tABS? nice", rect.Rect{280, 80, 200, 350})
+                ui.setJoinWindows(false)
 
-                d_ui.setJoinWindows(true)
-                        d_ui.beginWindow("technology indeed", rect.Rect{160, 40, 250, 350})
-                                d_ui.putButton("Chips ahoy");
-                        d_ui.beginWindow("Something Dumb", rect.Rect{160, 80, 230, 350})
-                        d_ui.beginWindow("Something Cool", rect.Rect{160, 80, 230, 350})
-                                d_ui.putButton("Chips ahoy");
-                d_ui.setJoinWindows(false)
+                ui.setJoinWindows(true)
+                        ui.beginWindow("technology indeed", rect.Rect{280, 40, 250, 350})
+                                ui.putButton("Chips ahoy");
+                        ui.beginWindow("Something Dumb", rect.Rect{280, 80, 230, 350})
+                        ui.beginWindow("Something Cool", rect.Rect{280, 80, 230, 350})
+                                ui.putButton("Chips ahoy");
+                ui.setJoinWindows(false)
 
-                d_ui.end()
+                ui.end()
         }
 }

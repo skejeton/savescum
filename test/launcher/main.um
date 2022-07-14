@@ -1,4 +1,4 @@
-import ("std.um"; "../../src/d_util.um"; "../../src/d_pfx.um")
+import ("../../src/d_util.um"; "../../src/d_pfx.um")
 
 fn main() {
         lf := d_util.readFileStr(d_pfx.pfx()+"local.txt")

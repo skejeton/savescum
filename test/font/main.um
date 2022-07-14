@@ -1,5 +1,5 @@
 import (
-        "../../src/d_font.um"; "window.um"; "rect.um"; "th.um"; "canvas.um"; "image.um"; "utf8.um"
+        "../../src/d_font.um"; "window.um"; "rect.um"; "th.um"; "canvas.um"
 )
 
 

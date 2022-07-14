@@ -1,4 +1,4 @@
-import ("std.um"; "utf8.um"; "image.um"; "th.um"; "rect.um"; "canvas.um"; "window.um"
+import ("std.um"; "image.um"; "th.um"; "rect.um"; "window.um"
         "d_font.um"; "d_util.um"; "d_typer.um")
 
 type (
