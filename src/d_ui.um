@@ -365,7 +365,9 @@ fn groupZoneHandleInput(zone: ^GroupZone, inputState: InputState) {
         zone.dockingGroup = null
         if zone.draggingGroup != null {
                 zone.draggingGroup.rect = rectMove(zone.draggingGroup.rect, inputState.mouseDelta)
-                zone.dockingGroup = groupZoneLocateDockingCandidate(zone, inputState.mousePos)
+                if rectInPoint(getWindowDecorationRectFromRect(zone.draggingGroup.rect), inputState.mousePos) {
+                        zone.dockingGroup = groupZoneLocateDockingCandidate(zone, inputState.mousePos)
+                }
         }
 
         zone.activeGroup = groupZoneLocateActiveGroup(zone, inputState.mousePos)
@@ -461,7 +463,7 @@ fn dbgPrintBool(lay: ^SequenceLayout, label: str, value: bool) {
 fn dbgPrintButtonState(lay: ^SequenceLayout, label: str, state: ButtonState) {
         dbgPrintSect(lay, label);
 
-        dbgPrintBool(lay, " down ", state.down)
+        dbgPrintBool(lay, "down ", state.down)
         dbgPrintBool(lay, "pressed ", state.pressed)
         dbgPrintBool(lay, "released", state.released)
 
@@ -579,12 +581,15 @@ fn invalidateClick() {
         v_groupZone.draggingGroup = null
 }
 
-fn _putButtonToggle(lay: ^Layout, text: str, out: bool): bool {
+fn _putButtonToggle(lay: ^Layout, text: str, out: bool): ButtonState {
         size := v_font.measure(text) 
         size.x += 10 // padding
         size.y += 5
         buttonRect := lay.getRect(size)
+        
         pressed := false
+        released := false
+        down := false
 
         color := c_item
 
@@ -594,11 +599,15 @@ fn _putButtonToggle(lay: ^Layout, text: str, out: bool): bool {
 
         if isMouseOver(buttonRect) {
                 color = c_over
+                if v_inputState.mouseLeft.released {
+                        released = true
+                }
                 if v_inputState.mouseLeft.pressed {
                         invalidateClick()
                         pressed = true
                 }
                 if v_inputState.mouseLeft.down {
+                        down = true
                         color = c_held
                 }
         }
@@ -606,10 +615,10 @@ fn _putButtonToggle(lay: ^Layout, text: str, out: bool): bool {
         lay.putCommand(commandRect(color, buttonRect))
         lay.putCommand(commandText(c_body, buttonRect, text))
         lay.getRect(th.Vf2{1, 1}) // padding
-        return pressed
+        return ButtonState{pressed: pressed, released: released, down: down}
 }
 
-fn _putButton(lay: ^Layout, text: str): bool {
+fn _putButton(lay: ^Layout, text: str): ButtonState {
         return _putButtonToggle(lay, text, false)
 }
 
@@ -631,12 +640,12 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
 
         lay.rect = titlebarRect
 
-        if _putButton(&lay, "||||") {
+        if _putButton(&lay, "||||").pressed {
                 v_groupZone.draggingGroup = group
         }
 
         for i, w in group.windows {
-                if _putButtonToggle(&lay, w.title, group.current == i) {
+                if _putButtonToggle(&lay, w.title, group.current == i).released {
                         group.current = i
                 }
         }
@@ -658,10 +667,11 @@ fn beginWindow*(title: str, r: rect.Rect) {
         }
 }
 
-fn putButton*(text: str) {
+fn putButton*(text: str): ButtonState {
         if isLastWindowRendered() {
-                _putButton(&layoutInit(&v_drawCtx, v_lastGroup.index, cuttingTop, getLastWindowContentRect()), text)
+                return _putButton(&layoutInit(&v_drawCtx, v_lastGroup.index, cuttingTop, getLastWindowContentRect()), text)
         }
+        return ButtonState{}
 }
 
 // DRAGGING
