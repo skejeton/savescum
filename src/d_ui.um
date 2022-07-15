@@ -31,9 +31,10 @@ type (
                 firstJoin: bool
 
                 /* ux */
-                draggingGroup: ^Group // window currently dragging
-                activeGroup: ^Group // window currently focused on
-                dockingGroup:  ^Group // window we may attach to
+                draggingGroup: ^Group // group currently dragging
+                activeGroup: ^Group // group currently focused on
+                dockingGroup:  ^Group // group we may attach to
+                undockingWindow: str // window we may undock from the group
         }
 
         ButtonState = struct {
@@ -263,10 +264,24 @@ fn groupAppendWindow(group: ^Group, win: Window) {
         group.windows = append(group.windows, win) 
 }
 
+fn groupCurrentWindow(group: ^Group): ^Window {
+        return &group.windows[group.current]
+}
+
 ///////////////////////
 // Group Zone
 fn groupZoneInit(): GroupZone {
         return GroupZone{groups: map[str]^Group{}, stack: make([]^Group, 0)}
+}
+
+fn groupZoneCreate(zone: ^GroupZone, win: Window): ^Group {
+        newGroup := new(Group)
+        newGroup ^= groupCreateFromWindow(win)
+        zone.groups[win.title] = newGroup
+        newGroup.index = len(zone.stack)
+        zone.stack = append(zone.stack, newGroup)
+
+        return newGroup 
 }
 
 fn groupZoneAcquire(zone: ^GroupZone, title: str, r: rect.Rect): ^Group {
@@ -278,13 +293,8 @@ fn groupZoneAcquire(zone: ^GroupZone, title: str, r: rect.Rect): ^Group {
                         group = zone.groups[title]
                         groupAppendWindow(zone.stack[len(zone.stack)-1], Window{title: title, rect: r})
                 } else {
-                        newGroup := new(Group)
-                        newGroup ^= groupCreateFromWindow(Window{title: title, rect: r})
-                        zone.groups[title] = newGroup
-                        group = zone.groups[title]
                         zone.firstJoin = false
-                        newGroup.index = len(zone.stack)
-                        zone.stack = append(zone.stack, newGroup)
+                        groupZoneCreate(zone, Window{title: title, rect: r})
                 }
         }
         
@@ -312,6 +322,31 @@ fn groupZoneSetJoin(zone: ^GroupZone, set: bool) {
         zone.firstJoin = true
 }
 
+fn groupZoneUndockWindow(zone: ^GroupZone, title: str): ^Group {
+        group := zone.groups[title]
+        index := -1
+
+        for i in group.windows {
+                if group.windows[i].title == title {
+                        index = i
+                        break
+                }
+        } 
+
+        if (index < 0) {
+                error("Invalid index")
+        }
+
+        if (group.current >= index && index > 0) {
+                group.current -= 1
+        }
+
+        win := group.windows[index]
+        group.windows = delete(group.windows, index)
+
+        return groupZoneCreate(zone, win);
+}
+
 fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
         dst := zone.stack[dstIdx]
         src := zone.stack[srcIdx]
@@ -334,58 +369,6 @@ fn groupZoneLocateActiveGroup(zone: ^GroupZone, at: th.Vf2): ^Group {
                 }
         }
         return group
-}
-
-// FIXME: this is here because group zone needs it
-//        but it relies on v_font which is a static variable
-//        i need to pass it to group zone instead
-fn getWindowDecorationRectFromRect(r: rect.Rect): rect.Rect
-
-fn groupZoneLocateDockingCandidate(zone: ^GroupZone, at: th.Vf2): ^Group {
-        var group: ^Group = null
-        for i in zone.stack {
-                if zone.draggingGroup != null && i == zone.draggingGroup.index {
-                        continue 
-                }
-
-                if rectInPoint(zone.stack[i].rect, at) {
-                        group = zone.stack[i]
-                }
-        }
-
-        if group != null && rectInPoint(getWindowDecorationRectFromRect(group.rect), at) {
-                return group
-        }
-
-        return null
-}
-
-fn groupZoneHandleInput(zone: ^GroupZone, inputState: InputState) {
-        // apply drag
-        zone.dockingGroup = null
-        if zone.draggingGroup != null {
-                zone.draggingGroup.rect = rectMove(zone.draggingGroup.rect, inputState.mouseDelta)
-                if rectInPoint(getWindowDecorationRectFromRect(zone.draggingGroup.rect), inputState.mousePos) {
-                        zone.dockingGroup = groupZoneLocateDockingCandidate(zone, inputState.mousePos)
-                }
-        }
-
-        zone.activeGroup = groupZoneLocateActiveGroup(zone, inputState.mousePos)
-
-        if inputState.mouseLeft.released && zone.draggingGroup != null && zone.dockingGroup != null {
-                groupZoneDockGroups(zone, zone.draggingGroup.index, zone.dockingGroup.index)
-        }
-
-        if inputState.mouseLeft.down == false  {
-                zone.draggingGroup = null
-        }
-
-        if zone.activeGroup != null {
-                if inputState.mouseLeft.pressed {
-                        zone.draggingGroup = zone.activeGroup
-                        groupZoneMoveToFront(zone, zone.draggingGroup.index)
-                }
-        }
 }
 
 ///////////////////////
@@ -508,6 +491,9 @@ fn dbgMain(pos: th.Vf2) {
         dbgPrintGroup(&lay, "DockingGroup", v_groupZone.dockingGroup)
         dbgPrintGroup(&lay, "DraggingGroup", v_groupZone.draggingGroup)
         dbgPrintGroup(&lay, "ActiveGroup", v_groupZone.activeGroup)
+        dbgPrintSect(&lay, "UndockWindow")
+        dbgPrintText(&lay, v_groupZone.undockingWindow, th.white & 0xFFFFFF99)
+        lay.newLine()
 
         // make lighter on hover
         if (rectInPoint(lay.getRect(), v_inputState.mousePos)) {
@@ -515,13 +501,6 @@ fn dbgMain(pos: th.Vf2) {
         } else {
                 v_drawCtx.putCommand(98, commandRect(th.black&0xBB, rectInset(lay.getRect(), -5)))
         }
-}
-
-fn begin*() {
-        v_inputState = populateInputState(v_inputState);
-        groupZoneHandleInput(&v_groupZone, v_inputState)
-        dbgMain(th.Vf2{10, 10});
-        groupZoneSetJoin(&v_groupZone, false)
 }
 
 fn getWindowDecorationRectFromRect(r: rect.Rect): rect.Rect {
@@ -535,6 +514,79 @@ fn getWindowContentRectFromRect(r: rect.Rect): rect.Rect {
         return rectInset(r, 1)
 }
 
+fn locateDockingCandidate(zone: ^GroupZone, at: th.Vf2): ^Group {
+        var group: ^Group = null
+        for i in zone.stack {
+                if zone.draggingGroup != null && i == zone.draggingGroup.index {
+                        continue 
+                }
+
+                if rectInPoint(zone.stack[i].rect, at) {
+                        group = zone.stack[i]
+                }
+        }
+
+        if group != null && rectInPoint(getWindowDecorationRectFromRect(group.rect), at) {
+                return group
+        }
+
+        return null
+}
+
+fn isOnTitlebar(): bool {
+        if (v_groupZone.activeGroup != null) {
+                return rectInPoint(getWindowDecorationRectFromRect(v_groupZone.activeGroup.rect), v_inputState.mousePos)
+        }
+        return false;
+}
+
+fn handleInput() {
+        inputState := v_inputState
+        zone := &v_groupZone
+
+        zone.dockingGroup = null
+        if zone.draggingGroup != null {
+                zone.draggingGroup.rect = rectMove(zone.draggingGroup.rect, inputState.mouseDelta)
+                if rectInPoint(getWindowDecorationRectFromRect(zone.draggingGroup.rect), inputState.mousePos) {
+                        zone.dockingGroup = locateDockingCandidate(zone, inputState.mousePos)
+                }
+        }
+
+        zone.activeGroup = groupZoneLocateActiveGroup(zone, inputState.mousePos)
+
+        if inputState.mouseLeft.released && zone.draggingGroup != null && zone.dockingGroup != null {
+                groupZoneDockGroups(zone, zone.draggingGroup.index, zone.dockingGroup.index)
+        }
+
+        if inputState.mouseLeft.down == false  {
+                zone.undockingWindow = ""
+                zone.draggingGroup = null
+        }
+
+        if zone.activeGroup != null {
+                if inputState.mouseLeft.pressed {
+                        zone.draggingGroup = zone.activeGroup
+                        groupZoneMoveToFront(zone, zone.draggingGroup.index)
+                }
+        }
+
+        if zone.undockingWindow != "" && !isOnTitlebar() {
+                group := groupZoneUndockWindow(zone, zone.undockingWindow)
+                group.rect.x = inputState.mousePos.x - 10;
+                group.rect.y = inputState.mousePos.y - 10;
+                zone.activeGroup = group
+                zone.draggingGroup = group
+                zone.undockingWindow = ""
+        }
+}
+
+fn begin*() {
+        v_inputState = populateInputState(v_inputState);
+        handleInput()
+        groupZoneSetJoin(&v_groupZone, false)
+        dbgMain(th.Vf2{10, 10});
+}
+
 fn end*() {
         v_drawCtx.render(v_font)
         v_drawCtx.clear()
@@ -544,24 +596,24 @@ fn setJoinWindows*(set: bool) {
         groupZoneSetJoin(&v_groupZone, set)
 }
 
-fn isLastWindowVisible(): bool {
-        if (v_lastGroup == null) {
+fn isGroupVisible(group: ^Group): bool {
+        if (group == null) {
                 return false
         }
 
-        if (v_lastWindow != v_lastGroup.windows[v_lastGroup.current].title) {
+        if (v_lastWindow != group.windows[group.current].title) {
                 return false
         }  
 
         return true
 }
 
-fn isLastWindowRendered(): bool {
-        return isLastWindowVisible() && (v_lastGroup == v_groupZone.dockingGroup || v_groupZone.dockingGroup == null)
+fn isGroupRendered(group: ^Group): bool {
+        return isGroupVisible(group) && (group == v_groupZone.dockingGroup || v_groupZone.dockingGroup == null)
 }
 
 fn getLastWindowContentRect(): rect.Rect {
-        if isLastWindowRendered() {
+        if isGroupVisible(v_lastGroup) {
                 return rectInset(getWindowContentRectFromRect(v_lastGroup.rect), 5);
         }
 
@@ -624,34 +676,50 @@ fn _putButton(lay: ^Layout, text: str): ButtonState {
 
 // FIXME: this relies on groupZone which is external
 fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
-        windowRect := group.rect
-        contentRect := getWindowContentRectFromRect(group.rect)
-        titlebarRect := getWindowDecorationRectFromRect(group.rect)
+        // Render the window & handle undocking
+        if isGroupRendered(group) {
+                windowRect := group.rect
+                contentRect := getWindowContentRectFromRect(group.rect)
+                titlebarRect := getWindowDecorationRectFromRect(group.rect)
 
-        lay := layoutInit(ctx, group.index)
+                lay := layoutInit(ctx, group.index)
 
-        // Draw shadow
-        lay.putCommand(commandRect(c_shadow, rectMove(rectInset(windowRect, -1), th.Vf2{0, 1})))
+                // Draw shadow
+                lay.putCommand(commandRect(c_shadow, rectMove(rectInset(windowRect, -1), th.Vf2{0, 1})))
 
-        // Begin scissor
-        lay.putCommand(commandBeginScissorRect(group.rect))
-        lay.putCommand(commandRect(c_decor, windowRect))
-        lay.putCommand(commandRect(c_body, contentRect))
+                // Begin scissor
+                lay.putCommand(commandBeginScissorRect(group.rect))
+                lay.putCommand(commandRect(c_decor, windowRect))
+                lay.putCommand(commandRect(c_body, contentRect))
 
-        lay.rect = titlebarRect
+                lay.rect = titlebarRect
 
-        if _putButton(&lay, "||||").pressed {
-                v_groupZone.draggingGroup = group
-        }
+                if len(group.windows) == 1 {
+                        lay.putCommand(commandText(c_body, titlebarRect, group.windows[0].title))
+                } else {
+                        if _putButton(&lay, "||||").pressed {
+                                v_groupZone.draggingGroup = group
+                        }
 
-        for i, w in group.windows {
-                if _putButtonToggle(&lay, w.title, group.current == i).released {
-                        group.current = i
+                        for i, w in group.windows {
+                                button := _putButtonToggle(&lay, w.title, group.current == i)
+
+                                if button.down {
+                                        v_groupZone.undockingWindow = w.title
+                                }
+
+                                if button.released {
+                                        group.current = i
+                                }
+                        }
                 }
-        }
 
-        // End scissor
-        lay.putCommand(commandEndScissorRect())
+
+                // End scissor
+                lay.putCommand(commandEndScissorRect())
+        } else {
+                ctx.putCommand(group.index, commandRect(c_shadow, group.rect))
+        }
 }
 
 fn beginWindow*(title: str, r: rect.Rect) {
@@ -660,15 +728,13 @@ fn beginWindow*(title: str, r: rect.Rect) {
 
         // Prevent drawing the group multiple times by checking if
         // the current window is the one displayed in the group.
-        if isLastWindowRendered() {
+        if isGroupVisible(v_lastGroup) {
                 drawGroup(&v_drawCtx, v_lastGroup);
-        } else if isLastWindowVisible() {
-                v_drawCtx.putCommand(v_lastGroup.index, commandRect(c_shadow, v_lastGroup.rect))
         }
 }
 
 fn putButton*(text: str): ButtonState {
-        if isLastWindowRendered() {
+        if isGroupRendered(v_lastGroup) {
                 return _putButton(&layoutInit(&v_drawCtx, v_lastGroup.index, cuttingTop, getLastWindowContentRect()), text)
         }
         return ButtonState{}
