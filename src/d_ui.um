@@ -264,10 +264,6 @@ fn groupAppendWindow(group: ^Group, win: Window) {
         group.windows = append(group.windows, win) 
 }
 
-fn groupCurrentWindow(group: ^Group): ^Window {
-        return &group.windows[group.current]
-}
-
 ///////////////////////
 // Group Zone
 fn groupZoneInit(): GroupZone {
@@ -704,7 +700,7 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
                         for i, w in group.windows {
                                 button := _putButtonToggle(&lay, w.title, group.current == i)
 
-                                if button.down {
+                                if button.pressed {
                                         v_groupZone.undockingWindow = w.title
                                 }
 
