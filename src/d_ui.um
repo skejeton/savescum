@@ -11,14 +11,18 @@ type (
                 rect: rect.Rect
         }
 
+        Scrolling = struct {
+                scroll: real
+                targetScroll: real
+        }
+
         Group = struct {
                 index: int
                 windows: []Window
                 current: uint
                 rect: rect.Rect
                 tabWidth: real //width of tabs total
-                tabScroll: real //horizontal scroll offset 
-                scrolling: bool
+                tabScroll: Scrolling
         }
 
         Cutting = int
@@ -70,6 +74,8 @@ type (
 
         Layout = struct {
                 index: int
+                hasBounds: bool
+                bounds: rect.Rect
                 rect: rect.Rect
                 cutter: Cutting
                 ctx: ^DrawCtx
@@ -131,6 +137,20 @@ fn (lay: ^SequenceLayout) put(size: th.Vf2) {
 fn (lay: ^SequenceLayout) padding(by: th.fu) {
         by = by - (trunc(lay.end.x-lay.start.x) % trunc(by))
         lay.put(th.Vf2{by, 0})
+}
+
+/////////////////////////////
+// Scroll
+
+fn scrollBy(scroll: ^Scrolling, by: real) {
+        scroll.targetScroll += by;
+        if scroll.targetScroll > 0 {
+                scroll.targetScroll = 0
+        }
+}
+
+fn scrollUpdate(scroll: ^Scrolling) {
+        scroll.scroll += (scroll.targetScroll-scroll.scroll)*(th.delta/1000.0)*10;
 }
 
 /////////////////////////////
@@ -377,6 +397,23 @@ fn (lay: ^Layout) getRect(reqSize: th.Vf2): rect.Rect {
         return cuttingCut(lay.cutter, &lay.rect, reqSize)
 }
 
+fn isMouseOver(r: rect.Rect): bool {
+        return rectInPoint(r, input.getMousePos())
+}
+
+fn (lay: ^Layout) isActive(): bool {
+        if lay.hasBounds {
+                // fix need for isMouseOver
+                return isMouseOver(lay.bounds);
+        }
+        return true;
+}
+
+fn (lay: ^Layout) setBounds(r: rect.Rect) {
+        lay.bounds = r;
+        lay.hasBounds = true;
+}
+
 fn (lay: ^Layout) putCommand(cmd: DrawCommand) {
         lay.ctx.putCommand(lay.index, cmd)
 }
@@ -576,9 +613,16 @@ fn handleInput() {
         }
 }
 
+fn handleGroups() {
+        for _, group in v_groupZone.groups {
+                scrollUpdate(&group.tabScroll)
+        }
+}
+
 fn begin*() {
         v_inputState = populateInputState(v_inputState);
         handleInput()
+        handleGroups()
         groupZoneSetJoin(&v_groupZone, false)
         dbgMain(th.Vf2{10, 10});
 }
@@ -621,10 +665,6 @@ fn isActive(): bool {
         return v_groupZone.activeGroup == v_lastGroup
 }
 
-fn isMouseOver(r: rect.Rect): bool {
-        return isActive() && rectInPoint(r, v_inputState.mousePos)
-}
-
 fn invalidateClick() {
         v_groupZone.draggingGroup = null
 }
@@ -645,7 +685,7 @@ fn _putButtonToggle(lay: ^Layout, text: str, out: bool): ButtonState {
                 color = c_held
         }
 
-        if isMouseOver(buttonRect) {
+        if lay.isActive() && isMouseOver(buttonRect) {
                 color = c_over
                 if v_inputState.mouseLeft.released {
                         released = true
@@ -678,15 +718,18 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
                 contentRect := getWindowContentRectFromRect(group.rect)
                 titlebarRect := getWindowDecorationRectFromRect(group.rect)
 
+                // Scroll
+                if v_groupZone.activeGroup == group && isMouseOver(titlebarRect) {
+                        scrollBy(&group.tabScroll, v_inputState.mouseScroll * 20);
+                }
+
                 lay := layoutInit(ctx, group.index)
 
                 // Draw shadow
                 lay.putCommand(commandRect(c_shadow, rectMove(rectInset(windowRect, -1), th.Vf2{0, 1})))
-
-                // Begin scissor
-                lay.putCommand(commandBeginScissorRect(group.rect))
                 lay.putCommand(commandRect(c_decor, windowRect))
                 lay.putCommand(commandRect(c_body, contentRect))
+
 
                 lay.rect = titlebarRect
 
@@ -694,25 +737,31 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
                         lay.putCommand(commandText(c_body, titlebarRect, group.windows[0].title))
                 } else {
                         if _putButton(&lay, "||||").pressed {
+                                printf("owo\n")
                                 v_groupZone.draggingGroup = group
                         }
+
+                        // Begin scissor
+                        lay.putCommand(commandBeginScissorRect(lay.rect))
+                        lay.setBounds(lay.rect)
+                        lay.getRect(th.Vf2{group.tabScroll.scroll, 0})
 
                         for i, w in group.windows {
                                 button := _putButtonToggle(&lay, w.title, group.current == i)
 
                                 if button.pressed {
+                                        printf("uwu\n")
                                         v_groupZone.undockingWindow = w.title
                                 }
 
                                 if button.released {
+                                        printf("uwu\n")
                                         group.current = i
                                 }
                         }
+                        // End scissor
+                        lay.putCommand(commandEndScissorRect())
                 }
-
-
-                // End scissor
-                lay.putCommand(commandEndScissorRect())
         } else {
                 ctx.putCommand(group.index, commandRect(c_shadow, group.rect))
         }
