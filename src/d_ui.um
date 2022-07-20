@@ -737,7 +737,6 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
                         lay.putCommand(commandText(c_body, titlebarRect, group.windows[0].title))
                 } else {
                         if _putButton(&lay, "||||").pressed {
-                                printf("owo\n")
                                 v_groupZone.draggingGroup = group
                         }
 
@@ -750,12 +749,10 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
                                 button := _putButtonToggle(&lay, w.title, group.current == i)
 
                                 if button.pressed {
-                                        printf("uwu\n")
                                         v_groupZone.undockingWindow = w.title
                                 }
 
                                 if button.released {
-                                        printf("uwu\n")
                                         group.current = i
                                 }
                         }
