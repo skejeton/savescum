@@ -682,7 +682,8 @@ fn _putButtonToggle(lay: ^Layout, text: str, out: bool): ButtonState {
     color = c_held
   }
 
-  if lay.isActive() && isMouseOver(buttonRect) {
+  // FIXME: using static variables
+  if v_groupZone.activeGroup == v_lastGroup && lay.isActive() && isMouseOver(buttonRect) {
     color = c_over
     if v_inputState.mouseLeft.released {
       released = true
