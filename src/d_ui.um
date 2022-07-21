@@ -217,13 +217,28 @@ fn (ctx: ^DrawCtx) putCommand(index: int, cmd: DrawCommand) {
 }
 
 fn (ctx: ^DrawCtx) render(font: d_font.Font) {
+  rectStack := make([]rect.Rect, 0)
+  isScissor := false
+  scissorRect := rect.Rect{}
+
   for i in ctx.layers {
     layer := &ctx.layers[i]
     for j, cmd in layer.commands {
       if cmd.color == magicColorBeginScissorRect {
+        if isScissor {
+          rectStack = append(rectStack, scissorRect)
+        }
+        isScissor = true
+        scissorRect = cmd.rect
         window.beginScissorRect(cmd.rect)
       } else if cmd.color == magicColorEndScissorRect {
-        window.endScissor()
+        if len(rectStack) > 0 {
+          window.beginScissorRect(rectStack[len(rectStack)-1])
+          rectStack = delete(rectStack, len(rectStack)-1)
+        } else {
+          window.endScissor()
+          isScissor = false
+        }
       } else if cmd.text != "" { // draw text
         size := font.measure(cmd.text)
         font.draw(cmd.text, th.Vf2{cmd.rect.x+(cmd.rect.w-size.x)/2, cmd.rect.y+(cmd.rect.h-size.y)/2}, cmd.color)
@@ -231,6 +246,10 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
         canvas.drawRect(cmd.color, cmd.rect)
       }
     }
+  }
+
+  if len(rectStack) > 0 {
+    error("Umatched endScissor");
   }
 }
 
@@ -629,6 +648,12 @@ fn begin*() {
 }
 
 fn end*() {
+  // clean up scissor
+  if v_currentLay.ctx != null {
+    v_currentLay.putCommand(commandEndScissorRect())
+  }
+  v_lastGroup = null
+
   v_drawCtx.render(v_font)
   v_drawCtx.clear()
 }
@@ -751,6 +776,8 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
         }
 
         if button.released {
+          // FIXME: maybe less hacky eh?
+          v_lastWindow = group.windows[i].title
           group.current = i
         }
       }
@@ -764,13 +791,21 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
 
 fn beginWindow*(title: str, r: rect.Rect) {
   v_lastWindow = title
-  v_lastGroup = groupZoneAcquire(&v_groupZone, title, r)
+  newGroup := groupZoneAcquire(&v_groupZone, title, r)
 
-  // Prevent drawing the group multiple times by checking if
-  // the current window is the one displayed in the group.
+  // Prevent handling the group multiple times
+  if newGroup != v_lastGroup {
+    // Prevent mismatches
+    if v_lastGroup != null {
+      v_currentLay.putCommand(commandEndScissorRect())
+    }
+    v_lastGroup = newGroup
+  }
+
   if isGroupVisible(v_lastGroup) {
+    drawGroup(&v_drawCtx, v_lastGroup)
     v_currentLay = layoutInit(&v_drawCtx, v_lastGroup.index, cuttingTop, getLastWindowContentRect())
-    drawGroup(&v_drawCtx, v_lastGroup);
+    v_currentLay.putCommand(commandBeginScissorRect(v_currentLay.rect))
   }
 }
 
