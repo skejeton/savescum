@@ -353,7 +353,7 @@ fn groupZoneUndockWindow(zone: ^GroupZone, title: str): ^Group {
     error("Invalid index")
   }
 
-  if (group.current >= index && index > 0) {
+  if (group.current >= index && group.current > 0) {
     group.current -= 1
   }
 
@@ -425,6 +425,7 @@ var (
   v_groupZone: GroupZone
   v_lastGroup: ^Group
   v_lastWindow: str
+  v_currentLay: Layout
 
   v_inputState: InputState
 )
@@ -661,10 +662,6 @@ fn getLastWindowContentRect(): rect.Rect {
   return rect.mk(0, 0, 0, 0)
 }
 
-fn isActive(): bool {
-  return v_groupZone.activeGroup == v_lastGroup
-}
-
 fn invalidateClick() {
   v_groupZone.draggingGroup = null
 }
@@ -771,13 +768,14 @@ fn beginWindow*(title: str, r: rect.Rect) {
   // Prevent drawing the group multiple times by checking if
   // the current window is the one displayed in the group.
   if isGroupVisible(v_lastGroup) {
+    v_currentLay = layoutInit(&v_drawCtx, v_lastGroup.index, cuttingTop, getLastWindowContentRect())
     drawGroup(&v_drawCtx, v_lastGroup);
   }
 }
 
 fn putButton*(text: str): ButtonState {
   if isGroupRendered(v_lastGroup) {
-    return _putButton(&layoutInit(&v_drawCtx, v_lastGroup.index, cuttingTop, getLastWindowContentRect()), text)
+    return _putButton(&v_currentLay, text)
   }
   return ButtonState{}
 }
