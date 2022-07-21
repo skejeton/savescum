@@ -1,384 +1,384 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
-        "d_world.um"; "d_dialogs.um")
+  "d_world.um"; "d_dialogs.um")
 
 const (
-        shapeBlock              = 0
-        shapeLeftUpSlope        = 1
-        shapeRightUpSlope       = 2
-        shapeLeftDownSlope      = 3
-        shapeRightDownSlope     = 4
+  shapeBlock        = 0
+  shapeLeftUpSlope  = 1
+  shapeRightUpSlope       = 2
+  shapeLeftDownSlope      = 3
+  shapeRightDownSlope     = 4
 )
 
 type (
-        Shape* = struct {
-                rect: rect.Rect
-                shape: int
-        }
+  Shape* = struct {
+    rect: rect.Rect
+    shape: int
+  }
 
-        Character* = struct {
-                rect: rect.Rect
-                vel: th.Vf2
-                onGround: bool
-                onSlope: bool
-        }
+  Character* = struct {
+    rect: rect.Rect
+    vel: th.Vf2
+    onGround: bool
+    onSlope: bool
+  }
 )
 
 var (
-        entities*: []Character
-        sceneId*: int
-        world*: d_world.World
-        chara*: Character
-        dialogs*: d_dialogs.Dialogs
-        camera: th.Vf2
-        cameraPos: th.Vf2
-        cameraAntiPanVel: th.Vf2
-        cameraAntiPan: th.Vf2
+  entities*: []Character
+  sceneId*: int
+  world*: d_world.World
+  chara*: Character
+  dialogs*: d_dialogs.Dialogs
+  camera: th.Vf2
+  cameraPos: th.Vf2
+  cameraAntiPanVel: th.Vf2
+  cameraAntiPan: th.Vf2
 )
 
 fn cameraControl() {
-        cameraAntiPanVel.x += chara.vel.x
-        cameraAntiPanVel.x /= 2.6
-        cameraAntiPanVel.y = chara.vel.y
-        cameraAntiPanVel.y /= 2.6
-        cameraAntiPan.x += cameraAntiPanVel.x/5.0
-        cameraAntiPan.y += cameraAntiPanVel.y/5.0
+  cameraAntiPanVel.x += chara.vel.x
+  cameraAntiPanVel.x /= 2.6
+  cameraAntiPanVel.y = chara.vel.y
+  cameraAntiPanVel.y /= 2.6
+  cameraAntiPan.x += cameraAntiPanVel.x/5.0
+  cameraAntiPan.y += cameraAntiPanVel.y/5.0
 
-        if cameraAntiPan.x < -50 {
-                cameraAntiPan.x = -50
-        }
-        if cameraAntiPan.x > 50 {
-                cameraAntiPan.x = 50
-        }
-        if cameraAntiPan.y < -50 {
-                cameraAntiPan.y = -50
-        }
-        if cameraAntiPan.y > 50 {
-                cameraAntiPan.y = 50
-        }
+  if cameraAntiPan.x < -50 {
+    cameraAntiPan.x = -50
+  }
+  if cameraAntiPan.x > 50 {
+    cameraAntiPan.x = 50
+  }
+  if cameraAntiPan.y < -50 {
+    cameraAntiPan.y = -50
+  }
+  if cameraAntiPan.y > 50 {
+    cameraAntiPan.y = 50
+  }
 
-        if ok, pos := dialogs.getTopPos(); ok {
-                cameraPos.x += (pos.x-cameraPos.x)/20
-                cameraPos.y += (pos.y-cameraPos.y)/20
-        } else {
-                cameraPos.x += ((chara.rect.x)-cameraPos.x)/4
-                cameraPos.y += ((chara.rect.y)-cameraPos.y)/4
-        }
-        camera.x = cameraPos.x + cameraAntiPan.x - (window.w-chara.rect.w)/2
-        camera.y = cameraPos.y + cameraAntiPan.y - (window.h-chara.rect.h)/2
+  if ok, pos := dialogs.getTopPos(); ok {
+    cameraPos.x += (pos.x-cameraPos.x)/20
+    cameraPos.y += (pos.y-cameraPos.y)/20
+  } else {
+    cameraPos.x += ((chara.rect.x)-cameraPos.x)/4
+    cameraPos.y += ((chara.rect.y)-cameraPos.y)/4
+  }
+  camera.x = cameraPos.x + cameraAntiPan.x - (window.w-chara.rect.w)/2
+  camera.y = cameraPos.y + cameraAntiPan.y - (window.h-chara.rect.h)/2
 }
 
 fn cameraOffsetRect(r: rect.Rect): rect.Rect {
-        r.x -= camera.x
-        r.y -= camera.y
-        return r
+  r.x -= camera.x
+  r.y -= camera.y
+  return r
 }
 
 fn playerControl() {
-        if input.isPressed(input.key_up) && chara.onGround {
-                chara.vel.y = -4.36
-        }
-        if input.isPressed(input.key_left) {
-                chara.vel.x = -2
-        }
-        if input.isPressed(input.key_right) {
-                chara.vel.x = 2
-        }
+  if input.isPressed(input.key_up) && chara.onGround {
+    chara.vel.y = -4.36
+  }
+  if input.isPressed(input.key_left) {
+    chara.vel.x = -2
+  }
+  if input.isPressed(input.key_right) {
+    chara.vel.x = 2
+  }
 
-        if chara.rect.y > 2e3 {
-                // NOTE: Respawn
-                chara.vel.x = 0
-                chara.vel.y = 0
-                chara.rect.x = world.playerSpawnPos.x * world.tileset.tileSizeX
-                chara.rect.y = world.playerSpawnPos.y * world.tileset.tileSizeY
-        }
+  if chara.rect.y > 2e3 {
+    // NOTE: Respawn
+    chara.vel.x = 0
+    chara.vel.y = 0
+    chara.rect.x = world.playerSpawnPos.x * world.tileset.tileSizeX
+    chara.rect.y = world.playerSpawnPos.y * world.tileset.tileSizeY
+  }
 }
 
 fn entPhysics(ent: ^Character) {
-        if ent.onSlope {
-                ent.vel.y += 2.2
-        } else {
-                ent.vel.y += 0.1
-        }
+  if ent.onSlope {
+    ent.vel.y += 2.2
+  } else {
+    ent.vel.y += 0.1
+  }
 
-        if ent.vel.y > 10 {
-                ent.vel.y = 10
-        }
+  if ent.vel.y > 10 {
+    ent.vel.y = 10
+  }
 
-        ent.rect.x += ent.vel.x
-        ent.rect.y += ent.vel.y
+  ent.rect.x += ent.vel.x
+  ent.rect.y += ent.vel.y
 
-        ent.onGround = false
-        ent.onSlope = false
-        ent.vel.x = 0
+  ent.onGround = false
+  ent.onSlope = false
+  ent.vel.x = 0
 }
 
 fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
-        x_left := r.x + r.w - along.x
-        y_up := r.y + r.h - along.y
+  x_left := r.x + r.w - along.x
+  y_up := r.y + r.h - along.y
 
-        x_right := along.x + along.w - r.x
-        y_down := along.y + along.h - r.y
+  x_right := along.x + along.w - r.x
+  y_down := along.y + along.h - r.y
 
-        var (min_x: real; min_y: real)
+  var (min_x: real; min_y: real)
 
-        if fabs(x_left) < fabs(x_right) {
-                min_x = -x_left
-        } else {
-                min_x = x_right
-        }
+  if fabs(x_left) < fabs(x_right) {
+    min_x = -x_left
+  } else {
+    min_x = x_right
+  }
 
-        if fabs(y_up) < fabs(y_down) {
-                min_y = -y_up
-        } else {
-                min_y = y_down
-        }
+  if fabs(y_up) < fabs(y_down) {
+    min_y = -y_up
+  } else {
+    min_y = y_down
+  }
 
-        if fabs(min_x) < fabs(min_y) {
-                return th.Vf2{min_x, 0}
-        } 
-        return th.Vf2{0, min_y}
+  if fabs(min_x) < fabs(min_y) {
+    return th.Vf2{min_x, 0}
+  } 
+  return th.Vf2{0, min_y}
 }
 
 fn collRectVsRect(r1, r2: rect.Rect): bool {
-        return (r1.x + r1.w) > (r2.x) && (r1.y + r1.h) > (r2.y) && (r1.x) < (r2.x + r2.w) && (r1.y) < (r2.y + r2.h)
+  return (r1.x + r1.w) > (r2.x) && (r1.y + r1.h) > (r2.y) && (r1.x) < (r2.x + r2.w) && (r1.y) < (r2.y + r2.h)
 }
 
 fn collSortShapesByProximity(shapes: ^[]Shape, along: th.Vf2) {
-        for i := 0; i < len(shapes^); i++ {
-                closest := &shapes[i]
-                mindist := real(99999999)
-                for j := i; j < len(shapes^); j++ {
-                        current := shapes[j].rect
-                        point := th.Vf2{current.x + current.w / 2, current.y + current.h / 2}
-                        dist := point.distanceTo(along)
-                        if dist < mindist {
-                                mindist = dist
-                                closest = &shapes[j]
-                        }
-                }
-                tmp := closest^
-                closest^ = shapes[i]
-                shapes[i] = tmp
-        }
+  for i := 0; i < len(shapes^); i++ {
+    closest := &shapes[i]
+    mindist := real(99999999)
+    for j := i; j < len(shapes^); j++ {
+      current := shapes[j].rect
+      point := th.Vf2{current.x + current.w / 2, current.y + current.h / 2}
+      dist := point.distanceTo(along)
+      if dist < mindist {
+        mindist = dist
+        closest = &shapes[j]
+      }
+    }
+    tmp := closest^
+    closest^ = shapes[i]
+    shapes[i] = tmp
+  }
 }
 
 fn entVsShape(ent: ^Character, s: Shape) {
-        r := s.rect
-        snap := collCalcRectSnap(ent.rect, r)
-                
-        // Not a valid collision (probably pushed back by other blocks?)
-        if collRectVsRect(ent.rect, r) == false {
-                return
-        }
-        
-        switch s.shape {
-        case shapeLeftUpSlope:
-                cornerX := ent.rect.x + ent.rect.w - r.x;
-                if cornerX > r.w {
-                        cornerX = r.w
-                }
-                cornerY := ent.rect.y + ent.rect.h - r.y;
-                hitY := r.h - ((r.h/r.w) * (cornerX))
-                if hitY > r.h {
-                        hitY = r.h
-                }
-                
-                if cornerY > hitY {
-                        ent.vel.y = 0;
-                        ent.onGround = true;
-                        ent.onSlope = true;
-                        ent.rect.y += hitY-cornerY;
-                }
-        case shapeRightUpSlope:
-                cornerX := ent.rect.x - r.x;
-                if cornerX < 0 {
-                        cornerX = 0;
-                }
-                cornerY := ent.rect.y + ent.rect.h - r.y;
-                hitY := (r.h/r.w) * (cornerX)
+  r := s.rect
+  snap := collCalcRectSnap(ent.rect, r)
+    
+  // Not a valid collision (probably pushed back by other blocks?)
+  if collRectVsRect(ent.rect, r) == false {
+    return
+  }
+  
+  switch s.shape {
+  case shapeLeftUpSlope:
+    cornerX := ent.rect.x + ent.rect.w - r.x;
+    if cornerX > r.w {
+      cornerX = r.w
+    }
+    cornerY := ent.rect.y + ent.rect.h - r.y;
+    hitY := r.h - ((r.h/r.w) * (cornerX))
+    if hitY > r.h {
+      hitY = r.h
+    }
+    
+    if cornerY > hitY {
+      ent.vel.y = 0;
+      ent.onGround = true;
+      ent.onSlope = true;
+      ent.rect.y += hitY-cornerY;
+    }
+  case shapeRightUpSlope:
+    cornerX := ent.rect.x - r.x;
+    if cornerX < 0 {
+      cornerX = 0;
+    }
+    cornerY := ent.rect.y + ent.rect.h - r.y;
+    hitY := (r.h/r.w) * (cornerX)
 
-                if cornerY > hitY {
-                        ent.vel.y = 0;
-                        ent.onGround = true;
-                        ent.onSlope = true;
-                        ent.rect.y += hitY-cornerY;
-                }
-        case shapeLeftDownSlope:
-                cornerX := ent.rect.x + ent.rect.w - r.x;
-                if cornerX > r.w {
-                        cornerX = r.w
-                }
-                cornerY := ent.rect.y - r.y;
-                hitY := (r.h/r.w) * (cornerX)
+    if cornerY > hitY {
+      ent.vel.y = 0;
+      ent.onGround = true;
+      ent.onSlope = true;
+      ent.rect.y += hitY-cornerY;
+    }
+  case shapeLeftDownSlope:
+    cornerX := ent.rect.x + ent.rect.w - r.x;
+    if cornerX > r.w {
+      cornerX = r.w
+    }
+    cornerY := ent.rect.y - r.y;
+    hitY := (r.h/r.w) * (cornerX)
 
-                if cornerY < hitY {
-                        if ent.vel.y < 0 {
-                                ent.vel.y = 0;
-                        }
-                        ent.rect.y += hitY-cornerY;
-                }
-        case shapeRightDownSlope:
-                cornerX := ent.rect.x - r.x;
-                if cornerX < 0 {
-                        cornerX = 0;
-                }
-                cornerY := ent.rect.y - r.y;
-                hitY := r.h - ((r.h/r.w) * (cornerX))
+    if cornerY < hitY {
+      if ent.vel.y < 0 {
+        ent.vel.y = 0;
+      }
+      ent.rect.y += hitY-cornerY;
+    }
+  case shapeRightDownSlope:
+    cornerX := ent.rect.x - r.x;
+    if cornerX < 0 {
+      cornerX = 0;
+    }
+    cornerY := ent.rect.y - r.y;
+    hitY := r.h - ((r.h/r.w) * (cornerX))
 
-                if cornerY < hitY {
-                        if ent.vel.y < 0 {
-                                ent.vel.y = 0;
-                        }
-                        ent.rect.y += hitY-cornerY;
-                }
-        case shapeBlock:
-                if snap.x != 0 {
-                        ent.vel.x = 0
-                } else if (snap.y > 0 && ent.vel.y < 0) || (snap.y < 0 && ent.vel.y > 0) {
-                        ent.vel.y = 0
-                }
-                if snap.y < 0 {
-                        ent.onGround = true
-                }
-                ent.rect.x += snap.x
-                ent.rect.y += snap.y
-        }
+    if cornerY < hitY {
+      if ent.vel.y < 0 {
+        ent.vel.y = 0;
+      }
+      ent.rect.y += hitY-cornerY;
+    }
+  case shapeBlock:
+    if snap.x != 0 {
+      ent.vel.x = 0
+    } else if (snap.y > 0 && ent.vel.y < 0) || (snap.y < 0 && ent.vel.y > 0) {
+      ent.vel.y = 0
+    }
+    if snap.y < 0 {
+      ent.onGround = true
+    }
+    ent.rect.x += snap.x
+    ent.rect.y += snap.y
+  }
 }
 
 fn entConstructColidingSolids(ent: ^Character): []Shape {
-        tangents := world.getTangentTiles(rect.Rect{ent.rect.x-1, ent.rect.y-1, ent.rect.w+1, ent.rect.h+1})
-        solids := []Shape{}
-        nonBlockSolids := []Shape{}
+  tangents := world.getTangentTiles(rect.Rect{ent.rect.x-1, ent.rect.y-1, ent.rect.w+1, ent.rect.h+1})
+  solids := []Shape{}
+  nonBlockSolids := []Shape{}
 
-        for i, tangent in tangents {
-                shapeRect := rect.Rect{tangent.x*world.tileset.tileSizeX, tangent.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY} 
-                shapeType := -1
+  for i, tangent in tangents {
+    shapeRect := rect.Rect{tangent.x*world.tileset.tileSizeX, tangent.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY} 
+    shapeType := -1
 
-                switch tangent.id {
-                case 1, 5, 7:   shapeType = shapeBlock
-                case 9:         shapeType = shapeLeftUpSlope
-                case 10:        shapeType = shapeRightUpSlope
-                case 13:        shapeType = shapeLeftDownSlope
-                case 14:        shapeType = shapeRightDownSlope
-                case 15:        shapeType = shapeLeftUpSlope
-                                shapeRect.h /= 2;
-                case 16:        shapeType = shapeRightUpSlope
-                                shapeRect.h /= 2;
-                case 4:         shapeType = shapeLeftUpSlope
-                                shapeRect.y += world.tileset.tileSizeY/2;
-                                shapeRect.h /= 2;
-                case 8:         shapeType = shapeRightUpSlope
-                                shapeRect.y += world.tileset.tileSizeY/2;
-                                shapeRect.h /= 2;
-                case 11:        shapeType = shapeRightDownSlope
-                                shapeRect.h /= 2;
-                case 12:        shapeType = shapeLeftDownSlope
-                                shapeRect.h /= 2;
-                // TODO: Investigate why uncommenting this causes a bug where you can pass through blocks
-                // default:        break
-                }
-                
-                if shapeType == shapeBlock {
-                        solids = append(solids, Shape{shapeRect, shapeType})
-                } else {
-                        nonBlockSolids = append(nonBlockSolids, Shape{shapeRect, shapeType})
-                }
-        }
+    switch tangent.id {
+    case 1, 5, 7:   shapeType = shapeBlock
+    case 9:   shapeType = shapeLeftUpSlope
+    case 10:  shapeType = shapeRightUpSlope
+    case 13:  shapeType = shapeLeftDownSlope
+    case 14:  shapeType = shapeRightDownSlope
+    case 15:  shapeType = shapeLeftUpSlope
+        shapeRect.h /= 2;
+    case 16:  shapeType = shapeRightUpSlope
+        shapeRect.h /= 2;
+    case 4:   shapeType = shapeLeftUpSlope
+        shapeRect.y += world.tileset.tileSizeY/2;
+        shapeRect.h /= 2;
+    case 8:   shapeType = shapeRightUpSlope
+        shapeRect.y += world.tileset.tileSizeY/2;
+        shapeRect.h /= 2;
+    case 11:  shapeType = shapeRightDownSlope
+        shapeRect.h /= 2;
+    case 12:  shapeType = shapeLeftDownSlope
+        shapeRect.h /= 2;
+    // TODO: Investigate why uncommenting this causes a bug where you can pass through blocks
+    // default:  break
+    }
+    
+    if shapeType == shapeBlock {
+      solids = append(solids, Shape{shapeRect, shapeType})
+    } else {
+      nonBlockSolids = append(nonBlockSolids, Shape{shapeRect, shapeType})
+    }
+  }
 
 
-        //collSortShapesByProximity(&nonBlockSolids, th.Vf2{ent.rect.x+ent.rect.w/2, ent.rect.y+ent.rect.h/2})
-        solids = append(solids, nonBlockSolids)
-        collSortShapesByProximity(&solids, th.Vf2{ent.rect.x+ent.rect.w/2, ent.rect.y+ent.rect.h/2})
-        return solids
+  //collSortShapesByProximity(&nonBlockSolids, th.Vf2{ent.rect.x+ent.rect.w/2, ent.rect.y+ent.rect.h/2})
+  solids = append(solids, nonBlockSolids)
+  collSortShapesByProximity(&solids, th.Vf2{ent.rect.x+ent.rect.w/2, ent.rect.y+ent.rect.h/2})
+  return solids
 }
 
 fn entSolveCollision(ent: ^Character) {
-        solids := entConstructColidingSolids(ent)
+  solids := entConstructColidingSolids(ent)
 
-        for i, solid in solids {
-                entVsShape(ent, solid)
-        }
+  for i, solid in solids {
+    entVsShape(ent, solid)
+  }
 }
 
 fn _drawRectTangents(r: rect.Rect) {
-        solids := entConstructColidingSolids(&chara)
+  solids := entConstructColidingSolids(&chara)
 
-        for i, solid in solids {
-                rec := cameraOffsetRect(solid.rect)
-                switch solid.shape {
-                case shapeBlock:
-                        canvas.drawRect(0x00FF0055, rec)
-                case shapeLeftUpSlope, shapeRightDownSlope:
-                        canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y+rec.h}, th.Vf2{rec.x+rec.w, rec.y}, 2)
-                case shapeRightUpSlope, shapeLeftDownSlope:
-                        canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y}, th.Vf2{rec.x+rec.w, rec.y+rec.h}, 2)
-                }
-                canvas.drawText(repr(i), th.Vf2{rec.x, rec.y}, th.white, 1)
-        }
+  for i, solid in solids {
+    rec := cameraOffsetRect(solid.rect)
+    switch solid.shape {
+    case shapeBlock:
+      canvas.drawRect(0x00FF0055, rec)
+    case shapeLeftUpSlope, shapeRightDownSlope:
+      canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y+rec.h}, th.Vf2{rec.x+rec.w, rec.y}, 2)
+    case shapeRightUpSlope, shapeLeftDownSlope:
+      canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y}, th.Vf2{rec.x+rec.w, rec.y+rec.h}, 2)
+    }
+    canvas.drawText(repr(i), th.Vf2{rec.x, rec.y}, th.white, 1)
+  }
 }
 
 fn init*() {
-        dialogs = d_dialogs.init()
-        d_game.dialogs.register("receptionist" , "data/ts03_dialog.png", 0, "data/sp00_receptionist.png", 0, "data/font_mono.ttf", 16, 0xFFFFFFFF, 0.1 , []str{"smirk"})
-        chara = Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
+  dialogs = d_dialogs.init()
+  d_game.dialogs.register("receptionist" , "data/ts03_dialog.png", 0, "data/sp00_receptionist.png", 0, "data/font_mono.ttf", 16, 0xFFFFFFFF, 0.1 , []str{"smirk"})
+  chara = Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
 
-        cameraPos.x = chara.rect.x-(window.w-chara.rect.w)/2
-        cameraPos.y = chara.rect.y-(window.h-chara.rect.h)/2
-        entities = make([]Character, 0)
+  cameraPos.x = chara.rect.x-(window.w-chara.rect.w)/2
+  cameraPos.y = chara.rect.y-(window.h-chara.rect.h)/2
+  entities = make([]Character, 0)
 }
 
 fn updateEntities() {
-        for i := 0; i < len(entities); i++ {
-                entPhysics(&entities[i])
-                entSolveCollision(&entities[i])
-        }
+  for i := 0; i < len(entities); i++ {
+    entPhysics(&entities[i])
+    entSolveCollision(&entities[i])
+  }
 
-        if ok, _ := dialogs.getTopPos(); !ok {
-                playerControl()
-        }
-        entPhysics(&chara)
-        entSolveCollision(&chara)
+  if ok, _ := dialogs.getTopPos(); !ok {
+    playerControl()
+  }
+  entPhysics(&chara)
+  entSolveCollision(&chara)
 }
 
 fn drawEntities() {
-        for i := 0; i < len(entities); i++ {
-                if entities[i].onGround {
-                        canvas.drawRect(th.red, cameraOffsetRect(entities[i].rect))
-                } else {
-                        canvas.drawRect(th.blue, cameraOffsetRect(entities[i].rect))
-                }
-        }
+  for i := 0; i < len(entities); i++ {
+    if entities[i].onGround {
+      canvas.drawRect(th.red, cameraOffsetRect(entities[i].rect))
+    } else {
+      canvas.drawRect(th.blue, cameraOffsetRect(entities[i].rect))
+    }
+  }
 
-        if chara.onGround { 
-                canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
-        } else {
-                canvas.drawRect(th.blue, cameraOffsetRect(chara.rect))
-        }
+  if chara.onGround { 
+    canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
+  } else {
+    canvas.drawRect(th.blue, cameraOffsetRect(chara.rect))
+  }
 }
 
 fn draw*() {
-        // UPDATE PLAYER & CAMERA //
-        updateEntities()
-        cameraControl()
+  // UPDATE PLAYER & CAMERA //
+  updateEntities()
+  cameraControl()
 
-        // UPDATE DIALOG //
-        dialogs.setCamPos(camera)
-        dialogs.update()
+  // UPDATE DIALOG //
+  dialogs.setCamPos(camera)
+  dialogs.update()
 
-        // RENDER WORLD //
-        world.drawLayer(camera, -1)
-        drawEntities()
+  // RENDER WORLD //
+  world.drawLayer(camera, -1)
+  drawEntities()
 
-        world.drawLayer(camera, 0)
-        world.drawLayer(camera, 1)
+  world.drawLayer(camera, 0)
+  world.drawLayer(camera, 1)
 
-        dialogs.advance(input.isPressed('x'))
+  dialogs.advance(input.isPressed('x'))
 
-        // RENDER DIALOG //
-        dialogs.draw()
+  // RENDER DIALOG //
+  dialogs.draw()
 
 /*
-        // DEBUG OVERYALS //
-        _drawRectTangents(chara.rect)
+  // DEBUG OVERYALS //
+  _drawRectTangents(chara.rect)
 */
 }

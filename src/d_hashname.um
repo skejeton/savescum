@@ -3,16 +3,16 @@
 //
 
 const (
-        prefixes = [21]str{"MO", "NO", "NE", "BRE", "BOR", "BU", "BO", "RU", "DAL", "PER",
-                           "SOR", "KO", "NOG", "KRO", "FER", "RAL", "LOA", "ROI", "FU", "YGG", "DRA"}
-        suffices = [18]str{"ETH", "YOR", "KKA", "TTU", "KIRK", "KER", "HAR", "KROK",
-                           "ROT", "TER", "FI", "AKKEN", "FOK", "TROL", "VARG", "LYR", "SIR", "SIL"}
-                           /*
-        prefixes = [21]str{"МО", "НО", "НЕ", "БРЕ", "БОР", "БУ", "БO", "PУ", "ДАЛ", "ПЕР",
-                           "СОР", "КО", "НОГ", "КРО", "ФЕР", "РАЛ", "ЛОА", "РОЙ", "ФУ", "ИГГ", "ДРА"}
-        suffices = [18]str{"ЭТ", "ЙОР", "ККА", "ТТУ", "KЁРK", "KЕР", "ХАР", "КРОК",
-                           "РОТ", "ТЕР", "ФИ", "АККЕН", "ФОК", "ТРОЛ", "ВАРГ", "ЛИР", "СИР", "СИЛЬ"}
-                           */
+  prefixes = [21]str{"MO", "NO", "NE", "BRE", "BOR", "BU", "BO", "RU", "DAL", "PER",
+         "SOR", "KO", "NOG", "KRO", "FER", "RAL", "LOA", "ROI", "FU", "YGG", "DRA"}
+  suffices = [18]str{"ETH", "YOR", "KKA", "TTU", "KIRK", "KER", "HAR", "KROK",
+         "ROT", "TER", "FI", "AKKEN", "FOK", "TROL", "VARG", "LYR", "SIR", "SIL"}
+         /*
+  prefixes = [21]str{"МО", "НО", "НЕ", "БРЕ", "БОР", "БУ", "БO", "PУ", "ДАЛ", "ПЕР",
+         "СОР", "КО", "НОГ", "КРО", "ФЕР", "РАЛ", "ЛОА", "РОЙ", "ФУ", "ИГГ", "ДРА"}
+  suffices = [18]str{"ЭТ", "ЙОР", "ККА", "ТТУ", "KЁРK", "KЕР", "ХАР", "КРОК",
+         "РОТ", "ТЕР", "ФИ", "АККЕН", "ФОК", "ТРОЛ", "ВАРГ", "ЛИР", "СИР", "СИЛЬ"}
+         */
 ) 
 
 
@@ -24,17 +24,17 @@ fn xorshift(x: uint): uint {
 }
 
 fn name*(hash: uint): str {
-        s := ""
-        hash = xorshift(hash)
-        s += prefixes[hash%21]
-        hash = xorshift(hash)
-        s += prefixes[hash%21]
-        hash = xorshift(hash)
-        s += "-"
-        s += prefixes[hash%21]
-        hash = xorshift(hash)
-        s += prefixes[hash%21]
-        hash = xorshift(hash)
-        s += suffices[hash%18]
-        return s
+  s := ""
+  hash = xorshift(hash)
+  s += prefixes[hash%21]
+  hash = xorshift(hash)
+  s += prefixes[hash%21]
+  hash = xorshift(hash)
+  s += "-"
+  s += prefixes[hash%21]
+  hash = xorshift(hash)
+  s += prefixes[hash%21]
+  hash = xorshift(hash)
+  s += suffices[hash%18]
+  return s
 }

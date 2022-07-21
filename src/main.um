@@ -1,7 +1,7 @@
 import (
-        "d_editor.um"
+  "d_editor.um"
 )
 
 fn main() {
-        d_editor.main()
+  d_editor.main()
 }

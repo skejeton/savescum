@@ -2,74 +2,74 @@
 //      
 //      The world is split up into layers, which contain chunks.
 //      There's 3 layers:
-//              -1: the background layer, no collision checks are performed on it
-//               0: the middleground layer, this is where the collisions are tested
-//               1: the foreground layer, this is drawn over the character, no collision checks  
+//        -1: the background layer, no collision checks are performed on it
+//         0: the middleground layer, this is where the collisions are tested
+//         1: the foreground layer, this is drawn over the character, no collision checks  
 
 import (
-        "th.um"; "std.um"; "csv.um"; "rect.um"
-        "d_util.um"; "d_tileset.um"
+  "th.um"; "std.um"; "csv.um"; "rect.um"
+  "d_util.um"; "d_tileset.um"
 )
 
 const (
-        chunkW* = 320/16*2
-        chunkH* = 240/16*2
-        lastVersion* = "000"
+  chunkW* = 320/16*2
+  chunkH* = 240/16*2
+  lastVersion* = "000"
 )
 
 type (
-        Chunk* = [chunkW][chunkH]int
-        ChunkPos* = struct {
-                x: int
-                y: int
-        }
-        World* = struct {
-                playerSpawnPos: th.Vf2
-                tileset: d_tileset.Tileset
-                tilemap: [3]map[ChunkPos]Chunk
-        }
-        Tangent* = struct {
-                x, y: int
-                id: int
-        }
+  Chunk* = [chunkW][chunkH]int
+  ChunkPos* = struct {
+    x: int
+    y: int
+  }
+  World* = struct {
+    playerSpawnPos: th.Vf2
+    tileset: d_tileset.Tileset
+    tilemap: [3]map[ChunkPos]Chunk
+  }
+  Tangent* = struct {
+    x, y: int
+    id: int
+  }
 )
 
 fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
-        layer++
-        if layer < 0 || layer > 2 {
-                return
-        }
+  layer++
+  if layer < 0 || layer > 2 {
+    return
+  }
 
-        // get or construct a chunk
-        chunk_pos := ChunkPos{d_util.floor(tx/real(chunkW)), d_util.floor(ty/real(chunkH))}
+  // get or construct a chunk
+  chunk_pos := ChunkPos{d_util.floor(tx/real(chunkW)), d_util.floor(ty/real(chunkH))}
 
-        chunk := &world.tilemap[layer][chunk_pos]
+  chunk := &world.tilemap[layer][chunk_pos]
 
-        // make tile positions local
-        tx = tx - chunk_pos.x * chunkW
-        ty = ty - chunk_pos.y * chunkH
+  // make tile positions local
+  tx = tx - chunk_pos.x * chunkW
+  ty = ty - chunk_pos.y * chunkH
 
-        chunk[tx][ty] = tile
+  chunk[tx][ty] = tile
 }
 
 fn (world: ^World) getTile*(layer, tx, ty: int): int {
-        layer++
-        if layer < 0 || layer > 2 {
-                return 0
-        }
+  layer++
+  if layer < 0 || layer > 2 {
+    return 0
+  }
 
-        chunk_pos := ChunkPos{d_util.floor(tx/real(chunkW)), d_util.floor(ty/real(chunkH))}
-        if !validkey(world.tilemap[layer], chunk_pos) {
-                return 0
-        }
+  chunk_pos := ChunkPos{d_util.floor(tx/real(chunkW)), d_util.floor(ty/real(chunkH))}
+  if !validkey(world.tilemap[layer], chunk_pos) {
+    return 0
+  }
 
-        chunk := &world.tilemap[layer][chunk_pos]
+  chunk := &world.tilemap[layer][chunk_pos]
 
-        // make tile positions local
-        tx = tx - chunk_pos.x * chunkW
-        ty = ty - chunk_pos.y * chunkH
+  // make tile positions local
+  tx = tx - chunk_pos.x * chunkW
+  ty = ty - chunk_pos.y * chunkH
 
-        return chunk[tx][ty]
+  return chunk[tx][ty]
 }
 
 
@@ -81,117 +81,117 @@ fn (world: ^World) getTile*(layer, tx, ty: int): int {
 // NOTE: This function only checks middleground layer (layer 0)
 //
 fn (world: ^World) getTangentTiles*(r: rect.Rect): []Tangent {
-        x, y, w, h := d_util.floor(r.x/world.tileset.tileSizeX), d_util.floor(r.y/world.tileset.tileSizeY), d_util.ceil(r.w/world.tileset.tileSizeX), d_util.ceil(r.h/world.tileset.tileSizeY)
-        x2, y2 := x + w, y + h
-        inity := y
-        tangents := []Tangent{}
+  x, y, w, h := d_util.floor(r.x/world.tileset.tileSizeX), d_util.floor(r.y/world.tileset.tileSizeY), d_util.ceil(r.w/world.tileset.tileSizeX), d_util.ceil(r.h/world.tileset.tileSizeY)
+  x2, y2 := x + w, y + h
+  inity := y
+  tangents := []Tangent{}
 
-        for x <= x2 {
-                y = inity
-                for y <= y2 {
-                        tile := world.getTile(0, x, y)
-                        if tile > 0 {
-                                tangents = append(tangents, Tangent{x, y, tile})
-                        }
-                        y++
-                }
-                x++
-        }
+  for x <= x2 {
+    y = inity
+    for y <= y2 {
+      tile := world.getTile(0, x, y)
+      if tile > 0 {
+        tangents = append(tangents, Tangent{x, y, tile})
+      }
+      y++
+    }
+    x++
+  }
 
-        return tangents
+  return tangents
 }
 
 fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int) {
-        layerId++
-        if layerId < 0 || layerId > 2 {
-                return
-        }
-        
-        layer := &world.tilemap[layerId]
+  layerId++
+  if layerId < 0 || layerId > 2 {
+    return
+  }
+  
+  layer := &world.tilemap[layerId]
 
-        for pos, _ in layer {
-                chunk := &layer[pos]
-                for cx := 0; cx < chunkW; cx++ {
-                        for cy := 0; cy < chunkH; cy++ {
-                                tx := cx + pos.x * chunkW
-                                ty := cy + pos.y * chunkH
-                                tileId := chunk[cx][cy]
+  for pos, _ in layer {
+    chunk := &layer[pos]
+    for cx := 0; cx < chunkW; cx++ {
+      for cy := 0; cy < chunkH; cy++ {
+        tx := cx + pos.x * chunkW
+        ty := cy + pos.y * chunkH
+        tileId := chunk[cx][cy]
 
-                                if tileId > 0 {
-                                        world.tileset.selectTilePos(tileId)
-                                        world.tileset.image.draw(d_util.posTrans(tx * world.tileset.tileSizeX - pan.x, ty * world.tileset.tileSizeY - pan.y))
-                                }
-                        }
-                }
+        if tileId > 0 {
+          world.tileset.selectTilePos(tileId)
+          world.tileset.image.draw(d_util.posTrans(tx * world.tileset.tileSizeX - pan.x, ty * world.tileset.tileSizeY - pan.y))
         }
+      }
+    }
+  }
 }
 
 fn (world: ^World) draw*(pan: th.Vf2) {
-        for i := -1; i < 2; i++ {
-                world.drawLayer(pan, i)
-        }
+  for i := -1; i < 2; i++ {
+    world.drawLayer(pan, i)
+  }
 }
 
 fn (world: ^World) save*(): str {
-        data := make([][]str, 0)
-        // ver
-        data = append(data, []str{lastVersion})
-        // player pos
-        data = append(data, []str{std.itoa(trunc(world.playerSpawnPos.x)), std.itoa(trunc(world.playerSpawnPos.y))})
+  data := make([][]str, 0)
+  // ver
+  data = append(data, []str{lastVersion})
+  // player pos
+  data = append(data, []str{std.itoa(trunc(world.playerSpawnPos.x)), std.itoa(trunc(world.playerSpawnPos.y))})
 
-        // Start from -1, because that's the background layer, which maps to index 0
-        layerNo := -1
-        for i in world.tilemap {
-                layer := &world.tilemap[i]
-                for pos, chunk in layer { 
-                        data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y), std.itoa(layerNo)})
-                        
-                        for ty := 0; ty < chunkH; ty++ {
-                                row := make([]str, 0)
-                                for tx := 0; tx < chunkW; tx++ {
-                                        row = append(row, std.itoa(chunk[tx][ty]))
-                                }
-                                data = append(data, row)
-                        }
-                }
-                layerNo++
+  // Start from -1, because that's the background layer, which maps to index 0
+  layerNo := -1
+  for i in world.tilemap {
+    layer := &world.tilemap[i]
+    for pos, chunk in layer { 
+      data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y), std.itoa(layerNo)})
+      
+      for ty := 0; ty < chunkH; ty++ {
+        row := make([]str, 0)
+        for tx := 0; tx < chunkW; tx++ {
+          row = append(row, std.itoa(chunk[tx][ty]))
         }
+        data = append(data, row)
+      }
+    }
+    layerNo++
+  }
 
-        return csv.encode(data)
+  return csv.encode(data)
 }
 
 fn (world: ^World) load*(data: str) {
-        csvData := csv.parse(data)
+  csvData := csv.parse(data)
 
-        world.tilemap = [3]map[ChunkPos]Chunk{map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}}
+  world.tilemap = [3]map[ChunkPos]Chunk{map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}}
 
-        if csvData[0][0] != lastVersion {
-                error("Scene version mismatch")
-        }
+  if csvData[0][0] != lastVersion {
+    error("Scene version mismatch")
+  }
 
-        world.playerSpawnPos = th.Vf2{real(std.atoi(csvData[1][0])), real(std.atoi(csvData[1][1]))}
+  world.playerSpawnPos = th.Vf2{real(std.atoi(csvData[1][0])), real(std.atoi(csvData[1][1]))}
 
-        row := 2
-        
-        // NOTE: I check first column of the csv data because csv parser reports adds bogus row with empty string
-        for row < len(csvData) && csvData[row][0] != "" {
-                chunkPos := ChunkPos{std.atoi(csvData[row][0]), std.atoi(csvData[row][1])}
-                layer := std.atoi(csvData[row][2]) + 1
-                row += 1
+  row := 2
+  
+  // NOTE: I check first column of the csv data because csv parser reports adds bogus row with empty string
+  for row < len(csvData) && csvData[row][0] != "" {
+    chunkPos := ChunkPos{std.atoi(csvData[row][0]), std.atoi(csvData[row][1])}
+    layer := std.atoi(csvData[row][2]) + 1
+    row += 1
 
-                if layer < 0 || layer > 2 {
-                        continue
-                }
-                var chunk: Chunk
-                for y := 0; y < chunkH; y++ {
-                        for x := 0; x < chunkW; x++ {
-                                tileId := std.atoi(csvData[row+y][x])
-                                chunk[x][y] = tileId                          
-                        }
-                }
-                row += chunkH
+    if layer < 0 || layer > 2 {
+      continue
+    }
+    var chunk: Chunk
+    for y := 0; y < chunkH; y++ {
+      for x := 0; x < chunkW; x++ {
+        tileId := std.atoi(csvData[row+y][x])
+        chunk[x][y] = tileId        
+      }
+    }
+    row += chunkH
 
-                world.tilemap[layer][chunkPos] = chunk
-        }
+    world.tilemap[layer][chunkPos] = chunk
+  }
 }
 

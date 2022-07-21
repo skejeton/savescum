@@ -1,7 +1,7 @@
 import ("../../src/d_hashname.um")
 
 fn main() {
-        for i := 0; i < 100; i++ {
-                printf("%2d %s\n", i, d_hashname.name(i))
-        }
+  for i := 0; i < 100; i++ {
+    printf("%2d %s\n", i, d_hashname.name(i))
+  }
 }

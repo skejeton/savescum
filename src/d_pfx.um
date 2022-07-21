@@ -1,14 +1,14 @@
 /*
-        Prefix for test directories
+  Prefix for test directories
 */
 
 import ("std.um")
 
 fn pfx*(): str {
-        pfx := std.getenv("TEST_PFX")
-        if len(pfx) < 5 || slice(pfx, 0, 5) != "test/" || pfx[len(pfx)-1] != "/" {
-                error("Invalid test prefix")
-        }
-        return pfx
+  pfx := std.getenv("TEST_PFX")
+  if len(pfx) < 5 || slice(pfx, 0, 5) != "test/" || pfx[len(pfx)-1] != "/" {
+    error("Invalid test prefix")
+  }
+  return pfx
 }
 

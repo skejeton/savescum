@@ -1,30 +1,30 @@
 import ("th.um")
 
 var (
-        record: [60]real
-        recordP: int
-        fps: real
+  record: [60]real
+  recordP: int
+  fps: real
 )
 
 fn avgFps() {
-        fps = 0
-        for i, datum in record {
-                fps += datum
-        }
-        fps /= 60
+  fps = 0
+  for i, datum in record {
+    fps += datum
+  }
+  fps /= 60
 }
 
 fn update*() {
-        if th.delta > 0 {
-                record[recordP] = 1000.0/th.delta
-                recordP++
-                if recordP >= 60 {
-                        recordP = 0
-                }
-                avgFps()
-        }
+  if th.delta > 0 {
+    record[recordP] = 1000.0/th.delta
+    recordP++
+    if recordP >= 60 {
+      recordP = 0
+    }
+    avgFps()
+  }
 }
 
 fn getFps*(): real {
-        return fps
+  return fps
 }

@@ -1,36 +1,36 @@
 import ("std.um"; "image.um"; "th.um"; "rect.um"; "window.um"
-        "d_font.um"; "d_util.um"; "d_typer.um")
+  "d_font.um"; "d_util.um"; "d_typer.um")
 
 type (
-        Persona* = struct {
-                name: str
-                boximg: image.Image
-                boximgY: int
-                faceimg: image.Image
-                faceimgY: int
-                font: d_font.Font
-                fontColor: uint32
-                speed: real
-                emotes: map[str]int // str -> int
-        }
+  Persona* = struct {
+    name: str
+    boximg: image.Image
+    boximgY: int
+    faceimg: image.Image
+    faceimgY: int
+    font: d_font.Font
+    fontColor: uint32
+    speed: real
+    emotes: map[str]int // str -> int
+  }
 
-        Dialog* = struct {
-                persona: ^Persona
-                emote: int
-                position: th.Vf2
+  Dialog* = struct {
+    persona: ^Persona
+    emote: int
+    position: th.Vf2
 
-                speed: real
-                typer: d_typer.Typer
-                appearTimer: real
-        }
+    speed: real
+    typer: d_typer.Typer
+    appearTimer: real
+  }
 
-        Dialogs* = struct {
-                personas: map[str]Persona
-                list: []Dialog
-                camera: th.Vf2
-                // The pressure to skip the dialog
-                pressure: real
-        }
+  Dialogs* = struct {
+    personas: map[str]Persona
+    list: []Dialog
+    camera: th.Vf2
+    // The pressure to skip the dialog
+    pressure: real
+  }
 )
 
 ////////////////////////
@@ -38,11 +38,11 @@ type (
 ////
 
 fn (p: ^Persona) getEmote*(emotion: str): int {
-        emote := 0
-        if validkey(p.emotes, emotion) { 
-                emote = p.emotes[emotion]
-        }
-        return emote
+  emote := 0
+  if validkey(p.emotes, emotion) { 
+    emote = p.emotes[emotion]
+  }
+  return emote
 }
 
 ////////////////////////
@@ -50,74 +50,74 @@ fn (p: ^Persona) getEmote*(emotion: str): int {
 ////
 
 fn initDialog*(persona: ^Persona, emote: int, position: th.Vf2, message: str): Dialog {
-        return Dialog{persona: persona, speed: persona.speed, emote: emote, position: position, typer: d_typer.init(message), appearTimer: 0}
+  return Dialog{persona: persona, speed: persona.speed, emote: emote, position: position, typer: d_typer.init(message), appearTimer: 0}
 }
 
 fn (d: ^Dialog) isFinished(): bool {
-        return d.typer.isFinished()
+  return d.typer.isFinished()
 }
 
 fn (d: ^Dialog) getBoximgOffset(): th.Vf2 {
-        return th.Vf2{0, d.persona.boximgY*48}
+  return th.Vf2{0, d.persona.boximgY*48}
 }
 
 fn (d: ^Dialog) getBox*(): rect.Rect {
-        boxSize := d.persona.font.measure(d.typer.fullMessage)
-        boxSize.x += 16+64+8
-        boxSize.y += 16
-        if boxSize.y < 64+16 {
-                boxSize.y = 64+16
-        }
+  boxSize := d.persona.font.measure(d.typer.fullMessage)
+  boxSize.x += 16+64+8
+  boxSize.y += 16
+  if boxSize.y < 64+16 {
+    boxSize.y = 64+16
+  }
 
-        box := rect.Rect{d.position.x-boxSize.x/2, d.position.y-12, boxSize.x, boxSize.y}
-        box.y -= boxSize.y+7
-        if box.x < 0 {
-                box.x = 0
-        }
-        if box.x > window.w-boxSize.x {
-                box.x = window.w-boxSize.x
-        }
+  box := rect.Rect{d.position.x-boxSize.x/2, d.position.y-12, boxSize.x, boxSize.y}
+  box.y -= boxSize.y+7
+  if box.x < 0 {
+    box.x = 0
+  }
+  if box.x > window.w-boxSize.x {
+    box.x = window.w-boxSize.x
+  }
 
-        box.x += d_util.fmin(d.position.x-8-4, 0) + d_util.fmax(d.position.x-window.w+8+4, 0)
+  box.x += d_util.fmin(d.position.x-8-4, 0) + d_util.fmax(d.position.x-window.w+8+4, 0)
 
-        return box
+  return box
 }
 
 fn (d: ^Dialog) draw*() {
 
-        // PRECALC VALUES //
-        rnSpriteOffset := d.getBoximgOffset()
-        rnNpRectOuter := rect.mk(rnSpriteOffset.x, rnSpriteOffset.y, 48, 48)
-        rnRectBubbles := rect.mk(rnSpriteOffset.x+48*2, rnSpriteOffset.y+24, 24, 24)
-        rnNpRectInner := rect.mk(16, 16, 16, 16)
-        rnBox := d.getBox()
+  // PRECALC VALUES //
+  rnSpriteOffset := d.getBoximgOffset()
+  rnNpRectOuter := rect.mk(rnSpriteOffset.x, rnSpriteOffset.y, 48, 48)
+  rnRectBubbles := rect.mk(rnSpriteOffset.x+48*2, rnSpriteOffset.y+24, 24, 24)
+  rnNpRectInner := rect.mk(16, 16, 16, 16)
+  rnBox := d.getBox()
 
-        // RENDER X //
-        if d.isFinished() {
-                size := th.Vf2{25, 25}
-                pos := th.Vf2{rnBox.x, rnBox.y - size.y - 5}
-                textSize := d.persona.font.measure("x")
-                textPos := pos.add(size.sub(textSize).div(th.Vf2{2.0, 2.0}))
+  // RENDER X //
+  if d.isFinished() {
+    size := th.Vf2{25, 25}
+    pos := th.Vf2{rnBox.x, rnBox.y - size.y - 5}
+    textSize := d.persona.font.measure("x")
+    textPos := pos.add(size.sub(textSize).div(th.Vf2{2.0, 2.0}))
 
-                d_util.drawRectNinepatch(d.persona.boximg, rnNpRectOuter, rnNpRectInner, rect.mk(pos.x, pos.y, size.x, size.y))
-                d.persona.font.draw("x", textPos, d.persona.fontColor)
-        }        
+    d_util.drawRectNinepatch(d.persona.boximg, rnNpRectOuter, rnNpRectInner, rect.mk(pos.x, pos.y, size.x, size.y))
+    d.persona.font.draw("x", textPos, d.persona.fontColor)
+  }  
 
 
-        // RENDER FRAME & FACE //
-        d_util.drawRectNinepatch(d.persona.boximg, rnNpRectOuter, rnNpRectInner, rnBox)
-        d_util.imageCropRect(d.persona.faceimg, rect.Rect{d.emote*64, d.persona.faceimgY*64, 64, 64})
-        d.persona.faceimg.draw(th.Transform{p: th.Vf2{rnBox.x+8, rnBox.y+8}, s: th.Vf2{1, 1}})
+  // RENDER FRAME & FACE //
+  d_util.drawRectNinepatch(d.persona.boximg, rnNpRectOuter, rnNpRectInner, rnBox)
+  d_util.imageCropRect(d.persona.faceimg, rect.Rect{d.emote*64, d.persona.faceimgY*64, 64, 64})
+  d.persona.faceimg.draw(th.Transform{p: th.Vf2{rnBox.x+8, rnBox.y+8}, s: th.Vf2{1, 1}})
  
-        // RENDER BUBBLE //
-        d_util.imageCropRect(d.persona.boximg, rnRectBubbles)
-        d.persona.boximg.draw(th.Transform{p: th.Vf2{d.position.x-12, d.position.y-24}, s: th.Vf2{1, 1}})
+  // RENDER BUBBLE //
+  d_util.imageCropRect(d.persona.boximg, rnRectBubbles)
+  d.persona.boximg.draw(th.Transform{p: th.Vf2{d.position.x-12, d.position.y-24}, s: th.Vf2{1, 1}})
 
-        // RENDER MESSAGE //
-        d.persona.font.draw(d.typer.message, th.Vf2{trunc(rnBox.x+64+16), trunc(rnBox.y+8)}, d.persona.fontColor)       
+  // RENDER MESSAGE //
+  d.persona.font.draw(d.typer.message, th.Vf2{trunc(rnBox.x+64+16), trunc(rnBox.y+8)}, d.persona.fontColor)       
 
-        // RENDER DEBUG //
-        // canvas.drawRect(th.red, rect.mk(d.position.x, d.position.y, 2, 2))
+  // RENDER DEBUG //
+  // canvas.drawRect(th.red, rect.mk(d.position.x, d.position.y, 2, 2))
 }
 
 ////////////////////////
@@ -125,105 +125,105 @@ fn (d: ^Dialog) draw*() {
 ////
 
 fn init*(): Dialogs {
-        return Dialogs{personas: map[str]Persona{}, list: make([]Dialog, 0)}
+  return Dialogs{personas: map[str]Persona{}, list: make([]Dialog, 0)}
 }
 
 fn (d: ^Dialogs) register*(name: str, boximgPath: str, boximgY: int, faceimgPath: str, faceimgY: int, fontPath: str, fontH: int, fontColor: uint32, speed: real, emotes: []str) {
-        var persona: Persona
-        persona.name = name
-        persona.boximg = image.load(boximgPath)
-        persona.boximgY = boximgY
-        persona.faceimg = image.load(faceimgPath)
-        persona.faceimgY = faceimgY
-        persona.font = d_font.loadFont(fontPath, fontH)
-        persona.fontColor = fontColor
-        persona.speed = speed
-        persona.emotes = map[str]int{}
+  var persona: Persona
+  persona.name = name
+  persona.boximg = image.load(boximgPath)
+  persona.boximgY = boximgY
+  persona.faceimg = image.load(faceimgPath)
+  persona.faceimgY = faceimgY
+  persona.font = d_font.loadFont(fontPath, fontH)
+  persona.fontColor = fontColor
+  persona.speed = speed
+  persona.emotes = map[str]int{}
 
-        for id, emote in emotes {
-                persona.emotes[emote] = int(id+1)
-        }
+  for id, emote in emotes {
+    persona.emotes[emote] = int(id+1)
+  }
 
-        d.personas[name] = persona
+  d.personas[name] = persona
 }
 
 fn (d: ^Dialogs) say*(name, emotion: str, message: str, pos: th.Vf2) {
-        // TODO: Fallback text if persona doesn't exist
-        if validkey(d.personas, name) {
-                persona := &d.personas[name]
-                dialog := initDialog(persona, persona.getEmote(emotion), th.Vf2{0, persona.boximgY*48}, message)
-                dialog.position = pos
-                d.list = append(d.list, dialog)
-        } else {
-                printf("Hell! The persona doesn't exist!");
-        }
+  // TODO: Fallback text if persona doesn't exist
+  if validkey(d.personas, name) {
+    persona := &d.personas[name]
+    dialog := initDialog(persona, persona.getEmote(emotion), th.Vf2{0, persona.boximgY*48}, message)
+    dialog.position = pos
+    d.list = append(d.list, dialog)
+  } else {
+    printf("Hell! The persona doesn't exist!");
+  }
 }
 
 // Returns (success, position of top dialog)
 fn (d: ^Dialogs) getTopPos*(): (bool, th.Vf2) {
-        if len(d.list) > 0 {
-                return true, d.list[len(d.list)-1].position
-        }
-        return false, th.Vf2{0, 0}
+  if len(d.list) > 0 {
+    return true, d.list[len(d.list)-1].position
+  }
+  return false, th.Vf2{0, 0}
 }
 
 fn (d: ^Dialogs) setCamPos*(pos: th.Vf2) {
-        d.camera = pos
+  d.camera = pos
 }
 
 fn (d: ^Dialogs) advance*(press: bool) {
-        if len(d.list) > 0 {
-                dialog := &d.list[len(d.list)-1]
-                initPressure := d.pressure
-                if press {
-                        d.pressure += th.delta/10000.0
-                        if d.pressure > 3 {
-                                d.pressure = 3
-                        }
-                } else {
-                        d.pressure = 0
-                }
+  if len(d.list) > 0 {
+    dialog := &d.list[len(d.list)-1]
+    initPressure := d.pressure
+    if press {
+      d.pressure += th.delta/10000.0
+      if d.pressure > 3 {
+        d.pressure = 3
+      }
+    } else {
+      d.pressure = 0
+    }
 
-                if dialog.isFinished() && initPressure == 0 && d.pressure != 0 {
-                        d.list = delete(d.list, len(d.list)-1)
-                }
+    if dialog.isFinished() && initPressure == 0 && d.pressure != 0 {
+      d.list = delete(d.list, len(d.list)-1)
+    }
 
-                dialog.appearTimer += d.pressure
-        }
+    dialog.appearTimer += d.pressure
+  }
 }
 
 fn (d: ^Dialogs) update*() {
-        for x in d.list {
-                dialog := &d.list[x]
+  for x in d.list {
+    dialog := &d.list[x]
 
-                dialog.appearTimer += th.delta/1000.0;
-                for dialog.appearTimer > dialog.speed {
-                        switch s, c := dialog.typer.advance(); s {
-                        case 0:
-                                break;
-                        case 2: 
-                                if c.verb == "emote" {
-                                        dialog.emote = dialog.persona.getEmote(c.noun)
-                                } else if c.verb == "sp" {
-                                        dialog.speed = std.atof(c.noun)
-                                }
-                        }
-                        dialog.appearTimer = dialog.appearTimer - dialog.speed
-                }
+    dialog.appearTimer += th.delta/1000.0;
+    for dialog.appearTimer > dialog.speed {
+      switch s, c := dialog.typer.advance(); s {
+      case 0:
+        break;
+      case 2: 
+        if c.verb == "emote" {
+          dialog.emote = dialog.persona.getEmote(c.noun)
+        } else if c.verb == "sp" {
+          dialog.speed = std.atof(c.noun)
         }
+      }
+      dialog.appearTimer = dialog.appearTimer - dialog.speed
+    }
+  }
 }
 
 fn (d: ^Dialogs) draw*() {
-        for x in d.list {
-                prevPos := d.list[x].position
-                d.list[x].position = d.list[x].position.sub(d.camera)
-                d.list[x].draw()
-                if x == len(d.list)-1 {
-                        box := d.list[x].getBox()
-                        offs := d.list[x].getBoximgOffset()
-                        d_util.drawRectNinepatch(d.list[x].persona.boximg, rect.mk(offs.x+48, offs.y, 48, 48), rect.mk(16, 16, 16, 16), box)
-                }
+  for x in d.list {
+    prevPos := d.list[x].position
+    d.list[x].position = d.list[x].position.sub(d.camera)
+    d.list[x].draw()
+    if x == len(d.list)-1 {
+      box := d.list[x].getBox()
+      offs := d.list[x].getBoximgOffset()
+      d_util.drawRectNinepatch(d.list[x].persona.boximg, rect.mk(offs.x+48, offs.y, 48, 48), rect.mk(16, 16, 16, 16), box)
+    }
 
-                d.list[x].position = prevPos
-        }
+    d.list[x].position = prevPos
+  }
 }

@@ -1,228 +1,228 @@
 import (
-        "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
-        "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"; "d_script.um"; "d_font.um"
+  "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
+  "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"; "d_script.um"; "d_font.um"
 )
 
 type (
-        Window = struct {
-                rect: rect.Rect
-                showDecorations: bool
-                closing: bool
-                closed: bool
-        }
+  Window = struct {
+    rect: rect.Rect
+    showDecorations: bool
+    closing: bool
+    closed: bool
+  }
 )
 
 const (
-        stateEditing = 0
-        statePlaying = 1
+  stateEditing = 0
+  statePlaying = 1
 
-        fileScene = "data/sc00_sky.csv"
+  fileScene = "data/sc00_sky.csv"
 )
 
 var (
-        state: int
+  state: int
 
-        uiLeftMouseDown: bool
-        uiPrevMousePos: th.Vf2
-        uiTileset: image.Image
-        uiTrayIconTileset: image.Image
-        uiWindows: [5]Window
-        uiRelocatingPlayer: bool
-        uiProcessWindowId: int          // window currently processing (drawing)
-        uiFocusWindowId: int            // window currently focused on (mouse over)
-        uiDraggingWindowId: int         // window currently dragging
-        uiDragPoint: th.Vf2
-        uiMainFont: d_font.Font
+  uiLeftMouseDown: bool
+  uiPrevMousePos: th.Vf2
+  uiTileset: image.Image
+  uiTrayIconTileset: image.Image
+  uiWindows: [5]Window
+  uiRelocatingPlayer: bool
+  uiProcessWindowId: int    // window currently processing (drawing)
+  uiFocusWindowId: int      // window currently focused on (mouse over)
+  uiDraggingWindowId: int   // window currently dragging
+  uiDragPoint: th.Vf2
+  uiMainFont: d_font.Font
 
-        worldViewOfsX: int
-        worldViewOfsY: int
-        worldSelTileX: int
-        worldSelTileY: int
-        worldSelLayer: int
-        worldShowCurrentLayer: bool
-        world: d_world.World
+  worldViewOfsX: int
+  worldViewOfsY: int
+  worldSelTileX: int
+  worldSelTileY: int
+  worldSelLayer: int
+  worldShowCurrentLayer: bool
+  world: d_world.World
 )
 
 fn isLeftMouseReleased(): bool {
-        return !input.isPressed(input.mouse1) && uiLeftMouseDown
+  return !input.isPressed(input.mouse1) && uiLeftMouseDown
 }
 
 fn uiSelTile(x, y: int) {
-        uiTileset.crop(th.Vf2{x/4.0, y/4.0}, th.Vf2{x/4.0+1/4.0, y/4.0+1/4.0})
+  uiTileset.crop(th.Vf2{x/4.0, y/4.0}, th.Vf2{x/4.0+1/4.0, y/4.0+1/4.0})
 }
 
 fn uiSelTrayTile(x, y: int) {
-        uiTrayIconTileset.crop(th.Vf2{x/4.0, y/4.0}, th.Vf2{x/4.0+1/4.0, y/4.0+1/4.0})
+  uiTrayIconTileset.crop(th.Vf2{x/4.0, y/4.0}, th.Vf2{x/4.0+1/4.0, y/4.0+1/4.0})
 }
 
 fn actField() {
-        if uiFocusWindowId == 0 && (input.isPressed(input.mouse1) || input.isPressed(input.mouse3))  {
-                pos := input.getMousePos()
+  if uiFocusWindowId == 0 && (input.isPressed(input.mouse1) || input.isPressed(input.mouse3))  {
+    pos := input.getMousePos()
 
-                tx := trunc(pos.x / world.tileset.tileSizeX) + worldViewOfsX
-                ty := trunc(pos.y / world.tileset.tileSizeY) + worldViewOfsY
+    tx := trunc(pos.x / world.tileset.tileSizeX) + worldViewOfsX
+    ty := trunc(pos.y / world.tileset.tileSizeY) + worldViewOfsY
 
-                painting := input.isPressed(input.mouse1)
-                
-                if !uiRelocatingPlayer {
-                        if painting {
-                                world.setTile(worldSelLayer, tx, ty, world.tileset.tileToPos(worldSelTileX, worldSelTileY))
-                        } else {
-                                world.setTile(worldSelLayer, tx, ty, 0)
-                        }
-                } else {
-                        world.playerSpawnPos = th.Vf2{tx, ty}
-                }
-        }
+    painting := input.isPressed(input.mouse1)
+    
+    if !uiRelocatingPlayer {
+      if painting {
+        world.setTile(worldSelLayer, tx, ty, world.tileset.tileToPos(worldSelTileX, worldSelTileY))
+      } else {
+        world.setTile(worldSelLayer, tx, ty, 0)
+      }
+    } else {
+      world.playerSpawnPos = th.Vf2{tx, ty}
+    }
+  }
 
-        if uiFocusWindowId == 0 && isLeftMouseReleased() {
-                uiRelocatingPlayer = false
-        }
+  if uiFocusWindowId == 0 && isLeftMouseReleased() {
+    uiRelocatingPlayer = false
+  }
 }
 
 fn drawGridEditor() {
-        // draw grid
-        nx := window.w/32
-        ny := window.h/32
+  // draw grid
+  nx := window.w/32
+  ny := window.h/32
 
-        for cx := 0; cx < nx; cx++ {
-                x := cx * world.tileset.tileSizeX
-                canvas.drawRect(0xFFFFFF11, rect.Rect{x, 0, 1, window.h})
-        }
-        for cy := 0; cy < ny; cy++ {
-                y := cy * world.tileset.tileSizeY
-                canvas.drawRect(0xFFFFFF11, rect.Rect{0, y, window.w, 1})        
-        }
+  for cx := 0; cx < nx; cx++ {
+    x := cx * world.tileset.tileSizeX
+    canvas.drawRect(0xFFFFFF11, rect.Rect{x, 0, 1, window.h})
+  }
+  for cy := 0; cy < ny; cy++ {
+    y := cy * world.tileset.tileSizeY
+    canvas.drawRect(0xFFFFFF11, rect.Rect{0, y, window.w, 1})  
+  }
 
  
-        // draw world
-        if worldShowCurrentLayer {
-                world.drawLayer(th.Vf2{worldViewOfsX * world.tileset.tileSizeX, worldViewOfsY * world.tileset.tileSizeY}, worldSelLayer)
-        } else {
-                world.draw(th.Vf2{worldViewOfsX * world.tileset.tileSizeX, worldViewOfsY * world.tileset.tileSizeY})
-        }
+  // draw world
+  if worldShowCurrentLayer {
+    world.drawLayer(th.Vf2{worldViewOfsX * world.tileset.tileSizeX, worldViewOfsY * world.tileset.tileSizeY}, worldSelLayer)
+  } else {
+    world.draw(th.Vf2{worldViewOfsX * world.tileset.tileSizeX, worldViewOfsY * world.tileset.tileSizeY})
+  }
 
 
-        // draw tile highlight
-        if uiFocusWindowId == 0 {
-                pos := input.getMousePos()
-                tx := trunc(pos.x / world.tileset.tileSizeX) 
-                ty := trunc(pos.y / world.tileset.tileSizeY)
-                canvas.drawRect(0x00FF0011, rect.Rect{tx*world.tileset.tileSizeX, ty*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}) 
-        }
+  // draw tile highlight
+  if uiFocusWindowId == 0 {
+    pos := input.getMousePos()
+    tx := trunc(pos.x / world.tileset.tileSizeX) 
+    ty := trunc(pos.y / world.tileset.tileSizeY)
+    canvas.drawRect(0x00FF0011, rect.Rect{tx*world.tileset.tileSizeX, ty*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}) 
+  }
 
-        uiSelTrayTile(2, 0)
-        uiTrayIconTileset.draw(th.Transform{p: world.playerSpawnPos.add(th.Vf2{-worldViewOfsX, -worldViewOfsY}).mul(th.Vf2{world.tileset.tileSizeX, world.tileset.tileSizeY}), s: th.Vf2{1, 1}}, th.white)
+  uiSelTrayTile(2, 0)
+  uiTrayIconTileset.draw(th.Transform{p: world.playerSpawnPos.add(th.Vf2{-worldViewOfsX, -worldViewOfsY}).mul(th.Vf2{world.tileset.tileSizeX, world.tileset.tileSizeY}), s: th.Vf2{1, 1}}, th.white)
 }
 
 fn putBtnBase(text: str, r: rect.Rect, held: bool): bool {
-        // -- measure
-        txtSize := uiMainFont.measure(text)
-        // center the text
-        txtPos := th.Vf2{trunc(r.x+(r.w-txtSize.x)/2), trunc(r.y+(r.h-txtSize.y)/2)}
-        color := d_colors.cPrimary 
-        hovered := d_util.isMouseInRect(r) && uiProcessWindowId == uiFocusWindowId
-        pressed := hovered && input.isPressed(input.mouse1)
-        nudged  := hovered && input.isJustPressed(input.mouse1)
-        if pressed || held {
-                color = 0xAD3E3EFF
-        }
-        if hovered {
-                color += 0x11111100
-        }
+  // -- measure
+  txtSize := uiMainFont.measure(text)
+  // center the text
+  txtPos := th.Vf2{trunc(r.x+(r.w-txtSize.x)/2), trunc(r.y+(r.h-txtSize.y)/2)}
+  color := d_colors.cPrimary 
+  hovered := d_util.isMouseInRect(r) && uiProcessWindowId == uiFocusWindowId
+  pressed := hovered && input.isPressed(input.mouse1)
+  nudged  := hovered && input.isJustPressed(input.mouse1)
+  if pressed || held {
+    color = 0xAD3E3EFF
+  }
+  if hovered {
+    color += 0x11111100
+  }
 
-        // -- draw
-        r1 := r
-        r1.w -= 1
-        r1.h -= 1
-        r2 := r1
-        r2.x += 1
-        r2.y += 1
-        r.x += 1
-        r.y += 1
-        r.w -= 2
-        r.h -= 2
-        r3 := r
-        r.w -= 1
-        r.h -= 1
+  // -- draw
+  r1 := r
+  r1.w -= 1
+  r1.h -= 1
+  r2 := r1
+  r2.x += 1
+  r2.y += 1
+  r.x += 1
+  r.y += 1
+  r.w -= 2
+  r.h -= 2
+  r3 := r
+  r.w -= 1
+  r.h -= 1
 
-        
-        if pressed || held {
-                tmp := r1
-                r1 = r2
-                r2 = tmp
-        }
-        canvas.drawRect(0xD37A70FF, r1) 
-        canvas.drawRect(0x7C0000FF, r2) 
-        canvas.drawRect(0xAD3E3EFF, r3) 
-        canvas.drawRect(color, r) 
-        uiMainFont.draw(text, txtPos, d_colors.cText)
-        return nudged
+  
+  if pressed || held {
+    tmp := r1
+    r1 = r2
+    r2 = tmp
+  }
+  canvas.drawRect(0xD37A70FF, r1) 
+  canvas.drawRect(0x7C0000FF, r2) 
+  canvas.drawRect(0xAD3E3EFF, r3) 
+  canvas.drawRect(color, r) 
+  uiMainFont.draw(text, txtPos, d_colors.cText)
+  return nudged
 }
 
 fn putBtn(text: str, r: rect.Rect): bool {
-        return putBtnBase(text, r, false)
+  return putBtnBase(text, r, false)
 }
 
 fn saveMap() { 
-        file := std.fopen(fileScene, "w")
-        if file == null {
-                error("Can't save the scene")
-        }
-        dataStr := world.save()
-        data := make([]uint8, 0)
-        for i in dataStr {
-                data = append(data, uint8(dataStr[i]))
-        }
-        std.fwrite(file, data)
-        std.fclose(file)
+  file := std.fopen(fileScene, "w")
+  if file == null {
+    error("Can't save the scene")
+  }
+  dataStr := world.save()
+  data := make([]uint8, 0)
+  for i in dataStr {
+    data = append(data, uint8(dataStr[i]))
+  }
+  std.fwrite(file, data)
+  std.fclose(file)
 }
 
 fn loadMap() {
-        file := std.fopen(fileScene, "r")
-        if file == null {
-                error("Can't load the scene")
-        }
-        std.fseek(file, 0, std.seekEnd)
-        datasiz := std.ftell(file)
-        std.fseek(file, 0, std.seekBegin)
-        buffer := make([]uint8, datasiz)
-        std.fread(file, buffer)
-        data := ""
-        
-        for i in buffer {
-                data += char(buffer[i])
-        }
-        
-        world.load(data)
+  file := std.fopen(fileScene, "r")
+  if file == null {
+    error("Can't load the scene")
+  }
+  std.fseek(file, 0, std.seekEnd)
+  datasiz := std.ftell(file)
+  std.fseek(file, 0, std.seekBegin)
+  buffer := make([]uint8, datasiz)
+  std.fread(file, buffer)
+  data := ""
+  
+  for i in buffer {
+    data += char(buffer[i])
+  }
+  
+  world.load(data)
 
-        worldViewOfsX = trunc(world.playerSpawnPos.x)-trunc(window.w/world.tileset.tileSizeX/2)
-        worldViewOfsY = trunc(world.playerSpawnPos.y)-trunc(window.h/world.tileset.tileSizeY/2)
+  worldViewOfsX = trunc(world.playerSpawnPos.x)-trunc(window.w/world.tileset.tileSizeX/2)
+  worldViewOfsY = trunc(world.playerSpawnPos.y)-trunc(window.h/world.tileset.tileSizeY/2)
 }
 
 fn drawLayerIcon(x, y: real) {
-        fills := [3]bool{worldSelLayer == -1, worldSelLayer == 0, worldSelLayer == 1}
+  fills := [3]bool{worldSelLayer == -1, worldSelLayer == 0, worldSelLayer == 1}
 
-        // NOTE: If we choose to show all layers, the icon will show all boxes filled in
-        if worldShowCurrentLayer == false {
-                fills = [3]bool{true, true, true}
-        }
+  // NOTE: If we choose to show all layers, the icon will show all boxes filled in
+  if worldShowCurrentLayer == false {
+    fills = [3]bool{true, true, true}
+  }
 
-        x += 26
+  x += 26
 
-        for i, l in fills {
-                rec := rect.Rect{x-20, y, 20, 12}
-                x -= 2
-                y += 4
+  for i, l in fills {
+    rec := rect.Rect{x-20, y, 20, 12}
+    x -= 2
+    y += 4
 
-                if l {
-                        canvas.drawRect(0xf0b5afFF, rec)
-                        d_util.drawRectLines(0xFFFFFFFF, rec)
-                } else {
-                        canvas.drawRect(d_colors.cPrimary, rec)
-                        d_util.drawRectLines(0xFFFFFFFF, rec)
-                }
-        }
+    if l {
+      canvas.drawRect(0xf0b5afFF, rec)
+      d_util.drawRectLines(0xFFFFFFFF, rec)
+    } else {
+      canvas.drawRect(d_colors.cPrimary, rec)
+      d_util.drawRectLines(0xFFFFFFFF, rec)
+    }
+  }
 }
 
 //
@@ -230,387 +230,387 @@ fn drawLayerIcon(x, y: real) {
 //      pos:    Position of the button
 //      ix, iy: Position of the icon from the icon set 
 //      active: True if you want a "button pressed" appearance
-//              False if you want a "button released" appearance 
+//        False if you want a "button released" appearance 
 // ): True if it was activated
 //
 fn putTrayBtn(pos: th.Vf2, ix, iy: int, active: bool): bool {
-        trayBtnRect := rect.Rect{pos.x, pos.y, 32, 32}
+  trayBtnRect := rect.Rect{pos.x, pos.y, 32, 32}
 
-        if active || (isLeftMouseReleased() || input.isPressed(input.mouse1)) && (d_util.isMouseInRect(trayBtnRect) && uiFocusWindowId == uiProcessWindowId) {
-                putBtnBase(" ", trayBtnRect, true)
-                uiSelTrayTile(ix, iy)
-                uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{1, 1}}, 0x999999FF)
-        } else {
-                putBtnBase(" ", trayBtnRect, false)
-                uiSelTrayTile(ix, iy)
-                uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{1, 1}})
-        }
+  if active || (isLeftMouseReleased() || input.isPressed(input.mouse1)) && (d_util.isMouseInRect(trayBtnRect) && uiFocusWindowId == uiProcessWindowId) {
+    putBtnBase(" ", trayBtnRect, true)
+    uiSelTrayTile(ix, iy)
+    uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{1, 1}}, 0x999999FF)
+  } else {
+    putBtnBase(" ", trayBtnRect, false)
+    uiSelTrayTile(ix, iy)
+    uiTrayIconTileset.draw(th.Transform{p: pos, s: th.Vf2{1, 1}})
+  }
 
-        return d_util.isMouseInRect(trayBtnRect) && isLeftMouseReleased() && uiFocusWindowId == uiProcessWindowId
+  return d_util.isMouseInRect(trayBtnRect) && isLeftMouseReleased() && uiFocusWindowId == uiProcessWindowId
 }
 
 fn drawBar() {
 
-        putButton := fn(s: str, r: ^rect.Rect, w: int): bool {
-                pressed := putBtn(s, d_util.rectChopRight(r, w))
-                d_util.rectChopRight(r, 1) // border
-                return pressed
-        }
+  putButton := fn(s: str, r: ^rect.Rect, w: int): bool {
+    pressed := putBtn(s, d_util.rectChopRight(r, w))
+    d_util.rectChopRight(r, 1) // border
+    return pressed
+  }
 
-        putSelect := fn(s: str, r: ^rect.Rect, w: int, check: bool): bool {
-                pressed := putBtnBase(s, d_util.rectChopRight(r, w), check)
-                d_util.rectChopRight(r, 1) // border
-                return pressed
-        }
-        
-        canvas.drawRect(d_colors.cBack, uiWindows[1].rect)
-        area := uiWindows[1].rect
-        
-        if putTrayBtn(th.Vf2{area.x, area.y}, 1, 1, false) {
-                d_game.world = world
-                d_game.init()
-                d_script.init()
-                state = statePlaying
-        }
-        if putTrayBtn(th.Vf2{area.x+32, area.y}, 0, 1, !uiWindows[2].closed) {
-                uiWindows[2].closed = !uiWindows[2].closed
-        }
-        if putTrayBtn(th.Vf2{area.x+64, area.y}, 3, 1, !uiWindows[3].closed) {
-                uiWindows[3].closed = !uiWindows[3].closed
-        }
-        if putTrayBtn(th.Vf2{area.x+96, area.y}, 0, 2, !uiWindows[4].closed) {
-                uiWindows[4].closed = !uiWindows[4].closed
-        }
-
-
+  putSelect := fn(s: str, r: ^rect.Rect, w: int, check: bool): bool {
+    pressed := putBtnBase(s, d_util.rectChopRight(r, w), check)
+    d_util.rectChopRight(r, 1) // border
+    return pressed
+  }
+  
+  canvas.drawRect(d_colors.cBack, uiWindows[1].rect)
+  area := uiWindows[1].rect
+  
+  if putTrayBtn(th.Vf2{area.x, area.y}, 1, 1, false) {
+    d_game.world = world
+    d_game.init()
+    d_script.init()
+    state = statePlaying
+  }
+  if putTrayBtn(th.Vf2{area.x+32, area.y}, 0, 1, !uiWindows[2].closed) {
+    uiWindows[2].closed = !uiWindows[2].closed
+  }
+  if putTrayBtn(th.Vf2{area.x+64, area.y}, 3, 1, !uiWindows[3].closed) {
+    uiWindows[3].closed = !uiWindows[3].closed
+  }
+  if putTrayBtn(th.Vf2{area.x+96, area.y}, 0, 2, !uiWindows[4].closed) {
+    uiWindows[4].closed = !uiWindows[4].closed
+  }
 
 
-        if putButton("Save", &area, 60) {
-                saveMap()
-        }
-        if putButton("Load", &area, 60) {
-                loadMap()
-        }
-        if putSelect("BG", &area, 30, worldSelLayer == -1) {
-                worldSelLayer = -1
-        }
-        if putSelect("MG", &area, 30, worldSelLayer == 0) {
-                worldSelLayer = 0
-        }
-        if putSelect("FG", &area, 30, worldSelLayer == 1) {
-                worldSelLayer = 1
-        }
 
-        if putButton(" ", &area, 40) {
-                worldShowCurrentLayer = !worldShowCurrentLayer
-        }
-        // FIXME: Hack to get the position of the previous butotn
-        drawLayerIcon(area.x + area.w+8, area.y+6)
+
+  if putButton("Save", &area, 60) {
+    saveMap()
+  }
+  if putButton("Load", &area, 60) {
+    loadMap()
+  }
+  if putSelect("BG", &area, 30, worldSelLayer == -1) {
+    worldSelLayer = -1
+  }
+  if putSelect("MG", &area, 30, worldSelLayer == 0) {
+    worldSelLayer = 0
+  }
+  if putSelect("FG", &area, 30, worldSelLayer == 1) {
+    worldSelLayer = 1
+  }
+
+  if putButton(" ", &area, 40) {
+    worldShowCurrentLayer = !worldShowCurrentLayer
+  }
+  // FIXME: Hack to get the position of the previous butotn
+  drawLayerIcon(area.x + area.w+8, area.y+6)
 }
 
 fn drawPicker() {
-        canvas.drawRect(d_colors.cBack, uiWindows[2].rect)
+  canvas.drawRect(d_colors.cBack, uiWindows[2].rect)
 
-        // selected tile
-        tsw := world.tileset.tileCountX
-        tsh := world.tileset.tileCountY
+  // selected tile
+  tsw := world.tileset.tileCountX
+  tsh := world.tileset.tileCountY
+  
+  for tx := 0; tx < tsw; tx++ {
+    for ty := 0; ty < tsh; ty++ {
+      x := uiWindows[2].rect.x + 2 + tx * (world.tileset.tileSizeX + 4)
+      y := uiWindows[2].rect.y + 2 + ty * (world.tileset.tileSizeY + 4)
         
-        for tx := 0; tx < tsw; tx++ {
-                for ty := 0; ty < tsh; ty++ {
-                        x := uiWindows[2].rect.x + 2 + tx * (world.tileset.tileSizeX + 4)
-                        y := uiWindows[2].rect.y + 2 + ty * (world.tileset.tileSizeY + 4)
-                                
-                        rec := rect.Rect{x, y, world.tileset.tileSizeX, world.tileset.tileSizeY}
-                        world.tileset.selectTile(tx, ty)
-                        world.tileset.image.draw(d_util.posTrans(x, y))
-                        
-                        if (worldSelTileX == tx) && (worldSelTileY == ty) {
-                                canvas.drawRect(0x00FF0033, rec)
-                        }
+      rec := rect.Rect{x, y, world.tileset.tileSizeX, world.tileset.tileSizeY}
+      world.tileset.selectTile(tx, ty)
+      world.tileset.image.draw(d_util.posTrans(x, y))
+      
+      if (worldSelTileX == tx) && (worldSelTileY == ty) {
+        canvas.drawRect(0x00FF0033, rec)
+      }
 
-                        if uiFocusWindowId == 2 && d_util.isMouseInRect(rec) && input.isJustPressed(input.mouse1) { 
-                                worldSelTileX = tx
-                                worldSelTileY = ty
-                        }
-                }
-        }
+      if uiFocusWindowId == 2 && d_util.isMouseInRect(rec) && input.isJustPressed(input.mouse1) { 
+        worldSelTileX = tx
+        worldSelTileY = ty
+      }
+    }
+  }
 }
 
 fn drawPlayerPlacer() {
-        canvas.drawRect(d_colors.cBack, uiWindows[3].rect)
-        uiMainFont.draw("Player at x"+std.itoa(trunc(world.playerSpawnPos.x))+" y"+std.itoa(trunc(world.playerSpawnPos.y)), th.Vf2{uiWindows[3].rect.x+10, uiWindows[3].rect.y+10}, d_colors.cText);
-        if !uiRelocatingPlayer {
-                uiRelocatingPlayer = putBtn("Relocate", rect.Rect{uiWindows[3].rect.x + 10, uiWindows[3].rect.y + 40, uiWindows[3].rect.w - 20, 30})
-        } else {
-                uiRelocatingPlayer = !putBtnBase("Relocate", rect.Rect{uiWindows[3].rect.x + 10, uiWindows[3].rect.y + 40, uiWindows[3].rect.w - 20, 30}, true)
-                uiMainFont.draw("Click on the grid\nTo place player", th.Vf2{uiWindows[3].rect.x+10, uiWindows[3].rect.y+80}, d_colors.cText);
-        }
+  canvas.drawRect(d_colors.cBack, uiWindows[3].rect)
+  uiMainFont.draw("Player at x"+std.itoa(trunc(world.playerSpawnPos.x))+" y"+std.itoa(trunc(world.playerSpawnPos.y)), th.Vf2{uiWindows[3].rect.x+10, uiWindows[3].rect.y+10}, d_colors.cText);
+  if !uiRelocatingPlayer {
+    uiRelocatingPlayer = putBtn("Relocate", rect.Rect{uiWindows[3].rect.x + 10, uiWindows[3].rect.y + 40, uiWindows[3].rect.w - 20, 30})
+  } else {
+    uiRelocatingPlayer = !putBtnBase("Relocate", rect.Rect{uiWindows[3].rect.x + 10, uiWindows[3].rect.y + 40, uiWindows[3].rect.w - 20, 30}, true)
+    uiMainFont.draw("Click on the grid\nTo place player", th.Vf2{uiWindows[3].rect.x+10, uiWindows[3].rect.y+80}, d_colors.cText);
+  }
 }
 
 fn drawEntityList() {
-        canvas.drawRect(d_colors.cBack, uiWindows[4].rect)
+  canvas.drawRect(d_colors.cBack, uiWindows[4].rect)
 }
 
 fn getWindowOuterRect(win: int): rect.Rect {
-        r := uiWindows[win].rect
-        r.y -= 16
-        r.h += 16
-        return r
+  r := uiWindows[win].rect
+  r.y -= 16
+  r.h += 16
+  return r
 }
 
 fn getWindowTitlebarRect(win: int): rect.Rect {
-        outerFrame := getWindowOuterRect(win)
-        outerFrame.x += 16
-        outerFrame.w -= 16
-        outerFrame.h = 16
-        return outerFrame
+  outerFrame := getWindowOuterRect(win)
+  outerFrame.x += 16
+  outerFrame.w -= 16
+  outerFrame.h = 16
+  return outerFrame
 }
 
 fn getWindowCloseRect(win: int): rect.Rect {
-        outerFrame := getWindowOuterRect(win)
-        outerFrame.w = 16
-        outerFrame.h = 16
-        return outerFrame
+  outerFrame := getWindowOuterRect(win)
+  outerFrame.w = 16
+  outerFrame.h = 16
+  return outerFrame
 }
 
 fn setupUiWindows() {
-        uiWindows[0].rect = rect.Rect{0, 0, 640, 480}
+  uiWindows[0].rect = rect.Rect{0, 0, 640, 480}
 
-        uiWindows[1].rect = rect.Rect{0, 448, 640, 32}        
+  uiWindows[1].rect = rect.Rect{0, 448, 640, 32}  
 
-        uiWindows[2].rect = rect.Rect{480, 20, 146, 408}
-        uiWindows[2].showDecorations = true
+  uiWindows[2].rect = rect.Rect{480, 20, 146, 408}
+  uiWindows[2].showDecorations = true
 
-        uiWindows[3].rect = rect.Rect{50, 50, 160, 120}
-        uiWindows[3].showDecorations = true
-        uiWindows[3].closed = true
+  uiWindows[3].rect = rect.Rect{50, 50, 160, 120}
+  uiWindows[3].showDecorations = true
+  uiWindows[3].closed = true
 
-        uiWindows[4].rect = rect.Rect{330, 20, 146, 408}
-        uiWindows[4].showDecorations = true
+  uiWindows[4].rect = rect.Rect{330, 20, 146, 408}
+  uiWindows[4].showDecorations = true
 }
 
 fn handleUiWindows() {
-        // -- handle window dragging
-        // no window is being dragged if we aren't holding the button
-        if (!input.isPressed(input.mouse1)) {
-                uiDraggingWindowId = -1
-        }
+  // -- handle window dragging
+  // no window is being dragged if we aren't holding the button
+  if (!input.isPressed(input.mouse1)) {
+    uiDraggingWindowId = -1
+  }
 
-        if (uiDraggingWindowId > 0) {
-                mousePos := input.getMousePos()
-                uiWindows[uiDraggingWindowId].rect.x = mousePos.x-uiDragPoint.x
-                uiWindows[uiDraggingWindowId].rect.y = mousePos.y-uiDragPoint.y
-        }
+  if (uiDraggingWindowId > 0) {
+    mousePos := input.getMousePos()
+    uiWindows[uiDraggingWindowId].rect.x = mousePos.x-uiDragPoint.x
+    uiWindows[uiDraggingWindowId].rect.y = mousePos.y-uiDragPoint.y
+  }
 
-        for i := 0; i < len(uiWindows); i++ {
-                if !uiWindows[i].closed {
-                        if uiWindows[i].showDecorations && d_util.isMouseInRect(getWindowOuterRect(i)) {
-                                uiFocusWindowId = -1
-                        } 
-                        if d_util.isMouseInRect(uiWindows[i].rect) {
-                                uiFocusWindowId = i
-                        } 
-                }
-        }
-        // -- handle mouse events on windows
-        for i := 0; i < len(uiWindows); i++ {
-                if uiWindows[i].rect.x < 0 {
-                        uiWindows[i].rect.x = 0
-                }
-                if uiWindows[i].rect.y < 16 {
-                        uiWindows[i].rect.y = 16
-                }
-                if uiWindows[i].rect.x > window.w-40 {
-                        uiWindows[i].rect.x = window.w-40
-                }
-                if uiWindows[i].rect.y > window.h {
-                        uiWindows[i].rect.y = window.h
-                }
-                
-        
-                if uiWindows[i].closed {
-                        continue
-                }
-                if isLeftMouseReleased() && uiWindows[i].closing {
-                        uiWindows[i].closed = true
-                }
-                uiWindows[i].closing = false
-        }
-        
-        for i := len(uiWindows)-1; i >= 0; i-- {
-                if (uiWindows[i].closed || !uiWindows[i].showDecorations) {
-                        continue
-                }
-                outerRect := getWindowOuterRect(i)
-                titlebarRect := getWindowTitlebarRect(i)
-                closeRect := getWindowCloseRect(i)
+  for i := 0; i < len(uiWindows); i++ {
+    if !uiWindows[i].closed {
+      if uiWindows[i].showDecorations && d_util.isMouseInRect(getWindowOuterRect(i)) {
+        uiFocusWindowId = -1
+      } 
+      if d_util.isMouseInRect(uiWindows[i].rect) {
+        uiFocusWindowId = i
+      } 
+    }
+  }
+  // -- handle mouse events on windows
+  for i := 0; i < len(uiWindows); i++ {
+    if uiWindows[i].rect.x < 0 {
+      uiWindows[i].rect.x = 0
+    }
+    if uiWindows[i].rect.y < 16 {
+      uiWindows[i].rect.y = 16
+    }
+    if uiWindows[i].rect.x > window.w-40 {
+      uiWindows[i].rect.x = window.w-40
+    }
+    if uiWindows[i].rect.y > window.h {
+      uiWindows[i].rect.y = window.h
+    }
+    
+  
+    if uiWindows[i].closed {
+      continue
+    }
+    if isLeftMouseReleased() && uiWindows[i].closing {
+      uiWindows[i].closed = true
+    }
+    uiWindows[i].closing = false
+  }
+  
+  for i := len(uiWindows)-1; i >= 0; i-- {
+    if (uiWindows[i].closed || !uiWindows[i].showDecorations) {
+      continue
+    }
+    outerRect := getWindowOuterRect(i)
+    titlebarRect := getWindowTitlebarRect(i)
+    closeRect := getWindowCloseRect(i)
 
-                if d_util.isMouseInRect(outerRect) && uiFocusWindowId < i {
-                        uiFocusWindowId = -1
-                        if input.isJustPressed(input.mouse1) && d_util.isMouseInRect(titlebarRect) {
-                                uiDragPoint = input.getMousePos().sub(th.Vf2{uiWindows[i].rect.x, uiWindows[i].rect.y})
-                                uiDraggingWindowId = i
-                        }
-                        if input.isPressed(input.mouse1) && d_util.isMouseInRect(closeRect) && uiDraggingWindowId < 0 {
-                                uiWindows[i].closing = true
-                        }
-                        break
-                }
-        }
-        
-        if (uiDraggingWindowId >= 0) {
-                uiFocusWindowId = -1
-        }
+    if d_util.isMouseInRect(outerRect) && uiFocusWindowId < i {
+      uiFocusWindowId = -1
+      if input.isJustPressed(input.mouse1) && d_util.isMouseInRect(titlebarRect) {
+        uiDragPoint = input.getMousePos().sub(th.Vf2{uiWindows[i].rect.x, uiWindows[i].rect.y})
+        uiDraggingWindowId = i
+      }
+      if input.isPressed(input.mouse1) && d_util.isMouseInRect(closeRect) && uiDraggingWindowId < 0 {
+        uiWindows[i].closing = true
+      }
+      break
+    }
+  }
+  
+  if (uiDraggingWindowId >= 0) {
+    uiFocusWindowId = -1
+  }
 }
 
 fn _drawDebugUiWindows() {
-        for i := 0; i < 4; i++ {
-                color := 0x0000FFFF
-                if i == uiFocusWindowId {
-                        color = 0x00FF00FF
-                }               
-                d_util.drawRectLines(color, uiWindows[i].rect)
-                d_util.drawRectLines(color, getWindowOuterRect(i))
-        }
+  for i := 0; i < 4; i++ {
+    color := 0x0000FFFF
+    if i == uiFocusWindowId {
+      color = 0x00FF00FF
+    }         
+    d_util.drawRectLines(color, uiWindows[i].rect)
+    d_util.drawRectLines(color, getWindowOuterRect(i))
+  }
 }
 
 fn drawUiDecorations(winId: int, title: str) {
-        if uiWindows[winId].showDecorations == false {
-                return
-        }
-        outerRect := getWindowOuterRect(winId)
-        for x := 16.0; x < outerRect.w; x += 16 {
-                if x < 16 {
-                        uiSelTile(1, 0) 
-                } else {
-                        uiSelTile(2, 0) 
-                } 
-                if x + 16 > outerRect.w {
-                        uiSelTile(3, 0) /* select win trail */
-                        x = outerRect.w - 16
-                }
-                uiTileset.draw(th.Transform{p: th.Vf2{outerRect.x+x, outerRect.y}, s: th.Vf2{1, 1}})
-        }
+  if uiWindows[winId].showDecorations == false {
+    return
+  }
+  outerRect := getWindowOuterRect(winId)
+  for x := 16.0; x < outerRect.w; x += 16 {
+    if x < 16 {
+      uiSelTile(1, 0) 
+    } else {
+      uiSelTile(2, 0) 
+    } 
+    if x + 16 > outerRect.w {
+      uiSelTile(3, 0) /* select win trail */
+      x = outerRect.w - 16
+    }
+    uiTileset.draw(th.Transform{p: th.Vf2{outerRect.x+x, outerRect.y}, s: th.Vf2{1, 1}})
+  }
 
-        if uiWindows[winId].closing {
-                uiSelTile(0, 1) /* select close btn pressed */
-        } else {
-                uiSelTile(0, 0) /* select close btn */
-        }
-        uiTileset.draw(th.Transform{p: th.Vf2{outerRect.x, outerRect.y}, s: th.Vf2{1, 1}})
+  if uiWindows[winId].closing {
+    uiSelTile(0, 1) /* select close btn pressed */
+  } else {
+    uiSelTile(0, 0) /* select close btn */
+  }
+  uiTileset.draw(th.Transform{p: th.Vf2{outerRect.x, outerRect.y}, s: th.Vf2{1, 1}})
 
-        uiMainFont.draw(title, th.Vf2{outerRect.x+18, outerRect.y-1}, d_colors.cText)
-        uiMainFont.draw(title, th.Vf2{outerRect.x+18+1, outerRect.y-1}, d_colors.cText)
+  uiMainFont.draw(title, th.Vf2{outerRect.x+18, outerRect.y-1}, d_colors.cText)
+  uiMainFont.draw(title, th.Vf2{outerRect.x+18+1, outerRect.y-1}, d_colors.cText)
 
 
-        borderRect := outerRect
-        borderRect.x -= 1
-        borderRect.y -= 1
-        borderRect.w += 2
-        borderRect.h += 2
-        d_util.drawRectLines(0x000000FF, borderRect)
+  borderRect := outerRect
+  borderRect.x -= 1
+  borderRect.y -= 1
+  borderRect.w += 2
+  borderRect.h += 2
+  d_util.drawRectLines(0x000000FF, borderRect)
 }
 
 fn drawWindows() {
-        uiWindows[1].rect = rect.Rect{0, window.h-32, window.w, 32}
-        uiWindows[0].rect = rect.Rect{0, 0, window.w, window.h}
-        for i := 0; i < len(uiWindows); i++ {
-                if uiWindows[i].closed {
-                        continue
-                }
-                uiProcessWindowId = i
+  uiWindows[1].rect = rect.Rect{0, window.h-32, window.w, 32}
+  uiWindows[0].rect = rect.Rect{0, 0, window.w, window.h}
+  for i := 0; i < len(uiWindows); i++ {
+    if uiWindows[i].closed {
+      continue
+    }
+    uiProcessWindowId = i
 
-                switch i {
-                case 0: drawUiDecorations(i, "Tile window (why are you even able to read this?")
-                        drawGridEditor()
-                case 1: drawUiDecorations(i, "Controls toolbar")
-                        drawBar()
-                case 2: drawUiDecorations(i, "Tile picker")
-                        drawPicker()
-                case 3: drawUiDecorations(i, "Player placer")
-                        drawPlayerPlacer()
-                case 4: drawUiDecorations(i, "Entity list")
-                        drawEntityList()
-                default: drawUiDecorations(i, " ")
-                }
-        }
+    switch i {
+    case 0: drawUiDecorations(i, "Tile window (why are you even able to read this?")
+      drawGridEditor()
+    case 1: drawUiDecorations(i, "Controls toolbar")
+      drawBar()
+    case 2: drawUiDecorations(i, "Tile picker")
+      drawPicker()
+    case 3: drawUiDecorations(i, "Player placer")
+      drawPlayerPlacer()
+    case 4: drawUiDecorations(i, "Entity list")
+      drawEntityList()
+    default: drawUiDecorations(i, " ")
+    }
+  }
 }
 
 loadingStr := ""
 fn loading(screen: rect.Rect, name: str) {
-        canvas.drawRect(th.black, rect.Rect{0, 0, screen.w, screen.h})
-        uiMainFont.draw("LOADING\n"+loadingStr+"> "+name, th.Vf2{30, 30}, th.white);
-        loadingStr += "√ "+name+"\n"
-        window.cycle(screen);       
+  canvas.drawRect(th.black, rect.Rect{0, 0, screen.w, screen.h})
+  uiMainFont.draw("LOADING\n"+loadingStr+"> "+name, th.Vf2{30, 30}, th.white);
+  loadingStr += "√ "+name+"\n"
+  window.cycle(screen);       
 }
 
 fn main*() {
-        screen := rect.mk(0, 0, 640, 480)
-        window.setup("title", trunc(screen.w), trunc(screen.h))
+  screen := rect.mk(0, 0, 640, 480)
+  window.setup("title", trunc(screen.w), trunc(screen.h))
 
-        uiMainFont = d_font.loadFont("data/font_mono.ttf", 16)
+  uiMainFont = d_font.loadFont("data/font_mono.ttf", 16)
 
-        loading(screen, "tileset")
-        world.tileset = d_tileset.fromImage(image.load("data/ts00_sky.png"), 32, 32)
+  loading(screen, "tileset")
+  world.tileset = d_tileset.fromImage(image.load("data/ts00_sky.png"), 32, 32)
 
-        loading(screen, "ui");
-        setupUiWindows()
-        uiTileset = image.load("data/ts01_ui.png")
-        uiTrayIconTileset = image.load("data/ts02_trayicons.png")
+  loading(screen, "ui");
+  setupUiWindows()
+  uiTileset = image.load("data/ts01_ui.png")
+  uiTrayIconTileset = image.load("data/ts02_trayicons.png")
 
-        loading(screen, "backgrounds");
-        d_background.init()
+  loading(screen, "backgrounds");
+  d_background.init()
 
-        loading(screen, "world");
-        loadMap()
+  loading(screen, "world");
+  loadMap()
 
-        loading(screen, "pre-init");
-        uiPrevMousePos = input.getMousePos()
+  loading(screen, "pre-init");
+  uiPrevMousePos = input.getMousePos()
 
 
-        for window.cycle(screen) {
-                d_fps.update()
-                d_background.draw(screen)
-                switch state {
-                case stateEditing:
-                        handleUiWindows()
+  for window.cycle(screen) {
+    d_fps.update()
+    d_background.draw(screen)
+    switch state {
+    case stateEditing:
+      handleUiWindows()
 
-                        if input.isJustPressed(input.key_up) {
-                                worldViewOfsY -= 1
-                        }
-                        if input.isJustPressed(input.key_down) {
-                                worldViewOfsY += 1
-                        }
-                        if input.isJustPressed(input.key_left) {
-                                worldViewOfsX -= 1
-                        }
-                        if input.isJustPressed(input.key_right) {
-                                worldViewOfsX += 1
-                        }
+      if input.isJustPressed(input.key_up) {
+        worldViewOfsY -= 1
+      }
+      if input.isJustPressed(input.key_down) {
+        worldViewOfsY += 1
+      }
+      if input.isJustPressed(input.key_left) {
+        worldViewOfsX -= 1
+      }
+      if input.isJustPressed(input.key_right) {
+        worldViewOfsX += 1
+      }
 
-                        actField()
+      actField()
 
-                        drawWindows()
+      drawWindows()
 
-                        if uiRelocatingPlayer {
-                                uiSelTrayTile(2, 0)
-                                uiTrayIconTileset.draw(th.Transform{p: input.getMousePos(), s: th.Vf2{1, 1}}, th.white)
-                        }
-                        
-                case statePlaying:
-                        d_game.draw()
-                        uiProcessWindowId = uiFocusWindowId
-                        if putTrayBtn(th.Vf2{0, window.h-32}, 2, 1, true) {
-                                state = stateEditing
-                        }
-                        d_script.update()
-                }
+      if uiRelocatingPlayer {
+        uiSelTrayTile(2, 0)
+        uiTrayIconTileset.draw(th.Transform{p: input.getMousePos(), s: th.Vf2{1, 1}}, th.white)
+      }
+      
+    case statePlaying:
+      d_game.draw()
+      uiProcessWindowId = uiFocusWindowId
+      if putTrayBtn(th.Vf2{0, window.h-32}, 2, 1, true) {
+        state = stateEditing
+      }
+      d_script.update()
+    }
 
-                uiPrevMousePos = input.getMousePos()
-                uiLeftMouseDown = input.isPressed(input.mouse1)
-                uiMainFont.draw(std.itoa(trunc(d_fps.getFps()))+"fps", th.Vf2{0, 0}, d_colors.cText) 
-                screen = rect.mk(0, 0, window.w, window.h)
-        }
+    uiPrevMousePos = input.getMousePos()
+    uiLeftMouseDown = input.isPressed(input.mouse1)
+    uiMainFont.draw(std.itoa(trunc(d_fps.getFps()))+"fps", th.Vf2{0, 0}, d_colors.cText) 
+    screen = rect.mk(0, 0, window.w, window.h)
+  }
 
 }
 
