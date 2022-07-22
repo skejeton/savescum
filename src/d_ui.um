@@ -6,15 +6,16 @@ import (
 
 
 type (
-  Window = struct {
-    title: str
-    rect: rect.Rect
-  }
-
   Scrolling = struct {
     scroll: real
     limit: real
     targetScroll: real
+  }
+
+  Window = struct {
+    title: str
+    rect: rect.Rect
+    scroll: Scrolling
   }
 
   Group = struct {
@@ -159,12 +160,6 @@ fn scrollLimit(scroll: ^Scrolling, to: real) {
     to = 0
   }
   scroll.limit = to
-}
-
-fn scrollSet(scroll: ^Scrolling, to: real) {
-  scroll.targetScroll = to
-  scroll.scroll = to
-  scrollFix(scroll)
 }
 
 fn scrollBy(scroll: ^Scrolling, by: real) {
@@ -330,6 +325,19 @@ fn groupCreateFromWindow(win: Window): Group {
   return Group{windows: windows, current: 0, rect: win.rect}
 }
 
+fn groupGetCurrentWindow(group: ^Group): ^Window {
+  return &group.windows[group.current]
+}
+
+fn groupFindWindow(group: ^Group, title: str): ^Window {
+  for i in group.windows {
+    if group.windows[i].title == title {
+      return &group.windows[i]
+    }
+  }
+  return null
+}
+
 fn groupAppendWindow(group: ^Group, win: Window) {
   group.windows = append(group.windows, win) 
 }
@@ -392,6 +400,7 @@ fn groupZoneUndockWindow(zone: ^GroupZone, title: str): ^Group {
   group := zone.groups[title]
   index := -1
 
+  // TODO: use groupFindWindow but we need the index :thinking:
   for i in group.windows {
     if group.windows[i].title == title {
       index = i
@@ -494,6 +503,7 @@ var (
   v_lastGroup: ^Group
   v_lastWindow: str
   v_currentLay: Layout
+  v_currentLayRec: real
 
   v_inputState: InputState
 )
@@ -593,6 +603,11 @@ fn dbgMain(pos: th.Vf2) {
   dbgPrintGroup(&lay, "DockingGroup", v_groupZone.dockingGroup)
   dbgPrintGroup(&lay, "DraggingGroup", v_groupZone.draggingGroup)
   dbgPrintGroup(&lay, "ActiveGroup", v_groupZone.activeGroup)
+  dbgPrintSect(&lay, "WindowScroll")
+  if v_groupZone.activeGroup != null {
+    dbgPrintText(&lay, repr(groupGetCurrentWindow(v_groupZone.activeGroup).scroll.targetScroll), th.white & 0xFFFFFF99)
+  }
+  lay.newLine()
   dbgPrintSect(&lay, "UndockWindow")
   dbgPrintText(&lay, v_groupZone.undockingWindow, th.white & 0xFFFFFF99)
   lay.newLine()
@@ -684,6 +699,9 @@ fn handleInput() {
 
 fn handleGroups() {
   for _, group in v_groupZone.groups {
+    for i in group.windows {
+      scrollUpdate(&group.windows[i].scroll)
+    }
     scrollUpdate(&group.tabScroll)
   }
 }
@@ -696,11 +714,23 @@ fn begin*() {
   dbgMain(th.Vf2{10, 10});
 }
 
-fn end*() {
-  // clean up scissor
-  if v_currentLay.ctx != null {
+fn getLastWindow(): ^Window {
+  return groupFindWindow(v_lastGroup, v_lastWindow)
+}
+
+fn getLastWindowContentRect(): rect.Rect {
+  return rectInset(getWindowContentRectFromRect(v_lastGroup.rect), 5);
+}
+
+fn endWindow() {
+  if v_currentLay.ctx != null && v_lastGroup != null {
+    scrollLimit(&getLastWindow().scroll, -(v_currentLay.stopRecord(v_currentLayRec)-getLastWindowContentRect().h))
     v_currentLay.putCommand(commandEndScissorRect())
   }
+}
+
+fn end*() {
+  endWindow()
   v_lastGroup = null
 
   v_drawCtx.render(v_font)
@@ -725,15 +755,6 @@ fn isGroupVisible(group: ^Group): bool {
 
 fn isGroupRendered(group: ^Group): bool {
   return isGroupVisible(group) && (group == v_groupZone.dockingGroup || v_groupZone.dockingGroup == null)
-}
-
-fn getLastWindowContentRect(): rect.Rect {
-  if isGroupVisible(v_lastGroup) {
-    return rectInset(getWindowContentRectFromRect(v_lastGroup.rect), 5);
-  }
-
-  error("Last window wasn't visible");
-  return rect.mk(0, 0, 0, 0)
 }
 
 fn invalidateClick() {
@@ -795,6 +816,10 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
       scrollBy(&group.tabScroll, v_inputState.mouseScroll * 20);
     }
 
+    if v_groupZone.activeGroup == group && isMouseOver(contentRect) {
+      scrollBy(&groupGetCurrentWindow(group).scroll, v_inputState.mouseScroll * 20)
+    }
+
     lay := layoutInit(ctx, group.index)
 
     // Draw shadow
@@ -833,9 +858,7 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
         }
       }
 
-      res := -(lay.stopRecord(rec)-titlebarWidth)
-      printf("%g\n", res)
-      scrollLimit(&group.tabScroll, res)
+      scrollLimit(&group.tabScroll, -(lay.stopRecord(rec)-titlebarWidth))
       // End scissor
       lay.putCommand(commandEndScissorRect())
     }
@@ -845,28 +868,31 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
 }
 
 fn beginWindow*(title: str, r: rect.Rect) {
-  v_lastWindow = title
   newGroup := groupZoneAcquire(&v_groupZone, title, r)
 
   // Prevent handling the group multiple times
   if newGroup != v_lastGroup {
-    // Prevent mismatches
-    if v_currentLay.ctx != null && v_lastGroup != null {
-      v_currentLay.putCommand(commandEndScissorRect())
-    }
+    endWindow()
     v_lastGroup = newGroup
   }
 
+  v_lastWindow = title
+
   if isGroupVisible(v_lastGroup) {
+    win := groupGetCurrentWindow(v_lastGroup)
     drawGroup(&v_drawCtx, v_lastGroup)
     v_currentLay = layoutInit(&v_drawCtx, v_lastGroup.index, cuttingTop, getLastWindowContentRect())
     v_currentLay.putCommand(commandBeginScissorRect(v_currentLay.rect))
+    v_currentLay.setBounds(v_currentLay.rect)
+    v_currentLay.getRect(th.Vf2{0, win.scroll.scroll});
+    v_currentLayRec = v_currentLay.startRecord()
   }
 }
 
 fn putButton*(text: str): ButtonState {
   if isGroupRendered(v_lastGroup) {
-    return _putButton(&v_currentLay, text)
+    output := _putButton(&v_currentLay, text)
+    return output;
   }
   return ButtonState{}
 }

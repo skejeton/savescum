@@ -1,12 +1,12 @@
 import (
-  "window.um"; "rect.um"; "canvas.um"; "std.um"
+  "window.um"; "rect.um"; "canvas.um"
   ui = "../../src/d_ui.um"; font = "../../src/d_font.um"
 )
 
 fn main() {
   window.setup("Ahoy", 800, 600)
   var screen: rect.Rect
-  count := 0
+  count := 5
   ui.init(font.loadFont("data/font_sans.ttf", 16))
 
   for (window.cycle(screen)) {
