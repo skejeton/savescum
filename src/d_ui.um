@@ -13,6 +13,7 @@ type (
 
   Scrolling = struct {
     scroll: real
+    limit: real
     targetScroll: real
   }
 
@@ -142,9 +143,28 @@ fn (lay: ^SequenceLayout) padding(by: th.fu) {
 /////////////////////////////
 // Scroll
 
+fn scrollFix(scroll: ^Scrolling) {
+  if scroll.targetScroll < scroll.limit {
+    scroll.targetScroll = scroll.limit
+  }
+
+  if scroll.scroll < scroll.limit {
+    scroll.scroll = scroll.limit
+  }
+}
+
+fn scrollLimit(scroll: ^Scrolling, to: real) {
+  // Fix negative scroll
+  if to > 0 {
+    to = 0
+  }
+  scroll.limit = to
+}
+
 fn scrollSet(scroll: ^Scrolling, to: real) {
-    scroll.targetScroll = to
-    scroll.scroll = to
+  scroll.targetScroll = to
+  scroll.scroll = to
+  scrollFix(scroll)
 }
 
 fn scrollBy(scroll: ^Scrolling, by: real) {
@@ -152,10 +172,12 @@ fn scrollBy(scroll: ^Scrolling, by: real) {
   if scroll.targetScroll > 0 {
     scroll.targetScroll = 0
   }
+  scrollFix(scroll)
 }
 
 fn scrollUpdate(scroll: ^Scrolling) {
   scroll.scroll += (scroll.targetScroll-scroll.scroll)*(th.delta/1000.0)*10;
+  scrollFix(scroll)
 }
 
 /////////////////////////////
@@ -419,6 +441,24 @@ fn groupZoneLocateActiveGroup(zone: ^GroupZone, at: th.Vf2): ^Group {
 // Layout
 fn layoutInit(ctx: ^DrawCtx, index: int, cutter: Cutting = cuttingLeft, r: rect.Rect = rect.Rect{0, 0, 0, 0}): Layout {
   return Layout{ctx: ctx, cutter: cutter, rect: r, index: index}
+}
+
+fn (lay: ^Layout) startRecord(): real {
+  if lay.cutter == cuttingLeft || lay.cutter == cuttingRight {
+    return lay.rect.x
+  }
+  return lay.rect.y
+}
+
+fn (lay: ^Layout) stopRecord(record: real): real {
+  switch lay.cutter {
+    case cuttingLeft:   return lay.rect.x-record;
+    case cuttingRight:  return -(lay.rect.x-record);
+    case cuttingTop:    return lay.rect.y-record;
+    case cuttingBottom: return -(lay.rect.y-record);
+    default: error("Unreachable");
+  }
+  return 0;
 }
 
 fn (lay: ^Layout) getRect(reqSize: th.Vf2): rect.Rect {
@@ -766,18 +806,18 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
     lay.rect = titlebarRect
 
     if len(group.windows) == 1 {
-      // No scrolling if there's only one tab
-      scrollSet(&group.tabScroll, 0)
       lay.putCommand(commandText(c_body, titlebarRect, group.windows[0].title))
     } else {
       if _putButton(&lay, "||||").pressed {
         v_groupZone.draggingGroup = group
       }
+      titlebarWidth := lay.rect.w
 
       // Begin scissor
       lay.putCommand(commandBeginScissorRect(lay.rect))
       lay.setBounds(lay.rect)
       lay.getRect(th.Vf2{group.tabScroll.scroll, 0})
+      rec := lay.startRecord()
 
       for i, w in group.windows {
         button := _putButtonToggle(&lay, w.title, group.current == i)
@@ -792,6 +832,10 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
           group.current = i
         }
       }
+
+      res := -(lay.stopRecord(rec)-titlebarWidth)
+      printf("%g\n", res)
+      scrollLimit(&group.tabScroll, res)
       // End scissor
       lay.putCommand(commandEndScissorRect())
     }
