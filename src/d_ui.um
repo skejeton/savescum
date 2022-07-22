@@ -329,13 +329,21 @@ fn groupGetCurrentWindow(group: ^Group): ^Window {
   return &group.windows[group.current]
 }
 
-fn groupFindWindow(group: ^Group, title: str): ^Window {
+fn groupFindWindowIndex(group: ^Group, title: str): int {
   for i in group.windows {
     if group.windows[i].title == title {
-      return &group.windows[i]
+      return i
     }
   }
-  return null
+  return -1
+}
+
+fn groupFindWindow(group: ^Group, title: str): ^Window {
+  index := groupFindWindowIndex(group, title)
+  if index < 0 {
+    return null
+  }
+  return &group.windows[index]
 }
 
 fn groupAppendWindow(group: ^Group, win: Window) {
@@ -398,15 +406,7 @@ fn groupZoneSetJoin(zone: ^GroupZone, set: bool) {
 
 fn groupZoneUndockWindow(zone: ^GroupZone, title: str): ^Group {
   group := zone.groups[title]
-  index := -1
-
-  // TODO: use groupFindWindow but we need the index :thinking:
-  for i in group.windows {
-    if group.windows[i].title == title {
-      index = i
-      break
-    }
-  } 
+  index := groupFindWindowIndex(group, title)
 
   if (index < 0) {
     error("Invalid index")
