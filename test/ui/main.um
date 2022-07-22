@@ -18,6 +18,7 @@ fn main() {
     ui.begin()
     
     ui.setJoinWindows(true)
+      ui.beginWindow("Test", rect.Rect{200, 80, 200, 300})
       ui.beginWindow("Controller", rect.Rect{200, 80, 200, 300})
         if (ui.putButton("Add").pressed) {
           count += 1;

@@ -142,6 +142,11 @@ fn (lay: ^SequenceLayout) padding(by: th.fu) {
 /////////////////////////////
 // Scroll
 
+fn scrollSet(scroll: ^Scrolling, to: real) {
+    scroll.targetScroll = to
+    scroll.scroll = to
+}
+
 fn scrollBy(scroll: ^Scrolling, by: real) {
   scroll.targetScroll += by;
   if scroll.targetScroll > 0 {
@@ -217,11 +222,11 @@ fn (ctx: ^DrawCtx) putCommand(index: int, cmd: DrawCommand) {
 }
 
 fn (ctx: ^DrawCtx) render(font: d_font.Font) {
-  rectStack := make([]rect.Rect, 0)
-  isScissor := false
-  scissorRect := rect.Rect{}
-
   for i in ctx.layers {
+    rectStack := make([]rect.Rect, 0)
+    isScissor := false
+    scissorRect := rect.Rect{}
+
     layer := &ctx.layers[i]
     for j, cmd in layer.commands {
       if cmd.color == magicColorBeginScissorRect {
@@ -246,10 +251,14 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
         canvas.drawRect(cmd.color, cmd.rect)
       }
     }
-  }
 
-  if len(rectStack) > 0 {
-    error("Umatched endScissor");
+    if isScissor {
+      window.endScissor()
+    }
+
+    if len(rectStack) > 0 {
+      error("Umatched endScissor");
+    }
   }
 }
 
@@ -757,6 +766,8 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
     lay.rect = titlebarRect
 
     if len(group.windows) == 1 {
+      // No scrolling if there's only one tab
+      scrollSet(&group.tabScroll, 0)
       lay.putCommand(commandText(c_body, titlebarRect, group.windows[0].title))
     } else {
       if _putButton(&lay, "||||").pressed {
@@ -796,7 +807,7 @@ fn beginWindow*(title: str, r: rect.Rect) {
   // Prevent handling the group multiple times
   if newGroup != v_lastGroup {
     // Prevent mismatches
-    if v_lastGroup != null {
+    if v_currentLay.ctx != null && v_lastGroup != null {
       v_currentLay.putCommand(commandEndScissorRect())
     }
     v_lastGroup = newGroup
