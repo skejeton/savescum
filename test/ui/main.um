@@ -14,14 +14,10 @@ fn main() {
     screen.h = window.h
 
 
-    canvas.drawRect(0xFFAAAAFF, screen)
+    canvas.drawRect(0xDD9988FF, screen)
     ui.begin()
     
     ui.setJoinWindows(true)
-      ui.beginWindow("Test", rect.Rect{200, 80, 200, 300})
-      ui.beginWindow("Test1", rect.Rect{200, 80, 200, 300})
-      ui.beginWindow("Test2", rect.Rect{200, 80, 200, 300})
-      ui.beginWindow("Test3", rect.Rect{200, 80, 200, 300})
       ui.beginWindow("Controller", rect.Rect{200, 80, 200, 300})
         if (ui.putButton("Add").pressed) {
           count += 1;
