@@ -38,7 +38,6 @@ fn (f: ^Font) measure*(text: str): th.Vf2 {
 
   for i := 0; i < len(runes); i++ {
     rune := runes[i]
-
     if rune == uint32('\n') {
       y += f.height
       if x > maxW {
@@ -63,7 +62,7 @@ fn (f: ^Font) measure*(text: str): th.Vf2 {
 // Returns the rect of the font
 fn (f: ^Font) draw*(text: str, pos: th.Vf2, color: uint32): rect.Rect {
   runes := utf8.decode(text)
-  x, y, maxW := pos.x, pos.y, 0.0
+  x, y, maxW := pos.x, pos.y, pos.x
 
   for i := 0; i < len(runes); i++ {
     rune := runes[i]

@@ -505,6 +505,7 @@ var (
   v_currentLay: Layout
   v_currentLayRec: real
 
+  v_dbgMask: uint32 // mask for debug ui
   v_inputState: InputState
 )
 
@@ -542,7 +543,7 @@ fn dbgPrintText(lay: ^SequenceLayout, label: str, color: uint32) {
   size := v_font.measure(label)
   r := rect.mk(lay.end.x, lay.end.y, size.x, size.y)
 
-  v_drawCtx.putCommand(99, commandText(color, r, label))
+  v_drawCtx.putCommand(99, commandText(color & v_dbgMask, r, label))
   lay.put(v_font.measure(label))
 }
 
@@ -614,8 +615,10 @@ fn dbgMain(pos: th.Vf2) {
 
   // make lighter on hover
   if (rectInPoint(lay.getRect(), v_inputState.mousePos)) {
+    v_dbgMask = 0xFFFFFF55
     v_drawCtx.putCommand(98, commandRect(th.black&0x11, rectInset(lay.getRect(), -5)))
   } else {
+    v_dbgMask = 0xFFFFFFFF
     v_drawCtx.putCommand(98, commandRect(th.black&0xBB, rectInset(lay.getRect(), -5)))
   }
 }
@@ -826,7 +829,6 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
     lay.putCommand(commandRect(c_shadow, rectMove(rectInset(windowRect, -1), th.Vf2{0, 1})))
     lay.putCommand(commandRect(c_decor, windowRect))
     lay.putCommand(commandRect(c_body, contentRect))
-
 
     lay.rect = titlebarRect
 
