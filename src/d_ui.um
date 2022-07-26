@@ -102,6 +102,7 @@ const (
   c_item = 0x993333FF
   c_held = 0xC24444FF
   c_over = 0xAD4545FF
+  c_fore = 0x000000FF
   c_body = th.white
 
   magicColorBeginScissorRect = 0x5B248E00
@@ -764,11 +765,20 @@ fn invalidateClick() {
   v_groupZone.draggingGroup = null
 }
 
-fn _putButtonToggle(lay: ^Layout, text: str, out: bool): ButtonState {
+fn getTextWidgetRect(lay: ^Layout, text: str): rect.Rect {
   size := v_font.measure(text) 
   size.x += 10 // padding
   size.y += 5
-  buttonRect := lay.getRect(size)
+  return lay.getRect(size)
+
+}
+
+fn _putLabel(lay: ^Layout, text: str) {
+  lay.putCommand(commandText(c_fore, getTextWidgetRect(lay, text), text))    
+}
+
+fn _putButtonToggle(lay: ^Layout, text: str, out: bool): ButtonState {
+  buttonRect := getTextWidgetRect(lay, text)
   
   pressed := false
   released := false
@@ -898,6 +908,13 @@ fn putButton*(text: str): ButtonState {
   }
   return ButtonState{}
 }
+
+fn putLabel*(text: str) {
+  if isGroupRendered(v_lastGroup) {
+    _putLabel(&v_currentLay, text)
+  }
+}
+
 
 // DRAGGING
 // 1. Check if left mouse button is down
