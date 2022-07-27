@@ -1,5 +1,5 @@
 import (
-  "window.um"; "rect.um"; "canvas.um"
+  "std.um"; "window.um"; "rect.um"; "canvas.um"
   ui = "../../src/d_ui.um"; font = "../../src/d_font.um"
 )
 
@@ -7,36 +7,71 @@ fn main() {
   window.setup("Ahoy", 800, 600)
   var screen: rect.Rect
   count := 5
+  layout := 0
+  elementsPerRow := 5
+
   ui.init(font.loadFont("data/font_sans.ttf", 16))
 
   for (window.cycle(screen)) {
     screen.w = window.w
     screen.h = window.h
 
-
     canvas.drawRect(0xDD9988FF, screen)
     ui.begin()
     
-    ui.setJoinWindows(true)
-      ui.beginWindow("Controller", rect.Rect{200, 80, 200, 300})
-        ui.putLabel("Add or remove items to the")
-        ui.putLabel("Controlled window")
-        if (ui.putButton("Add").pressed) {
-          count += 1;
-        }
+    ui.beginWindow("Controller", rect.Rect{250, 80, 200, 300})
+      ui.putLabel("Add or remove items to the")
+      ui.putLabel("Controlled window")
+
+      name := ""
+      switch layout {
+        case 0: name = "Fixed row"
+        case 1: name = "Dynamic row"
+        case 2: name = "Columns"
+      }
+
+      if (ui.putButton(name).pressed) {
+        layout += 1
+       
+        layout %= 3
+      }
+      ui.beginFixedRow(3)
         if (ui.putButton("Remove").pressed) {
           count -= 1;
         }
-    ui.setJoinWindows(false)
-
-    ui.setJoinWindows(true)
-      ui.beginWindow("Controlled", rect.Rect{280, 80, 230, 350})
-        for i := 0; i < count; i++ {
-          buf := str(make([]char, 256))
-          sprintf(buf, "%d", i)
-          ui.putLabel(buf)
+        ui.putLabel(std.itoa(count))
+        if (ui.putButton("Add").pressed) {
+          count += 1;
         }
-    ui.setJoinWindows(false)
+
+        if layout == 0 {
+          if (ui.putButton("Decrease").pressed) {
+            if elementsPerRow > 1 {
+              elementsPerRow -= 1;
+            }
+          }
+          ui.putLabel(std.itoa(elementsPerRow))
+          if (ui.putButton("Increase").pressed) {
+            elementsPerRow += 1;
+          }
+        }
+    ui.endFixedRow()
+
+
+    ui.beginWindow("Controlled", rect.Rect{480, 80, 230, 350})
+      switch layout {
+        case 0: ui.beginFixedRow(elementsPerRow)
+        case 1: ui.beginDynamicRow()
+        case 2: ui.beginColumn()
+      }
+        for i := 0; i < count; i++ {
+          ui.putLabel(std.itoa(i+1))
+        }
+      switch layout {
+        case 0: ui.endFixedRow()
+        case 1: ui.endDynamicRow()
+        case 2: ui.endColumn()
+      }
 
     ui.end()
   }

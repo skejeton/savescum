@@ -1,7 +1,7 @@
 import (
   "std.um"
   "th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
-  "d_font.um"; 
+  "d_font.um"; "d_fps.um"
 )
 
 
@@ -89,6 +89,32 @@ type (
     lineHeight: th.fu
     maxX: th.fu
   }
+
+  // Dictates where you should place your element.
+  //  focused: whether the element should accept input or not
+  //  rect: the rectangle where you should render your element
+  UiElementPlace = struct {
+    focused: bool
+    rect: rect.Rect
+  }
+
+  UiLayoutType = int
+
+  UiLayout = struct {
+    position: th.Vf2 
+    elementsPerRow: int
+    rowHeight: real
+    layoutType: UiLayoutType
+    scroll: th.Vf2
+  }
+
+  UiState = struct {
+    groupIndex: int
+    drawCtx: ^DrawCtx
+    inputState: InputState
+    baseRect: rect.Rect
+    layouts: []UiLayout
+  }
 )
 
 const (
@@ -96,6 +122,10 @@ const (
   cuttingRight = Cutting(1)
   cuttingTop = Cutting(2)
   cuttingBottom = Cutting(3)
+
+  uiLayoutTypeColumn = UiLayoutType(0)
+  uiLayoutTypeFixedRow = UiLayoutType(1)
+  uiLayoutTypeDynamicRow = UiLayoutType(2)
 
   c_shadow = 0x00000022
   c_decor = 0x752f29FF
@@ -377,7 +407,7 @@ fn groupZoneAcquire(zone: ^GroupZone, title: str, r: rect.Rect): ^Group {
       groupAppendWindow(zone.stack[len(zone.stack)-1], Window{title: title, rect: r})
     } else {
       zone.firstJoin = false
-      groupZoneCreate(zone, Window{title: title, rect: r})
+      group = groupZoneCreate(zone, Window{title: title, rect: r})
     }
   }
   
@@ -496,6 +526,183 @@ fn (lay: ^Layout) putCommand(cmd: DrawCommand) {
   lay.ctx.putCommand(lay.index, cmd)
 }
 
+///////////////////////
+// UI
+fn uiInit(drawCtx: ^DrawCtx): UiState {
+  return UiState{layouts: make([]UiLayout, 0), drawCtx: drawCtx};
+}
+
+fn uiBegin(ui: ^UiState, inputState: InputState) {
+  // (1) Not really necessary, but good for debugging so you can immediately spot something's wrong
+  ui.groupIndex = -1 // (1)
+  ui.baseRect = rect.mk(0, 0, 0, 0) // (1)
+
+  if len(ui.layouts) > 0 {
+    error("unfinished ui layouts\n")
+  }
+
+  ui.inputState = inputState
+}
+
+fn uiBeginGroup(ui: ^UiState, baseRect: rect.Rect, zIndex: int) {
+  ui.groupIndex = zIndex
+  ui.baseRect = baseRect
+}
+
+fn uiPutCommand(ui: ^UiState, command: DrawCommand) {
+  ui.drawCtx.putCommand(ui.groupIndex, command)
+}
+
+fn uiLayoutTypeName(t: UiLayoutType): str {
+  switch t {
+    case uiLayoutTypeColumn: return "column"
+    case uiLayoutTypeFixedRow: return "fixed row"
+    case uiLayoutTypeDynamicRow: return "dynamic row"
+  }
+  return "unknown layout"
+}
+
+fn uiCurrentLayout(ui: ^UiState): ^UiLayout {
+  if len(ui.layouts) > 0 {
+    return &ui.layouts[len(ui.layouts)-1]
+  }
+  return null
+}
+
+// Adds an element into the UI and advances the layout.
+fn uiPushElement(ui: ^UiState, size: th.Vf2): UiElementPlace {
+  currentLayout := uiCurrentLayout(ui) 
+
+  // (1) NOTE: for now here the positions are relative to the base rect 
+  resultRect := rect.mk(currentLayout.position.x, currentLayout.position.y, size.x, size.y)
+
+  switch currentLayout.layoutType {
+    case uiLayoutTypeColumn:
+      resultRect.w = ui.baseRect.w
+
+      currentLayout.position.y += resultRect.h
+    case uiLayoutTypeFixedRow:
+      resultRect.w = ui.baseRect.w / real(currentLayout.elementsPerRow);
+      
+      if resultRect.x >= ui.baseRect.w { // wrap around
+        resultRect.x = 0
+        resultRect.y += currentLayout.rowHeight
+        currentLayout.position.y += currentLayout.rowHeight
+        currentLayout.position.x = 0
+        currentLayout.rowHeight = 0
+      }
+
+      if resultRect.h > currentLayout.rowHeight {
+        currentLayout.rowHeight = resultRect.h
+      }
+
+      currentLayout.position.x += ui.baseRect.w / real(currentLayout.elementsPerRow)
+    case uiLayoutTypeDynamicRow:
+      if (resultRect.x+resultRect.w) > ui.baseRect.w { // wrap around
+        resultRect.x = 0
+        resultRect.y += currentLayout.rowHeight
+        currentLayout.position.y += currentLayout.rowHeight
+        currentLayout.position.x = 0
+        currentLayout.rowHeight = 0
+      }
+
+      if resultRect.h > currentLayout.rowHeight {
+        currentLayout.rowHeight = resultRect.h
+      }
+
+      currentLayout.position.x += resultRect.w
+  }
+
+  // (1) ... Then they are transformed to the absolute position.
+  resultRect.x += ui.baseRect.x+currentLayout.scroll.x
+  resultRect.y += ui.baseRect.y+currentLayout.scroll.y
+
+  // TODO: Remove always true
+  return UiElementPlace{rectInPoint(resultRect, ui.inputState.mousePos), resultRect}
+}
+
+fn uiGetBounds(ui: ^UiState): th.Vf2 {
+  currentLayout := uiCurrentLayout(ui)
+  bounds := th.Vf2{ui.baseRect.w, ui.baseRect.h}
+  addendum := currentLayout.position.add(th.Vf2{0, currentLayout.rowHeight})
+
+  if addendum.x > bounds.x {
+    bounds.x = addendum.x
+  }
+
+  if addendum.y > bounds.y {
+    bounds.y = addendum.y
+  }
+
+  return bounds
+}
+
+fn uiSetScroll(ui: ^UiState, offset: th.Vf2) {
+  currentLayout := uiCurrentLayout(ui)
+  currentLayout.scroll.x += offset.x
+  currentLayout.scroll.y += offset.y
+}
+
+fn uiPopLayout(ui: ^UiState, expectedType: UiLayoutType) {
+  currentLayout := uiCurrentLayout(ui)
+  currentType := uiCurrentLayout(ui).layoutType
+
+  if currentType != expectedType {
+    buf := str(make([]char, 256))
+    sprintf(buf, "(UI) Layout type mismatch: started with %s but ended with %s", uiLayoutTypeName(currentType), uiLayoutTypeName(expectedType))
+    error(buf)
+  } else {
+    ui.layouts = delete(ui.layouts, len(ui.layouts)-1)
+    if len(ui.layouts) > 0 {
+      // FIXME: BAD
+      ui.layouts[len(ui.layouts)-1].position.y = currentLayout.position.y+currentLayout.rowHeight
+      ui.layouts[len(ui.layouts)-1].position.x = 0
+    }
+  }
+}
+
+fn uiBeginLayout(ui: ^UiState, layoutType: UiLayoutType, elementsPerRow: int = 0) {
+  currentLayout := uiCurrentLayout(ui)
+  newLayout := UiLayout{layoutType: layoutType, elementsPerRow: elementsPerRow}
+
+  if currentLayout != null {
+    newLayout.scroll = currentLayout.scroll
+    newLayout.position = currentLayout.position
+  }
+
+  ui.layouts = append(ui.layouts, newLayout)
+}
+
+// Begins a column layout.
+// It becomes full width to the parent rectangle and moves on to next row.
+fn uiBeginColumn(ui: ^UiState) {
+  uiBeginLayout(ui, uiLayoutTypeColumn)
+}
+
+fn uiEndColumn(ui: ^UiState) {
+  uiPopLayout(ui, uiLayoutTypeColumn)
+}
+
+// Begins a dynamic row layout.
+// It uses its provided size and wraps around if needed.
+fn uiBeginDynamicRow(ui: ^UiState) {
+  uiBeginLayout(ui, uiLayoutTypeDynamicRow)
+}
+
+fn uiEndDynamicRow(ui: ^UiState) {
+  uiPopLayout(ui, uiLayoutTypeDynamicRow)
+}
+
+// Begins a fixed row layout.
+// It assigns element width to parent width divided by element per row, and wraps around if needed.
+fn uiBeginFixedRow(ui: ^UiState, elementsPerRow: int) {
+  uiBeginLayout(ui, uiLayoutTypeFixedRow, elementsPerRow)
+}
+
+fn uiEndFixedRow(ui: ^UiState) {
+  uiPopLayout(ui, uiLayoutTypeFixedRow)
+}
+
 var (
   v_font: d_font.Font
   v_drawCtx: DrawCtx
@@ -503,20 +710,50 @@ var (
   v_groupZone: GroupZone
   v_lastGroup: ^Group
   v_lastWindow: str
-  v_currentLay: Layout
-  v_currentLayRec: real
+  v_uiState: UiState
 
   v_dbgMask: uint32 // mask for debug ui
   v_inputState: InputState
 )
 
-
 ///////////////////////
-// UI
+// UI (Interface)
+
+// Begins a column layout.
+// It becomes full width to the parent rectangle and moves on to next row.
+fn beginColumn*() {
+  uiBeginColumn(&v_uiState)
+}
+
+fn endColumn*() {
+  uiEndColumn(&v_uiState)
+}
+
+// Begins a dynamic row layout.
+// It uses its provided size and wraps around if needed.
+fn beginDynamicRow*() {
+  uiBeginDynamicRow(&v_uiState)
+}
+
+fn endDynamicRow*() {
+  uiEndDynamicRow(&v_uiState)
+}
+
+// Begins a fixed row layout.
+// It assigns element width to parent width divided by element per row, and wraps around if needed.
+fn beginFixedRow*(elementsPerRow: int) {
+  uiBeginFixedRow(&v_uiState, elementsPerRow)
+}
+
+fn endFixedRow*() {
+  uiEndFixedRow(&v_uiState)
+}
+
 fn init*(font: d_font.Font) {
   v_font = font
   v_groupZone = groupZoneInit()
   v_drawCtx = drawCtxInit()
+  v_uiState = uiInit(&v_drawCtx)
 }
 
 fn populateMouseButton(previous: ButtonState, button: char): ButtonState {
@@ -550,7 +787,12 @@ fn dbgPrintText(lay: ^SequenceLayout, label: str, color: uint32) {
 
 fn dbgPrintSect(lay: ^SequenceLayout, label: str) {
   dbgPrintText(lay, label, th.white)
-  lay.padding(50)
+  startX := lay.end.x 
+  lay.padding(100)
+  endX := lay.end.x
+  y := lay.end.y + v_font.height/2;
+
+  v_drawCtx.putCommand(99, commandRect(0xFFFFFF11 & v_dbgMask, rect.mk(startX, y, endX-startX, 1)))
 }
 
 fn dbgPrintBool(lay: ^SequenceLayout, label: str, value: bool) {
@@ -601,6 +843,10 @@ fn dbgPrintGroup(lay: ^SequenceLayout, label: str, group: ^Group) {
 
 fn dbgMain(pos: th.Vf2) {
   lay := sequenceLayoutInit(pos)
+  dbgPrintSect(&lay, "FPS")
+  dbgPrintText(&lay, std.itoa(round(d_fps.getFps())), th.white & 0xFFFFFF99)
+  lay.newLine()
+
   dbgPrintInputState(&lay, v_inputState)
   dbgPrintGroup(&lay, "DockingGroup", v_groupZone.dockingGroup)
   dbgPrintGroup(&lay, "DraggingGroup", v_groupZone.draggingGroup)
@@ -711,11 +957,13 @@ fn handleGroups() {
 }
 
 fn begin*() {
+  d_fps.update()
   v_inputState = populateInputState(v_inputState);
   handleInput()
   handleGroups()
   groupZoneSetJoin(&v_groupZone, false)
   dbgMain(th.Vf2{10, 10});
+  uiBegin(&v_uiState, v_inputState)
 }
 
 fn getLastWindow(): ^Window {
@@ -726,15 +974,12 @@ fn getLastWindowContentRect(): rect.Rect {
   return rectInset(getWindowContentRectFromRect(v_lastGroup.rect), 5);
 }
 
-fn endWindow() {
-  if v_currentLay.ctx != null && v_lastGroup != null {
-    scrollLimit(&getLastWindow().scroll, -(v_currentLay.stopRecord(v_currentLayRec)-getLastWindowContentRect().h))
-    v_currentLay.putCommand(commandEndScissorRect())
-  }
-}
+fn endWindow();
 
 fn end*() {
-  endWindow()
+  if v_lastGroup != null {
+    endWindow()
+  }
   v_lastGroup = null
 
   v_drawCtx.render(v_font)
@@ -770,11 +1015,58 @@ fn getTextWidgetRect(lay: ^Layout, text: str): rect.Rect {
   size.x += 10 // padding
   size.y += 5
   return lay.getRect(size)
-
 }
 
 fn _putLabel(lay: ^Layout, text: str) {
   lay.putCommand(commandText(c_fore, getTextWidgetRect(lay, text), text))    
+}
+
+fn _putLabelNeo(text: str) {
+  size := v_font.measure(text) 
+  size.x += 10 // padding
+  size.y += 5
+
+  labelRect := uiPushElement(&v_uiState, size).rect
+  labelRect.w -= 1
+  labelRect.h -= 1
+  uiPutCommand(&v_uiState, commandText(c_fore, labelRect, text))
+}
+
+
+fn _putButtonNeo(text: str): ButtonState {
+  size := v_font.measure(text) 
+  size.x += 10 // padding
+  size.y += 5
+
+  buttonPlace := uiPushElement(&v_uiState, size)
+  buttonPlace.rect.w -= 1
+  buttonPlace.rect.h -= 1
+
+  pressed := false
+  released := false
+  down := false
+
+  color := c_item
+
+  if v_groupZone.activeGroup == v_lastGroup && buttonPlace.focused {
+    color = c_over
+    if v_inputState.mouseLeft.released {
+      released = true
+    }
+    if v_inputState.mouseLeft.pressed {
+      invalidateClick()
+      pressed = true
+    }
+    if v_inputState.mouseLeft.down {
+      down = true
+      color = c_held
+    }   
+  }
+
+  uiPutCommand(&v_uiState, commandRect(color, buttonPlace.rect))
+  uiPutCommand(&v_uiState, commandText(c_body, buttonPlace.rect, text))
+
+  return ButtonState{pressed: pressed, released: released, down: down}
 }
 
 fn _putButtonToggle(lay: ^Layout, text: str, out: bool): ButtonState {
@@ -816,10 +1108,13 @@ fn _putButton(lay: ^Layout, text: str): ButtonState {
   return _putButtonToggle(lay, text, false)
 }
 
+fn beginWindow*(title: str, r: rect.Rect);
+
 // FIXME: this relies on groupZone which is external
 fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
   // Render the window & handle undocking
   if isGroupRendered(group) {
+    win := groupGetCurrentWindow(group)
     windowRect := group.rect
     contentRect := getWindowContentRectFromRect(group.rect)
     titlebarRect := getWindowDecorationRectFromRect(group.rect)
@@ -830,8 +1125,9 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
     }
 
     if v_groupZone.activeGroup == group && isMouseOver(contentRect) {
-      scrollBy(&groupGetCurrentWindow(group).scroll, v_inputState.mouseScroll * 20)
+      scrollBy(&win.scroll, v_inputState.mouseScroll * 20)
     }
+
 
     lay := layoutInit(ctx, group.index)
 
@@ -840,11 +1136,25 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
     lay.putCommand(commandRect(c_decor, windowRect))
     lay.putCommand(commandRect(c_body, contentRect))
 
+    // Draw scroll bar
+    if win.scroll.limit < 0 {
+      innerH := contentRect.h - 10
+      innerRect := contentRect
+      bar := cuttingCut(cuttingRight, &innerRect, th.Vf2{3, 0})
+      percentOfs := -win.scroll.scroll/(innerH-win.scroll.limit)
+      percentSize := contentRect.h/(contentRect.h-win.scroll.limit)
+
+      bar.y += percentOfs*contentRect.h
+      bar.h = percentSize*contentRect.h
+      lay.putCommand(commandRect(c_shadow, bar))
+    }
+
     lay.rect = titlebarRect
 
-    if len(group.windows) == 1 {
+
+    if len(group.windows) == 1 { // One tab, render only the title
       lay.putCommand(commandText(c_body, titlebarRect, group.windows[0].title))
-    } else {
+    } else { // Two or more tabs, render the tab menu
       if _putButton(&lay, "||||").pressed {
         v_groupZone.draggingGroup = group
       }
@@ -863,10 +1173,10 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
           v_groupZone.undockingWindow = w.title
         }
 
-        if button.released {
+        if button.released && group.current != i {
           // FIXME: maybe less hacky eh?
-          v_lastWindow = group.windows[i].title
           group.current = i
+          beginWindow(group.windows[group.current].title, rect.mk(0, 0, 1, 1))
         }
       }
 
@@ -879,31 +1189,42 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
   }
 }
 
+fn endWindow() {
+  // TODO: Maybe make the scroll store the cap height instead of calculating it in place?
+  scrollLimit(&getLastWindow().scroll, -(uiGetBounds(&v_uiState).y-v_uiState.baseRect.h))
+  uiPutCommand(&v_uiState, commandEndScissorRect())
+  uiEndColumn(&v_uiState)
+}
+
 fn beginWindow*(title: str, r: rect.Rect) {
-  newGroup := groupZoneAcquire(&v_groupZone, title, r)
-
-  // Prevent handling the group multiple times
-  if newGroup != v_lastGroup {
+  if v_lastGroup != null {
     endWindow()
-    v_lastGroup = newGroup
   }
-
+ 
+  v_lastGroup = groupZoneAcquire(&v_groupZone, title, r)
   v_lastWindow = title
 
-  if isGroupVisible(v_lastGroup) {
+  {
+    r := getLastWindowContentRect()
+
+    uiBeginGroup(&v_uiState, r, v_lastGroup.index)
+    uiBeginColumn(&v_uiState)
+
+    if isGroupVisible(v_lastGroup) {
+      drawGroup(&v_drawCtx, v_lastGroup)
+    }
+
     win := groupGetCurrentWindow(v_lastGroup)
-    drawGroup(&v_drawCtx, v_lastGroup)
-    v_currentLay = layoutInit(&v_drawCtx, v_lastGroup.index, cuttingTop, getLastWindowContentRect())
-    v_currentLay.putCommand(commandBeginScissorRect(v_currentLay.rect))
-    v_currentLay.setBounds(v_currentLay.rect)
-    v_currentLay.getRect(th.Vf2{0, win.scroll.scroll});
-    v_currentLayRec = v_currentLay.startRecord()
+
+    // TODO: add procedure to automatically insert scissor rect into UI at will
+    uiPutCommand(&v_uiState, commandBeginScissorRect(r))
+    uiSetScroll(&v_uiState, th.Vf2{0, win.scroll.scroll})
   }
 }
 
 fn putButton*(text: str): ButtonState {
   if isGroupRendered(v_lastGroup) {
-    output := _putButton(&v_currentLay, text)
+    output := _putButtonNeo(text)
     return output;
   }
   return ButtonState{}
@@ -911,7 +1232,7 @@ fn putButton*(text: str): ButtonState {
 
 fn putLabel*(text: str) {
   if isGroupRendered(v_lastGroup) {
-    _putLabel(&v_currentLay, text)
+    _putLabelNeo(text)
   }
 }
 
