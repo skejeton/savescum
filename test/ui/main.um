@@ -1,10 +1,12 @@
 import (
-  "std.um"; "window.um"; "rect.um"; "canvas.um"
+  "std.um"; "window.um"; "rect.um"; "canvas.um"; "image.um"
   ui = "../../src/d_ui.um"; font = "../../src/d_font.um"
 )
 
 fn main() {
   window.setup("Ahoy", 800, 600)
+  testImage := image.load("data/ui00_img_test.png")
+
   var screen: rect.Rect
   count := 5
   layout := 0
@@ -65,6 +67,7 @@ fn main() {
         case 2: ui.beginColumn()
       }
         for i := 0; i < count; i++ {
+          ui.putImage(testImage)
           ui.putLabel(std.itoa(i+1))
         }
       switch layout {

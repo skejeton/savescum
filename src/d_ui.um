@@ -1,6 +1,6 @@
 import (
   "std.um"
-  "th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
+  "th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"; "image.um"
   "d_font.um"; "d_fps.um"
 )
 
@@ -63,6 +63,7 @@ type (
     color: uint32
     rect: rect.Rect
     text: str
+    img: image.Image
   }
 
   DrawLayer = struct {
@@ -179,10 +180,6 @@ fn scrollFix(scroll: ^Scrolling) {
   if scroll.targetScroll < scroll.limit {
     scroll.targetScroll = scroll.limit
   }
-
-  if scroll.scroll < scroll.limit {
-    scroll.scroll = scroll.limit
-  }
 }
 
 fn scrollLimit(scroll: ^Scrolling, to: real) {
@@ -202,7 +199,14 @@ fn scrollBy(scroll: ^Scrolling, by: real) {
 }
 
 fn scrollUpdate(scroll: ^Scrolling) {
-  scroll.scroll += (scroll.targetScroll-scroll.scroll)*(th.delta/1000.0)*10;
+  speed := 10
+
+  if (scroll.scroll < scroll.limit) {
+    speed *= 3
+  }
+
+  scroll.scroll += (scroll.targetScroll-scroll.scroll)*(th.delta/1000.0)*speed;
+
   scrollFix(scroll)
 }
 
@@ -231,6 +235,10 @@ fn commandEndScissorRect(): DrawCommand {
 
 fn commandText(color: uint32, r: rect.Rect, t: str): DrawCommand {
   return DrawCommand{color: color, rect: r, text: t}
+}
+
+fn commandImage(r: rect.Rect, img: image.Image, tint: uint32 = th.white): DrawCommand {
+  return DrawCommand{color: tint, rect: r, img: img}
 }
 
 fn (lay: ^DrawLayer) putCommand(cmd: DrawCommand) {
@@ -295,6 +303,16 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
       } else if cmd.text != "" { // draw text
         size := font.measure(cmd.text)
         font.draw(cmd.text, th.Vf2{cmd.rect.x+(cmd.rect.w-size.x)/2, cmd.rect.y+(cmd.rect.h-size.y)/2}, cmd.color)
+      } else if cmd.img.handle != 0 {
+        // TODO: Maybe separate drawing the image as a rectangle into a separate function
+
+        size := cmd.img.getDims()
+        scale := th.Vf2{1/size.x*cmd.rect.w, 1/size.y*cmd.rect.h}
+        pos := cmd.rect.getPos()
+        pos.x = round(pos.x)
+        pos.y = round(pos.y)
+
+        cmd.img.draw(th.Transform{p: pos, s: scale})
       } else { // draw rect
         canvas.drawRect(cmd.color, cmd.rect)
       }
@@ -1032,6 +1050,14 @@ fn _putLabelNeo(text: str) {
   uiPutCommand(&v_uiState, commandText(c_fore, labelRect, text))
 }
 
+fn putImage*(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}) {
+  if size.x == 0 && size.y == 0 {
+    size = img.getDims()
+  }
+  place := uiPushElement(&v_uiState, size)
+
+  uiPutCommand(&v_uiState, commandImage(place.rect, img))
+}
 
 fn _putButtonNeo(text: str): ButtonState {
   size := v_font.measure(text) 
@@ -1067,7 +1093,7 @@ fn _putButtonNeo(text: str): ButtonState {
   uiPutCommand(&v_uiState, commandText(c_body, buttonPlace.rect, text))
 
   return ButtonState{pressed: pressed, released: released, down: down}
-}
+}     
 
 fn _putButtonToggle(lay: ^Layout, text: str, out: bool): ButtonState {
   buttonRect := getTextWidgetRect(lay, text)
@@ -1143,6 +1169,9 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
       bar := cuttingCut(cuttingRight, &innerRect, th.Vf2{3, 0})
       percentOfs := -win.scroll.scroll/(innerH-win.scroll.limit)
       percentSize := contentRect.h/(contentRect.h-win.scroll.limit)
+      if percentOfs + percentSize > 1.0 {
+        percentSize = 1.0-percentOfs
+      }
 
       bar.y += percentOfs*contentRect.h
       bar.h = percentSize*contentRect.h
@@ -1150,7 +1179,6 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
     }
 
     lay.rect = titlebarRect
-
 
     if len(group.windows) == 1 { // One tab, render only the title
       lay.putCommand(commandText(c_body, titlebarRect, group.windows[0].title))
