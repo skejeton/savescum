@@ -110,6 +110,7 @@ type (
   }
 
   UiState = struct {
+    isCropped: bool
     groupIndex: int
     drawCtx: ^DrawCtx
     inputState: InputState
@@ -550,10 +551,18 @@ fn uiInit(drawCtx: ^DrawCtx): UiState {
   return UiState{layouts: make([]UiLayout, 0), drawCtx: drawCtx};
 }
 
+fn uiPutCommand(ui: ^UiState, command: DrawCommand) {
+  ui.drawCtx.putCommand(ui.groupIndex, command)
+}
+
 fn uiBegin(ui: ^UiState, inputState: InputState) {
   // (1) Not really necessary, but good for debugging so you can immediately spot something's wrong
   ui.groupIndex = -1 // (1)
   ui.baseRect = rect.mk(0, 0, 0, 0) // (1)
+
+  if ui.isCropped {
+    error("ui is still cropped (have you called uiEnd?)\n")
+  }
 
   if len(ui.layouts) > 0 {
     error("unfinished ui layouts\n")
@@ -562,13 +571,21 @@ fn uiBegin(ui: ^UiState, inputState: InputState) {
   ui.inputState = inputState
 }
 
-fn uiBeginGroup(ui: ^UiState, baseRect: rect.Rect, zIndex: int) {
-  ui.groupIndex = zIndex
-  ui.baseRect = baseRect
+fn uiEnd(ui: ^UiState) {
+  if ui.isCropped {
+    uiPutCommand(ui, commandEndScissorRect())
+    ui.isCropped = false
+  }
 }
 
-fn uiPutCommand(ui: ^UiState, command: DrawCommand) {
-  ui.drawCtx.putCommand(ui.groupIndex, command)
+fn uiBeginGroup(ui: ^UiState, baseRect: rect.Rect, zIndex: int) {
+  if ui.isCropped {
+    uiPutCommand(ui, commandEndScissorRect())
+    ui.isCropped = false
+  }
+
+  ui.groupIndex = zIndex
+  ui.baseRect = baseRect
 }
 
 fn uiLayoutTypeName(t: UiLayoutType): str {
@@ -602,7 +619,7 @@ fn uiPushElement(ui: ^UiState, size: th.Vf2): UiElementPlace {
     case uiLayoutTypeFixedRow:
       resultRect.w = ui.baseRect.w / real(currentLayout.elementsPerRow);
       
-      if resultRect.x >= ui.baseRect.w { // wrap around
+      if (resultRect.x+resultRect.w-1) > ui.baseRect.w { // wrap around
         resultRect.x = 0
         resultRect.y += currentLayout.rowHeight
         currentLayout.position.y += currentLayout.rowHeight
@@ -635,7 +652,6 @@ fn uiPushElement(ui: ^UiState, size: th.Vf2): UiElementPlace {
   resultRect.x += ui.baseRect.x+currentLayout.scroll.x
   resultRect.y += ui.baseRect.y+currentLayout.scroll.y
 
-  // TODO: Remove always true
   return UiElementPlace{rectInPoint(resultRect, ui.inputState.mousePos), resultRect}
 }
 
@@ -655,6 +671,22 @@ fn uiGetBounds(ui: ^UiState): th.Vf2 {
   return bounds
 }
 
+//
+// Crops the contents of the base rectangle
+// 
+// ui: ui state
+//
+fn uiCropContents(ui: ^UiState) {
+  ui.isCropped = true
+  uiPutCommand(ui, commandBeginScissorRect(ui.baseRect))
+}
+
+//
+// Scrolls the current layout
+//
+// ui: ui state
+// offset: x/y scroll offset
+//
 fn uiSetScroll(ui: ^UiState, offset: th.Vf2) {
   currentLayout := uiCurrentLayout(ui)
   currentLayout.scroll.x += offset.x
@@ -995,6 +1027,7 @@ fn getLastWindowContentRect(): rect.Rect {
 fn endWindow();
 
 fn end*() {
+  uiEnd(&v_uiState)
   if v_lastGroup != null {
     endWindow()
   }
@@ -1218,9 +1251,7 @@ fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
 }
 
 fn endWindow() {
-  // TODO: Maybe make the scroll store the cap height instead of calculating it in place?
   scrollLimit(&getLastWindow().scroll, -(uiGetBounds(&v_uiState).y-v_uiState.baseRect.h))
-  uiPutCommand(&v_uiState, commandEndScissorRect())
   uiEndColumn(&v_uiState)
 }
 
@@ -1242,10 +1273,10 @@ fn beginWindow*(title: str, r: rect.Rect) {
       drawGroup(&v_drawCtx, v_lastGroup)
     }
 
+    uiCropContents(&v_uiState)
+    
+    // TODO: Store the scroll in the widget instead of manually
     win := groupGetCurrentWindow(v_lastGroup)
-
-    // TODO: add procedure to automatically insert scissor rect into UI at will
-    uiPutCommand(&v_uiState, commandBeginScissorRect(r))
     uiSetScroll(&v_uiState, th.Vf2{0, win.scroll.scroll})
   }
 }
