@@ -1050,7 +1050,7 @@ fn _putLabelNeo(text: str) {
   uiPutCommand(&v_uiState, commandText(c_fore, labelRect, text))
 }
 
-fn putImage*(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}) {
+fn _putImage(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}) {
   if size.x == 0 && size.y == 0 {
     size = img.getDims()
   }
@@ -1247,6 +1247,15 @@ fn beginWindow*(title: str, r: rect.Rect) {
     // TODO: add procedure to automatically insert scissor rect into UI at will
     uiPutCommand(&v_uiState, commandBeginScissorRect(r))
     uiSetScroll(&v_uiState, th.Vf2{0, win.scroll.scroll})
+  }
+}
+
+// TODO: get rid of these functions as they are only needed for checking if the group is rendered,
+// we can instead just disable UI rendering and input in the UiState.
+
+fn putImage*(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}) {
+  if isGroupRendered(v_lastGroup) {
+    _putImage(img, size)
   }
 }
 
