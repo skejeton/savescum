@@ -49,6 +49,9 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
       if (ui.putButton("Remove").pressed) {
         t.count -= 1;
       }
+      if t.count < 0 {
+        t.count = 0
+      }
       ui.putLabel(std.itoa(t.count))
       if (ui.putButton("Add").pressed) {
         t.count += 1;
