@@ -1,4 +1,5 @@
 import (
+  "th.um";
   "std.um"; "window.um"; "rect.um"; "canvas.um"; "image.um"
   ui = "../../src/d_ui.um"; font = "../../src/d_font.um"
 )
@@ -42,30 +43,30 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
     ui.putLabel("Controlled window")
     name := layoutName(t.layout)
 
-    if (ui.putButton(name).pressed) {
+    if (ui.putButton(name).released) {
       t.layout = (t.layout + 1) % 3
     }
-    ui.beginFixedRow(3)
-      if (ui.putButton("Remove").pressed) {
+    ui.beginFixedRow(th.Vf2{0, 0}, 3)
+      if (ui.putButton("Remove").released) {
         t.count -= 1;
       }
       if t.count < 0 {
         t.count = 0
       }
       ui.putLabel(std.itoa(t.count))
-      if (ui.putButton("Add").pressed) {
+      if (ui.putButton("Add").released) {
         t.count += 1;
       }
 
       if t.layout == 0 {
-        if (ui.putButton("Decrease").pressed) {
+        if (ui.putButton("Decrease").released) {
           t.elementsPerRow -= 1;
         }
         if t.elementsPerRow <= 0 {
           t.elementsPerRow = 1
         }
         ui.putLabel(std.itoa(t.elementsPerRow))
-        if (ui.putButton("Increase").pressed) {
+        if (ui.putButton("Increase").released) {
           t.elementsPerRow += 1;
         }
       }
@@ -74,9 +75,9 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
 
   if ui.beginWindow("Controlled", rect.Rect{480, 80, 230, 350}) {
     switch t.layout {
-      case 0: ui.beginFixedRow(t.elementsPerRow)
-      case 1: ui.beginDynamicRow()
-      case 2: ui.beginColumn()
+      case 0: ui.beginFixedRow(th.Vf2{0, 0}, t.elementsPerRow)
+      case 1: ui.beginDynamicRow(th.Vf2{0, 0})
+      case 2: ui.beginColumn(th.Vf2{0, 0})
     }
       for i := 0; i < t.count; i++ {
         ui.putImage(r.testImage)
@@ -93,9 +94,9 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
 fn putShowHideButton(what: str, toggle: ^bool) {
   pressed := false
   if toggle^ {
-    pressed = ui.putButton("Hide "+what).pressed
+    pressed = ui.putButton("Hide "+what).released
   } else {
-    pressed = ui.putButton("Show "+what).pressed
+    pressed = ui.putButton("Show "+what).released
   }
 
   if pressed {
