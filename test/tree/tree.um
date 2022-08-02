@@ -1,0 +1,67 @@
+import ("std.um")
+
+type (
+  Elem* = struct {
+    child, next, previous, parent: ^Elem
+    guid: uint
+    key: str
+  }
+
+  Tree* = struct {
+    root: ^Elem
+
+    elems: map[str]^Elem
+
+    previous: ^Elem
+    current: ^Elem
+    lastGuid: uint
+  }
+)
+
+fn init*(): Tree {
+  return Tree{elems: map[str]^Elem{}}
+}
+
+fn (t: ^Tree) getFullKey*(key: str): str {
+  out := std.itoa(len(key))+key
+  for el := t.current; el != null; el = el.parent {
+    out = std.itoa(len(el.key))+el.key+"::"+out
+  }
+  return out
+}
+
+fn (t: ^Tree) pushElement*(key: str): uint {
+  var element: ^Elem
+  fullKey := t.getFullKey(key)
+  printf("FullKey %s\n", fullKey)
+
+  if validkey(t.elems, fullKey) {
+    element = t.elems[fullKey]
+  } else {
+    element = new(Elem)
+    element.key = key
+    element.guid = t.lastGuid
+    t.lastGuid += 1
+    element.parent = t.current
+    element.previous = t.previous
+    t.elems[fullKey] = element
+  }
+
+  if t.current == null {
+    t.root = element
+  } else if t.previous == null {
+    t.current.child = element
+  } else {
+    t.previous.next = element
+  }
+
+  t.previous = null
+  t.current = element
+
+  return element.guid
+}
+
+fn (t: ^Tree) popElement*() {
+  t.previous = t.current
+  t.current = t.current.parent
+}

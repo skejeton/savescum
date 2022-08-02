@@ -37,7 +37,7 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
     return
   }
 
-  ui.beginWindow("Controller", rect.Rect{250, 80, 200, 300})
+  if ui.beginWindow("Controller", rect.Rect{250, 80, 200, 300}) {
     ui.putLabel("Add or remove items to the")
     ui.putLabel("Controlled window")
     name := layoutName(t.layout)
@@ -69,10 +69,10 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
           t.elementsPerRow += 1;
         }
       }
-  ui.endFixedRow()
+    ui.endFixedRow()
+  }
 
-
-  ui.beginWindow("Controlled", rect.Rect{480, 80, 230, 350})
+  if ui.beginWindow("Controlled", rect.Rect{480, 80, 230, 350}) {
     switch t.layout {
       case 0: ui.beginFixedRow(t.elementsPerRow)
       case 1: ui.beginDynamicRow()
@@ -87,6 +87,7 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
       case 1: ui.endDynamicRow()
       case 2: ui.endColumn()
     }
+  }
 }
 
 fn putShowHideButton(what: str, toggle: ^bool) {
@@ -104,9 +105,9 @@ fn putShowHideButton(what: str, toggle: ^bool) {
 
 fn putTest(t: ^TestData, r: ^TestResources) {
   putLayoutTest(&t.td_layout, r)
-  ui.beginWindow("Test Window", rect.Rect{(window.w-250)/2, (window.h-400)/2, 250, 400})
+  if ui.beginWindow("Test Window", rect.Rect{(window.w-250)/2, (window.h-400)/2, 250, 400}) {
     putShowHideButton("layout test", &t.td_layout.show)
-
+  }
 }
 
 fn main() {

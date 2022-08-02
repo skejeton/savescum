@@ -110,6 +110,17 @@ type (
     scroll: th.Vf2
   }
 
+  UiElement = struct {
+    // Links
+    sibling, child, parent: ^UiElement
+    key: str
+
+    // Size data
+    rect: rect.Rect
+    
+    // Persistent data
+  }
+
   UiState = struct {
     isCropped: bool
     groupIndex: int
@@ -117,6 +128,7 @@ type (
     inputState: InputState
     baseRect: rect.Rect
     layouts: []UiLayout
+    root: ^UiElement
   }
 )
 
@@ -1035,7 +1047,6 @@ fn endWindow();
 fn end*() {
   for title, group in v_groupZone.groups {
     win := groupFindWindow(group, title)
-    printf("Window %s %d\n", title, win.visibilityStatus)
     if win.visibilityStatus > 0 {
       win.visibilityStatus -= 1
     } 
@@ -1183,7 +1194,7 @@ fn _putButton(lay: ^Layout, text: str): ButtonState {
   return _putButtonToggle(lay, text, false)
 }
 
-fn beginWindow*(title: str, r: rect.Rect);
+fn beginWindow*(title: str, r: rect.Rect): bool;
 
 // FIXME: this relies on groupZone which is external
 fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
@@ -1282,7 +1293,8 @@ fn endWindow() {
   uiEndColumn(&v_uiState)
 }
 
-fn beginWindow*(title: str, r: rect.Rect) {
+fn beginWindow*(title: str, r: rect.Rect): bool {
+  visible := false
   if v_lastGroup != null {
     endWindow()
   }
@@ -1300,6 +1312,7 @@ fn beginWindow*(title: str, r: rect.Rect) {
     uiBeginColumn(&v_uiState)
 
     if isGroupVisible(v_lastGroup) {
+      visible = true
       drawGroup(&v_drawCtx, v_lastGroup)
     }
 
@@ -1308,6 +1321,8 @@ fn beginWindow*(title: str, r: rect.Rect) {
     // TODO: Store the scroll in the widget instead of manually
     uiSetScroll(&v_uiState, th.Vf2{0, win.scroll.scroll})
   }
+
+  return visible
 }
 
 // TODO: get rid of these functions as they are only needed for checking if the group is rendered,
