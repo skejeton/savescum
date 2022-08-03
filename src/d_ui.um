@@ -480,6 +480,8 @@ fn groupZoneUpdate(zone: ^GroupZone) {
   }
   if zone.currentDraggingGroup == null {
     zone.currentDockingCandidate = null
+  } else {
+    groupZoneMoveToFront(zone, zone.currentDraggingGroup.index)
   }
   zone.currentActiveGroup = zone.currentActiveCandidateGroup
   zone.currentActiveCandidateGroup = null
@@ -507,8 +509,6 @@ fn groupZoneReportInput(zone: ^GroupZone, overTab: str, overBody: bool, overTitl
     if !isPressed {
       zone.dockGroups = !isPressed && zone.currentDockingCandidate != null
       zone.currentDraggingGroup = null
-    } else {
-      groupZoneMoveToFront(zone, zone.currentGroup.index)
     }
 
     canDrag := (overTitlebar || overBody) && isPressed
@@ -744,7 +744,13 @@ fn uiBeginLayout(ui: ^UiState, layoutType: UiLayoutType, elementsPerRow: int = 0
 
   if currentLayout != null {
     newLayout.scroll = currentLayout.scroll
-    //newLayout.position = currentLayout.position.add(currentLayout.bounds.getPos()).sub(newLayout.bounds.getPos())
+
+    // FIXME: This is a way to identify if newLayout and currentLayout share the element
+    if currentLayout.bounds.x == newLayout.bounds.x && currentLayout.bounds.y == newLayout.bounds.y && currentLayout.bounds.w == newLayout.bounds.w && currentLayout.bounds.h == newLayout.bounds.h {
+      newLayout.position.y = currentLayout.position.y
+      newLayout.position.x = 0
+    }
+   // newLayout.position = currentLayout.position.add(currentLayout.bounds.getPos()).sub(newLayout.bounds.getPos())
   }
 
   ui.layouts = append(ui.layouts, newLayout)
