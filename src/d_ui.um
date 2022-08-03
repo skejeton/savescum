@@ -4,7 +4,6 @@ import (
   "d_font.um"; "d_fps.um"
 )
 
-
 type (
   Scrolling = struct {
     scroll: real
@@ -28,8 +27,6 @@ type (
     tabScroll: Scrolling
   }
 
-  Cutting = int
-
   GroupZone = struct {
     /* base */
     groups: map[str]^Group // Window name to group
@@ -37,11 +34,11 @@ type (
     join: bool
     firstJoin: bool
 
-    /* ux */
-    draggingGroup: ^Group // group currently dragging
-    activeGroup: ^Group // group currently focused on
-    dockingGroup:  ^Group // group we may attach to
-    undockingWindow: str // window we may undock from the group
+    currentActiveGroup: ^Group
+    currentActiveCandidateGroup: ^Group
+    currentDraggingGroup: ^Group
+    currentGroup: ^Group
+    currentWindow: str
   }
 
   ButtonState = struct {
@@ -77,15 +74,6 @@ type (
     layers: []DrawLayer 
   }
 
-  Layout = struct {
-    index: int
-    hasBounds: bool
-    bounds: rect.Rect
-    rect: rect.Rect
-    cutter: Cutting
-    ctx: ^DrawCtx
-  }
-
   SequenceLayout = struct {
     start: th.Vf2
     end: th.Vf2
@@ -115,11 +103,6 @@ type (
 )
 
 const (
-  cuttingLeft = Cutting(0)
-  cuttingRight = Cutting(1)
-  cuttingTop = Cutting(2)
-  cuttingBottom = Cutting(3)
-
   uiLayoutTypeColumn = UiLayoutType(0)
   uiLayoutTypeFixedRow = UiLayoutType(1)
   uiLayoutTypeDynamicRow = UiLayoutType(2)
@@ -340,30 +323,6 @@ fn rectMove(r: rect.Rect, by: th.Vf2): rect.Rect {
 }
 
 ///////////////////////
-// Cutting
-fn cuttingCut(c: Cutting, r: ^rect.Rect, req: th.Vf2): rect.Rect {
-  result := rect.Rect{-1e7, -1e7, 0, 0}
-  switch c {
-  case cuttingLeft:
-    result = rect.mk(r.x, r.y, req.x, r.h)
-    r.x += req.x;
-    r.w -= req.x;
-  case cuttingRight:
-    result = rect.mk(r.x+r.w-req.x, r.y, req.x, r.h)
-    r.w -= req.x;
-  case cuttingTop:
-    result = rect.mk(r.x, r.y, r.w, req.y)
-    r.y += req.y;
-    r.h -= req.y;
-  case cuttingBottom:
-    result = rect.mk(r.x, r.y+r.h-req.y, r.w, req.y)
-    r.h -= req.y;
-  }
-  return result
-
-}
-
-///////////////////////
 // Group
 fn groupCreateFromWindow(win: Window): Group {
   windows := make([]Window, 1)
@@ -492,54 +451,61 @@ fn groupZoneLocateActiveGroup(zone: ^GroupZone, at: th.Vf2): ^Group {
   return group
 }
 
-///////////////////////
-// Layout
-fn layoutInit(ctx: ^DrawCtx, index: int, cutter: Cutting = cuttingLeft, r: rect.Rect = rect.Rect{0, 0, 0, 0}): Layout {
-  return Layout{ctx: ctx, cutter: cutter, rect: r, index: index}
-}
+fn groupZoneBegin(zone: ^GroupZone, title: str, r: rect.Rect): bool {
+  acquired := groupZoneAcquire(zone, title, r)
+  zone.currentGroup = acquired
+  zone.currentWindow = title
 
-fn (lay: ^Layout) startRecord(): real {
-  if lay.cutter == cuttingLeft || lay.cutter == cuttingRight {
-    return lay.rect.x
+  return groupFindWindow(acquired, title) != null
+} 
+
+fn groupZoneEnd(zone: ^GroupZone): bool {
+  if zone.currentGroup != null {
+    zone.currentWindow = ""
+    zone.currentGroup = null
+    return true
   }
-  return lay.rect.y
+  return false
 }
 
-fn (lay: ^Layout) stopRecord(record: real): real {
-  switch lay.cutter {
-    case cuttingLeft:   return lay.rect.x-record;
-    case cuttingRight:  return -(lay.rect.x-record);
-    case cuttingTop:    return lay.rect.y-record;
-    case cuttingBottom: return -(lay.rect.y-record);
-    default: error("Unreachable");
+fn groupZoneUpdate(zone: ^GroupZone) {
+  zone.currentActiveGroup = zone.currentActiveCandidateGroup
+  zone.currentActiveCandidateGroup = null
+}
+
+fn groupZoneReportInput(zone: ^GroupZone, overTab: str, overBody: bool, overTitlebar: bool, isPressed: bool, mouseDelta: th.Vf2) {
+  overWindow := overTab != "" || overTitlebar  || overBody
+
+  if overWindow {
+    if zone.currentActiveCandidateGroup != null {
+      // Check overlap
+      if zone.currentActiveCandidateGroup.index < zone.currentGroup.index {
+        zone.currentActiveCandidateGroup = zone.currentGroup
+      }
+    } else {
+      zone.currentActiveCandidateGroup = zone.currentGroup
+    }
   }
-  return 0;
-}
 
-fn (lay: ^Layout) getRect(reqSize: th.Vf2): rect.Rect {
-  return cuttingCut(lay.cutter, &lay.rect, reqSize)
-}
+  if zone.currentActiveGroup == zone.currentGroup {
+    if !isPressed {
+      zone.currentDraggingGroup = null
+    } else {
+      groupZoneMoveToFront(zone, zone.currentGroup.index)
+    }
 
-fn isMouseOver(r: rect.Rect): bool {
-  return rectInPoint(r, input.getMousePos())
-}
+    canDrag := (overTitlebar || overBody) && isPressed
+    if canDrag {
+      if zone.currentDraggingGroup == null {
+        zone.currentDraggingGroup = zone.currentGroup
+      }
 
-fn (lay: ^Layout) isActive(): bool {
-  if lay.hasBounds {
-    // fix need for isMouseOver
-    return isMouseOver(lay.bounds);
+      zone.currentDraggingGroup.rect.x += mouseDelta.x
+      zone.currentDraggingGroup.rect.y += mouseDelta.y
+    }
   }
-  return true;
 }
 
-fn (lay: ^Layout) setBounds(r: rect.Rect) {
-  lay.bounds = r;
-  lay.hasBounds = true;
-}
-
-fn (lay: ^Layout) putCommand(cmd: DrawCommand) {
-  lay.ctx.putCommand(lay.index, cmd)
-}
 
 ///////////////////////
 // UI
@@ -608,12 +574,12 @@ fn uiCurrentElement(ui: ^UiState): rect.Rect {
 }
 
 // Adds an element into the UI and advances the layout.
-fn uiPushElement(ui: ^UiState, size: th.Vf2): rect.Rect {
+fn uiPushElement(ui: ^UiState, size: th.Vf2, margin: real = 0): rect.Rect {
   currentLayout := uiCurrentLayout(ui) 
   if currentLayout == null {
-    ui.elements = append(ui.elements, rect.mk(0, 0, size.x, size.y))
-    printf("Push, %s\n", repr(rect.mk(0, 0, size.x, size.y)))
-    return rect.mk(0, 0, size.x, size.y)
+    ui.elements = append(ui.elements, rect.mk(margin, margin, size.x-margin*2, size.y-margin*2))
+
+    return rect.mk(margin, margin, size.x-margin*2, size.y-margin*2)
   }
   baseRect := currentLayout.bounds
 
@@ -665,12 +631,14 @@ fn uiPushElement(ui: ^UiState, size: th.Vf2): rect.Rect {
   }
 
   // (1) ... Then they are transformed to the absolute position.
-  resultRect.x += baseRect.x+currentLayout.scroll.x
-  resultRect.y += baseRect.y+currentLayout.scroll.y
+  resultRect.x += baseRect.x+currentLayout.scroll.x+margin
+  resultRect.y += baseRect.y+currentLayout.scroll.y+margin
+
+  resultRect.w -= margin*2
+  resultRect.h -= margin*2
 
   ui.elements = append(ui.elements, resultRect)
 
-  printf("Push, %s\n", repr(resultRect))
   return resultRect
 }
 
@@ -696,6 +664,13 @@ fn uiGetBounds(ui: ^UiState): rect.Rect {
 fn uiGetContentSize(ui: ^UiState): th.Vf2 {
   currentLayout := uiCurrentLayout(ui)
   return currentLayout.position.add(th.Vf2{0, currentLayout.rowHeight})
+}
+
+fn uiGetRemainingSize(ui: ^UiState): th.Vf2 {
+  bounds := uiCurrentElement(ui).getDims()
+  offs := uiGetContentSize(ui).y
+  bounds.y -= offs
+  return bounds
 }
 
 fn uiGetButtonState(ui: ^UiState): ButtonState {
@@ -752,7 +727,7 @@ fn uiBeginLayout(ui: ^UiState, layoutType: UiLayoutType, elementsPerRow: int = 0
 
   if currentLayout != null {
     newLayout.scroll = currentLayout.scroll
-    newLayout.position = currentLayout.position.add(currentLayout.bounds.getPos()).sub(newLayout.bounds.getPos())
+    //newLayout.position = currentLayout.position.add(currentLayout.bounds.getPos()).sub(newLayout.bounds.getPos())
   }
 
   ui.layouts = append(ui.layouts, newLayout)
@@ -798,8 +773,6 @@ var (
   v_drawCtx: DrawCtx
   
   v_groupZone: GroupZone
-  v_lastGroup: ^Group
-  v_lastWindow: str
   v_uiState: UiState
 
   v_dbgMask: uint32 // mask for debug ui
@@ -854,14 +827,20 @@ fn populateMouseButton(previous: ButtonState, button: char): ButtonState {
 }
 
 fn populateInputState(previous: InputState): InputState {
+
+  // This looks stupid, but this is to prevent NaN's from happening, since NaN != NaN
+  if input.getMousePos().x != input.getMousePos().x {
+    return previous
+  }
+
   var output: InputState
 
   output.mouseLeft = populateMouseButton(previous.mouseLeft, input.mouse1);
   output.mouseMiddle = populateMouseButton(previous.mouseMiddle, input.mouse2);
   output.mouseRight = populateMouseButton(previous.mouseRight, input.mouse3);
 
-  output.mousePos = input.getMousePos()
-  output.mouseDelta = output.mousePos.sub(previous.mousePos)
+  output.mousePos = previous.mousePos.add(previous.mouseDelta)
+  output.mouseDelta = input.getMousePos().sub(output.mousePos)
   output.mouseScroll = int(input.isJustPressed(input.mouse_up)) - int(input.isJustPressed(input.mouse_down));
 
   return output
@@ -938,9 +917,11 @@ fn dbgMain(pos: th.Vf2) {
   lay.newLine()
 
   dbgPrintInputState(&lay, v_inputState)
+  // TODO: uncomment
+  dbgPrintGroup(&lay, "DraggingGroup", v_groupZone.currentDraggingGroup)
+  dbgPrintGroup(&lay, "ActiveGroup", v_groupZone.currentActiveGroup)
+  /*
   dbgPrintGroup(&lay, "DockingGroup", v_groupZone.dockingGroup)
-  dbgPrintGroup(&lay, "DraggingGroup", v_groupZone.draggingGroup)
-  dbgPrintGroup(&lay, "ActiveGroup", v_groupZone.activeGroup)
   dbgPrintSect(&lay, "WindowScroll")
   if v_groupZone.activeGroup != null {
     dbgPrintText(&lay, repr(groupGetCurrentWindow(v_groupZone.activeGroup).scroll.targetScroll), th.white & 0xFFFFFF99)
@@ -949,6 +930,9 @@ fn dbgMain(pos: th.Vf2) {
   dbgPrintSect(&lay, "UndockWindow")
   dbgPrintText(&lay, v_groupZone.undockingWindow, th.white & 0xFFFFFF99)
   lay.newLine()
+  */
+
+
 
   // make lighter on hover
   if (rectInPoint(lay.getRect(), v_inputState.mousePos)) {
@@ -957,83 +941,6 @@ fn dbgMain(pos: th.Vf2) {
   } else {
     v_dbgMask = 0xFFFFFFFF
     v_drawCtx.putCommand(98, commandRect(th.black&0xBB, rectInset(lay.getRect(), -5)))
-  }
-}
-
-fn getWindowDecorationRectFromRect(r: rect.Rect): rect.Rect {
-  return rect.mk(r.x, r.y, r.w, v_font.height + 4)
-}
-
-fn getWindowContentRectFromRect(r: rect.Rect): rect.Rect {
-  deco := getWindowDecorationRectFromRect(r)
-  r.y += deco.h
-  r.h -= deco.h
-  return rectInset(r, 1)
-}
-
-fn locateDockingCandidate(zone: ^GroupZone, at: th.Vf2): ^Group {
-  var group: ^Group = null
-  for i in zone.stack {
-    if zone.draggingGroup != null && i == zone.draggingGroup.index {
-      continue 
-    }
-
-    if rectInPoint(zone.stack[i].rect, at) {
-      group = zone.stack[i]
-    }
-  }
-
-  if group != null && rectInPoint(getWindowDecorationRectFromRect(group.rect), at) {
-    return group
-  }
-
-  return null
-}
-
-fn isOnTitlebar(): bool {
-  if (v_groupZone.activeGroup != null) {
-    return rectInPoint(getWindowDecorationRectFromRect(v_groupZone.activeGroup.rect), v_inputState.mousePos)
-  }
-  return false;
-}
-
-fn handleInput() {
-  inputState := v_inputState
-  zone := &v_groupZone
-
-  zone.dockingGroup = null
-  if zone.draggingGroup != null {
-    zone.draggingGroup.rect = rectMove(zone.draggingGroup.rect, inputState.mouseDelta)
-    if rectInPoint(getWindowDecorationRectFromRect(zone.draggingGroup.rect), inputState.mousePos) {
-      zone.dockingGroup = locateDockingCandidate(zone, inputState.mousePos)
-    }
-  }
-
-  zone.activeGroup = groupZoneLocateActiveGroup(zone, inputState.mousePos)
-
-  if inputState.mouseLeft.released && zone.draggingGroup != null && zone.dockingGroup != null {
-    groupZoneDockGroups(zone, zone.draggingGroup.index, zone.dockingGroup.index)
-  }
-
-  if inputState.mouseLeft.down == false  {
-    zone.undockingWindow = ""
-    zone.draggingGroup = null
-  }
-
-  if zone.activeGroup != null {
-    if inputState.mouseLeft.pressed {
-      zone.draggingGroup = zone.activeGroup
-      groupZoneMoveToFront(zone, zone.draggingGroup.index)
-    }
-  }
-
-  if zone.undockingWindow != "" && !isOnTitlebar() {
-    group := groupZoneUndockWindow(zone, zone.undockingWindow)
-    group.rect.x = inputState.mousePos.x - 10;
-    group.rect.y = inputState.mousePos.y - 10;
-    zone.activeGroup = group
-    zone.draggingGroup = group
-    zone.undockingWindow = ""
   }
 }
 
@@ -1049,19 +956,10 @@ fn handleGroups() {
 fn begin*() {
   d_fps.update()
   v_inputState = populateInputState(v_inputState);
-  handleInput()
   handleGroups()
   groupZoneSetJoin(&v_groupZone, false)
   dbgMain(th.Vf2{10, 10});
   uiBegin(&v_uiState, v_inputState)
-}
-
-fn getLastWindow(): ^Window {
-  return groupFindWindow(v_lastGroup, v_lastWindow)
-}
-
-fn getLastWindowContentRect(): rect.Rect {
-  return rectInset(getWindowContentRectFromRect(v_lastGroup.rect), 5);
 }
 
 fn endWindow();
@@ -1074,13 +972,13 @@ fn end*() {
     } 
   }
 
-  uiEnd(&v_uiState)
-  if v_lastGroup != null {
+  if groupZoneEnd(&v_groupZone) {
     endWindow()
   }
 
+  groupZoneUpdate(&v_groupZone)
 
-  v_lastGroup = null
+  uiEnd(&v_uiState)
 
   v_drawCtx.render(v_font)
   v_drawCtx.clear()
@@ -1090,49 +988,12 @@ fn setJoinWindows*(set: bool) {
   groupZoneSetJoin(&v_groupZone, set)
 }
 
-fn isGroupVisible(group: ^Group): bool {
-  if (group == null) {
-    return false
-  }
-
-  if (v_lastWindow != group.windows[group.current].title) {
-    return false
-  }  
-
-  return true
-}
-
-fn isGroupRendered(group: ^Group): bool {
-  return isGroupVisible(group) && (group == v_groupZone.dockingGroup || v_groupZone.dockingGroup == null)
-}
-
-fn invalidateClick() {
-  v_groupZone.draggingGroup = null
-}
-
 fn getButtonState(): ButtonState {
-  if v_groupZone.activeGroup != v_lastGroup {
-    return ButtonState{}
-  }
   buttonState := uiGetButtonState(&v_uiState)
-  if buttonState.over {
-    invalidateClick()
-  }
   return buttonState
 }
 
-fn getTextWidgetRect(lay: ^Layout, text: str): rect.Rect {
-  size := v_font.measure(text) 
-  size.x += 10 // padding
-  size.y += 5
-  return lay.getRect(size)
-}
-
-fn _putLabel(lay: ^Layout, text: str) {
-  lay.putCommand(commandText(c_fore, getTextWidgetRect(lay, text), text))    
-}
-
-fn _putLabelNeo(text: str) {
+fn _putLabel(text: str) {
   size := v_font.measure(text) 
   size.x += 10 // padding
   size.y += 5
@@ -1164,7 +1025,7 @@ fn drawButtonUi(r: rect.Rect, state: ButtonState) {
   uiPutCommand(&v_uiState, commandRect(color, r))
 }
 
-fn _putButtonNeo(text: str): ButtonState {
+fn _putButton(text: str): ButtonState {
   size := v_font.measure(text) 
   size.x += 10 // padding
   size.y += 5
@@ -1182,205 +1043,88 @@ fn _putButtonNeo(text: str): ButtonState {
   return buttonState
 }     
 
-fn _putButtonToggle(lay: ^Layout, text: str, out: bool): ButtonState {
-  buttonRect := getTextWidgetRect(lay, text)
-  
-  pressed := false
-  released := false
-  down := false
-
-  color := c_item
-
-  if out {
-    color = c_held
-  }
-
-  // FIXME: using static variables
-  if v_groupZone.activeGroup == v_lastGroup && lay.isActive() && isMouseOver(buttonRect) {
-    color = c_over
-    if v_inputState.mouseLeft.released {
-      released = true
-    }
-    if v_inputState.mouseLeft.pressed {
-      invalidateClick()
-      pressed = true
-    }
-    if v_inputState.mouseLeft.down {
-      down = true
-      color = c_held
-    }
-  }
-
-  lay.putCommand(commandRect(color, buttonRect))
-  lay.putCommand(commandText(c_body, buttonRect, text))
-  lay.getRect(th.Vf2{1, 1}) // padding
-  return ButtonState{pressed: pressed, released: released, down: down}
-}
-
-fn _putButton(lay: ^Layout, text: str): ButtonState {
-  return _putButtonToggle(lay, text, false)
-}
-
 fn beginWindow*(title: str, r: rect.Rect): bool;
 
-// FIXME: this relies on groupZone which is external
-fn drawGroup(ctx: ^DrawCtx, group: ^Group) {
-  // Render the window & handle undocking
-  if isGroupRendered(group) {
-    win := groupGetCurrentWindow(group)
-    windowRect := group.rect
-    contentRect := getWindowContentRectFromRect(group.rect)
-    titlebarRect := getWindowDecorationRectFromRect(group.rect)
-
-    // Scroll
-    if v_groupZone.activeGroup == group && isMouseOver(titlebarRect) {
-      scrollBy(&group.tabScroll, v_inputState.mouseScroll * 20);
-    }
-
-    if v_groupZone.activeGroup == group && isMouseOver(contentRect) {
-      scrollBy(&win.scroll, v_inputState.mouseScroll * 20)
-    }
-
-
-    lay := layoutInit(ctx, group.index)
-
-    // Draw shadow
-    lay.putCommand(commandRect(c_shadow, rectMove(rectInset(windowRect, -1), th.Vf2{0, 1})))
-    lay.putCommand(commandRect(c_decor, windowRect))
-    lay.putCommand(commandRect(c_body, contentRect))
-
-    // Draw scroll bar
-    if win.scroll.limit < 0 {
-      innerH := contentRect.h - 10
-      innerRect := contentRect
-      bar := cuttingCut(cuttingRight, &innerRect, th.Vf2{3, 0})
-      percentOfs := -win.scroll.scroll/(innerH-win.scroll.limit)
-      percentSize := contentRect.h/(contentRect.h-win.scroll.limit)
-      if percentOfs + percentSize > 1.0 {
-        percentSize = 1.0-percentOfs
-      }
-
-      bar.y += percentOfs*contentRect.h
-      bar.h = percentSize*contentRect.h
-      lay.putCommand(commandRect(c_shadow, bar))
-    }
-
-    lay.rect = titlebarRect
-
-    visibleWindowCount := 0
-    for i, w in group.windows {
-      if w.visibilityStatus > 0 {
-        visibleWindowCount += 1
-      }
-    }
-
-    if visibleWindowCount == 1 { // One tab, render only the title
-      lay.putCommand(commandText(c_body, titlebarRect, win.title))
-    } else { // Two or more tabs, render the tab menu
-      if _putButton(&lay, "||||").pressed {
-        v_groupZone.draggingGroup = group
-      }
-      titlebarWidth := lay.rect.w
-
-      // Begin scissor
-      lay.putCommand(commandBeginScissorRect(lay.rect))
-      lay.setBounds(lay.rect)
-      lay.getRect(th.Vf2{group.tabScroll.scroll, 0})
-      rec := lay.startRecord()
-
-      for i, w in group.windows {
-        if w.visibilityStatus == 0 {
-          continue
-        }
-
-        button := _putButtonToggle(&lay, w.title, group.current == i)
-
-        if button.pressed {
-          v_groupZone.undockingWindow = w.title
-        }
-
-        if button.released && group.current != i {
-          // FIXME: maybe less hacky eh?
-          group.current = i
-          beginWindow(group.windows[group.current].title, rect.mk(0, 0, 1, 1))
-        }
-      }
-
-      scrollLimit(&group.tabScroll, -(lay.stopRecord(rec)-titlebarWidth))
-      // End scissor
-      lay.putCommand(commandEndScissorRect())
-    }
-  } else {
-    ctx.putCommand(group.index, commandRect(c_shadow, group.rect))
-  }
-}
-
 fn endWindow() {
-  scrollLimit(&getLastWindow().scroll, -(uiGetContentSize(&v_uiState).y-uiGetBounds(&v_uiState).h))
-  uiEndColumn(&v_uiState)
-  uiPopElement(&v_uiState)
-  uiEndLayout(&v_uiState, uiLayoutTypeScreen)
+  // (beginWindow 1)
+              uiEndColumn(&v_uiState)
+            uiPopElement(&v_uiState)
+          uiEndColumn(&v_uiState)
+        uiPopElement(&v_uiState)
+      uiPopElement(&v_uiState)
+    uiEndLayout(&v_uiState, uiLayoutTypeScreen)
   uiPopElement(&v_uiState)
 }
 
 fn beginWindow*(title: str, r: rect.Rect): bool {
-  visible := false
-  if v_lastGroup != null {
+  if groupZoneEnd(&v_groupZone) {
     endWindow()
   }
- 
-  v_lastGroup = groupZoneAcquire(&v_groupZone, title, r)
-  v_lastWindow = title
 
-  {
-    win := groupFindWindow(v_lastGroup, v_lastWindow)
-    win.visibilityStatus = 2 // set to was shown this frame
+  began := groupZoneBegin(&v_groupZone, title, r)
 
-    r := getLastWindowContentRect()
+  overTab := ""
+  overBody := false
+  overTitlebar := false
+  isPressed := v_inputState.mouseLeft.down
+  mouseDelta := v_inputState.mouseDelta
 
-    uiBeginGroup(&v_uiState, v_lastGroup.index)
-    
+  if began {
+    group := v_groupZone.currentGroup
+    uiBeginGroup(&v_uiState, group.index)
+
     uiPushElement(&v_uiState, th.Vf2{window.w, window.h})
-    uiBeginLayout(&v_uiState, uiLayoutTypeScreen)
-    uiSetCursor(&v_uiState, r.getPos())
-    uiPushElement(&v_uiState, r.getDims())
-    uiBeginColumn(&v_uiState)
+      uiBeginLayout(&v_uiState, uiLayoutTypeScreen)
+        uiSetCursor(&v_uiState, group.rect.getPos())
+        uiPushElement(&v_uiState, group.rect.getDims())
+          uiPutCommand(&v_uiState, commandRect(c_decor, uiGetBounds(&v_uiState)))
+          uiPushElement(&v_uiState, uiGetBounds(&v_uiState).getDims(), 1)
+            uiBeginColumn(&v_uiState)
+              uiCropContents(&v_uiState)
 
-    if isGroupVisible(v_lastGroup) {
-      visible = true
-      drawGroup(&v_drawCtx, v_lastGroup)
-    }
+              // Titlebar
+              uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.height+5})
+                if uiGetButtonState(&v_uiState).over {
+                  overTitlebar = true
+                }
+                uiBeginDynamicRow(&v_uiState)
+                  _putButton("||||")
+                  for i, w in group.windows {
+                    if _putButton(w.title).over {
+                      overTab = w.title
+                    }
+                  }
+                uiEndDynamicRow(&v_uiState)
+              uiPopElement(&v_uiState)
+              uiPushElement(&v_uiState, uiGetRemainingSize(&v_uiState))
+                if uiGetButtonState(&v_uiState).over {
+                  overBody = true
+                }
+                uiPutCommand(&v_uiState, commandRect(c_body, uiGetBounds(&v_uiState)))
+                uiBeginColumn(&v_uiState)
 
-    uiCropContents(&v_uiState)
-    
-    // TODO: Store the scroll in the widget instead of manually
-    uiSetScroll(&v_uiState, th.Vf2{0, win.scroll.scroll})
+     //       scrollLimit(&getLastWindow().scroll, -(uiGetContentSize(&v_uiState).y-uiGetBounds(&v_uiState).h))
+    // (beginWindow 1)
   }
 
-  return visible
+  if overTab != "" {
+    overTitlebar = false
+  }
+  groupZoneReportInput(&v_groupZone, overTab, overBody, overTitlebar, isPressed, mouseDelta)
+
+  return began
 }
 
-// TODO: get rid of these functions as they are only needed for checking if the group is rendered,
-// we can instead just disable UI rendering and input in the UiState.
-
 fn putImage*(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}) {
-  if isGroupRendered(v_lastGroup) {
-    _putImage(img, size)
-  }
+  _putImage(img, size)
 }
 
 fn putButton*(text: str): ButtonState {
-  if isGroupRendered(v_lastGroup) {
-    output := _putButtonNeo(text)
-    return output;
-  }
-  return ButtonState{}
+  return _putButton(text)
 }
 
 fn putLabel*(text: str) {
-  if isGroupRendered(v_lastGroup) {
-    _putLabelNeo(text)
-  }
+  _putLabel(text)
 }
 
 
