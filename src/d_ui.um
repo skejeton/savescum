@@ -473,7 +473,10 @@ fn groupZoneEnd(zone: ^GroupZone): bool {
 
 fn groupZoneUpdate(zone: ^GroupZone) {
   if zone.dockGroups {
-    groupZoneDockGroups(zone, zone.currentDockingCandidate.index, zone.currentActiveGroup.index)
+    groupZoneDockGroups(zone,
+      zone.currentActiveGroup.index,
+      zone.currentDockingCandidate.index)
+    zone.dockGroups = false
   }
   if zone.currentDraggingGroup == null {
     zone.currentDockingCandidate = null
