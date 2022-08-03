@@ -1,5 +1,4 @@
 import (
-  "th.um";
   "std.um"; "window.um"; "rect.um"; "canvas.um"; "image.um"
   ui = "../../src/d_ui.um"; font = "../../src/d_font.um"
 )
@@ -46,7 +45,7 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
     if (ui.putButton(name).released) {
       t.layout = (t.layout + 1) % 3
     }
-    ui.beginFixedRow(th.Vf2{0, 0}, 3)
+    ui.beginFixedRow(3)
       if (ui.putButton("Remove").released) {
         t.count -= 1;
       }
@@ -75,9 +74,9 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
 
   if ui.beginWindow("Controlled", rect.Rect{480, 80, 230, 350}) {
     switch t.layout {
-      case 0: ui.beginFixedRow(th.Vf2{0, 0}, t.elementsPerRow)
-      case 1: ui.beginDynamicRow(th.Vf2{0, 0})
-      case 2: ui.beginColumn(th.Vf2{0, 0})
+      case 0: ui.beginFixedRow(t.elementsPerRow)
+      case 1: ui.beginDynamicRow()
+      case 2: ui.beginColumn()
     }
       for i := 0; i < t.count; i++ {
         ui.putImage(r.testImage)
