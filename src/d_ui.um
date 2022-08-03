@@ -33,7 +33,9 @@ type (
     stack: []^Group 
     join: bool
     firstJoin: bool
+    dockGroups: bool
 
+    currentDockingCandidate: ^Group
     currentActiveGroup: ^Group
     currentActiveCandidateGroup: ^Group
     currentDraggingGroup: ^Group
@@ -428,6 +430,7 @@ fn groupZoneUndockWindow(zone: ^GroupZone, title: str): ^Group {
 }
 
 fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
+  printf("Indices %d %d\n", srcIdx, dstIdx)
   dst := zone.stack[dstIdx]
   src := zone.stack[srcIdx]
 
@@ -469,12 +472,22 @@ fn groupZoneEnd(zone: ^GroupZone): bool {
 }
 
 fn groupZoneUpdate(zone: ^GroupZone) {
+  if zone.dockGroups {
+    groupZoneDockGroups(zone, zone.currentDockingCandidate.index, zone.currentActiveGroup.index)
+  }
+  if zone.currentDraggingGroup == null {
+    zone.currentDockingCandidate = null
+  }
   zone.currentActiveGroup = zone.currentActiveCandidateGroup
   zone.currentActiveCandidateGroup = null
 }
 
 fn groupZoneReportInput(zone: ^GroupZone, overTab: str, overBody: bool, overTitlebar: bool, isPressed: bool, mouseDelta: th.Vf2) {
   overWindow := overTab != "" || overTitlebar  || overBody
+
+  if overTitlebar && zone.currentDraggingGroup != null && zone.currentGroup != zone.currentActiveGroup {
+    zone.currentDockingCandidate = zone.currentGroup
+  }
 
   if overWindow {
     if zone.currentActiveCandidateGroup != null {
@@ -489,6 +502,7 @@ fn groupZoneReportInput(zone: ^GroupZone, overTab: str, overBody: bool, overTitl
 
   if zone.currentActiveGroup == zone.currentGroup {
     if !isPressed {
+      zone.dockGroups = !isPressed && zone.currentDockingCandidate != null
       zone.currentDraggingGroup = null
     } else {
       groupZoneMoveToFront(zone, zone.currentGroup.index)
@@ -827,8 +841,7 @@ fn populateMouseButton(previous: ButtonState, button: char): ButtonState {
 }
 
 fn populateInputState(previous: InputState): InputState {
-
-  // This looks stupid, but this is to prevent NaN's from happening, since NaN != NaN
+  // FIXME: This looks stupid, but this is to prevent NaN's from happening, since NaN != NaN
   if input.getMousePos().x != input.getMousePos().x {
     return previous
   }
@@ -920,8 +933,8 @@ fn dbgMain(pos: th.Vf2) {
   // TODO: uncomment
   dbgPrintGroup(&lay, "DraggingGroup", v_groupZone.currentDraggingGroup)
   dbgPrintGroup(&lay, "ActiveGroup", v_groupZone.currentActiveGroup)
+  dbgPrintGroup(&lay, "DockingGroup", v_groupZone.currentDockingCandidate)
   /*
-  dbgPrintGroup(&lay, "DockingGroup", v_groupZone.dockingGroup)
   dbgPrintSect(&lay, "WindowScroll")
   if v_groupZone.activeGroup != null {
     dbgPrintText(&lay, repr(groupGetCurrentWindow(v_groupZone.activeGroup).scroll.targetScroll), th.white & 0xFFFFFF99)
@@ -976,9 +989,8 @@ fn end*() {
     endWindow()
   }
 
-  groupZoneUpdate(&v_groupZone)
-
   uiEnd(&v_uiState)
+  groupZoneUpdate(&v_groupZone)
 
   v_drawCtx.render(v_font)
   v_drawCtx.clear()
