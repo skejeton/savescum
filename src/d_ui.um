@@ -34,7 +34,9 @@ type (
     join: bool
     firstJoin: bool
     dockGroups: bool
+    undockGroups: bool
 
+    undockWindow: str
     currentDockingCandidate: ^Group
     currentActiveGroup: ^Group
     currentActiveCandidateGroup: ^Group
@@ -430,7 +432,6 @@ fn groupZoneUndockWindow(zone: ^GroupZone, title: str): ^Group {
 }
 
 fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
-  printf("Indices %d %d\n", srcIdx, dstIdx)
   dst := zone.stack[dstIdx]
   src := zone.stack[srcIdx]
 
@@ -455,11 +456,20 @@ fn groupZoneLocateActiveGroup(zone: ^GroupZone, at: th.Vf2): ^Group {
 }
 
 fn groupZoneBegin(zone: ^GroupZone, title: str, r: rect.Rect): bool {
-  acquired := groupZoneAcquire(zone, title, r)
-  zone.currentGroup = acquired
-  zone.currentWindow = title
+  shouldRender := false
 
-  return groupFindWindow(acquired, title) != null
+  acquired := groupZoneAcquire(zone, title, r)
+  windowIndex := groupFindWindowIndex(acquired, title)
+  if windowIndex == acquired.current {
+    zone.currentGroup = acquired
+    zone.currentWindow = title
+
+    shouldRender = true
+  }
+
+  acquired.windows[windowIndex].visibilityStatus = 2
+
+  return shouldRender
 } 
 
 fn groupZoneEnd(zone: ^GroupZone): bool {
@@ -472,28 +482,43 @@ fn groupZoneEnd(zone: ^GroupZone): bool {
 }
 
 fn groupZoneUpdate(zone: ^GroupZone) {
-  if zone.dockGroups {
-    groupZoneDockGroups(zone,
-      zone.currentActiveGroup.index,
-      zone.currentDockingCandidate.index)
-    zone.dockGroups = false
-  }
-  if zone.currentDraggingGroup == null {
-    zone.currentDockingCandidate = null
-  } else {
+  if zone.currentDraggingGroup != null {
     groupZoneMoveToFront(zone, zone.currentDraggingGroup.index)
   }
+  if zone.dockGroups && zone.currentDockingCandidate != null && zone.currentDraggingGroup != null {
+    groupZoneDockGroups(zone, zone.currentDraggingGroup.index, zone.currentDockingCandidate.index)
+    zone.currentDraggingGroup = null
+  }
+  if zone.dockGroups {
+    zone.currentDraggingGroup = null
+  } 
+  zone.dockGroups = false
   zone.currentActiveGroup = zone.currentActiveCandidateGroup
   zone.currentActiveCandidateGroup = null
 }
 
-fn groupZoneReportInput(zone: ^GroupZone, overTab: str, overBody: bool, overTitlebar: bool, isPressed: bool, mouseDelta: th.Vf2) {
-  overWindow := overTab != "" || overTitlebar  || overBody
+fn groupZoneBeginFrame(zone: ^GroupZone, delta: th.Vf2, mousePos: th.Vf2) {
+  if zone.undockGroups && zone.undockWindow != "" {
+    zone.currentDraggingGroup = groupZoneUndockWindow(zone, zone.undockWindow)
 
-  if overTitlebar && zone.currentDraggingGroup != null && zone.currentGroup != zone.currentActiveGroup {
+    // FIXME: this is really bad because it relies on certain type of visual info
+    zone.currentDraggingGroup.rect.x = mousePos.x-10
+    zone.currentDraggingGroup.rect.y = mousePos.y-10
+  } else if zone.currentDraggingGroup != null {
+    zone.currentDraggingGroup.rect.x += delta.x
+    zone.currentDraggingGroup.rect.y += delta.y
+  }
+  zone.undockGroups = false
+
+  zone.currentDockingCandidate = null
+}
+
+fn groupZoneReportInput(zone: ^GroupZone, overTab: str, overBody: bool, overTitlebar: bool, isDown: bool, isPressed: bool, isReleased: bool) {
+  if (overTab != "" || overTitlebar) && zone.currentGroup != zone.currentActiveGroup {
     zone.currentDockingCandidate = zone.currentGroup
   }
 
+  overWindow := overTab != "" || overTitlebar  || overBody
   if overWindow {
     if zone.currentActiveCandidateGroup != null {
       // Check overlap
@@ -506,20 +531,26 @@ fn groupZoneReportInput(zone: ^GroupZone, overTab: str, overBody: bool, overTitl
   }
 
   if zone.currentActiveGroup == zone.currentGroup {
-    if !isPressed {
-      zone.dockGroups = !isPressed && zone.currentDockingCandidate != null
-      zone.currentDraggingGroup = null
+    if !overTitlebar && overTab == "" {
+      zone.undockGroups = true
     }
 
-    canDrag := (overTitlebar || overBody) && isPressed
-    if canDrag {
-      if zone.currentDraggingGroup == null {
+    if isPressed {
+      if overTab != "" {
+        zone.undockWindow = overTab
+      } else if overTitlebar || overBody {
         zone.currentDraggingGroup = zone.currentGroup
       }
-
-      zone.currentDraggingGroup.rect.x += mouseDelta.x
-      zone.currentDraggingGroup.rect.y += mouseDelta.y
-    }
+    } else if isReleased {
+      zone.undockWindow = ""
+      if overTab != "" {
+        zone.currentActiveGroup.current = groupFindWindowIndex(zone.currentActiveGroup, overTab)
+      } else if overTitlebar {
+        zone.dockGroups = true
+      } else {
+        zone.currentDraggingGroup = null
+      }
+    } 
   }
 }
 
@@ -850,19 +881,14 @@ fn populateMouseButton(previous: ButtonState, button: char): ButtonState {
 }
 
 fn populateInputState(previous: InputState): InputState {
-  // FIXME: This looks stupid, but this is to prevent NaN's from happening, since NaN != NaN
-  if input.getMousePos().x != input.getMousePos().x {
-    return previous
-  }
-
   var output: InputState
 
   output.mouseLeft = populateMouseButton(previous.mouseLeft, input.mouse1);
   output.mouseMiddle = populateMouseButton(previous.mouseMiddle, input.mouse2);
   output.mouseRight = populateMouseButton(previous.mouseRight, input.mouse3);
 
-  output.mousePos = previous.mousePos.add(previous.mouseDelta)
-  output.mouseDelta = input.getMousePos().sub(output.mousePos)
+  output.mousePos = input.getMousePos()
+  output.mouseDelta = output.mousePos.sub(previous.mousePos)
   output.mouseScroll = int(input.isJustPressed(input.mouse_up)) - int(input.isJustPressed(input.mouse_down));
 
   return output
@@ -981,6 +1007,7 @@ fn begin*() {
   handleGroups()
   groupZoneSetJoin(&v_groupZone, false)
   dbgMain(th.Vf2{10, 10});
+  groupZoneBeginFrame(&v_groupZone, v_inputState.mouseDelta, v_inputState.mousePos)
   uiBegin(&v_uiState, v_inputState)
 }
 
@@ -1087,8 +1114,9 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
   overTab := ""
   overBody := false
   overTitlebar := false
-  isPressed := v_inputState.mouseLeft.down
-  mouseDelta := v_inputState.mouseDelta
+  isDown := v_inputState.mouseLeft.down
+  isPressed := v_inputState.mouseLeft.pressed
+  isReleased := v_inputState.mouseLeft.released
 
   if began {
     group := v_groupZone.currentGroup
@@ -1111,8 +1139,10 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
                 uiBeginDynamicRow(&v_uiState)
                   _putButton("||||")
                   for i, w in group.windows {
-                    if _putButton(w.title).over {
-                      overTab = w.title
+                    if w.visibilityStatus > 0 {
+                      if _putButton(w.title).over {
+                        overTab = w.title
+                      }
                     }
                   }
                 uiEndDynamicRow(&v_uiState)
@@ -1126,12 +1156,11 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
 
      //       scrollLimit(&getLastWindow().scroll, -(uiGetContentSize(&v_uiState).y-uiGetBounds(&v_uiState).h))
     // (beginWindow 1)
+    if overTab != "" {
+      overTitlebar = false
+    }
+    groupZoneReportInput(&v_groupZone, overTab, overBody, overTitlebar, isDown, isPressed, isReleased)
   }
-
-  if overTab != "" {
-    overTitlebar = false
-  }
-  groupZoneReportInput(&v_groupZone, overTab, overBody, overTitlebar, isPressed, mouseDelta)
 
   return began
 }
