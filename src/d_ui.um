@@ -93,11 +93,12 @@ type (
     rowHeight: real
     layoutType: UiLayoutType
     bounds: rect.Rect
+    elementRef: int
     scroll: th.Vf2
+    auto: bool
   }
 
   UiState = struct {
-    isCropped: bool
     groupIndex: int
     drawCtx: ^DrawCtx
     inputState: InputState
@@ -123,6 +124,24 @@ const (
   magicColorBeginScissorRect = 0x5B248E00
   magicColorEndScissorRect = 0x896A4100
 )
+
+///////////////////////
+// Utility
+fn rectVsRect(r1, r2: rect.Rect): bool {
+  return (r1.x + r1.w) > (r2.x) && (r1.y + r1.h) > (r2.y) && (r1.x) < (r2.x + r2.w) && (r1.y) < (r2.y + r2.h)
+}
+
+fn rectInPoint(r: rect.Rect, p: th.Vf2): bool {
+  return p.x > r.x && p.y > r.y && p.x < (r.x + r.w) && p.y < (r.y + r.h)
+}
+
+fn rectInset(r: rect.Rect, by: real): rect.Rect {
+  return rect.mk(r.x+by, r.y+by, r.w-by*2, r.h-by*2)
+}
+
+fn rectMove(r: rect.Rect, by: th.Vf2): rect.Rect {
+  return rect.Rect{r.x+by.x, r.y+by.y, r.w, r.h}
+}
 
 ////////////////////////////
 // SequenceLayout
@@ -269,6 +288,11 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
 
     layer := &ctx.layers[i]
     for j, cmd in layer.commands {
+      // dont draw whats not visible
+      if cmd.color != magicColorBeginScissorRect && cmd.color != magicColorEndScissorRect && isScissor && !rectVsRect(cmd.rect, scissorRect) {
+        continue
+      }
+
       if cmd.color == magicColorBeginScissorRect {
         if isScissor {
           rectStack = append(rectStack, scissorRect)
@@ -310,20 +334,6 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
       error("Umatched endScissor");
     }
   }
-}
-
-///////////////////////
-// Utility
-fn rectInPoint(r: rect.Rect, p: th.Vf2): bool {
-  return p.x > r.x && p.y > r.y && p.x < (r.x + r.w) && p.y < (r.y + r.h)
-}
-
-fn rectInset(r: rect.Rect, by: real): rect.Rect {
-  return rect.mk(r.x+by, r.y+by, r.w-by*2, r.h-by*2)
-}
-
-fn rectMove(r: rect.Rect, by: th.Vf2): rect.Rect {
-  return rect.Rect{r.x+by.x, r.y+by.y, r.w, r.h}
 }
 
 ///////////////////////
@@ -445,16 +455,6 @@ fn groupZoneDockGroups(zone: ^GroupZone, srcIdx: int, dstIdx: int) {
   groupZoneReassignIndices(zone)
 }
 
-fn groupZoneLocateActiveGroup(zone: ^GroupZone, at: th.Vf2): ^Group {
-  var group: ^Group = null
-  for i in zone.stack {
-    if rectInPoint(zone.stack[i].rect, at) {
-      group = zone.stack[i]
-    }
-  }
-  return group
-}
-
 fn groupZoneBegin(zone: ^GroupZone, title: str, r: rect.Rect): bool {
   shouldRender := false
 
@@ -569,10 +569,6 @@ fn uiBegin(ui: ^UiState, inputState: InputState) {
   // (1) Not really necessary, but good for debugging so you can immediately spot something's wrong
   ui.groupIndex = -1 // (1)
 
-  if ui.isCropped {
-    error("ui is still cropped (have you called uiEnd?)\n")
-  }
-
   if len(ui.layouts) > 0 {
     error("unfinished ui layouts\n")
   }
@@ -581,18 +577,10 @@ fn uiBegin(ui: ^UiState, inputState: InputState) {
 }
 
 fn uiEnd(ui: ^UiState) {
-  if ui.isCropped {
-    uiPutCommand(ui, commandEndScissorRect())
-    ui.isCropped = false
-  }
+
 }
 
 fn uiBeginGroup(ui: ^UiState, zIndex: int) {
-  if ui.isCropped {
-    uiPutCommand(ui, commandEndScissorRect())
-    ui.isCropped = false
-  }
-
   ui.groupIndex = zIndex
 }
 
@@ -636,7 +624,9 @@ fn uiPushElement(ui: ^UiState, size: th.Vf2, margin: real = 0): rect.Rect {
 
   switch currentLayout.layoutType {
     case uiLayoutTypeColumn:
-      resultRect.w = baseRect.w
+      if resultRect.w < baseRect.w {
+        resultRect.w = baseRect.w
+      }
 
       currentLayout.position.y += resultRect.h
     case uiLayoutTypeFixedRow:
@@ -647,7 +637,7 @@ fn uiPushElement(ui: ^UiState, size: th.Vf2, margin: real = 0): rect.Rect {
 
       resultRect.w = baseRect.w / elementsPerRow;
       
-      if (resultRect.x+resultRect.w-1) > baseRect.w { // wrap around
+      if !currentLayout.auto && (resultRect.x+resultRect.w-1) > baseRect.w { // wrap around
         resultRect.x = 0
         resultRect.y += currentLayout.rowHeight
         currentLayout.position.y += currentLayout.rowHeight
@@ -661,7 +651,7 @@ fn uiPushElement(ui: ^UiState, size: th.Vf2, margin: real = 0): rect.Rect {
 
       currentLayout.position.x += baseRect.w / elementsPerRow
     case uiLayoutTypeDynamicRow:
-      if (resultRect.x+resultRect.w) > baseRect.w { // wrap around
+      if !currentLayout.auto && (resultRect.x+resultRect.w) > baseRect.w { // wrap around
         resultRect.x = 0
         resultRect.y += currentLayout.rowHeight
         currentLayout.position.y += currentLayout.rowHeight
@@ -716,8 +706,9 @@ fn uiGetContentSize(ui: ^UiState): th.Vf2 {
 
 fn uiGetRemainingSize(ui: ^UiState): th.Vf2 {
   bounds := uiCurrentElement(ui).getDims()
-  offs := uiGetContentSize(ui).y
-  bounds.y -= offs
+  offs := uiCurrentLayout(ui).position
+  bounds.y -= offs.y
+  bounds.x -= offs.x
   return bounds
 }
 
@@ -735,9 +726,17 @@ fn uiGetButtonState(ui: ^UiState): ButtonState {
 // 
 // ui: ui state
 //
-fn uiCropContents(ui: ^UiState) {
-  ui.isCropped = true
+fn uiBeginCropContents(ui: ^UiState) {
   uiPutCommand(ui, commandBeginScissorRect(uiGetBounds(ui)))
+}
+
+//
+// Stops cropping the contents
+// 
+// ui: ui state
+//
+fn uiEndCropContents(ui: ^UiState) {
+  uiPutCommand(ui, commandEndScissorRect())
 }
 
 //
@@ -753,7 +752,7 @@ fn uiSetScroll(ui: ^UiState, offset: th.Vf2) {
 }
 
 fn uiEndLayout(ui: ^UiState, expectedType: UiLayoutType) {
-  currentLayout := uiCurrentLayout(ui)
+  currentLayout := uiCurrentLayout(ui)^
   currentType := currentLayout.layoutType
 
   if currentType != expectedType {
@@ -762,22 +761,26 @@ fn uiEndLayout(ui: ^UiState, expectedType: UiLayoutType) {
     error(buf)
   } else {
     ui.layouts = delete(ui.layouts, len(ui.layouts)-1)
-    if currentLayout.layoutType != uiLayoutTypeScreen && len(ui.layouts) > 0 {
-      ui.layouts[len(ui.layouts)-1].position.y = currentLayout.position.y+currentLayout.rowHeight
-      ui.layouts[len(ui.layouts)-1].position.x = 0
+    if len(ui.layouts) > 0 {
+      layout := &ui.layouts[len(ui.layouts)-1]
+
+      if currentLayout.elementRef == layout.elementRef && currentLayout.layoutType != uiLayoutTypeScreen {
+        layout.position.y = currentLayout.position.y+currentLayout.rowHeight
+        layout.position.x = 0
+      }
     }
   }
 }
 
-fn uiBeginLayout(ui: ^UiState, layoutType: UiLayoutType, elementsPerRow: int = 0) {
+fn uiBeginLayout(ui: ^UiState, layoutType: UiLayoutType, elementsPerRow: int = 0, auto: bool = false) {
   currentLayout := uiCurrentLayout(ui)
-  newLayout := UiLayout{layoutType: layoutType, elementsPerRow: elementsPerRow, bounds: uiCurrentElement(ui)}
+  newLayout := UiLayout{auto: auto, layoutType: layoutType, elementsPerRow: elementsPerRow, elementRef: len(ui.elements), bounds: uiCurrentElement(ui)}
 
   if currentLayout != null {
     newLayout.scroll = currentLayout.scroll
 
     // FIXME: This is a way to identify if newLayout and currentLayout share the element
-    if currentLayout.bounds.x == newLayout.bounds.x && currentLayout.bounds.y == newLayout.bounds.y && currentLayout.bounds.w == newLayout.bounds.w && currentLayout.bounds.h == newLayout.bounds.h {
+    if newLayout.elementRef == currentLayout.elementRef {
       newLayout.position.y = currentLayout.position.y
       newLayout.position.x = 0
     }
@@ -804,8 +807,9 @@ fn uiEndColumn(ui: ^UiState) {
 
 // Begins a dynamic row layout.
 // It uses its provided size and wraps around if needed.
-fn uiBeginDynamicRow(ui: ^UiState) {
-  uiBeginLayout(ui, uiLayoutTypeDynamicRow)
+// auto: true to disable wrapping
+fn uiBeginDynamicRow(ui: ^UiState, auto: bool = false) {
+  uiBeginLayout(ui, uiLayoutTypeDynamicRow, 0, auto)
 }
 
 fn uiEndDynamicRow(ui: ^UiState) {
@@ -814,8 +818,9 @@ fn uiEndDynamicRow(ui: ^UiState) {
 
 // Begins a fixed row layout.
 // It assigns element width to parent width divided by element per row, and wraps around if needed.
-fn uiBeginFixedRow(ui: ^UiState, elementsPerRow: int) {
-  uiBeginLayout(ui, uiLayoutTypeFixedRow, elementsPerRow)
+// auto: true to disable wrapping
+fn uiBeginFixedRow(ui: ^UiState, elementsPerRow: int, auto: bool = false) {
+  uiBeginLayout(ui, uiLayoutTypeFixedRow, elementsPerRow, auto)
 }
 
 fn uiEndFixedRow(ui: ^UiState) {
@@ -848,8 +853,8 @@ fn endColumn*() {
 
 // Begins a dynamic row layout.
 // It uses its provided size and wraps around if needed.
-fn beginDynamicRow*() {
-  uiBeginDynamicRow(&v_uiState)
+fn beginDynamicRow*(auto: bool = false) {
+  uiBeginDynamicRow(&v_uiState, auto)
 }
 
 fn endDynamicRow*() {
@@ -858,8 +863,8 @@ fn endDynamicRow*() {
 
 // Begins a fixed row layout.
 // It assigns element width to parent width divided by element per row, and wraps around if needed.
-fn beginFixedRow*(elementsPerRow: int) {
-  uiBeginFixedRow(&v_uiState, elementsPerRow)
+fn beginFixedRow*(elementsPerRow: int, auto: bool = false) {
+  uiBeginFixedRow(&v_uiState, elementsPerRow, auto)
 }
 
 fn endFixedRow*() {
@@ -969,11 +974,11 @@ fn dbgMain(pos: th.Vf2) {
   dbgPrintGroup(&lay, "DraggingGroup", v_groupZone.currentDraggingGroup)
   dbgPrintGroup(&lay, "ActiveGroup", v_groupZone.currentActiveGroup)
   dbgPrintGroup(&lay, "DockingGroup", v_groupZone.currentDockingCandidate)
-  /*
   dbgPrintSect(&lay, "WindowScroll")
-  if v_groupZone.activeGroup != null {
-    dbgPrintText(&lay, repr(groupGetCurrentWindow(v_groupZone.activeGroup).scroll.targetScroll), th.white & 0xFFFFFF99)
+  if v_groupZone.currentActiveGroup != null {
+    dbgPrintText(&lay, repr(groupGetCurrentWindow(v_groupZone.currentActiveGroup).scroll.targetScroll), th.white & 0xFFFFFF99)
   }
+  /*
   lay.newLine()
   dbgPrintSect(&lay, "UndockWindow")
   dbgPrintText(&lay, v_groupZone.undockingWindow, th.white & 0xFFFFFF99)
@@ -1011,7 +1016,7 @@ fn begin*() {
   uiBegin(&v_uiState, v_inputState)
 }
 
-fn endWindow();
+fn endWindow(group: ^Group);
 
 fn end*() {
   for title, group in v_groupZone.groups {
@@ -1021,8 +1026,10 @@ fn end*() {
     } 
   }
 
+
+  group := v_groupZone.currentGroup
   if groupZoneEnd(&v_groupZone) {
-    endWindow()
+    endWindow(group)
   }
 
   uiEnd(&v_uiState)
@@ -1037,11 +1044,14 @@ fn setJoinWindows*(set: bool) {
 }
 
 fn getButtonState(): ButtonState {
+  if v_groupZone.currentActiveGroup != v_groupZone.currentGroup {
+    return ButtonState{}
+  }
   buttonState := uiGetButtonState(&v_uiState)
   return buttonState
 }
 
-fn _putLabel(text: str) {
+fn _putLabel(text: str, color: uint32 = c_fore) {
   size := v_font.measure(text) 
   size.x += 10 // padding
   size.y += 5
@@ -1050,7 +1060,7 @@ fn _putLabel(text: str) {
   labelRect.w -= 1
   labelRect.h -= 1
 
-  uiPutCommand(&v_uiState, commandText(c_fore, labelRect, text))
+  uiPutCommand(&v_uiState, commandText(color, labelRect, text))
 }
 
 fn _putImage(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}) {
@@ -1073,6 +1083,10 @@ fn drawButtonUi(r: rect.Rect, state: ButtonState) {
   uiPutCommand(&v_uiState, commandRect(color, r))
 }
 
+fn invalidateClick() {
+  v_groupZone.currentDraggingGroup = null
+}
+
 fn _putButton(text: str): ButtonState {
   size := v_font.measure(text) 
   size.x += 10 // padding
@@ -1081,6 +1095,9 @@ fn _putButton(text: str): ButtonState {
 
   uiPushElement(&v_uiState, size)
     buttonState := getButtonState()
+    if buttonState.pressed {
+      invalidateClick()
+    }
     buttonRect := uiGetBounds(&v_uiState)
     buttonRect.w -= 1
     buttonRect.h -= 1
@@ -1093,8 +1110,11 @@ fn _putButton(text: str): ButtonState {
 
 fn beginWindow*(title: str, r: rect.Rect): bool;
 
-fn endWindow() {
+fn endWindow(group: ^Group) {
   // (beginWindow 1)
+  currentWindow := groupGetCurrentWindow(group)
+                uiEndCropContents(&v_uiState)
+                scrollLimit(&currentWindow.scroll, -(uiGetContentSize(&v_uiState).y-uiGetBounds(&v_uiState).h))
               uiEndColumn(&v_uiState)
             uiPopElement(&v_uiState)
           uiEndColumn(&v_uiState)
@@ -1105,8 +1125,9 @@ fn endWindow() {
 }
 
 fn beginWindow*(title: str, r: rect.Rect): bool {
+  group := v_groupZone.currentGroup
   if groupZoneEnd(&v_groupZone) {
-    endWindow()
+    endWindow(group)
   }
 
   began := groupZoneBegin(&v_groupZone, title, r)
@@ -1126,35 +1147,57 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
       uiBeginLayout(&v_uiState, uiLayoutTypeScreen)
         uiSetCursor(&v_uiState, group.rect.getPos())
         uiPushElement(&v_uiState, group.rect.getDims())
+          uiPutCommand(&v_uiState, commandRect(c_shadow, rectMove(rectInset(uiGetBounds(&v_uiState), -1), th.Vf2{0, 1})))
           uiPutCommand(&v_uiState, commandRect(c_decor, uiGetBounds(&v_uiState)))
           uiPushElement(&v_uiState, uiGetBounds(&v_uiState).getDims(), 1)
             uiBeginColumn(&v_uiState)
-              uiCropContents(&v_uiState)
-
               // Titlebar
               uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.height+5})
-                if uiGetButtonState(&v_uiState).over {
-                  overTitlebar = true
-                }
-                uiBeginDynamicRow(&v_uiState)
-                  _putButton("||||")
-                  for i, w in group.windows {
-                    if w.visibilityStatus > 0 {
-                      if _putButton(w.title).over {
-                        overTab = w.title
-                      }
-                    }
+                uiBeginDynamicRow(&v_uiState, true)
+                  if len(group.windows) == 1 {
+                    uiPutCommand(&v_uiState, commandText(c_body, uiPutElement(&v_uiState, uiGetBounds(&v_uiState).getDims()), group.windows[0].title))
+                  } else {
+                    _putButton("||||")
+                    uiPushElement(&v_uiState, uiGetRemainingSize(&v_uiState))
+                      uiBeginDynamicRow(&v_uiState, true)
+                        uiBeginCropContents(&v_uiState)
+                        uiSetScroll(&v_uiState, th.Vf2{group.tabScroll.scroll, 0})
+                        for i, w in group.windows {
+                          if w.visibilityStatus > 0 {
+                            if _putButton(w.title).over {
+                              overTab = w.title
+                            }
+                          }
+                        }
+                        scrollLimit(&group.tabScroll, -(uiCurrentLayout(&v_uiState).position.x-uiGetBounds(&v_uiState).w))
+                        if uiGetButtonState(&v_uiState).over && v_groupZone.currentActiveGroup == group {
+                          if v_inputState.mouseScroll != 0 {
+                            printf("Bruh %g %g\n", uiCurrentLayout(&v_uiState).position.x, uiGetBounds(&v_uiState).w);
+                          }
+                          scrollBy(&group.tabScroll, v_inputState.mouseScroll*2000*(th.delta/1000.0))
+                        }
+                      uiEndDynamicRow(&v_uiState)
+                    uiPopElement(&v_uiState)
+                  }
+
+                  if uiGetButtonState(&v_uiState).over {
+                    overTitlebar = true
                   }
                 uiEndDynamicRow(&v_uiState)
+                uiEndCropContents(&v_uiState)
               uiPopElement(&v_uiState)
               uiPushElement(&v_uiState, uiGetRemainingSize(&v_uiState))
                 if uiGetButtonState(&v_uiState).over {
+                  if v_groupZone.currentActiveGroup == group {
+                    scrollBy(&groupGetCurrentWindow(group).scroll, v_inputState.mouseScroll*2000*(th.delta/1000.0))
+                  }
                   overBody = true
                 }
                 uiPutCommand(&v_uiState, commandRect(c_body, uiGetBounds(&v_uiState)))
                 uiBeginColumn(&v_uiState)
+                  uiBeginCropContents(&v_uiState)
+                  uiSetScroll(&v_uiState, th.Vf2{0, groupGetCurrentWindow(group).scroll.scroll})
 
-     //       scrollLimit(&getLastWindow().scroll, -(uiGetContentSize(&v_uiState).y-uiGetBounds(&v_uiState).h))
     // (beginWindow 1)
     if overTab != "" {
       overTitlebar = false
