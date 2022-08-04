@@ -34,7 +34,9 @@ type (
     join: bool
     firstJoin: bool
     dockGroups: bool
+    canDock: bool
     undockGroups: bool
+    hasDockingCandidate: bool
 
     undockWindow: str
     currentDockingCandidate: ^Group
@@ -495,11 +497,16 @@ fn groupZoneUpdate(zone: ^GroupZone) {
   zone.dockGroups = false
   zone.currentActiveGroup = zone.currentActiveCandidateGroup
   zone.currentActiveCandidateGroup = null
+
+  if !zone.hasDockingCandidate {
+    zone.currentDockingCandidate = null
+  }
 }
 
 fn groupZoneBeginFrame(zone: ^GroupZone, delta: th.Vf2, mousePos: th.Vf2) {
   if zone.undockGroups && zone.undockWindow != "" {
     zone.currentDraggingGroup = groupZoneUndockWindow(zone, zone.undockWindow)
+    zone.currentActiveGroup = zone.currentDraggingGroup
 
     // FIXME: this is really bad because it relies on certain type of visual info
     zone.currentDraggingGroup.rect.x = mousePos.x-10
@@ -509,12 +516,12 @@ fn groupZoneBeginFrame(zone: ^GroupZone, delta: th.Vf2, mousePos: th.Vf2) {
     zone.currentDraggingGroup.rect.y += delta.y
   }
   zone.undockGroups = false
-
-  zone.currentDockingCandidate = null
+  zone.hasDockingCandidate = false
 }
 
 fn groupZoneReportInput(zone: ^GroupZone, overTab: str, overBody: bool, overTitlebar: bool, isDown: bool, isPressed: bool, isReleased: bool) {
   if (overTab != "" || overTitlebar) && zone.currentGroup != zone.currentActiveGroup {
+    zone.hasDockingCandidate = true
     zone.currentDockingCandidate = zone.currentGroup
   }
 
@@ -535,6 +542,7 @@ fn groupZoneReportInput(zone: ^GroupZone, overTab: str, overBody: bool, overTitl
       zone.undockGroups = true
     }
 
+    zone.canDock = overTitlebar
     if isPressed {
       if overTab != "" {
         zone.undockWindow = overTab
@@ -827,12 +835,17 @@ fn uiEndFixedRow(ui: ^UiState) {
   uiEndLayout(ui, uiLayoutTypeFixedRow)
 }
 
+const (
+  windowFlagShadow = 0x1
+)
+
 var (
   v_font: d_font.Font
   v_drawCtx: DrawCtx
   
   v_groupZone: GroupZone
   v_uiState: UiState
+  v_lastWindowFlags: uint32
 
   v_dbgMask: uint32 // mask for debug ui
   v_inputState: InputState
@@ -978,13 +991,10 @@ fn dbgMain(pos: th.Vf2) {
   if v_groupZone.currentActiveGroup != null {
     dbgPrintText(&lay, repr(groupGetCurrentWindow(v_groupZone.currentActiveGroup).scroll.targetScroll), th.white & 0xFFFFFF99)
   }
-  /*
   lay.newLine()
   dbgPrintSect(&lay, "UndockWindow")
-  dbgPrintText(&lay, v_groupZone.undockingWindow, th.white & 0xFFFFFF99)
+  dbgPrintText(&lay, v_groupZone.undockWindow, th.white & 0xFFFFFF99)
   lay.newLine()
-  */
-
 
 
   // make lighter on hover
@@ -1087,7 +1097,7 @@ fn invalidateClick() {
   v_groupZone.currentDraggingGroup = null
 }
 
-fn _putButton(text: str): ButtonState {
+fn _putButtonToggle(text: str, pressed: bool): ButtonState {
   size := v_font.measure(text) 
   size.x += 10 // padding
   size.y += 5
@@ -1099,29 +1109,49 @@ fn _putButton(text: str): ButtonState {
       invalidateClick()
     }
     buttonRect := uiGetBounds(&v_uiState)
-    buttonRect.w -= 1
-    buttonRect.h -= 1
-    drawButtonUi(buttonRect, buttonState)
+
+    // create a copy so we don't report bogus button info in return
+    buttonStateCopy := buttonState
+    buttonStateCopy.down = buttonStateCopy.down || pressed
+    drawButtonUi(buttonRect, buttonStateCopy)
     uiPutCommand(&v_uiState, commandText(c_body, buttonRect, text))
   uiPopElement(&v_uiState)
 
-  return buttonState
+  return buttonState 
+}
+
+
+fn _putButton(text: str): ButtonState {
+  return _putButtonToggle(text, false)
 }     
 
 fn beginWindow*(title: str, r: rect.Rect): bool;
 
 fn endWindow(group: ^Group) {
-  // (beginWindow 1)
-  currentWindow := groupGetCurrentWindow(group)
-                uiEndCropContents(&v_uiState)
-                scrollLimit(&currentWindow.scroll, -(uiGetContentSize(&v_uiState).y-uiGetBounds(&v_uiState).h))
-              uiEndColumn(&v_uiState)
-            uiPopElement(&v_uiState)
-          uiEndColumn(&v_uiState)
+  if (v_lastWindowFlags & windowFlagShadow) == 0 {
+    // (beginWindow 1)
+    currentWindow := groupGetCurrentWindow(group)
+                  uiEndCropContents(&v_uiState)
+                  scrollLimit(&currentWindow.scroll, -(uiGetContentSize(&v_uiState).y-uiGetBounds(&v_uiState).h))
+                  if currentWindow.scroll.limit < 0 {
+                    contentRect := uiGetBounds(&v_uiState)
+                    percentOfs := -currentWindow.scroll.scroll/(contentRect.h-currentWindow.scroll.limit)
+                    percentSize := contentRect.h/(contentRect.h-currentWindow.scroll.limit)
+                    uiPutCommand(&v_uiState, commandRect(c_shadow, rect.mk(contentRect.x+contentRect.w-3, contentRect.y+contentRect.h*percentOfs, 3, contentRect.h * percentSize)))
+                  }
+                uiEndColumn(&v_uiState)
+              uiPopElement(&v_uiState)
+            uiEndColumn(&v_uiState)
+          uiPopElement(&v_uiState)
         uiPopElement(&v_uiState)
-      uiPopElement(&v_uiState)
-    uiEndLayout(&v_uiState, uiLayoutTypeScreen)
-  uiPopElement(&v_uiState)
+      uiEndLayout(&v_uiState, uiLayoutTypeScreen)
+    uiPopElement(&v_uiState)
+  } else {
+        uiPopElement(&v_uiState)
+      uiEndLayout(&v_uiState, uiLayoutTypeScreen)
+    uiPopElement(&v_uiState)
+  }
+  v_lastWindowFlags = 0
 }
 
 fn beginWindow*(title: str, r: rect.Rect): bool {
@@ -1141,62 +1171,75 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
 
   if began {
     group := v_groupZone.currentGroup
+    if v_groupZone.currentDraggingGroup != null && v_groupZone.canDock && v_groupZone.currentDockingCandidate != null && group != v_groupZone.currentDockingCandidate {
+      v_lastWindowFlags |= windowFlagShadow
+    }
+
     uiBeginGroup(&v_uiState, group.index)
 
-    uiPushElement(&v_uiState, th.Vf2{window.w, window.h})
-      uiBeginLayout(&v_uiState, uiLayoutTypeScreen)
-        uiSetCursor(&v_uiState, group.rect.getPos())
-        uiPushElement(&v_uiState, group.rect.getDims())
-          uiPutCommand(&v_uiState, commandRect(c_shadow, rectMove(rectInset(uiGetBounds(&v_uiState), -1), th.Vf2{0, 1})))
-          uiPutCommand(&v_uiState, commandRect(c_decor, uiGetBounds(&v_uiState)))
-          uiPushElement(&v_uiState, uiGetBounds(&v_uiState).getDims(), 1)
-            uiBeginColumn(&v_uiState)
-              // Titlebar
-              uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.height+5})
-                uiBeginDynamicRow(&v_uiState, true)
-                  if len(group.windows) == 1 {
-                    uiPutCommand(&v_uiState, commandText(c_body, uiPutElement(&v_uiState, uiGetBounds(&v_uiState).getDims()), group.windows[0].title))
-                  } else {
-                    _putButton("||||")
-                    uiPushElement(&v_uiState, uiGetRemainingSize(&v_uiState))
-                      uiBeginDynamicRow(&v_uiState, true)
-                        uiBeginCropContents(&v_uiState)
-                        uiSetScroll(&v_uiState, th.Vf2{group.tabScroll.scroll, 0})
-                        for i, w in group.windows {
-                          if w.visibilityStatus > 0 {
-                            if _putButton(w.title).over {
-                              overTab = w.title
+    if (v_lastWindowFlags & windowFlagShadow) != 0 {
+      uiPushElement(&v_uiState, th.Vf2{window.w, window.h})
+        uiBeginLayout(&v_uiState, uiLayoutTypeScreen)
+          uiPushElement(&v_uiState, group.rect.getDims())
+            uiSetCursor(&v_uiState, group.rect.getPos())
+            uiPutCommand(&v_uiState, commandRect(c_shadow, uiPutElement(&v_uiState, uiGetBounds(&v_uiState).getDims())))
+            // Create a fake titlebar, a hack
+            uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.height+5})
+              overTitlebar = getButtonState().over
+            uiPopElement(&v_uiState)
+    } else {
+      uiPushElement(&v_uiState, th.Vf2{window.w, window.h})
+        uiBeginLayout(&v_uiState, uiLayoutTypeScreen)
+          uiSetCursor(&v_uiState, group.rect.getPos())
+          uiPushElement(&v_uiState, group.rect.getDims())
+            uiPutCommand(&v_uiState, commandRect(c_shadow, rectMove(rectInset(uiGetBounds(&v_uiState), -1), th.Vf2{0, 1})))
+            uiPutCommand(&v_uiState, commandRect(c_decor, uiGetBounds(&v_uiState)))
+            uiPushElement(&v_uiState, uiGetBounds(&v_uiState).getDims(), 1)
+              uiBeginColumn(&v_uiState)
+                // Titlebar
+                uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.height+5})
+                  uiBeginDynamicRow(&v_uiState, true)
+                    if len(group.windows) == 1 {
+                      uiPutCommand(&v_uiState, commandText(c_body, uiPutElement(&v_uiState, uiGetBounds(&v_uiState).getDims()), group.windows[0].title))
+                    } else {
+                      _putButton("||||")
+                      uiPushElement(&v_uiState, uiGetRemainingSize(&v_uiState))
+                        uiBeginDynamicRow(&v_uiState, true)
+                          uiBeginCropContents(&v_uiState)
+                          uiSetScroll(&v_uiState, th.Vf2{group.tabScroll.scroll, 0})
+                          for i, w in group.windows {
+                            if w.visibilityStatus > 0 {
+                              if _putButtonToggle(w.title, group.current == i).over {
+                                overTab = w.title
+                              }
                             }
                           }
-                        }
-                        scrollLimit(&group.tabScroll, -(uiCurrentLayout(&v_uiState).position.x-uiGetBounds(&v_uiState).w))
-                        if uiGetButtonState(&v_uiState).over && v_groupZone.currentActiveGroup == group {
-                          if v_inputState.mouseScroll != 0 {
-                            printf("Bruh %g %g\n", uiCurrentLayout(&v_uiState).position.x, uiGetBounds(&v_uiState).w);
+                          scrollLimit(&group.tabScroll, -(uiCurrentLayout(&v_uiState).position.x-uiGetBounds(&v_uiState).w))
+                          if uiGetButtonState(&v_uiState).over && v_groupZone.currentActiveGroup == group {
+                            scrollBy(&group.tabScroll, v_inputState.mouseScroll*2000*(th.delta/1000.0))
                           }
-                          scrollBy(&group.tabScroll, v_inputState.mouseScroll*2000*(th.delta/1000.0))
-                        }
-                      uiEndDynamicRow(&v_uiState)
-                    uiPopElement(&v_uiState)
-                  }
+                        uiEndDynamicRow(&v_uiState)
+                      uiPopElement(&v_uiState)
+                    }
 
+                    if uiGetButtonState(&v_uiState).over {
+                      overTitlebar = true
+                    }
+                  uiEndDynamicRow(&v_uiState)
+                  uiEndCropContents(&v_uiState)
+                uiPopElement(&v_uiState)
+                uiPushElement(&v_uiState, uiGetRemainingSize(&v_uiState))
                   if uiGetButtonState(&v_uiState).over {
-                    overTitlebar = true
+                    if v_groupZone.currentActiveGroup == group {
+                      scrollBy(&groupGetCurrentWindow(group).scroll, v_inputState.mouseScroll*2000*(th.delta/1000.0))
+                    }
+                    overBody = true
                   }
-                uiEndDynamicRow(&v_uiState)
-                uiEndCropContents(&v_uiState)
-              uiPopElement(&v_uiState)
-              uiPushElement(&v_uiState, uiGetRemainingSize(&v_uiState))
-                if uiGetButtonState(&v_uiState).over {
-                  if v_groupZone.currentActiveGroup == group {
-                    scrollBy(&groupGetCurrentWindow(group).scroll, v_inputState.mouseScroll*2000*(th.delta/1000.0))
-                  }
-                  overBody = true
-                }
-                uiPutCommand(&v_uiState, commandRect(c_body, uiGetBounds(&v_uiState)))
-                uiBeginColumn(&v_uiState)
-                  uiBeginCropContents(&v_uiState)
-                  uiSetScroll(&v_uiState, th.Vf2{0, groupGetCurrentWindow(group).scroll.scroll})
+                  uiPutCommand(&v_uiState, commandRect(c_body, uiGetBounds(&v_uiState)))
+                  uiBeginColumn(&v_uiState)
+                    uiBeginCropContents(&v_uiState)
+                    uiSetScroll(&v_uiState, th.Vf2{0, groupGetCurrentWindow(group).scroll.scroll})
+    }
 
     // (beginWindow 1)
     if overTab != "" {
@@ -1209,15 +1252,22 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
 }
 
 fn putImage*(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}) {
-  _putImage(img, size)
+  if (v_lastWindowFlags & windowFlagShadow) == 0 {
+    _putImage(img, size)
+  }
 }
 
 fn putButton*(text: str): ButtonState {
-  return _putButton(text)
+  if (v_lastWindowFlags & windowFlagShadow) == 0 {
+    return _putButton(text)
+  }
+  return ButtonState{}
 }
 
 fn putLabel*(text: str) {
-  _putLabel(text)
+  if (v_lastWindowFlags & windowFlagShadow) == 0 {
+    _putLabel(text)
+  }
 }
 
 
