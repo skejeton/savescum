@@ -36,9 +36,9 @@ type (
     dockGroups: bool
     canDock: bool
     undockGroups: bool
-    hasDockingCandidate: bool
 
     undockWindow: str
+    currentDockingGroup: ^Group
     currentDockingCandidate: ^Group
     currentActiveGroup: ^Group
     currentActiveCandidateGroup: ^Group
@@ -488,8 +488,8 @@ fn groupZoneUpdate(zone: ^GroupZone) {
   if zone.currentDraggingGroup != null {
     groupZoneMoveToFront(zone, zone.currentDraggingGroup.index)
   }
-  if zone.dockGroups && zone.currentDockingCandidate != null && zone.currentDraggingGroup != null {
-    groupZoneDockGroups(zone, zone.currentDraggingGroup.index, zone.currentDockingCandidate.index)
+  if zone.dockGroups && zone.currentDockingGroup != null && zone.currentDraggingGroup != null {
+    groupZoneDockGroups(zone, zone.currentDraggingGroup.index, zone.currentDockingGroup.index)
     zone.currentDraggingGroup = null
   }
   if zone.dockGroups {
@@ -499,8 +499,12 @@ fn groupZoneUpdate(zone: ^GroupZone) {
   zone.currentActiveGroup = zone.currentActiveCandidateGroup
   zone.currentActiveCandidateGroup = null
 
-  if !zone.hasDockingCandidate {
-    zone.currentDockingCandidate = null
+
+  zone.currentDockingGroup = zone.currentDockingCandidate
+  zone.currentDockingCandidate = null
+
+  if zone.currentDockingGroup == zone.currentActiveGroup {
+    zone.currentDockingGroup = null
   }
 }
 
@@ -517,13 +521,13 @@ fn groupZoneBeginFrame(zone: ^GroupZone, delta: th.Vf2, mousePos: th.Vf2) {
     zone.currentDraggingGroup.rect.y += delta.y
   }
   zone.undockGroups = false
-  zone.hasDockingCandidate = false
 }
 
 fn groupZoneReportInput(zone: ^GroupZone, overTab: str, overBody: bool, overTitlebar: bool, isDown: bool, isPressed: bool, isReleased: bool) {
   if (overTab != "" || overTitlebar) && zone.currentGroup != zone.currentActiveGroup {
-    zone.hasDockingCandidate = true
-    zone.currentDockingCandidate = zone.currentGroup
+    if zone.currentDockingGroup == null || zone.currentDockingGroup.index <= zone.currentGroup.index  {
+      zone.currentDockingCandidate = zone.currentGroup
+    }
   }
 
   overWindow := overTab != "" || overTitlebar  || overBody
@@ -997,7 +1001,7 @@ fn dbgMain(pos: th.Vf2) {
   // TODO: uncomment
   dbgPrintGroup(&lay, "DraggingGroup", v_groupZone.currentDraggingGroup)
   dbgPrintGroup(&lay, "ActiveGroup", v_groupZone.currentActiveGroup)
-  dbgPrintGroup(&lay, "DockingGroup", v_groupZone.currentDockingCandidate)
+  dbgPrintGroup(&lay, "DockingGroup", v_groupZone.currentDockingGroup)
   dbgPrintSect(&lay, "WindowScroll")
   if v_groupZone.currentActiveGroup != null {
     dbgPrintText(&lay, repr(groupGetCurrentWindow(v_groupZone.currentActiveGroup).scroll.targetScroll), th.white & 0xFFFFFF99)
@@ -1183,7 +1187,7 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
 
   if began {
     group := v_groupZone.currentGroup
-    if v_groupZone.currentDraggingGroup != null && v_groupZone.canDock && v_groupZone.currentDockingCandidate != null && group != v_groupZone.currentDockingCandidate {
+    if  v_groupZone.currentDraggingGroup != null && v_groupZone.canDock && v_groupZone.currentDockingGroup != null && group != v_groupZone.currentDockingGroup {
       v_lastWindowFlags |= windowFlagShadow
     }
 
@@ -1204,6 +1208,9 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
         uiBeginLayout(&v_uiState, uiLayoutTypeScreen)
           uiSetCursor(&v_uiState, group.rect.getPos())
           uiPushElement(&v_uiState, group.rect.getDims())
+            if uiGetButtonState(&v_uiState).over {
+              overTitlebar = true
+            }
             uiPutCommand(&v_uiState, commandRect(c_shadow, rectMove(rectInset(uiGetBounds(&v_uiState), -1), th.Vf2{0, 1})))
             uiPutCommand(&v_uiState, commandRect(c_decor, uiGetBounds(&v_uiState)))
             uiPushElement(&v_uiState, uiGetBounds(&v_uiState).getDims(), 1)
@@ -1234,10 +1241,6 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
                         uiEndDynamicRow(&v_uiState)
                       uiPopElement(&v_uiState)
                     }
-
-                    if uiGetButtonState(&v_uiState).over {
-                      overTitlebar = true
-                    }
                   uiEndDynamicRow(&v_uiState)
                 uiPopElement(&v_uiState)
                 uiPushElement(&v_uiState, uiGetRemainingSize(&v_uiState))
@@ -1255,6 +1258,9 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
 
     // (beginWindow 1)
     if overTab != "" {
+      overTitlebar = false
+    }
+    if overBody {
       overTitlebar = false
     }
     groupZoneReportInput(&v_groupZone, overTab, overBody, overTitlebar, isDown, isPressed, isReleased)
