@@ -80,7 +80,7 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
     }
       for i := 0; i < t.count; i++ {
         ui.putImage(r.testImage)
-        ui.putLabel(std.itoa(i+1))
+        ui.putButton(std.itoa(i+1))
       }
     switch t.layout {
       case 0: ui.endFixedRow()
@@ -106,6 +106,7 @@ fn putShowHideButton(what: str, toggle: ^bool) {
 fn putTest(t: ^TestData, r: ^TestResources) {
   putLayoutTest(&t.td_layout, r)
   if ui.beginWindow("Test Window", rect.Rect{(window.w-250)/2, (window.h-400)/2, 250, 400}) {
+    ui.putLabel("Hello folks!")
     putShowHideButton("layout test", &t.td_layout.show)
   }
 }

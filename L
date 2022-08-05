@@ -8,50 +8,51 @@ PROG_NAME=$0
 
 # $1 offset
 getarg() {
-        echo ${ARGS[$NARG + $1]}
+  echo ${ARGS[$NARG + $1]}
 }
 
 # $1 test name
 target_test() {
-        if [ -z "$1" ]; then
-                echo -e "Specify the test. \n$PROG_NAME test test_name" 
-                exit 1
-        elif [[ -d "test/$1" && -f "test/$1/main.um" ]]; then 
-                TEST_PFX="test/$1/" ../../tophat $SILENT main "test/$1/main.um"
-        else
-                echo "No test \"$1\"." 
-                exit 2
-        fi
+  if [ -z "$1" ]; then
+    echo -e "Specify the test. \n$PROG_NAME test test_name" 
+    exit 1
+  elif [[ -d "test/$1" && -f "test/$1/main.um" ]]; then 
+    TEST_PFX="test/$1/" ../../tophat $SILENT main "test/$1/main.um"
+  else
+    echo "No test \"$1\"." 
+    exit 2
+  fi
 }
 
 case `getarg 0` in
-        silent)
-                NARG=1
-                SILENT=silent
-        ;; 
+  silent)
+    NARG=1
+    SILENT=silent
+  ;; 
 esac
 
 case `getarg 0` in
-        play)
-                ../../tophat $SILENT main src/main.um
-        ;;
-        check)
-                ../../tophat $SILENT check main src/main.um
-                
-                for d in test/*; do
-                        TEST_PFX="%d/" ../../tophat $SILENT check main "$d/main.um"
-                done
-        ;;
-        testall)
-                for d in test/*; do
-                        SILENT=$SILENT ./L test `basename $d`
-                done
-        ;;
-        test)
-                target_test `getarg 1`
-        ;;
-        *)
-                echo "Use commands: test, check, play"
-                exit 3
-        ;;
+  play)
+    ../../tophat $SILENT main src/main.um
+  ;;
+  check)
+    ../../tophat $SILENT check main src/main.um
+    
+    for d in test/*; do
+      TEST_PFX="%d/" ../../tophat $SILENT check main "$d/main.um"
+    done
+  ;;
+  testall)
+    for d in test/*; do
+      SILENT=$SILENT ./L test `basename $d`
+    done
+  ;;
+  test)
+    target_test `getarg 1`
+  ;;
+  *)
+    echo "Use commands: test, check, play"
+    exit 3
+  ;;
 esac
+
