@@ -50,7 +50,7 @@ fn (f: ^Font) measure*(text: str): th.Vf2 {
         advance += cgetkern(f.handle, rune, runes[i+1])
       }
       advance *= f.size/5.0
-      x += trunc(advance)
+      x += advance
     }
   }
   if x > maxW {
@@ -79,10 +79,9 @@ fn (f: ^Font) draw*(text: str, pos: th.Vf2, color: uint32): rect.Rect {
 
       advance := cgetadvance(f.handle, rune)
       if i < len(runes)-1 {
-        advance -= cgetkern(f.handle, rune, runes[i+1])
+        advance += cgetkern(f.handle, rune, runes[i+1])
       }
-      advance *= f.size/5.0
-      x += trunc(advance)
+      x += advance * f.size / 5.0
     }
   }
   if x > maxW {

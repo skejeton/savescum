@@ -1209,7 +1209,7 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
           uiSetCursor(&v_uiState, group.rect.getPos())
           uiPushElement(&v_uiState, group.rect.getDims())
             if uiGetButtonState(&v_uiState).over {
-              overTitlebar = true
+              overBody = true
             }
             uiPutCommand(&v_uiState, commandRect(c_shadow, rectMove(rectInset(uiGetBounds(&v_uiState), -1), th.Vf2{0, 1})))
             uiPutCommand(&v_uiState, commandRect(c_decor, uiGetBounds(&v_uiState)))
@@ -1241,6 +1241,9 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
                         uiEndDynamicRow(&v_uiState)
                       uiPopElement(&v_uiState)
                     }
+                    if uiGetButtonState(&v_uiState).over {
+                      overTitlebar = true
+                    }
                   uiEndDynamicRow(&v_uiState)
                 uiPopElement(&v_uiState)
                 uiPushElement(&v_uiState, uiGetRemainingSize(&v_uiState))
@@ -1260,8 +1263,8 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
     if overTab != "" {
       overTitlebar = false
     }
-    if overBody {
-      overTitlebar = false
+    if overTitlebar {
+      overBody = false
     }
     groupZoneReportInput(&v_groupZone, overTab, overBody, overTitlebar, isDown, isPressed, isReleased)
   }
