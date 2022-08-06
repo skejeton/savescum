@@ -1,4 +1,5 @@
 import (
+  "th.um";
   "std.um"; "window.um"; "rect.um"; "canvas.um"; "image.um"
   ui = "../../src/d_ui.um"; font = "../../src/d_font.um"
 )
@@ -79,7 +80,7 @@ fn putLayoutTest(t: ^TestDataLayout, r: ^TestResources) {
       case 2: ui.beginColumn()
     }
       for i := 0; i < t.count; i++ {
-        ui.putImage(r.testImage)
+        ui.putImageButton(r.testImage, th.Vf2{0, 0}, true)
         ui.putButton(std.itoa(i+1))
       }
     switch t.layout {

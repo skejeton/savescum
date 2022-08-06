@@ -220,11 +220,11 @@ fn scrollUpdate(scroll: ^Scrolling) {
 // Draw*
 
 fn layerFromCommand(index: int, cmd: DrawCommand): DrawLayer {
-  return DrawLayer{index: index, commands: []DrawCommand{cmd}}
+  return DrawLayer{index: index, commands: []DrawCommand{cmd }}
 }
 
 fn drawCtxInit(): DrawCtx {
-  return DrawCtx{layers: []DrawLayer{}}
+  return DrawCtx{layers: []DrawLayer{ }}
 }
 
 fn commandRect(color: uint32, r: rect.Rect): DrawCommand {
@@ -622,72 +622,78 @@ fn uiCurrentElement(ui: ^UiState): rect.Rect {
   return rect.Rect{}
 }
 
-// Adds an element into the UI and advances the layout.
-fn uiPushElement(ui: ^UiState, size: th.Vf2, margin: real = 0): rect.Rect {
-  currentLayout := uiCurrentLayout(ui) 
-  if currentLayout == null {
-    ui.elements = append(ui.elements, rect.mk(margin, margin, size.x-margin*2, size.y-margin*2))
-
+fn uiCalculateElementFromLayout(ui: ^UiState, layout: ^UiLayout, size: th.Vf2, margin: real): rect.Rect {
+  if layout == null {
     return rect.mk(margin, margin, size.x-margin*2, size.y-margin*2)
   }
-  baseRect := currentLayout.bounds
-
   // (1) NOTE: for now here the positions are relative to the base rect 
-  resultRect := rect.mk(currentLayout.position.x, currentLayout.position.y, size.x, size.y)
+  resultRect := rect.mk(layout.position.x, layout.position.y, size.x, size.y)
+  baseRect := layout.bounds
 
-  switch currentLayout.layoutType {
+  switch layout.layoutType {
     case uiLayoutTypeColumn:
       if resultRect.w < baseRect.w {
         resultRect.w = baseRect.w
       }
 
-      currentLayout.position.y += resultRect.h
+      layout.position.y += resultRect.h
     case uiLayoutTypeFixedRow:
-      elementsPerRow := real(currentLayout.elementsPerRow)
+      elementsPerRow := real(layout.elementsPerRow)
       if elementsPerRow <= 0 {
         elementsPerRow = 1
       }
 
       resultRect.w = baseRect.w / elementsPerRow;
       
-      if !currentLayout.auto && (resultRect.x+resultRect.w-1) > baseRect.w { // wrap around
+      if !layout.auto && (resultRect.x+resultRect.w-1) > baseRect.w { // wrap around
         resultRect.x = 0
-        resultRect.y += currentLayout.rowHeight
-        currentLayout.position.y += currentLayout.rowHeight
-        currentLayout.position.x = 0
-        currentLayout.rowHeight = 0
+        resultRect.y += layout.rowHeight
+        layout.position.y += layout.rowHeight
+        layout.position.x = 0
+        layout.rowHeight = 0
       }
 
-      if resultRect.h > currentLayout.rowHeight {
-        currentLayout.rowHeight = resultRect.h
+      if resultRect.h > layout.rowHeight {
+        layout.rowHeight = resultRect.h
       }
 
-      currentLayout.position.x += baseRect.w / elementsPerRow
+      layout.position.x += baseRect.w / elementsPerRow
     case uiLayoutTypeDynamicRow:
-      if !currentLayout.auto && (resultRect.x+resultRect.w) > baseRect.w { // wrap around
+      if !layout.auto && (resultRect.x+resultRect.w) > baseRect.w { // wrap around
         resultRect.x = 0
-        resultRect.y += currentLayout.rowHeight
-        currentLayout.position.y += currentLayout.rowHeight
-        currentLayout.position.x = 0
-        currentLayout.rowHeight = 0
+        resultRect.y += layout.rowHeight
+        layout.position.y += layout.rowHeight
+        layout.position.x = 0
+        layout.rowHeight = 0
       }
 
-      if resultRect.h > currentLayout.rowHeight {
-        currentLayout.rowHeight = resultRect.h
+      if resultRect.h > layout.rowHeight {
+        layout.rowHeight = resultRect.h
       }
 
-      currentLayout.position.x += resultRect.w
+      layout.position.x += resultRect.w
     case uiLayoutTypeScreen:
-
   }
 
   // (1) ... Then they are transformed to the absolute position.
-  resultRect.x += baseRect.x+currentLayout.scroll.x+margin
-  resultRect.y += baseRect.y+currentLayout.scroll.y+margin
+  resultRect.x += baseRect.x+layout.scroll.x+margin
+  resultRect.y += baseRect.y+layout.scroll.y+margin
 
   resultRect.w -= margin*2
   resultRect.h -= margin*2
 
+  return resultRect
+}
+
+fn uiCalculateElement(ui: ^UiState, size: th.Vf2, margin: real = 0): rect.Rect {
+  currentLayout := uiCurrentLayout(ui)^
+
+  return uiCalculateElementFromLayout(ui, &currentLayout, size, margin)
+}
+
+// Adds an element into the UI and advances the layout.
+fn uiPushElement(ui: ^UiState, size: th.Vf2, margin: real = 0): rect.Rect {
+  resultRect := uiCalculateElementFromLayout(ui, uiCurrentLayout(ui), size, margin)
   ui.elements = append(ui.elements, resultRect)
 
   return resultRect
@@ -800,10 +806,9 @@ fn uiBeginLayout(ui: ^UiState, layoutType: UiLayoutType, elementsPerRow: int = 0
   newLayout := UiLayout{auto: auto, layoutType: layoutType, elementsPerRow: elementsPerRow, elementRef: len(ui.elements), bounds: uiCurrentElement(ui)}
 
   if currentLayout != null {
-    newLayout.scroll = currentLayout.scroll
-
     // FIXME: This is a way to identify if newLayout and currentLayout share the element
     if newLayout.elementRef == currentLayout.elementRef {
+      newLayout.scroll = currentLayout.scroll
       newLayout.position.y = currentLayout.position.y
       newLayout.position.x = 0
     }
@@ -1077,6 +1082,10 @@ fn getButtonState(): ButtonState {
   return buttonState
 }
 
+fn invalidateClick() {
+  v_groupZone.currentDraggingGroup = null
+}
+
 fn _putLabel(text: str, color: uint32 = c_fore) {
   size := v_font.measure(text) 
   size.x += 10 // padding
@@ -1089,13 +1098,22 @@ fn _putLabel(text: str, color: uint32 = c_fore) {
   uiPutCommand(&v_uiState, commandText(color, labelRect, text))
 }
 
-fn _putImage(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}) {
+fn _calculateImageSize(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}, preserveAspect: bool = false): th.Vf2 {
   if size.x == 0 && size.y == 0 {
     size = img.getDims()
   }
-  place := uiPutElement(&v_uiState, size)
 
-  uiPutCommand(&v_uiState, commandImage(place, img))
+  if preserveAspect {
+    place := uiCalculateElement(&v_uiState, size)
+    place.h = place.w * size.x/size.y
+    size = place.getDims()
+  }
+
+  return size
+}
+
+fn _putImage(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}, preserveAspect: bool = false) {
+  uiPutCommand(&v_uiState, commandImage(uiPutElement(&v_uiState, _calculateImageSize(img, size, preserveAspect)), img))
 }
 
 fn drawButtonUi(r: rect.Rect, state: ButtonState) {
@@ -1109,8 +1127,24 @@ fn drawButtonUi(r: rect.Rect, state: ButtonState) {
   uiPutCommand(&v_uiState, commandRect(color, r))
 }
 
-fn invalidateClick() {
-  v_groupZone.currentDraggingGroup = null
+fn _putImageButton(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}, preserveAspect: bool = false): ButtonState {
+  size = _calculateImageSize(img, size, preserveAspect)
+
+  uiPushElement(&v_uiState, size)
+    buttonState := getButtonState()
+    if buttonState.pressed {
+      invalidateClick()
+    }
+    buttonRect := uiGetBounds(&v_uiState)
+
+    // create a copy so we don't report bogus button info in return
+    drawButtonUi(buttonRect, buttonState)
+    uiBeginColumn(&v_uiState)
+      _putImage(img, size, preserveAspect)
+    uiEndColumn(&v_uiState)
+  uiPopElement(&v_uiState)
+
+  return buttonState
 }
 
 fn _putButtonToggle(text: str, pressed: bool): ButtonState {
@@ -1200,7 +1234,7 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
             uiSetCursor(&v_uiState, group.rect.getPos())
             uiPutCommand(&v_uiState, commandRect(c_shadow, uiPutElement(&v_uiState, uiGetBounds(&v_uiState).getDims())))
             // Create a fake titlebar, a hack
-            uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.height+5})
+            uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.height+6})
               overTitlebar = uiGetButtonState(&v_uiState).over
             uiPopElement(&v_uiState)
     } else {
@@ -1263,6 +1297,7 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
     if overTab != "" {
       overTitlebar = false
     }
+
     if overTitlebar {
       overBody = false
     }
@@ -1272,9 +1307,17 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
   return began
 }
 
-fn putImage*(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}) {
+fn putImageButton*(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}, preserveAspect: bool = false): ButtonState {
   if (v_lastWindowFlags & windowFlagShadow) == 0 {
-    _putImage(img, size)
+    return _putImageButton(img, size, preserveAspect)
+  }
+
+  return ButtonState{}
+}
+
+fn putImage*(img: image.Image, size: th.Vf2 = th.Vf2{0, 0}, preserveAspect: bool = false) {
+  if (v_lastWindowFlags & windowFlagShadow) == 0 {
+    _putImage(img, size, preserveAspect)
   }
 }
 
@@ -1309,3 +1352,4 @@ fn putLabel*(text: str) {
 // 2. Check if mouse is pressed on any certain tab
 // 3. Save it as a held tab
 // 4. When held tab goes out of titlebar, move it to a new group
+// 0 = hidden, 1 = shown last frame, 2 = shown this frame// 0 = hidden, 1 = shown last frame, 2 = shown this frame

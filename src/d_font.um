@@ -49,8 +49,7 @@ fn (f: ^Font) measure*(text: str): th.Vf2 {
       if i < len(runes)-1 {
         advance += cgetkern(f.handle, rune, runes[i+1])
       }
-      advance *= f.size/5.0
-      x += advance
+      x += round(advance * f.size/5.0)
     }
   }
   if x > maxW {
@@ -75,13 +74,13 @@ fn (f: ^Font) draw*(text: str, pos: th.Vf2, color: uint32): rect.Rect {
       x = pos.x
     } else {
       glyph := f.getGlyph(rune)
-      glyph.draw(th.Transform{p: th.Vf2{trunc(x), trunc(y)}, s: th.Vf2{1, 1}}, color)
+      glyph.draw(th.Transform{p: th.Vf2{round(x), trunc(y)}, s: th.Vf2{1, 1}}, color)
 
       advance := cgetadvance(f.handle, rune)
       if i < len(runes)-1 {
         advance += cgetkern(f.handle, rune, runes[i+1])
       }
-      x += advance * f.size / 5.0
+      x += round(advance * f.size/5.0)
     }
   }
   if x > maxW {
