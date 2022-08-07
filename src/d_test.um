@@ -35,7 +35,6 @@ fn itsNotAUnitTest*() {
   // Yes, a string true, because it's an env variable which are all strings lol,
   //  I could've used any other value other than true, but that one sounds aight. 
   if isUnitTest == "true" {
-    // w
     d_extern.exit(0)
   }
 }
