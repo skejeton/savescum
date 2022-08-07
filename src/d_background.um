@@ -7,20 +7,25 @@ backgroundOffsets := [4]int{0, 0, 0, 0}
 
 var (
   imgClouds: image.Image
+  width: real
 )
 
 fn init*() {
   imgClouds = image.load("data/bg00_sky.png")
+  width = imgClouds.getDims().x
 }
 
 fn drawCloudStrip(scroll: int, y: int, colorMod: uint32) {
-    times := trunc(window.w/640)+1
-    for i := 0; i < times; i++ {
-  imgClouds.draw(d_util.posTrans(scroll+i*640, y), colorMod)
-    }
+  times := trunc(window.w/width)+2
+
+  for i := 0; i < times; i++ {
+    imgClouds.draw(d_util.posTrans(scroll+i*width, y), colorMod)
+  }
 }
 
 fn draw*(screen: rect.Rect) {
+  width := imgClouds.getDims().x
+  
   canvas.drawRect(0x001133FF, screen)
   drawCloudStrip(backgroundOffsets[0], window.h-480-60, 0xFFFFFF66);
   drawCloudStrip(backgroundOffsets[1], window.h-480, 0xFFFFFF99);
@@ -31,7 +36,7 @@ fn draw*(screen: rect.Rect) {
   backgroundOffsets[2] -= 5
   backgroundOffsets[3] -= 10
   for i := 0; i < len(backgroundOffsets); i++ {
-    if backgroundOffsets[i] <= -640 {
+    if backgroundOffsets[i] <= -width {
       backgroundOffsets[i] = 0
     }
   }

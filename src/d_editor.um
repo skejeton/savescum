@@ -551,7 +551,9 @@ fn main*() {
   uiMainFont = d_font.loadFont("data/font_mono.ttf", 16)
 
   loading(screen, "tileset")
-  world.tileset = d_tileset.fromImage(image.load("data/ts00_sky.png"), 32, 32)
+  tsImage := image.load("data/ts00_sky.png")
+  world.tileset = d_tileset.fromImage(tsImage, 32, 32)
+  tsImage.setfilter(0)
 
   loading(screen, "ui");
   setupUiWindows()
