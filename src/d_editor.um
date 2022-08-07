@@ -19,6 +19,7 @@ const (
   fileScene = "data/sc00_sky.csv"
 )
 
+
 var (
   state: int
 
@@ -521,17 +522,17 @@ fn drawWindows() {
     uiProcessWindowId = i
 
     switch i {
-    case 0: drawUiDecorations(i, "Tile window (why are you even able to read this?")
-      drawGridEditor()
-    case 1: drawUiDecorations(i, "Controls toolbar")
-      drawBar()
-    case 2: drawUiDecorations(i, "Tile picker")
-      drawPicker()
-    case 3: drawUiDecorations(i, "Player placer")
-      drawPlayerPlacer()
-    case 4: drawUiDecorations(i, "Entity list")
-      drawEntityList()
-    default: drawUiDecorations(i, " ")
+      case 0: drawUiDecorations(i, "Tile window (why are you even able to read this?")
+        drawGridEditor()
+      case 1: drawUiDecorations(i, "Controls toolbar")
+        drawBar()
+      case 2: drawUiDecorations(i, "Tile picker")
+        drawPicker()
+      case 3: drawUiDecorations(i, "Player placer")
+        drawPlayerPlacer()
+      case 4: drawUiDecorations(i, "Entity list")
+        drawEntityList()
+      default: drawUiDecorations(i, " ")
     }
   }
 }
@@ -574,38 +575,38 @@ fn main*() {
     d_fps.update()
     d_background.draw(screen)
     switch state {
-    case stateEditing:
-      handleUiWindows()
+      case stateEditing:
+        handleUiWindows()
 
-      if input.isJustPressed(input.key_up) {
-        worldViewOfsY -= 1
-      }
-      if input.isJustPressed(input.key_down) {
-        worldViewOfsY += 1
-      }
-      if input.isJustPressed(input.key_left) {
-        worldViewOfsX -= 1
-      }
-      if input.isJustPressed(input.key_right) {
-        worldViewOfsX += 1
-      }
+        if input.isJustPressed(input.key_up) {
+          worldViewOfsY -= 1
+        }
+        if input.isJustPressed(input.key_down) {
+          worldViewOfsY += 1
+        }
+        if input.isJustPressed(input.key_left) {
+          worldViewOfsX -= 1
+        }
+        if input.isJustPressed(input.key_right) {
+          worldViewOfsX += 1
+        }
 
-      actField()
+        actField()
 
-      drawWindows()
+        drawWindows()
 
-      if uiRelocatingPlayer {
-        uiSelTrayTile(2, 0)
-        uiTrayIconTileset.draw(th.Transform{p: input.getMousePos(), s: th.Vf2{1, 1}}, th.white)
-      }
-      
-    case statePlaying:
-      d_game.draw()
-      uiProcessWindowId = uiFocusWindowId
-      if putTrayBtn(th.Vf2{0, window.h-32}, 2, 1, true) {
-        state = stateEditing
-      }
-      d_script.update()
+        if uiRelocatingPlayer {
+          uiSelTrayTile(2, 0)
+          uiTrayIconTileset.draw(th.Transform{p: input.getMousePos(), s: th.Vf2{1, 1}}, th.white)
+        }
+        
+      case statePlaying:
+        d_game.draw()
+        uiProcessWindowId = uiFocusWindowId
+        if putTrayBtn(th.Vf2{0, window.h-32}, 2, 1, true) {
+          state = stateEditing
+        }
+        d_script.update()
     }
 
     uiPrevMousePos = input.getMousePos()

@@ -1,10 +1,10 @@
-//      d_world.um
-//      
-//      The world is split up into layers, which contain chunks.
-//      There's 3 layers:
-//        -1: the background layer, no collision checks are performed on it
-//         0: the middleground layer, this is where the collisions are tested
-//         1: the foreground layer, this is drawn over the character, no collision checks  
+//  d_world.um
+//
+//  The world is split up into layers, which contain chunks.
+//  There's 3 layers:
+//    -1: the background layer, no collision checks are performed on it
+//    0: the middleground layer, this is where the collisions are tested
+//    1: the foreground layer, this is drawn over the character, no collision checks
 
 import (
   "th.um"; "std.um"; "csv.um"; "rect.um"
@@ -173,7 +173,7 @@ fn (world: ^World) load*(data: str) {
 
   row := 2
   
-  // NOTE: I check first column of the csv data because csv parser reports adds bogus row with empty string
+  // NOTE: I check first column of the csv data because csv parser adds bogus row with empty string
   for row < len(csvData) && csvData[row][0] != "" {
     chunkPos := ChunkPos{std.atoi(csvData[row][0]), std.atoi(csvData[row][1])}
     layer := std.atoi(csvData[row][2]) + 1
