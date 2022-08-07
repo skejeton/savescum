@@ -1,7 +1,7 @@
-import ("../../src/d_util.um"; "../../src/d_pfx.um")
+import ("../../src/d_util.um"; "../../src/d_test.um")
 
 fn main() {
-  lf := d_util.readFileStr(d_pfx.pfx()+"local.txt")
+  lf := d_util.readFileStr(d_test.pfx()+"local.txt")
   gf := d_util.readFileStr("data/global.txt")
   
   if lf != "I'm a local file!\n" {

@@ -3,6 +3,7 @@
 
 ARGS=( $@ )
 SILENT=""
+ISUNITTEST=""
 NARG=0
 PROG_NAME=$0
 
@@ -17,19 +18,39 @@ target_test() {
     echo -e "Specify the test. \n$PROG_NAME test test_name" 
     exit 1
   elif [[ -d "test/$1" && -f "test/$1/main.um" ]]; then 
-    TEST_PFX="test/$1/" ../../tophat $SILENT main "test/$1/main.um"
+    ISUNITTEST=$ISUNITTEST TEST_PFX="test/$1/" ../../tophat $SILENT main "test/$1/main.um"
   else
     echo "No test \"$1\"." 
     exit 2
   fi
 }
 
-case `getarg 0` in
-  silent)
-    NARG=1
-    SILENT=silent
-  ;; 
-esac
+# Compiles external C code
+target_compile_extern() {
+  cc external/jumbo.c -shared -o src/d_extern.umi
+}
+
+hasargs=1
+
+# Fetch all sparse args
+while [ $hasargs -eq 1 ]
+do
+  case `getarg 0` in
+    silent)
+      NARG=$(( $NARG + 1 ))
+      SILENT=silent
+    ;; 
+    unit)
+      NARG=$(( $NARG + 1 ))
+      ISUNITTEST="true"
+    ;; 
+    *)
+      hasargs=0
+    ;;
+  esac
+done
+
+target_compile_extern
 
 case `getarg 0` in
   play)
@@ -44,7 +65,8 @@ case `getarg 0` in
   ;;
   testall)
     for d in test/*; do
-      SILENT=$SILENT ./L test `basename $d`
+      echo "Testing ---" `basename $d`
+      target_test `basename $d`
     done
   ;;
   test)

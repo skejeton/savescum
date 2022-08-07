@@ -1,13 +1,15 @@
 import (
   "window.um"; "rect.um"; "image.um";
-  "../../src/d_util.um"; "../../src/d_pfx.um"
+  "../../src/d_util.um"; "../../src/d_test.um"
 )
 
 fn main() {
+  d_test.itsNotAUnitTest()
+  
   window.setup("title", 640, 480)
   screen := rect.mk(0, 0, 640, 480)
-  img := image.load(d_pfx.pfx()+"medium.png")
-  img2 := image.load(d_pfx.pfx()+"../dialogs/defbox.png") 
+  img := image.load(d_test.pfx()+"medium.png")
+  img2 := image.load(d_test.pfx()+"../dialogs/defbox.png") 
 
   for window.cycle(screen) {
     d_util.drawRectNinepatch(img, rect.Rect{0, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{220, 10, 200, 200})

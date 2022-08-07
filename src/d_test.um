@@ -1,0 +1,41 @@
+// Utilities for testing
+// (C) skejeton
+
+import ("std.um"; "d_extern.um")
+
+// pfx(): Path prefix where your test is located
+//
+// Gives you the path prefix to the current test directory.
+// For example if you have test located at /home/snork/flying-ship/test/takeoff
+//   or if you are a Windows pal, maybe C:/Users/snork/flying-ship/test/takeoff
+//   then it will return you that exact path.
+// I think you'll use it to load stuff like images that are nearby your test directory,
+//   like this: `image.load(d_test.pfx()+"YourImageNearTestFile.png")`,
+//   of course you can use it for any kinda file.
+// This is useful so you don't jam the assets folder with useless junk.
+fn pfx*(): str {
+  pfx := std.getenv("TEST_PFX")
+  if len(pfx) < 5 || slice(pfx, 0, 5) != "test/" || pfx[len(pfx)-1] != "/" {
+    error("Invalid test prefix")
+  }
+  return pfx
+}
+
+// Its not a unit test!()
+//
+// When you choose to run unit tests, testbeds (interactive tests)
+//  are gonna be ignored if you call this function.
+// Having windows appear in unit tests is really wack,
+//   I wish I could monkey-patch the window setup to
+//   automatically ignore any test that has windows,
+//   but currently this is all I have.
+fn itsNotAUnitTest*() {
+  isUnitTest := std.getenv("ISUNITTEST")
+
+  // Yes, a string true, because it's an env variable which are all strings lol,
+  //  I could've used any other value other than true, but that one sounds aight. 
+  if isUnitTest == "true" {
+    // w
+    d_extern.exit(0)
+  }
+}

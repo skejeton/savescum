@@ -1,7 +1,7 @@
 import (
   "th.um";
   "std.um"; "window.um"; "rect.um"; "canvas.um"; "image.um"
-  ui = "../../src/d_ui.um"; font = "../../src/d_font.um"
+  ui = "../../src/d_ui.um"; font = "../../src/d_font.um"; "../../src/d_test.um"
 )
 
 type (
@@ -113,6 +113,8 @@ fn putTest(t: ^TestData, r: ^TestResources) {
 }
 
 fn main() {
+  d_test.itsNotAUnitTest()
+
   window.setup("Ahoy", 800, 600)
 
   ui.init(font.loadFont("data/font_sans.ttf", 16))

@@ -1,5 +1,5 @@
 import ("rect.um"; "window.um"; "th.um"; "canvas.um"; "input.um"
-  "t_preset.um"; "../../src/d_dialogs.um"; "../../src/d_pfx.um")
+  "t_preset.um"; "../../src/d_dialogs.um"; "../../src/d_test.um")
 
 var (
   dialogs: d_dialogs.Dialogs
@@ -20,6 +20,8 @@ fn moveCamera() {
 }
 
 fn main() {
+  d_test.itsNotAUnitTest()
+
   dialogs = d_dialogs.init()
   window.setup("Dialogs test", 640, 480)
   screen = rect.mk(0, 0, window.w, window.h)
@@ -28,7 +30,7 @@ fn main() {
   personas := t_preset.getPersonas()
 
   for i, persona in personas {
-    dialogs.register(persona.name, d_pfx.pfx()+persona.box, persona.boxY, d_pfx.pfx()+persona.image, persona.imageY, persona.font, persona.fontH, persona.fontColor, persona.speed, persona.emotes)
+    dialogs.register(persona.name, d_test.pfx()+persona.box, persona.boxY, d_test.pfx()+persona.image, persona.imageY, persona.font, persona.fontH, persona.fontColor, persona.speed, persona.emotes)
   }
 
   dialogs.say("triangle", "happy", "#{sp:1}Привет 8)#{sp:0.05}Я весь из треугольников\n:)\n:)\n:)", th.Vf2{200, 200})

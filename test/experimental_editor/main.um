@@ -1,0 +1,7 @@
+import ("../../src/d_test.um")
+
+fn main() {
+  d_test.itsNotAUnitTest()
+
+  printf("here's your editor :O")
+}
