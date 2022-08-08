@@ -1,7 +1,106 @@
-import ("../../src/d_test.um")
+// It's an experimental editor that redoes the way the editor is made.
+// Yes, I discarded old d_ui.um but let's be honest, it sucks balls.
+// Obtuse asf and almost impossible to maintain because of myraid bugs
+//  The docking thing.. oh dear.. docking...
+// 
+// (C) skejeton
+
+import (
+  "../../src/d_test.um"; "../../src/d_util.um";
+  "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"
+)
+
+////////////
+// UI
+
+////////////
+// USAGE
+
+var (
+  bevelImage: image.Image
+  toolbarIcons: image.Image
+  screen: rect.Rect
+)
+
+// Draw bevel rect(
+//   Rectangle to draw,
+//   Does rectangle look pushed in,
+//   Color tint, the iconic gray is the default
+// )
+//
+// Draws a beveled rectangle in Windows 98 style.
+// It may have a problem with displaying colors somewhat incorrectly,
+//   because the middle of the rectangle is tinted gray slightly.
+fn drawBevelRect(r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
+  const (
+    bevelOuterRect = rect.Rect{0, 0, 5, 5}
+    bevelInnerRect = rect.Rect{2, 2, 1, 1}
+   
+    bevelPushedOuterRect = rect.Rect{5, 0, 5, 5}
+    bevelPushedInnerRect = rect.Rect{2, 2, 1, 1}
+  )
+
+  if pushed {
+    d_util.drawRectNinepatch(bevelImage, bevelPushedOuterRect, bevelPushedInnerRect, r, color)
+  } else {
+    d_util.drawRectNinepatch(bevelImage, bevelOuterRect, bevelInnerRect, r, color)
+  }
+}
+
+fn drawIconButton(r: rect.Rect, img: image.Image, color: uint32) {
+  drawBevelRect(r, false, color)
+  img.draw(th.Transform{p: th.Vf2{r.x, r.y}, s: th.Vf2{1, 1}})
+}
+
+fn uiPutToolbar() {
+  const (
+    margin = 10
+    padding = 10
+    toolbarRectHeight = 32 + margin * 2 + padding * 2
+  )
+
+  toolbarRect := rect.Rect{margin, screen.h - toolbarRectHeight + padding, screen.w - padding * 2, toolbarRectHeight - padding * 2}
+
+  drawBevelRect(toolbarRect, false)
+
+  buttonRectangle := rect.mk(toolbarRect.x+padding, toolbarRect.y+padding, toolbarRect.h-padding*2, toolbarRect.h-padding*2)
+
+  toolbarIcons.crop(th.Vf2{0.25, 0.25}, th.Vf2{0.50, 0.50})
+  drawIconButton(buttonRectangle, toolbarIcons, th.white)
+
+  buttonRectangle.x += buttonRectangle.w + margin
+
+  toolbarIcons.crop(th.Vf2{0.0, 0.25}, th.Vf2{0.25, 0.50})
+  drawIconButton(buttonRectangle, toolbarIcons, th.white)
+
+  buttonRectangle.x += buttonRectangle.w + margin
+}
 
 fn main() {
   d_test.itsNotAUnitTest()
 
-  printf("here's your editor :O")
+  screen = rect.mk(0, 0, 800, 600)
+  window.setup("Cool editor nice", 800, 600)
+
+  // init data
+
+  bevelImage = image.load("data/ts04_bevelbutton.png")
+  if bevelImage.handle == 0 {
+    error("Couldn't load bevel image.")
+  }
+
+  toolbarIcons = image.load("data/ts02_trayicons.png")
+  if toolbarIcons.handle == 0 {
+    error("Couldn't load toolbar icons image.")
+  }
+
+  // cycle
+
+  for window.cycle(screen) {
+    screen.w = window.w
+    screen.h = window.h
+
+    canvas.drawRect(th.black, screen)
+    uiPutToolbar()
+  }
 }

@@ -15,12 +15,12 @@ getarg() {
 # $1 test name
 target_test() {
   if [ -z "$1" ]; then
-    echo -e "Specify the test. \n$PROG_NAME test test_name" 
+    echo -e "What am I gonna test? \n$PROG_NAME test test_name" 
     exit 1
   elif [[ -d "test/$1" && -f "test/$1/main.um" ]]; then 
     ISUNITTEST=$ISUNITTEST TEST_PFX="test/$1/" ../../tophat $SILENT main "test/$1/main.um"
   else
-    echo "No test \"$1\"." 
+    echo -e "I don't know test \"$1\".\nTests are in ./test directory, you must make a folder named \"$1\" inside it, and put a main.um file in it. That's the way it is!" 
     exit 2
   fi
 }
@@ -73,7 +73,7 @@ case `getarg 0` in
     target_test `getarg 1`
   ;;
   *)
-    echo "Use commands: test, check, play"
+    echo "You can do: test, check, play"
     exit 3
   ;;
 esac
