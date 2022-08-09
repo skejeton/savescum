@@ -7,7 +7,7 @@
 
 import (
   "../../src/d_test.um"; "../../src/d_util.um";
-  "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"
+  "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
 )
 
 ////////////
@@ -15,6 +15,12 @@ import (
 
 ////////////
 // USAGE
+
+type (
+  EditorGrid = struct {
+    panning: th.Vf2
+  }
+)
 
 var (
   bevelImage: image.Image
@@ -52,18 +58,90 @@ fn drawIconButton(r: rect.Rect, img: image.Image, color: uint32) {
   img.draw(th.Transform{p: th.Vf2{r.x, r.y}, s: th.Vf2{1, 1}})
 }
 
-fn uiPutToolbar() {
+// Vf2 granulate(
+//   Vector to granulate
+//   The granulation sizes
+// )
+// 
+// Granulation is making number A a multiple of B by rounding.
+// This boy does same thing but for vectors, so `th.Vf2{Granulate(A.x, B.x), Granulate(A.y, B.y)}`.
+fn vf2Granulate(a, b: th.Vf2): th.Vf2 {
+  a = a.div(b)
+  a.x = d_util.floor(a.x)
+  a.y = d_util.floor(a.y)
+  return a.mul(b)
+}
+
+// Vf2 int modulo(
+//  
+// )
+// 
+// Performs an integer (!!!) modulo operator on scalars of vector a wrt b
+// All floating point is lost.
+fn vf2IntMod(a, b: th.Vf2): th.Vf2 {
+  return th.Vf2{trunc(a.x)%trunc(b.x), trunc(a.y)%trunc(b.y)}
+}
+
+// Puts editor grid spanning the entire screen
+fn uiPutEditorGrid(ge: ^EditorGrid) {
   const (
-    margin = 10
-    padding = 10
-    toolbarRectHeight = 32 + margin * 2 + padding * 2
+    tileSize = 32
+    tileSizes = th.Vf2{tileSize, tileSize}
+    lineColor = th.white&0xFFFFFF11
+    tileColor = th.white&0xFFFFFF22
+    debugColor = th.red&0xFFFFFF33
   )
 
-  toolbarRect := rect.Rect{margin, screen.h - toolbarRectHeight + padding, screen.w - padding * 2, toolbarRectHeight - padding * 2}
+  var (
+    mousePos: th.Vf2 = input.getMousePos()
+    // This is the viewport rect, no panning applied
+    rectangle: rect.Rect = rect.mk(0, 0, window.w, window.h)
+    // This is the panning :P
+    offset: th.Vf2 = th.Vf2{rectangle.w/2, rectangle.h/2}.add(ge.panning)
+    // This is panning but adjusted so that it wraps around every TileSize'th time
+    visualOffset: th.Vf2 = vf2IntMod(offset, tileSizes)
 
-  drawBevelRect(toolbarRect, false)
+    nRows: int = trunc(rectangle.h/tileSize)
+    nCols: int = trunc(rectangle.w/tileSize)
 
-  buttonRectangle := rect.mk(toolbarRect.x+padding, toolbarRect.y+padding, toolbarRect.h-padding*2, toolbarRect.h-padding*2)
+    highlightedTileWorldPosition: th.Vf2 = mousePos.sub(offset)
+    highlightedTileScreenPosition: th.Vf2 = vf2Granulate(highlightedTileWorldPosition, tileSizes).add(offset)
+    highlightedTileRect: rect.Rect = rect.mk(highlightedTileScreenPosition.x, highlightedTileScreenPosition.y, tileSize, tileSize)
+  )
+
+  ge.panning = ge.panning.add(th.Vf2{th.delta/7.0, th.delta/7.0}) 
+
+  // Draw background (debug)
+  canvas.drawRect(debugColor, rectangle)
+
+  // Draw grid
+  for y := visualOffset.y; y < rectangle.h; y += tileSize {
+    lineRect := rect.mk(round(rectangle.x), round(rectangle.y + y), rectangle.w, 1)
+    canvas.drawRect(lineColor, lineRect)
+  }
+
+  for x := visualOffset.x; x < rectangle.w; x += tileSize {
+    lineRect := rect.mk(round(rectangle.x + x), round(rectangle.y), 1, rectangle.h)
+    canvas.drawRect(lineColor, lineRect)
+  }
+
+  // Draw highlighted tile
+  canvas.drawRect(tileColor, highlightedTileRect)
+}
+
+// Puts window toolbar on the bottom of the screen
+fn uiPutToolbar() {
+  const (
+    margin = 4
+    padding = 4
+    rectangleHeight = 32 + margin * 2 + padding * 2
+  )
+
+  rectangle := rect.Rect{margin, screen.h - rectangleHeight + margin, screen.w - margin * 2, rectangleHeight - margin * 2}
+
+  drawBevelRect(rectangle, false)
+
+  buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
 
   toolbarIcons.crop(th.Vf2{0.25, 0.25}, th.Vf2{0.50, 0.50})
   drawIconButton(buttonRectangle, toolbarIcons, th.white)
@@ -83,7 +161,6 @@ fn main() {
   window.setup("Cool editor nice", 800, 600)
 
   // init data
-
   bevelImage = image.load("data/ts04_bevelbutton.png")
   if bevelImage.handle == 0 {
     error("Couldn't load bevel image.")
@@ -94,13 +171,15 @@ fn main() {
     error("Couldn't load toolbar icons image.")
   }
 
-  // cycle
+  editorGrid := EditorGrid{}
 
+  // cycle
   for window.cycle(screen) {
     screen.w = window.w
     screen.h = window.h
 
     canvas.drawRect(th.black, screen)
+    uiPutEditorGrid(&editorGrid)
     uiPutToolbar()
   }
 }
