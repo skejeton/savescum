@@ -20,6 +20,17 @@ type (
   EditorGrid = struct {
     panning: th.Vf2
   }
+
+  EditorGridMouseInput = struct {
+    isDown: bool
+    mousePos: th.Vf2
+    mouseDelta: th.Vf2
+  }
+
+  Editor = struct {
+    lastMousePos: th.Vf2
+    tileGrid: EditorGrid
+  }
 )
 
 var (
@@ -82,8 +93,29 @@ fn vf2IntMod(a, b: th.Vf2): th.Vf2 {
   return th.Vf2{trunc(a.x)%trunc(b.x), trunc(a.y)%trunc(b.y)}
 }
 
+fn uiPutWindow() {
+  const (
+    windowRect = rect.Rect{30, 30, 300, 500}
+    padding = 2
+  )
+
+  var (
+    position: th.Vf2 = th.Vf2{padding, padding}
+  )
+
+  drawBevelRect(windowRect)
+
+  buttonSize := th.Vf2{24, 20}
+  drawBevelRect(rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y))
+  position.x += buttonSize.x + padding
+
+  handleSize := th.Vf2{windowRect.w - position.x - padding, 20}
+  canvas.drawRect(th.blue, rect.mk(position.x+windowRect.x, position.y+windowRect.y, handleSize.x, handleSize.y))
+  position.x += handleSize.x + padding
+}
+
 // Puts editor grid spanning the entire screen
-fn uiPutEditorGrid(ge: ^EditorGrid) {
+fn uiPutEditorGrid(ge: ^EditorGrid, mi: EditorGridMouseInput) {
   const (
     tileSize = 32
     tileSizes = th.Vf2{tileSize, tileSize}
@@ -93,7 +125,16 @@ fn uiPutEditorGrid(ge: ^EditorGrid) {
   )
 
   var (
-    mousePos: th.Vf2 = input.getMousePos()
+    mousePos: th.Vf2 = mi.mousePos
+    mouseDelta: th.Vf2 = mi.mouseDelta
+  )
+
+  // Handle input
+  if mi.isDown {
+    ge.panning = ge.panning.add(mouseDelta)
+  }
+
+  var (
     // This is the viewport rect, no panning applied
     rectangle: rect.Rect = rect.mk(0, 0, window.w, window.h)
     // This is the panning :P
@@ -101,15 +142,10 @@ fn uiPutEditorGrid(ge: ^EditorGrid) {
     // This is panning but adjusted so that it wraps around every TileSize'th time
     visualOffset: th.Vf2 = vf2IntMod(offset, tileSizes)
 
-    nRows: int = trunc(rectangle.h/tileSize)
-    nCols: int = trunc(rectangle.w/tileSize)
-
     highlightedTileWorldPosition: th.Vf2 = mousePos.sub(offset)
     highlightedTileScreenPosition: th.Vf2 = vf2Granulate(highlightedTileWorldPosition, tileSizes).add(offset)
     highlightedTileRect: rect.Rect = rect.mk(highlightedTileScreenPosition.x, highlightedTileScreenPosition.y, tileSize, tileSize)
   )
-
-  ge.panning = ge.panning.add(th.Vf2{th.delta/7.0, th.delta/7.0}) 
 
   // Draw background (debug)
   canvas.drawRect(debugColor, rectangle)
@@ -154,6 +190,18 @@ fn uiPutToolbar() {
   buttonRectangle.x += buttonRectangle.w + margin
 }
 
+fn editorInit(): Editor {
+  return Editor{lastMousePos: input.getMousePos()}
+}
+
+fn editorPutUi(editor: ^Editor) {
+  mousePos := input.getMousePos()
+  uiPutEditorGrid(&editor.tileGrid, EditorGridMouseInput{input.isPressed(input.mouse2), mousePos, mousePos.sub(editor.lastMousePos)}) 
+  uiPutToolbar()
+  uiPutWindow()
+  editor.lastMousePos = input.getMousePos()
+}
+
 fn main() {
   d_test.itsNotAUnitTest()
 
@@ -171,7 +219,8 @@ fn main() {
     error("Couldn't load toolbar icons image.")
   }
 
-  editorGrid := EditorGrid{}
+
+  editor := editorInit()
 
   // cycle
   for window.cycle(screen) {
@@ -179,7 +228,6 @@ fn main() {
     screen.h = window.h
 
     canvas.drawRect(th.black, screen)
-    uiPutEditorGrid(&editorGrid)
-    uiPutToolbar()
+    editorPutUi(&editor)
   }
 }
