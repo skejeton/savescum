@@ -97,6 +97,7 @@ fn uiPutWindow() {
   const (
     windowRect = rect.Rect{30, 30, 300, 500}
     padding = 2
+    titlebarHeight = 20
   )
 
   var (
@@ -105,13 +106,19 @@ fn uiPutWindow() {
 
   drawBevelRect(windowRect)
 
-  buttonSize := th.Vf2{24, 20}
+  buttonSize := th.Vf2{24, titlebarHeight}
   drawBevelRect(rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y))
   position.x += buttonSize.x + padding
 
-  handleSize := th.Vf2{windowRect.w - position.x - padding, 20}
+  handleSize := th.Vf2{windowRect.w - position.x - padding, titlebarHeight}
   canvas.drawRect(th.blue, rect.mk(position.x+windowRect.x, position.y+windowRect.y, handleSize.x, handleSize.y))
   position.x += handleSize.x + padding
+
+  position.x = padding
+  position.y += titlebarHeight + padding
+
+  contentSize := th.Vf2{windowRect.w - position.x - padding, windowRect.h - position.y - padding}
+  drawBevelRect(rect.mk(position.x+windowRect.x, position.y+windowRect.y, contentSize.x, contentSize.y), true)
 }
 
 // Puts editor grid spanning the entire screen

@@ -128,6 +128,19 @@ fn fmax*(a, b: real): real {
   return b
 }
 
+//
+// Fmod(
+//   Divident
+//   Divisor
+// )
+// 
+// floating point modulo
+//
+fn fmod*(a, b: real): real {
+  rem := a / b
+  return (rem-floor(rem)) * b
+}
+
 // 
 // Takes `size` characters (Runes) out of UTF-8 string `s` and returns the slice
 // 
