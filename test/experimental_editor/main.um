@@ -6,7 +6,7 @@
 // (C) skejeton
 
 import (
-  "../../src/d_test.um"; "../../src/d_util.um";
+  "../../src/d_test.um"; "../../src/d_util.um"; "../../src/d_font.um";
   "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
 )
 
@@ -18,6 +18,7 @@ import (
 
 type (
   EditorGrid = struct {
+    scaling: real
     panning: th.Vf2
   }
 
@@ -28,8 +29,22 @@ type (
   }
 
   Editor = struct {
-    lastMousePos: th.Vf2
+    // Visual data
+    mainFont: d_font.Font
+
+    // Editors
     tileGrid: EditorGrid
+
+    // Input
+    mouseWheel: int
+    mousePos: th.Vf2
+    lastMousePos: th.Vf2
+
+    // Census
+    lastToolName: str
+    tools: map[str]rect.Rect
+    maybeActiveTool: str
+    activeTool: str
   }
 )
 
@@ -38,6 +53,29 @@ var (
   toolbarIcons: image.Image
   screen: rect.Rect
 )
+
+fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): bool {
+  if d_util.rectVsPoint(toolRect, e.mousePos) {
+    e.maybeActiveTool = name
+  }
+
+  if e.lastToolName != "" {
+    error("Unfinished tool "+name)
+  }
+
+  e.lastToolName = name
+  e.tools[name] = toolRect
+
+  return e.activeTool == name
+}
+
+fn (e: ^Editor) endTool() {
+  e.lastToolName = ""
+}
+
+fn (e: ^Editor) isLastToolActive(): bool {
+  return e.lastToolName == e.activeTool
+}
 
 // Draw bevel rect(
 //   Rectangle to draw,
@@ -64,11 +102,6 @@ fn drawBevelRect(r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
   }
 }
 
-fn drawIconButton(r: rect.Rect, img: image.Image, color: uint32) {
-  drawBevelRect(r, false, color)
-  img.draw(th.Transform{p: th.Vf2{r.x, r.y}, s: th.Vf2{1, 1}})
-}
-
 // Vf2 granulate(
 //   Vector to granulate
 //   The granulation sizes
@@ -84,7 +117,8 @@ fn vf2Granulate(a, b: th.Vf2): th.Vf2 {
 }
 
 // Vf2 int modulo(
-//  
+//   Divident
+//   Divisor
 // )
 // 
 // Performs an integer (!!!) modulo operator on scalars of vector a wrt b
@@ -93,59 +127,111 @@ fn vf2IntMod(a, b: th.Vf2): th.Vf2 {
   return th.Vf2{trunc(a.x)%trunc(b.x), trunc(a.y)%trunc(b.y)}
 }
 
-fn uiPutWindow() {
+
+// Draw text centered(
+//   The font
+//   The text
+//   The color
+//   The rect to center in
+// )
+fn centerTextWithinRect(font: d_font.Font, text: str, r: rect.Rect): th.Vf2 {
+  return r.getDims().sub(font.measure(text)).divf(2.0).add(r.getPos())
+}
+
+// TODO: Ability to pass colour
+fn putButton(editor: ^Editor, r: rect.Rect): bool {
+  pressed := editor.isLastToolActive() && d_util.rectVsPoint(r, editor.mousePos) && input.isPressed(input.mouse1)
+  if pressed {
+    drawBevelRect(r, true, 0xCCCCCCFF)
+  } else {
+    drawBevelRect(r, false)
+  }
+  return pressed
+}
+
+// Draws titlebar title styled text
+fn drawTitlebarText(font: d_font.Font, text: str, p: th.Vf2) {
+  font.draw(text, p.add(th.Vf2{0, 0}), th.black)
+  font.draw(text, p.add(th.Vf2{1, 0}), th.black)
+  font.draw(text, p.add(th.Vf2{0, 1}), th.white)
+  font.draw(text, p.add(th.Vf2{1, 1}), th.white)
+}
+
+fn uiPutWindow(editor: ^Editor) {
   const (
-    windowRect = rect.Rect{30, 30, 300, 500}
     padding = 2
-    titlebarHeight = 20
+    titlebarHeight = 18
+    title = "Tile Picker"
   )
 
   var (
+    windowRect: rect.Rect = rect.Rect{30, 30, 300, 500}
     position: th.Vf2 = th.Vf2{padding, padding}
   )
 
-  drawBevelRect(windowRect)
+  editor.beginTool(title, windowRect)
+  {
+    drawBevelRect(windowRect)
 
-  buttonSize := th.Vf2{24, titlebarHeight}
-  drawBevelRect(rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y))
-  position.x += buttonSize.x + padding
+    buttonSize := th.Vf2{18, titlebarHeight}
+    drawBevelRect(rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y))
+    canvas.drawRect(th.black, rect.mk(position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-1, buttonSize.x-10, 2))
+    position.x += buttonSize.x + padding
 
-  handleSize := th.Vf2{windowRect.w - position.x - padding, titlebarHeight}
-  canvas.drawRect(th.blue, rect.mk(position.x+windowRect.x, position.y+windowRect.y, handleSize.x, handleSize.y))
-  position.x += handleSize.x + padding
+    {
+      handleSize := th.Vf2{windowRect.w - position.x - padding, titlebarHeight}
+      rectangle := rect.mk(position.x+windowRect.x, position.y+windowRect.y, handleSize.x-1, handleSize.y)
+      canvas.drawRect(th.blue, rectangle)
+      window.beginScissorRect(rectangle)
+        drawTitlebarText(editor.mainFont, title, centerTextWithinRect(editor.mainFont, title, rectangle))
+      window.endScissor()
+    
+      position.x += handleSize.x + padding
+    }
 
-  position.x = padding
-  position.y += titlebarHeight + padding
+    position.x = padding
+    position.y += titlebarHeight + padding
 
-  contentSize := th.Vf2{windowRect.w - position.x - padding, windowRect.h - position.y - padding}
-  drawBevelRect(rect.mk(position.x+windowRect.x, position.y+windowRect.y, contentSize.x, contentSize.y), true)
+    contentSize := th.Vf2{windowRect.w - position.x - padding, windowRect.h - position.y - padding}
+    drawBevelRect(rect.mk(position.x+windowRect.x, position.y+windowRect.y, contentSize.x-1, contentSize.y-1), true)
+  }
+  editor.endTool()
 }
 
 // Puts editor grid spanning the entire screen
-fn uiPutEditorGrid(ge: ^EditorGrid, mi: EditorGridMouseInput) {
+// TODO: Fix scaling
+fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid, mi: EditorGridMouseInput) {
   const (
-    tileSize = 32
-    tileSizes = th.Vf2{tileSize, tileSize}
     lineColor = th.white&0xFFFFFF11
     tileColor = th.white&0xFFFFFF22
     debugColor = th.red&0xFFFFFF33
   )
 
   var (
+    scale: real = ge.scaling
+    tileSize: real = 32*scale
+    tileSizes: th.Vf2 = th.Vf2{tileSize, tileSize}
+
     mousePos: th.Vf2 = mi.mousePos
     mouseDelta: th.Vf2 = mi.mouseDelta
+
+    // This is the viewport rect, no panning applied
+    rectangle: rect.Rect = rect.mk(0, 0, window.w, window.h)
+
+    isActive: bool = editor.beginTool("TileEditor", rectangle)
   )
 
-  // Handle input
-  if mi.isDown {
-    ge.panning = ge.panning.add(mouseDelta)
+  if isActive {
+    // Handle input
+    if mi.isDown {
+      ge.panning = ge.panning.add(mouseDelta.divf(scale))
+    }
   }
 
   var (
-    // This is the viewport rect, no panning applied
-    rectangle: rect.Rect = rect.mk(0, 0, window.w, window.h)
     // This is the panning :P
-    offset: th.Vf2 = th.Vf2{rectangle.w/2, rectangle.h/2}.add(ge.panning)
+    offset: th.Vf2 = th.Vf2{rectangle.w/2, rectangle.h/2}.add(ge.panning).mulf(scale)
+
     // This is panning but adjusted so that it wraps around every TileSize'th time
     visualOffset: th.Vf2 = vf2IntMod(offset, tileSizes)
 
@@ -168,12 +254,23 @@ fn uiPutEditorGrid(ge: ^EditorGrid, mi: EditorGridMouseInput) {
     canvas.drawRect(lineColor, lineRect)
   }
 
-  // Draw highlighted tile
-  canvas.drawRect(tileColor, highlightedTileRect)
+  if isActive {
+    // Draw highlighted tile
+    canvas.drawRect(tileColor, highlightedTileRect)
+  }
+
+  editor.endTool()
+}
+
+
+fn putIconButton(editor: ^Editor, r: rect.Rect, img: image.Image): bool {
+  pressed := putButton(editor, r)
+  img.draw(th.Transform{p: th.Vf2{r.x, r.y}, s: th.Vf2{1, 1}})
+  return pressed
 }
 
 // Puts window toolbar on the bottom of the screen
-fn uiPutToolbar() {
+fn uiPutToolbar(editor: ^Editor) {
   const (
     margin = 4
     padding = 4
@@ -182,31 +279,76 @@ fn uiPutToolbar() {
 
   rectangle := rect.Rect{margin, screen.h - rectangleHeight + margin, screen.w - margin * 2, rectangleHeight - margin * 2}
 
+  editor.beginTool("ToolBar", rectangle)
+
   drawBevelRect(rectangle, false)
 
   buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
 
   toolbarIcons.crop(th.Vf2{0.25, 0.25}, th.Vf2{0.50, 0.50})
-  drawIconButton(buttonRectangle, toolbarIcons, th.white)
+  putIconButton(editor, buttonRectangle, toolbarIcons)
 
   buttonRectangle.x += buttonRectangle.w + margin
 
   toolbarIcons.crop(th.Vf2{0.0, 0.25}, th.Vf2{0.25, 0.50})
-  drawIconButton(buttonRectangle, toolbarIcons, th.white)
+  putIconButton(editor, buttonRectangle, toolbarIcons)
 
   buttonRectangle.x += buttonRectangle.w + margin
+
+  editor.endTool()
 }
 
 fn editorInit(): Editor {
-  return Editor{lastMousePos: input.getMousePos()}
+  return Editor{
+    tileGrid: EditorGrid{scaling: 1.0},
+    lastMousePos: input.getMousePos(),
+    mainFont: d_font.loadFont("data/font_mono.ttf", 16),
+    tools: map[str]rect.Rect{}}
+}
+
+fn putEditorDebugToolFrames(editor: ^Editor) {
+  font := editor.mainFont
+
+  for toolName in editor.tools {
+    baseColor := th.red
+    if editor.activeTool == toolName {
+      baseColor = th.green
+    }
+
+    tool := editor.tools[toolName]
+
+    // NOREP(PlaneText,TextRect,MeasureText,ColorAlpha,RectFrom2Vec2f)
+    planeSize := font.measure(toolName)
+    canvas.drawRect(baseColor&0xFFFFFFAA, rect.mk(tool.x, tool.y, planeSize.x, planeSize.y))
+    d_util.drawRectLines(baseColor, tool)
+    font.draw(toolName, tool.getPos(), th.white)
+    d_util.drawRectLines(baseColor, tool)
+  }
 }
 
 fn editorPutUi(editor: ^Editor) {
-  mousePos := input.getMousePos()
-  uiPutEditorGrid(&editor.tileGrid, EditorGridMouseInput{input.isPressed(input.mouse2), mousePos, mousePos.sub(editor.lastMousePos)}) 
-  uiPutToolbar()
-  uiPutWindow()
+  // handle pre input states
+  editor.mousePos = input.getMousePos()
+  editor.mouseWheel = int(input.isJustPressed(input.mouse_up)) - int(input.isJustPressed(input.mouse_down));
+
+  // put ui
+  uiPutEditorGrid(editor, &editor.tileGrid, EditorGridMouseInput{input.isPressed(input.mouse2), editor.mousePos, editor.mousePos.sub(editor.lastMousePos)}) 
+  uiPutToolbar(editor)
+  uiPutWindow(editor)
+ 
+  // put debug overlays
+  putEditorDebugToolFrames(editor)
+
+  // handle post input states
   editor.lastMousePos = input.getMousePos()
+
+  // NOREP(PressDetect,MouseInput,AnyMouseButton)
+  // swap frame census
+  if !(input.isPressed(input.mouse1) || input.isPressed(input.mouse2) || input.isPressed(input.mouse3)) {
+    editor.activeTool = editor.maybeActiveTool
+  }
+  editor.maybeActiveTool = ""
+  editor.tools = map[str]rect.Rect{}
 }
 
 fn main() {

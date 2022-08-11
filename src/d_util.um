@@ -64,6 +64,15 @@ fn rectChopRight*(r: ^rect.Rect, by: int): rect.Rect {
 // dest: Destination rectangle
 //
 fn drawRectNinepatch*(img: image.Image, outer, inner, dest: rect.Rect, tint: uint32 = th.white) {
+  if dest.w < 0 {
+    dest.x += dest.w;
+    dest.w *= -1;
+  }
+  if dest.h < 0 {
+    dest.y += dest.h;
+    dest.h *= -1;
+  }
+
   stepSrc := [3]th.Vf2{th.Vf2{inner.x, inner.y}, th.Vf2{inner.w, inner.h}, th.Vf2{outer.w-(inner.x+inner.w), outer.h-(inner.y+inner.h)}}
   stepDst := [3]th.Vf2{th.Vf2{stepSrc[0].x, stepSrc[0].y}, th.Vf2{dest.w-stepSrc[0].x-stepSrc[2].x, dest.h-stepSrc[0].y-stepSrc[2].y}, th.Vf2{stepSrc[2].x, stepSrc[2].y}}
 
@@ -167,13 +176,13 @@ fn rectVsRect*(r1, r2: rect.Rect): bool {
   return (r1.x + r1.w) > (r2.x) && (r1.y + r1.h) > (r2.y) && (r1.x) < (r2.x + r2.w) && (r1.y) < (r2.y + r2.h)
 }
 
-// Rect in point(
+// Rect vs point(
 //   Rect
 //   Point
 // )
 //
 // Returns true if point p is in rectangle r
-fn rectInPoint*(r: rect.Rect, p: th.Vf2): bool {
+fn rectVsPoint*(r: rect.Rect, p: th.Vf2): bool {
   return p.x > r.x && p.y > r.y && p.x < (r.x + r.w) && p.y < (r.y + r.h)
 }
 
