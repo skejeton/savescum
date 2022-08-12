@@ -109,7 +109,7 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int) {
   
   layer := &world.tilemap[layerId]
 
-  for pos, _ in layer {
+  for pos in layer {
     chunk := &layer[pos]
     for cx := 0; cx < chunkW; cx++ {
       for cy := 0; cy < chunkH; cy++ {

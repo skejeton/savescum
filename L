@@ -7,6 +7,7 @@ fi
 
 ARGS=( $@ )
 SILENT=""
+PROF=""
 ISUNITTEST=""
 NARG=0
 PROG_NAME=$0
@@ -40,6 +41,10 @@ hasargs=1
 while [ $hasargs -eq 1 ]
 do
   case `getarg 0` in
+    prof)
+      NARG=$(( $NARG + 1 ))
+      SILENT=prof
+    ;; 
     silent)
       NARG=$(( $NARG + 1 ))
       SILENT=silent
@@ -58,7 +63,7 @@ target_compile_extern
 
 case `getarg 0` in
   play)
-    ../../tophat $SILENT main src/main.um
+    ../../tophat $PROF $SILENT main src/main.um
   ;;
   check)
     ../../tophat $SILENT check main src/main.um

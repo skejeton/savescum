@@ -313,6 +313,7 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
         }
       } else if cmd.text != "" { // draw text
         size := font.measure(cmd.text)
+        canvas.drawRect(th.red, rect.mk(cmd.rect.x+(cmd.rect.w-size.x)/2, cmd.rect.y+(cmd.rect.h-size.y)/2, size.x, size.y));
         font.draw(cmd.text, th.Vf2{cmd.rect.x+(cmd.rect.w-size.x)/2, cmd.rect.y+(cmd.rect.h-size.y)/2}, cmd.color)
       } else if cmd.img.validate() {
         // TODO: Maybe separate drawing the image as a rectangle into a separate function
@@ -322,7 +323,7 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
         pos := cmd.rect.getPos()
         pos.x = round(pos.x)
         pos.y = round(pos.y)
-
+        
         cmd.img.draw(th.Transform{p: pos, s: scale})
       } else { // draw rect
         canvas.drawRect(cmd.color, cmd.rect)
@@ -945,7 +946,7 @@ fn dbgPrintSect(lay: ^SequenceLayout, label: str) {
   startX := lay.end.x 
   lay.padding(100)
   endX := lay.end.x
-  y := lay.end.y + v_font.height/2;
+  y := lay.end.y + v_font.measure(" ").y/2;
 
   v_drawCtx.putCommand(99, commandRect(0xFFFFFF11 & v_dbgMask, rect.mk(startX, y, endX-startX, 1)))
 }
@@ -1234,7 +1235,7 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
             uiSetCursor(&v_uiState, group.rect.getPos())
             uiPutCommand(&v_uiState, commandRect(c_shadow, uiPutElement(&v_uiState, uiGetBounds(&v_uiState).getDims())))
             // Create a fake titlebar, a hack
-            uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.height+6})
+            uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.measure(" ").y+6})
               overTitlebar = uiGetButtonState(&v_uiState).over
             uiPopElement(&v_uiState)
     } else {
@@ -1250,7 +1251,7 @@ fn beginWindow*(title: str, r: rect.Rect): bool {
             uiPushElement(&v_uiState, uiGetBounds(&v_uiState).getDims(), 1)
               uiBeginColumn(&v_uiState)
                 // Titlebar
-                uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.height+5})
+                uiPushElement(&v_uiState, th.Vf2{uiGetBounds(&v_uiState).w, v_font.measure(" ").y+5})
                   uiBeginDynamicRow(&v_uiState, true)
                     if len(group.windows) == 1 {
                       uiPutCommand(&v_uiState, commandText(c_body, uiPutElement(&v_uiState, uiGetBounds(&v_uiState).getDims()), group.windows[0].title))

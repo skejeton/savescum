@@ -269,7 +269,7 @@ fn drawBar() {
   
   if putTrayBtn(th.Vf2{area.x, area.y}, 1, 1, false) {
     d_game.world = world
-    d_game.init()
+    d_game.start()
     d_script.init()
     state = statePlaying
   }
@@ -551,6 +551,8 @@ fn main*() {
 
   uiMainFont = d_font.loadFont("data/font_mono.ttf", 16)
 
+  loading(screen, "font")
+  d_game.init()
   loading(screen, "tileset")
   tsImage := image.load("data/ts00_sky.png")
   world.tileset = d_tileset.fromImage(tsImage, 32, 32)

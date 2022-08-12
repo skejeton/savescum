@@ -317,14 +317,17 @@ fn _drawRectTangents(r: rect.Rect) {
   }
 }
 
-fn init*() {
-  dialogs = d_dialogs.init()
-  d_game.dialogs.register("receptionist" , "data/ts03_dialog.png", 0, "data/sp00_receptionist.png", 0, "data/font_mono.ttf", 16, 0xFFFFFFFF, 0.1 , []str{"smirk"})
+fn start*() {
   chara = Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
 
   cameraPos.x = chara.rect.x-(window.w-chara.rect.w)/2
   cameraPos.y = chara.rect.y-(window.h-chara.rect.h)/2
   entities = make([]Character, 0)
+}
+
+fn init*() {
+  dialogs = d_dialogs.init()
+  d_game.dialogs.register("receptionist" , "data/ts03_dialog.png", 0, "data/sp00_receptionist.png", 0, "data/font_mono.ttf", 16, 0xFFFFFFFF, 0.1 , []str{"smirk"})
 }
 
 fn updateEntities() {
