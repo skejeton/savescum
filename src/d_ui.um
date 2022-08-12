@@ -314,7 +314,7 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
       } else if cmd.text != "" { // draw text
         size := font.measure(cmd.text)
         font.draw(cmd.text, th.Vf2{cmd.rect.x+(cmd.rect.w-size.x)/2, cmd.rect.y+(cmd.rect.h-size.y)/2}, cmd.color)
-      } else if cmd.img.handle != 0 {
+      } else if cmd.img.validate() {
         // TODO: Maybe separate drawing the image as a rectangle into a separate function
 
         size := cmd.img.getDims()

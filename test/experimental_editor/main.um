@@ -359,12 +359,12 @@ fn main() {
 
   // init data
   bevelImage = image.load("data/ts04_bevelbutton.png")
-  if bevelImage.handle == 0 {
+  if bevelImage.validate() == false {
     error("Couldn't load bevel image.")
   }
 
   toolbarIcons = image.load("data/ts02_trayicons.png")
-  if toolbarIcons.handle == 0 {
+  if toolbarIcons.validate() == false {
     error("Couldn't load toolbar icons image.")
   }
 
