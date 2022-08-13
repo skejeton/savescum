@@ -1,5 +1,7 @@
-import ("std.um"; "image.um"; "th.um"; "rect.um"; "window.um"
-  "d_font.um"; "d_util.um"; "d_typer.um")
+import (
+  "std.um"; "image.um"; "th.um"; "rect.um"; "window.um"; th_font = "font.um";
+  "d_util.um"; "d_typer.um"
+)
 
 type (
   Persona* = struct {
@@ -8,7 +10,7 @@ type (
     boximgY: int
     faceimg: image.Image
     faceimgY: int
-    font: d_font.Font
+    font: th_font.Font
     fontColor: uint32
     speed: real
     emotes: map[str]int // str -> int
@@ -135,7 +137,7 @@ fn (d: ^Dialogs) register*(name: str, boximgPath: str, boximgY: int, faceimgPath
   persona.boximgY = boximgY
   persona.faceimg = image.load(faceimgPath)
   persona.faceimgY = faceimgY
-  persona.font = d_font.loadFont(fontPath, fontH)
+  persona.font = th_font.load(fontPath, fontH)
   persona.fontColor = fontColor
   persona.speed = speed
   persona.emotes = map[str]int{}

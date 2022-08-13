@@ -6,7 +6,7 @@
 // (C) skejeton
 
 import (
-  "../../src/d_test.um"; "../../src/d_util.um"; "../../src/d_font.um";
+  "../../src/d_test.um"; "../../src/d_util.um"; th_font = "font.um";
   "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
 )
 
@@ -30,7 +30,7 @@ type (
 
   Editor = struct {
     // Visual data
-    mainFont: d_font.Font
+    mainFont: th_font.Font
 
     // Editors
     tileGrid: EditorGrid
@@ -134,7 +134,7 @@ fn vf2IntMod(a, b: th.Vf2): th.Vf2 {
 //   The color
 //   The rect to center in
 // )
-fn centerTextWithinRect(font: d_font.Font, text: str, r: rect.Rect): th.Vf2 {
+fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
   return r.getDims().sub(font.measure(text)).divf(2.0).add(r.getPos())
 }
 
@@ -150,7 +150,7 @@ fn putButton(editor: ^Editor, r: rect.Rect): bool {
 }
 
 // Draws titlebar title styled text
-fn drawTitlebarText(font: d_font.Font, text: str, p: th.Vf2) {
+fn drawTitlebarText(font: th_font.Font, text: str, p: th.Vf2) {
   font.draw(text, p.add(th.Vf2{0, 0}), th.black)
   font.draw(text, p.add(th.Vf2{1, 0}), th.black)
   font.draw(text, p.add(th.Vf2{0, 1}), th.white)
@@ -302,7 +302,7 @@ fn editorInit(): Editor {
   return Editor{
     tileGrid: EditorGrid{scaling: 1.0},
     lastMousePos: input.getMousePos(),
-    mainFont: d_font.loadFont("data/font_mono.ttf", 16),
+    mainFont: th_font.load("data/font_mono.ttf", 16, th_font.filterNearest),
     tools: map[str]rect.Rect{}}
 }
 

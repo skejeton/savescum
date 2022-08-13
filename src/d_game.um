@@ -2,11 +2,11 @@ import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
   "d_world.um"; "d_dialogs.um")
 
 const (
-  shapeBlock        = 0
-  shapeLeftUpSlope  = 1
-  shapeRightUpSlope       = 2
-  shapeLeftDownSlope      = 3
-  shapeRightDownSlope     = 4
+  shapeBlock          = 0
+  shapeLeftUpSlope    = 1
+  shapeRightUpSlope   = 2
+  shapeLeftDownSlope  = 3
+  shapeRightDownSlope = 4
 )
 
 type (

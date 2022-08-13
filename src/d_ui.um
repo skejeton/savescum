@@ -1,7 +1,7 @@
 import (
   "std.um"
-  "th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"; "image.um"
-  "d_font.um"; "d_fps.um"
+  "th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"; "image.um"; th_font = "font.um";
+  "d_fps.um"
 )
 
 type (
@@ -283,7 +283,7 @@ fn (ctx: ^DrawCtx) putCommand(index: int, cmd: DrawCommand) {
   }
 }
 
-fn (ctx: ^DrawCtx) render(font: d_font.Font) {
+fn (ctx: ^DrawCtx) render(font: th_font.Font) {
   for i in ctx.layers {
     rectStack := make([]rect.Rect, 0)
     isScissor := false
@@ -313,7 +313,7 @@ fn (ctx: ^DrawCtx) render(font: d_font.Font) {
         }
       } else if cmd.text != "" { // draw text
         size := font.measure(cmd.text)
-        canvas.drawRect(th.red, rect.mk(cmd.rect.x+(cmd.rect.w-size.x)/2, cmd.rect.y+(cmd.rect.h-size.y)/2, size.x, size.y));
+ //      canvas.drawRect(th.red, rect.mk(cmd.rect.x+(cmd.rect.w-size.x)/2, cmd.rect.y+(cmd.rect.h-size.y)/2, size.x, size.y));
         font.draw(cmd.text, th.Vf2{cmd.rect.x+(cmd.rect.w-size.x)/2, cmd.rect.y+(cmd.rect.h-size.y)/2}, cmd.color)
       } else if cmd.img.validate() {
         // TODO: Maybe separate drawing the image as a rectangle into a separate function
@@ -861,7 +861,7 @@ const (
 )
 
 var (
-  v_font: d_font.Font
+  v_font: th_font.Font
   v_drawCtx: DrawCtx
   
   v_groupZone: GroupZone
@@ -905,7 +905,7 @@ fn endFixedRow*() {
   uiEndFixedRow(&v_uiState)
 }
 
-fn init*(font: d_font.Font) {
+fn init*(font: th_font.Font) {
   v_font = font
   v_groupZone = groupZoneInit()
   v_drawCtx = drawCtxInit()

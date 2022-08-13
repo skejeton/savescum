@@ -31,7 +31,7 @@ fn draw*(screen: rect.Rect) {
 
   origin := window.h - 480 - (stripeCount - 1) * step + 120
 
-  width := imgClouds.getDims().x
+  width = imgClouds.getDims().x
 
   canvas.drawRect(0x001133FF, screen) 
 

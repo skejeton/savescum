@@ -1,6 +1,6 @@
 import (
-  "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
-  "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"; "d_script.um"; "d_font.um"
+  "std.um"; "rect.um"; "window.um"; "th.um"; "image.um"; "canvas.um"; "input.um"; th_font = "font.um"
+  "d_tileset.um"; "d_world.um"; "d_util.um"; "d_background.um"; "d_colors.um"; "d_game.um"; "d_fps.um"; "d_script.um"
 )
 
 type (
@@ -33,7 +33,7 @@ var (
   uiFocusWindowId: int      // window currently focused on (mouse over)
   uiDraggingWindowId: int   // window currently dragging
   uiDragPoint: th.Vf2
-  uiMainFont: d_font.Font
+  uiMainFont: th_font.Font
 
   worldViewOfsX: int
   worldViewOfsY: int
@@ -549,7 +549,7 @@ fn main*() {
   screen := rect.mk(0, 0, 640, 480)
   window.setup("title", trunc(screen.w), trunc(screen.h))
 
-  uiMainFont = d_font.loadFont("data/font_mono.ttf", 16)
+  uiMainFont = th_font.load("data/font_mono.ttf", 16, th_font.filterNearest)
 
   loading(screen, "font")
   d_game.init()
