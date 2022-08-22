@@ -2,12 +2,3 @@
 // Using ./L should automatically compile the needed C files 
 //  and put everything into the correct folder.
 
-fn externalapi_exit(code: int)
-
-// exit(Exit code)
-//
-// Just exits the program as it normally would,
-// I have no idea why isn't this a builtin umka function already ¯\_(ツ)_/¯
-fn exit*(code: int) {
-  externalapi_exit(code)
-}

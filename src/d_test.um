@@ -1,7 +1,7 @@
 // Utilities for testing
 // (C) skejeton
 
-import ("std.um"; "d_extern.um")
+import ("std.um")
 
 // pfx(): Path prefix where your test is located
 //
@@ -35,6 +35,6 @@ fn itsNotAUnitTest*() {
   // Yes, a string true, because it's an env variable which are all strings lol,
   //  I could've used any other value other than true, but that one sounds aight. 
   if isUnitTest == "true" {
-    d_extern.exit(0)
+    exit()
   }
 }

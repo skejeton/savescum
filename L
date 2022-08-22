@@ -23,7 +23,7 @@ target_test() {
     echo -e "What am I gonna test? \n$PROG_NAME test test_name" 
     exit 1
   elif [[ -d "test/$1" && -f "test/$1/main.um" ]]; then 
-    ISUNITTEST=$ISUNITTEST TEST_PFX="test/$1/" ../../tophat $SILENT main "test/$1/main.um"
+    ISUNITTEST=$ISUNITTEST TEST_PFX="test/$1/" ../../tophat $PROF $SILENT main "test/$1/main.um"
   else
     echo -e "I don't know test \"$1\".\nTests are in ./test directory, you must make a folder named \"$1\" inside it, and put a main.um file in it. That's the way it is!" 
     exit 2
@@ -66,10 +66,10 @@ case `getarg 0` in
     ../../tophat $PROF $SILENT main src/main.um
   ;;
   check)
-    ../../tophat $SILENT check main src/main.um
+    ../../tophat $PROF $SILENT check main src/main.um
     
     for d in test/*; do
-      TEST_PFX="%d/" ../../tophat $SILENT check main "$d/main.um"
+      TEST_PFX="%d/" ../../tophat $PROF $SILENT check main "$d/main.um"
     done
   ;;
   testall)

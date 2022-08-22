@@ -39,7 +39,7 @@ fn main() {
   dialogs.say("star", "think", "I'm a star, very nice #{emote:sad}but you dont like", th.Vf2{500, 300})
   dialogs.say("circle", "", "#{sp:0.05}I'm a very round cicrle,#{sp:0.2} hello :)", th.Vf2{600, 100})
   dialogs.say("blob", "", "I dont exist haha", th.Vf2{100, 100})
-
+  
   for window.cycle(screen) {
     dialogs.setCamPos(camera)
     moveCamera()

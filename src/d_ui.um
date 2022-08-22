@@ -786,9 +786,7 @@ fn uiEndLayout(ui: ^UiState, expectedType: UiLayoutType) {
   currentType := currentLayout.layoutType
 
   if currentType != expectedType {
-    buf := str(make([]char, 256))
-    sprintf(buf, "(UI) Layout type mismatch: started with %s but ended with %s", uiLayoutTypeName(currentType), uiLayoutTypeName(expectedType))
-    error(buf)
+    error(sprintf("(UI) Layout type mismatch: started with %s but ended with %s", uiLayoutTypeName(currentType), uiLayoutTypeName(expectedType)))
   } else {
     ui.layouts = delete(ui.layouts, len(ui.layouts)-1)
     if len(ui.layouts) > 0 {

@@ -28,7 +28,21 @@ type (
     mouseDelta: th.Vf2
   }
 
+  Tool = struct {
+    rect: rect.Rect
+  }
+
+  ToolNode = struct {
+    children: map[str]^ToolNode
+    parent: ^ToolNode
+    lastFrameTouched: int
+    tool: Tool
+  }
+
   Editor = struct {
+    // Misc
+    frameNumber: int
+
     // Visual data
     mainFont: th_font.Font
 
@@ -41,10 +55,10 @@ type (
     lastMousePos: th.Vf2
 
     // Census
-    lastToolName: str
-    tools: map[str]rect.Rect
-    maybeActiveTool: str
-    activeTool: str
+    tools: ToolNode
+    currentTool: ^ToolNode
+    maybeActiveTool: ^ToolNode
+    activeTool: ^ToolNode
   }
 )
 
@@ -54,27 +68,58 @@ var (
   screen: rect.Rect
 )
 
+fn (e: ^Editor) acquireToolNode(name: str): ^ToolNode {
+  if e.currentTool == null {
+    e.currentTool = &e.tools
+  }
+
+  if !validkey(e.currentTool.children, name) {
+    tool := new(ToolNode)
+    tool ^= ToolNode{children: map[str]^ToolNode{}, parent: e.currentTool}
+    e.currentTool.children[name] = tool
+  }
+
+  return e.currentTool.children[name]
+}
+
+// Prunes all tools untouched last frame
+fn (e: ^Editor) pruneToolsRecursive(node: ^ToolNode) {
+  for key in node.children {
+    if node.children[key].lastFrameTouched < e.frameNumber {
+      // Fix leak
+      node.children[key].parent = null
+      // Prune untouched
+      node.children = delete(node.children, key)
+    } else {
+      // Recurse otherwise
+      e.pruneToolsRecursive(node.children[key])
+    }
+  }
+}
+
 fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): bool {
-  if d_util.rectVsPoint(toolRect, e.mousePos) {
-    e.maybeActiveTool = name
+  node := e.acquireToolNode(name)
+  node.lastFrameTouched = e.frameNumber
+  node.tool = Tool{toolRect}
+
+  e.currentTool = node
+
+  if d_util.rectVsPoint(node.tool.rect, e.mousePos) {
+    e.maybeActiveTool = node
   }
 
-  if e.lastToolName != "" {
-    error("Unfinished tool "+name)
-  }
-
-  e.lastToolName = name
-  e.tools[name] = toolRect
-
-  return e.activeTool == name
+  return e.currentTool == e.activeTool
 }
 
 fn (e: ^Editor) endTool() {
-  e.lastToolName = ""
+  if e.currentTool.parent == null {
+    error("Parent node is null, beginTool/endTool mismatched!")
+  }
+  e.currentTool = e.currentTool.parent
 }
 
-fn (e: ^Editor) isLastToolActive(): bool {
-  return e.lastToolName == e.activeTool
+fn (e: ^Editor) isCurrentToolActive(): bool {
+  return e.currentTool == e.activeTool
 }
 
 // Draw bevel rect(
@@ -110,10 +155,7 @@ fn drawBevelRect(r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
 // Granulation is making number A a multiple of B by rounding.
 // This boy does same thing but for vectors, so `th.Vf2{Granulate(A.x, B.x), Granulate(A.y, B.y)}`.
 fn vf2Granulate(a, b: th.Vf2): th.Vf2 {
-  a = a.div(b)
-  a.x = d_util.floor(a.x)
-  a.y = d_util.floor(a.y)
-  return a.mul(b)
+  return a.div(b).floor().mul(b)
 }
 
 // Vf2 int modulo(
@@ -127,7 +169,6 @@ fn vf2IntMod(a, b: th.Vf2): th.Vf2 {
   return th.Vf2{trunc(a.x)%trunc(b.x), trunc(a.y)%trunc(b.y)}
 }
 
-
 // Draw text centered(
 //   The font
 //   The text
@@ -140,7 +181,7 @@ fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
 
 // TODO: Ability to pass colour
 fn putButton(editor: ^Editor, r: rect.Rect): bool {
-  pressed := editor.isLastToolActive() && d_util.rectVsPoint(r, editor.mousePos) && input.isPressed(input.mouse1)
+  pressed := editor.isCurrentToolActive() && d_util.rectVsPoint(r, editor.mousePos) && input.isPressed(input.mouse1)
   if pressed {
     drawBevelRect(r, true, 0xCCCCCCFF)
   } else {
@@ -220,6 +261,9 @@ fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid, mi: EditorGridMouseInput) {
 
     isActive: bool = editor.beginTool("TileEditor", rectangle)
   )
+
+  editor.beginTool("SubTool", rect.mk(200, 50, 50, 50))
+  editor.endTool()
 
   if isActive {
     // Handle input
@@ -303,30 +347,42 @@ fn editorInit(): Editor {
     tileGrid: EditorGrid{scaling: 1.0},
     lastMousePos: input.getMousePos(),
     mainFont: th_font.load("data/font_mono.ttf", 16, th_font.filterNearest),
-    tools: map[str]rect.Rect{}}
+    tools: ToolNode{children: map[str]^ToolNode{}}}
 }
 
-fn putEditorDebugToolFrames(editor: ^Editor) {
+fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: str = "") {
   font := editor.mainFont
 
-  for toolName in editor.tools {
+  for toolName, toolChild in tool.children {
     baseColor := th.red
-    if editor.activeTool == toolName {
+    if editor.activeTool == toolChild {
       baseColor = th.green
     }
 
-    tool := editor.tools[toolName]
+    toolName = prefix + toolName
 
     // NOREP(PlaneText,TextRect,MeasureText,ColorAlpha,RectFrom2Vec2f)
-    planeSize := font.measure(toolName)
-    canvas.drawRect(baseColor&0xFFFFFFAA, rect.mk(tool.x, tool.y, planeSize.x, planeSize.y))
-    d_util.drawRectLines(baseColor, tool)
-    font.draw(toolName, tool.getPos(), th.white)
-    d_util.drawRectLines(baseColor, tool)
+    if editor.activeTool == toolChild {
+      planeSize := font.measure(toolName)
+      r := rect.mk(toolChild.tool.rect.x, toolChild.tool.rect.y-planeSize.y, planeSize.x, planeSize.y)
+      if r.y < 0 {
+        r.y += planeSize.y
+      }
+      canvas.drawRect(baseColor&0xFFFFFFAA, r)
+      font.draw(toolName, r.getPos(), th.white)
+    }
+    d_util.drawRectLines(baseColor, toolChild.tool.rect)
+
+    putEditorDebugToolFramesRecursive(editor, toolChild, toolName+"::")
   }
 }
 
+fn putEditorDebugToolFrames(editor: ^Editor) {
+  putEditorDebugToolFramesRecursive(editor, &editor.tools)
+}
+
 fn editorPutUi(editor: ^Editor) {
+  editor.frameNumber += 1
   // handle pre input states
   editor.mousePos = input.getMousePos()
   editor.mouseWheel = int(input.isJustPressed(input.mouse_up)) - int(input.isJustPressed(input.mouse_down));
@@ -347,8 +403,8 @@ fn editorPutUi(editor: ^Editor) {
   if !(input.isPressed(input.mouse1) || input.isPressed(input.mouse2) || input.isPressed(input.mouse3)) {
     editor.activeTool = editor.maybeActiveTool
   }
-  editor.maybeActiveTool = ""
-  editor.tools = map[str]rect.Rect{}
+  editor.maybeActiveTool = null
+  editor.pruneToolsRecursive(&editor.tools)
 }
 
 fn main() {
@@ -379,4 +435,12 @@ fn main() {
     canvas.drawRect(th.black, screen)
     editorPutUi(&editor)
   }
+
+  editor = Editor{}
+  printf("%s\n", repr(editor.tools))
+  editor.tools.children = map[str]^ToolNode{}
+  editor.tools.parent = null
+  editor.currentTool = null
+  editor.activeTool = null
+  editor.maybeActiveTool = null
 }
