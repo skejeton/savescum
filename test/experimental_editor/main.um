@@ -39,8 +39,16 @@ type (
     tool: Tool
   }
 
+  ButtonState = struct {
+    isOver: bool
+    isDown: bool
+    isPressed: bool
+    isReleased: bool
+  }
+
   Editor = struct {
     // Misc
+    isDebugOverlayShown: bool
     frameNumber: int
 
     // Visual data
@@ -55,7 +63,7 @@ type (
     lastMousePos: th.Vf2
 
     // Census
-    tools: ToolNode
+    tools: ^ToolNode
     currentTool: ^ToolNode
     maybeActiveTool: ^ToolNode
     activeTool: ^ToolNode
@@ -70,7 +78,7 @@ var (
 
 fn (e: ^Editor) acquireToolNode(name: str): ^ToolNode {
   if e.currentTool == null {
-    e.currentTool = &e.tools
+    e.currentTool = e.tools
   }
 
   if !validkey(e.currentTool.children, name) {
@@ -180,14 +188,32 @@ fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
 }
 
 // TODO: Ability to pass colour
-fn putButton(editor: ^Editor, r: rect.Rect): bool {
-  pressed := editor.isCurrentToolActive() && d_util.rectVsPoint(r, editor.mousePos) && input.isPressed(input.mouse1)
-  if pressed {
+fn putButton(editor: ^Editor, r: rect.Rect, buttonState: ButtonState) {
+  if buttonState.isDown {
     drawBevelRect(r, true, 0xCCCCCCFF)
   } else {
     drawBevelRect(r, false)
   }
-  return pressed
+}
+
+fn putButtonTool(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
+  editor.beginTool(name,  r)
+
+  buttonState := ButtonState{}
+
+  if (editor.isCurrentToolActive()) {
+    buttonState.isOver = true;
+    if (input.isPressed(input.mouse1)) {
+      buttonState.isDown = true;
+    }
+    if (input.isJustPressed(input.mouse1)) {
+      buttonState.isPressed = true;
+    }
+    // TODO: input.isReleased
+  }
+
+  editor.endTool()
+  return buttonState
 }
 
 // Draws titlebar title styled text
@@ -307,10 +333,11 @@ fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid, mi: EditorGridMouseInput) {
 }
 
 
-fn putIconButton(editor: ^Editor, r: rect.Rect, img: image.Image): bool {
-  pressed := putButton(editor, r)
+fn putIconButton(editor: ^Editor, name: str, r: rect.Rect, img: image.Image): bool {
+  buttonState := putButtonTool(editor, r, name)
+  putButton(editor, r, buttonState);
   img.draw(th.Transform{p: th.Vf2{r.x, r.y}, s: th.Vf2{1, 1}})
-  return pressed
+  return buttonState.isPressed
 }
 
 // Puts window toolbar on the bottom of the screen
@@ -330,12 +357,12 @@ fn uiPutToolbar(editor: ^Editor) {
   buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
 
   toolbarIcons.crop(th.Vf2{0.25, 0.25}, th.Vf2{0.50, 0.50})
-  putIconButton(editor, buttonRectangle, toolbarIcons)
+  putIconButton(editor, "Play", buttonRectangle, toolbarIcons)
 
   buttonRectangle.x += buttonRectangle.w + margin
 
   toolbarIcons.crop(th.Vf2{0.0, 0.25}, th.Vf2{0.25, 0.50})
-  putIconButton(editor, buttonRectangle, toolbarIcons)
+  putIconButton(editor, "Tile Picker", buttonRectangle, toolbarIcons)
 
   buttonRectangle.x += buttonRectangle.w + margin
 
@@ -343,11 +370,14 @@ fn uiPutToolbar(editor: ^Editor) {
 }
 
 fn editorInit(): Editor {
+  rootNode := new(ToolNode)
+  rootNode ^= ToolNode{children: map[str]^ToolNode{}}
+
   return Editor{
     tileGrid: EditorGrid{scaling: 1.0},
     lastMousePos: input.getMousePos(),
     mainFont: th_font.load("data/font_mono.ttf", 16, th_font.filterNearest),
-    tools: ToolNode{children: map[str]^ToolNode{}}}
+    tools: rootNode}
 }
 
 fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: str = "") {
@@ -378,7 +408,7 @@ fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: s
 }
 
 fn putEditorDebugToolFrames(editor: ^Editor) {
-  putEditorDebugToolFramesRecursive(editor, &editor.tools)
+  putEditorDebugToolFramesRecursive(editor, editor.tools)
 }
 
 fn editorPutUi(editor: ^Editor) {
@@ -393,10 +423,15 @@ fn editorPutUi(editor: ^Editor) {
   uiPutWindow(editor)
  
   // put debug overlays
-  putEditorDebugToolFrames(editor)
+  if (editor.isDebugOverlayShown) {
+    putEditorDebugToolFrames(editor)
+  }
 
   // handle post input states
   editor.lastMousePos = input.getMousePos()
+  if (input.isJustPressed(input.key_escape)) {
+    editor.isDebugOverlayShown = !editor.isDebugOverlayShown
+  }
 
   // NOREP(PressDetect,MouseInput,AnyMouseButton)
   // swap frame census
@@ -404,7 +439,21 @@ fn editorPutUi(editor: ^Editor) {
     editor.activeTool = editor.maybeActiveTool
   }
   editor.maybeActiveTool = null
-  editor.pruneToolsRecursive(&editor.tools)
+  editor.pruneToolsRecursive(editor.tools)
+}
+
+// Disconnects all nodes in the editor from their parents.
+// Due to how the Umka GC currently works, it's not able to collect
+//   circular references, so I must do it myself.
+fn editorDisconnectAllNodes(editor: ^Editor, node: ^ToolNode) {
+  if node == null {
+    node = editor.tools
+  }
+
+  node.parent = null
+  for _, child in node.children {
+    editorDisconnectAllNodes(editor, child)
+  }
 }
 
 fn main() {
@@ -436,11 +485,5 @@ fn main() {
     editorPutUi(&editor)
   }
 
-  editor = Editor{}
-  printf("%s\n", repr(editor.tools))
-  editor.tools.children = map[str]^ToolNode{}
-  editor.tools.parent = null
-  editor.currentTool = null
-  editor.activeTool = null
-  editor.maybeActiveTool = null
+  editorDisconnectAllNodes(&editor, null)
 }
