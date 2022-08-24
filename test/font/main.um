@@ -5,8 +5,6 @@ import (
   "window.um"; "rect.um"; "th.um"; "canvas.um"
 )
 
-
-
 fn main() {
   d_test.itsNotAUnitTest()
 

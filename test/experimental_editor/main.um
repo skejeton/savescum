@@ -341,7 +341,7 @@ fn putIconButton(editor: ^Editor, name: str, r: rect.Rect, img: image.Image): bo
 }
 
 // Puts window toolbar on the bottom of the screen
-fn uiPutToolbar(editor: ^Editor) {
+fn editorPutToolbar(editor: ^Editor) {
   const (
     margin = 4
     padding = 4
@@ -419,7 +419,7 @@ fn editorPutUi(editor: ^Editor) {
 
   // put ui
   uiPutEditorGrid(editor, &editor.tileGrid, EditorGridMouseInput{input.isPressed(input.mouse2), editor.mousePos, editor.mousePos.sub(editor.lastMousePos)}) 
-  uiPutToolbar(editor)
+  editorPutToolbar(editor)
   uiPutWindow(editor)
  
   // put debug overlays
