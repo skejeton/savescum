@@ -284,8 +284,6 @@ fn drawBar() {
   }
 
 
-
-
   if putButton("Save", &area, 60) {
     saveMap()
   }

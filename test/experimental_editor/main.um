@@ -6,12 +6,10 @@
 // (C) skejeton
 
 import (
-  "../../src/d_test.um"; "../../src/d_util.um"; th_font = "font.um";
+  "../../src/d_test.um"; "../../src/d_util.um"; "../../src/d_mouseinput.um";
+  th_font = "font.um";
   "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
 )
-
-////////////
-// UI
 
 ////////////
 // USAGE
@@ -22,21 +20,11 @@ type (
     panning: th.Vf2
   }
 
-  EditorGridMouseInput = struct {
-    isDown: bool
-    mousePos: th.Vf2
-    mouseDelta: th.Vf2
-  }
-
-  Tool = struct {
-    rect: rect.Rect
-  }
-
   ToolNode = struct {
     children: map[str]^ToolNode
     parent: ^ToolNode
     lastFrameTouched: int
-    tool: Tool
+    rect: rect.Rect
   }
 
   ButtonState = struct {
@@ -45,6 +33,7 @@ type (
     isPressed: bool
     isReleased: bool
   }
+
 
   Editor = struct {
     // Misc
@@ -58,9 +47,7 @@ type (
     tileGrid: EditorGrid
 
     // Input
-    mouseWheel: int
-    mousePos: th.Vf2
-    lastMousePos: th.Vf2
+    mouseState: d_mouseinput.MouseState
 
     // Census
     tools: ^ToolNode
@@ -108,11 +95,11 @@ fn (e: ^Editor) pruneToolsRecursive(node: ^ToolNode) {
 fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): bool {
   node := e.acquireToolNode(name)
   node.lastFrameTouched = e.frameNumber
-  node.tool = Tool{toolRect}
+  node.rect = toolRect
 
   e.currentTool = node
 
-  if d_util.rectVsPoint(node.tool.rect, e.mousePos) {
+  if d_util.rectVsPoint(node.rect, e.mouseState.pos) {
     e.maybeActiveTool = node
   }
 
@@ -203,13 +190,9 @@ fn putButtonTool(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
 
   if (editor.isCurrentToolActive()) {
     buttonState.isOver = true;
-    if (input.isPressed(input.mouse1)) {
-      buttonState.isDown = true;
-    }
-    if (input.isJustPressed(input.mouse1)) {
-      buttonState.isPressed = true;
-    }
-    // TODO: input.isReleased
+    buttonState.isDown = editor.mouseState.lmb.isDown;
+    buttonState.isPressed = editor.mouseState.lmb.isPressed;
+    buttonState.isReleased = editor.mouseState.lmb.isReleased;
   }
 
   editor.endTool()
@@ -267,7 +250,7 @@ fn uiPutWindow(editor: ^Editor) {
 
 // Puts editor grid spanning the entire screen
 // TODO: Fix scaling
-fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid, mi: EditorGridMouseInput) {
+fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid) {
   const (
     lineColor = th.white&0xFFFFFF11
     tileColor = th.white&0xFFFFFF22
@@ -279,8 +262,8 @@ fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid, mi: EditorGridMouseInput) {
     tileSize: real = 32*scale
     tileSizes: th.Vf2 = th.Vf2{tileSize, tileSize}
 
-    mousePos: th.Vf2 = mi.mousePos
-    mouseDelta: th.Vf2 = mi.mouseDelta
+    mousePos: th.Vf2 = editor.mouseState.pos
+    mouseDelta: th.Vf2 = editor.mouseState.delta
 
     // This is the viewport rect, no panning applied
     rectangle: rect.Rect = rect.mk(0, 0, window.w, window.h)
@@ -293,7 +276,7 @@ fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid, mi: EditorGridMouseInput) {
 
   if isActive {
     // Handle input
-    if mi.isDown {
+    if editor.mouseState.mmb.isDown {
       ge.panning = ge.panning.add(mouseDelta.divf(scale))
     }
   }
@@ -375,7 +358,6 @@ fn editorInit(): Editor {
 
   return Editor{
     tileGrid: EditorGrid{scaling: 1.0},
-    lastMousePos: input.getMousePos(),
     mainFont: th_font.load("data/font_mono.ttf", 16, th_font.filterNearest),
     tools: rootNode}
 }
@@ -394,14 +376,14 @@ fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: s
     // NOREP(PlaneText,TextRect,MeasureText,ColorAlpha,RectFrom2Vec2f)
     if editor.activeTool == toolChild {
       planeSize := font.measure(toolName)
-      r := rect.mk(toolChild.tool.rect.x, toolChild.tool.rect.y-planeSize.y, planeSize.x, planeSize.y)
+      r := rect.mk(toolChild.rect.x, toolChild.rect.y-planeSize.y, planeSize.x, planeSize.y)
       if r.y < 0 {
         r.y += planeSize.y
       }
       canvas.drawRect(baseColor&0xFFFFFFAA, r)
       font.draw(toolName, r.getPos(), th.white)
     }
-    d_util.drawRectLines(baseColor, toolChild.tool.rect)
+    d_util.drawRectLines(baseColor, toolChild.rect)
 
     putEditorDebugToolFramesRecursive(editor, toolChild, toolName+"::")
   }
@@ -411,14 +393,17 @@ fn putEditorDebugToolFrames(editor: ^Editor) {
   putEditorDebugToolFramesRecursive(editor, editor.tools)
 }
 
+fn isAnyButtonHeld(mouseState: ^d_mouseinput.MouseState): bool {
+  return mouseState.lmb.isDown || mouseState.mmb.isDown || mouseState.rmb.isDown
+} 
+
 fn editorPutUi(editor: ^Editor) {
-  editor.frameNumber += 1
-  // handle pre input states
-  editor.mousePos = input.getMousePos()
-  editor.mouseWheel = int(input.isJustPressed(input.mouse_up)) - int(input.isJustPressed(input.mouse_down));
+  editor.mouseState = editor.mouseState.updated()
+
+  editor.frameNumber += 1;
 
   // put ui
-  uiPutEditorGrid(editor, &editor.tileGrid, EditorGridMouseInput{input.isPressed(input.mouse2), editor.mousePos, editor.mousePos.sub(editor.lastMousePos)}) 
+  uiPutEditorGrid(editor, &editor.tileGrid) 
   editorPutToolbar(editor)
   uiPutWindow(editor)
  
@@ -428,14 +413,12 @@ fn editorPutUi(editor: ^Editor) {
   }
 
   // handle post input states
-  editor.lastMousePos = input.getMousePos()
   if (input.isJustPressed(input.key_escape)) {
     editor.isDebugOverlayShown = !editor.isDebugOverlayShown
   }
 
-  // NOREP(PressDetect,MouseInput,AnyMouseButton)
   // swap frame census
-  if !(input.isPressed(input.mouse1) || input.isPressed(input.mouse2) || input.isPressed(input.mouse3)) {
+  if !isAnyButtonHeld(&editor.mouseState) {
     editor.activeTool = editor.maybeActiveTool
   }
   editor.maybeActiveTool = null

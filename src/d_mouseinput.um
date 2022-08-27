@@ -1,4 +1,5 @@
 import (
+  "th.um"
   "input.um"
 )
 
@@ -14,28 +15,26 @@ type (
     mmb: MouseButtonState
     rmb: MouseButtonState
     wheelY: real
-    mousePos: th.Vf2
-    lastMousePos: th.Vf2 
-    mouseDelta: th.Vf2 // mousePos - lastMousePos
+    pos: th.Vf2
+    lastPos: th.Vf2 
+    delta: th.Vf2 // mousePos - lastMousePos
   }
 )
 
-fn (prev: MouseButtonState) update*(button: char): MouseButtonState {
+fn (prev: ^MouseButtonState) updated*(button: char): MouseButtonState {
   return MouseButtonState{
     isDown: input.isPressed(button),
     isPressed: input.isJustPressed(button),
-    isReleased: input.isReleased(button)
-  }
+    isReleased: prev.isDown && input.isPressed(button)}
 }
 
-fn (prev: MouseButtonState) update*(prev: MouseState): MouseState {
+fn (prev: ^MouseState) updated*(): MouseState {
   return MouseState {
-    lmb: updateButtonState(prev, input.mouse1),
-    mmb: updateButtonState(prev, input.mouse2),
-    rmb: updateButtonState(prev, input.mouse3),
-    wheelY: real(input.isJustPressed(input.mouse_up)) - real(input.isJustPressed(input.mouse_down)),
-    mousePos: input.getMousePos(),
-    lastMousePos: prev.mousePos,
-    mouseDelta: input.getMousePos().sub(prev.getMousePos())
-  }
+    lmb: prev.lmb.updated(input.mouse1),
+    mmb: prev.mmb.updated(input.mouse2),
+    rmb: prev.rmb.updated(input.mouse3), 
+    wheelY: real(int(input.isJustPressed(input.mouse_up))) - real(int(input.isJustPressed(input.mouse_down))),
+    pos: input.getMousePos(),
+    lastPos: prev.pos,
+    delta: input.getMousePos().sub(prev.pos)}
 }
