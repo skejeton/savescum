@@ -117,6 +117,53 @@ fn (e: ^Editor) isCurrentToolActive(): bool {
   return e.currentTool == e.activeTool
 }
 
+/*
+// QueryMouse()
+// 
+// Queries mouse button `btn` if it has the `which` property set.
+// Returns false if the current tool is not focused.
+//
+// `btn` maybe be on of the following values:
+//   0 :: Left mouse button
+//   1 :: Middle mouse button
+//   2 :: Right mouse button
+//
+// `which` may be one of those values:
+//   d_mouseinput.down     :: IsDown
+//   d_mouseinput.pressed  :: IsPressed
+//   d_mouseinput.released :: IsReleased
+*/
+fn (e: ^Editor) queryMouse(btn: int, which: int): bool {
+  if e.isCurrentToolActive() == false {
+    return false
+  }
+
+  var mouseButton: d_mouseinput.MouseButtonState
+
+  switch btn {
+    case 0:
+      mouseButton = e.mouseState.lmb
+    case 1:
+      mouseButton = e.mouseState.mmb
+    case 2:
+      mouseButton = e.mouseState.rmb
+    default:
+      error(sprintf("Invalid mouse button index %d", btn))
+  }
+
+  switch which {
+    case d_mouseinput.down:
+      return mouseButton.isDown
+    case d_mouseinput.pressed:
+      return mouseButton.isPressed
+    case d_mouseinput.released:
+      return mouseButton.isReleased
+    default:
+      error(sprintf("Invalid mouse button property index %d", which))
+  }
+  return false;
+}
+
 // Draw bevel rect(
 //   Rectangle to draw,
 //   Does rectangle look pushed in,
@@ -175,7 +222,7 @@ fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
 }
 
 // TODO: Ability to pass colour
-fn putButton(editor: ^Editor, r: rect.Rect, buttonState: ButtonState) {
+fn putButton(r: rect.Rect, buttonState: ButtonState) {
   if buttonState.isDown {
     drawBevelRect(r, true, 0xCCCCCCFF)
   } else {
@@ -207,30 +254,46 @@ fn drawTitlebarText(font: th_font.Font, text: str, p: th.Vf2) {
   font.draw(text, p.add(th.Vf2{1, 1}), th.white)
 }
 
-fn uiPutWindow(editor: ^Editor) {
+var (
+  windowRect: rect.Rect = rect.Rect{30, 30, 300, 500}
+)
+
+fn uiPutWindow(editor: ^Editor, title: str) {
   const (
     padding = 2
     titlebarHeight = 18
-    title = "Tile Picker"
   )
 
   var (
-    windowRect: rect.Rect = rect.Rect{30, 30, 300, 500}
     position: th.Vf2 = th.Vf2{padding, padding}
+    movement: th.Vf2
+    squishing: th.Vf2  // Same as movement but changes the window size
   )
 
+  // Frame tool.
   editor.beginTool(title, windowRect)
   {
     drawBevelRect(windowRect)
 
-    buttonSize := th.Vf2{18, titlebarHeight}
-    drawBevelRect(rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y))
+    buttonSize := th.Vf2{20, titlebarHeight}
+    buttonRect := rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y)
+    putButton(buttonRect, putButtonTool(editor, buttonRect, "Close"))
     canvas.drawRect(th.black, rect.mk(position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-1, buttonSize.x-10, 2))
     position.x += buttonSize.x + padding
 
     {
       handleSize := th.Vf2{windowRect.w - position.x - padding, titlebarHeight}
       rectangle := rect.mk(position.x+windowRect.x, position.y+windowRect.y, handleSize.x-1, handleSize.y)
+
+      // Titlebar tool.
+      editor.beginTool("Titlebar", rectangle)
+      {
+        if (editor.queryMouse(0, d_mouseinput.down)) {
+          movement = editor.mouseState.delta
+        }
+      }
+      editor.endTool()
+
       canvas.drawRect(th.blue, rectangle)
       window.beginScissorRect(rectangle)
         drawTitlebarText(editor.mainFont, title, centerTextWithinRect(editor.mainFont, title, rectangle))
@@ -239,13 +302,44 @@ fn uiPutWindow(editor: ^Editor) {
       position.x += handleSize.x + padding
     }
 
-    position.x = padding
-    position.y += titlebarHeight + padding
+    position.x = 1
+    position.y += titlebarHeight + 1
 
     contentSize := th.Vf2{windowRect.w - position.x - padding, windowRect.h - position.y - padding}
-    drawBevelRect(rect.mk(position.x+windowRect.x, position.y+windowRect.y, contentSize.x-1, contentSize.y-1), true)
+    contentRect := rect.mk(position.x+windowRect.x, position.y+windowRect.y, contentSize.x-1, contentSize.y-1)
+
+    editor.beginTool("Body", contentRect)
+    {
+      if (editor.queryMouse(0, d_mouseinput.down)) {
+        movement = editor.mouseState.delta
+      }
+      drawBevelRect(contentRect, true)
+    }
+    editor.endTool()
+
+    gripSize := th.Vf2{10, 10};
+    gripRect := rect.mk(windowRect.x+windowRect.w-gripSize.x, windowRect.y+windowRect.h-gripSize.y, gripSize.x, gripSize.y)
+    editor.beginTool("Grip", gripRect)
+    {
+      if (editor.queryMouse(0, d_mouseinput.down)) {
+        squishing = editor.mouseState.delta
+      }
+    }
+    editor.endTool()
   }
   editor.endTool()
+
+
+  windowRect = d_util.rectMove(windowRect, movement)
+  windowRect.w += squishing.x; windowRect.h += squishing.y;
+
+  // Clamp
+  if windowRect.w < 100 {
+    windowRect.w = 100
+  }
+  if windowRect.h < 100 {
+    windowRect.h = 100
+  }
 }
 
 // Puts editor grid spanning the entire screen
@@ -270,9 +364,6 @@ fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid) {
 
     isActive: bool = editor.beginTool("TileEditor", rectangle)
   )
-
-  editor.beginTool("SubTool", rect.mk(200, 50, 50, 50))
-  editor.endTool()
 
   if isActive {
     // Handle input
@@ -318,7 +409,7 @@ fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid) {
 
 fn putIconButton(editor: ^Editor, name: str, r: rect.Rect, img: image.Image): bool {
   buttonState := putButtonTool(editor, r, name)
-  putButton(editor, r, buttonState);
+  putButton(r, buttonState)
   img.draw(th.Transform{p: th.Vf2{r.x, r.y}, s: th.Vf2{1, 1}})
   return buttonState.isPressed
 }
@@ -405,7 +496,7 @@ fn editorPutUi(editor: ^Editor) {
   // put ui
   uiPutEditorGrid(editor, &editor.tileGrid) 
   editorPutToolbar(editor)
-  uiPutWindow(editor)
+  uiPutWindow(editor, "Tile Editor")
  
   // put debug overlays
   if (editor.isDebugOverlayShown) {

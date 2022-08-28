@@ -21,6 +21,13 @@ type (
   }
 )
 
+const (
+  // Mouse states
+  down* = 0
+  pressed* = 1
+  released* = 2
+)
+
 fn (prev: ^MouseButtonState) updated*(button: char): MouseButtonState {
   return MouseButtonState{
     isDown: input.isPressed(button),
