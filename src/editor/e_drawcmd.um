@@ -2,7 +2,7 @@
 // Draw commands.
 */
 
-import ("th.um"; "rect.um"; "image.um"; "font.um"; "canvas.um")
+import ("th.um"; "rect.um"; "image.um"; "font.um"; "canvas.um"; "../d_util.um")
 
 type (
   CustomCommand* = interface {
@@ -129,15 +129,33 @@ fn (ctx: ^DrawContext) drawRect*(color: uint32, r: rect.Rect) {
 type ImageCmd = struct {
   image: image.Image
   transform: th.Transform
+  quadCrop: th.Quad
   tint: uint32
 }
 
 fn (d: ^ImageCmd) draw() {
+  d.image.cropQuad(d.quadCrop)
   d.image.draw(d.transform, d.tint)
 }
 
 fn (ctx: ^DrawContext) drawImage*(img: image.Image, transform: th.Transform, color: uint32 = 0xFFFFFFFF) {
-  ctx.currentLayer.appendCommand(Command{kind: commandCustom, custom: ImageCmd{img, transform, color}})
+  ctx.currentLayer.appendCommand(Command{kind: commandCustom, custom: ImageCmd{img, transform, img.getCropQuad(), color}})
+}
+
+type NinepatchCmd = struct {
+  image: image.Image
+  outer, inner, dest: rect.Rect
+  quadCrop: th.Quad
+  tint: uint32
+}
+
+fn (d: ^NinepatchCmd) draw() {
+  d.image.cropQuad(d.quadCrop)
+  d_util.drawRectNinepatch(d.image, d.outer, d.inner, d.dest, d.tint)
+}
+
+fn (ctx: ^DrawContext) drawNinepatch*(img: image.Image, outer, inner, dest: rect.Rect, tint: uint32 = th.white) {
+  ctx.currentLayer.appendCommand(Command{kind: commandCustom, custom: NinepatchCmd{img, outer, inner, dest, img.getCropQuad(), tint}})
 }
 
 fn (ctx: ^DrawContext) drawCustom*(custom: CustomCommand) {

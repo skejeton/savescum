@@ -21,12 +21,15 @@ fn (r: ^OutlineRectCmd) draw*() {
 }
 
 fn main() {
+  d_test.itsNotAUnitTest()
+
   window.setup("Hello", 640, 480)
   ctx := e_drawcmd.init()
   font1 := font.load("data/font_mono.ttf", 16, 1)
   font2 := font.load("data/font_sans.ttf", 16)
   image1 := image.load("data/ui00_img_test.png")
   image2 := image.load("data/ui00_img_test.png")
+  image3 := image.load("data/ts04_bevelbutton.png")
   image2.setfilter(0)
 
   var colors: [7][2]uint32
@@ -57,8 +60,15 @@ fn main() {
     ctx.drawText(font1, "The quick brown fox jumps\nover the lazy dog.", th.Vf2{70, 90}, th.green, 2.0);
     ctx.drawText(font2, "The quick brown fox jumps over the lazy dog.", th.Vf2{70, 165}, th.white);
     ctx.drawText(font2, "The quick brown fox jumps over the\nlazy dog.", th.Vf2{70, 185}, 0xFF9922FF, 2.0);
+
+    ctx.setLayer(300)
     ctx.drawImage(image1, th.Transform{p: th.Vf2{70, 250}, s: th.Vf2{2, 2}});
+    image2.crop(th.Vf2{0.1, 0.1}, th.Vf2{0.95, 0.9})
     ctx.drawImage(image2, th.Transform{p: th.Vf2{70+64, 250}, s: th.Vf2{2, 2}});
+    image2.crop(th.Vf2{0.0, 0.0}, th.Vf2{0.0, 0.0})
+
+    ctx.setLayer(10)
+    ctx.drawNinepatch(image3, rect.mk(0, 0, 5, 5), rect.mk(2, 2, 1, 1), rect.mk(70, 250, 640-140, 60));
 
     ctx.flush()
   }
