@@ -1,0 +1,66 @@
+import (
+  "std.um"
+  "window.um"
+  "th.um"
+  "rect.um"
+  "font.um"
+  "image.um"
+  th_color = "color.um"
+  "../../src/d_test.um"
+  "../../src/d_util.um"
+  "../../src/editor/e_drawcmd.um"
+)
+
+type OutlineRectCmd = struct {
+  color: uint32
+  r: rect.Rect
+}
+
+fn (r: ^OutlineRectCmd) draw*() {
+  d_util.drawRectLines(r.color, r.r)
+}
+
+fn main() {
+  window.setup("Hello", 640, 480)
+  ctx := e_drawcmd.init()
+  font1 := font.load("data/font_mono.ttf", 16, 1)
+  font2 := font.load("data/font_sans.ttf", 16)
+  image1 := image.load("data/ui00_img_test.png")
+  image2 := image.load("data/ui00_img_test.png")
+  image2.setfilter(0)
+
+  var colors: [7][2]uint32
+
+  for i in colors {
+    colors[i][0] = th_color.hsv(i/7.0, 1.0, 1.0)
+    colors[i][1] = th_color.hsv(i/7.0, 1.0, 0.5)
+  }
+
+  for window.cycle(rect.mk(0, 0, 640, 480)) {
+    std.srand(th.time/200)
+    for k := 0; k < 7; k++ {
+      for j := 0; j < 7; j++ {
+        for i, color in colors {
+          ctx.setLayer(std.rand()%7)
+          ctx.drawRect(color[0], rect.mk(30+i*20+j*60, 30+i*20+k*50, 50, 50))
+          ctx.setLayer(10)
+          ctx.drawCustom(OutlineRectCmd{color[1], rect.mk(30+i*20+j*60, 30+i*20+k*50, 50, 50)})
+        }
+      }
+    }
+
+    for i := 0; i < 50; i++ {
+      ctx.drawRect(0x00000014, rect.mk(0, 0, 640, 480*(i/50.0)))
+    }
+
+    ctx.drawText(font1, "The quick brown fox jumps over the lazy dog.", th.Vf2{70, 70}, th.white);
+    ctx.drawText(font1, "The quick brown fox jumps\nover the lazy dog.", th.Vf2{70, 90}, th.green, 2.0);
+    ctx.drawText(font2, "The quick brown fox jumps over the lazy dog.", th.Vf2{70, 165}, th.white);
+    ctx.drawText(font2, "The quick brown fox jumps over the\nlazy dog.", th.Vf2{70, 185}, 0xFF9922FF, 2.0);
+    ctx.drawImage(image1, th.Transform{p: th.Vf2{70, 250}, s: th.Vf2{2, 2}});
+    ctx.drawImage(image2, th.Transform{p: th.Vf2{70+64, 250}, s: th.Vf2{2, 2}});
+
+    ctx.flush()
+  }
+  
+}

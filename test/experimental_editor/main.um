@@ -6,6 +6,7 @@
 // (C) skejeton
 
 import (
+  "../../src/editor/e_drawcmd.um";
   "../../src/d_test.um"; "../../src/d_util.um"; "../../src/d_mouseinput.um";
   th_font = "font.um";
   "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"; "input.um"

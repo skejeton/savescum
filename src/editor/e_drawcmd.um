@@ -1,0 +1,147 @@
+/*
+// Draw commands.
+*/
+
+import ("th.um"; "rect.um"; "image.um"; "font.um"; "canvas.um")
+
+type (
+  CustomCommand* = interface {
+    draw(): void
+  }
+
+  Command = struct {
+    kind: int
+    rect: rect.Rect
+    color: uint32
+    font: font.Font
+    size: th.fu
+    text: str
+    custom: CustomCommand
+  }
+
+  Layer = struct {
+    commands: []Command
+    commandsLen: uint
+  }
+
+  DrawContext* = struct {
+    currentLayer: ^Layer
+    layerOrder: []int
+    layers: map[int]^Layer
+  }
+)
+
+const (
+  commandRect   = 0
+  commandText   = 1
+  commandCustom = 255
+)
+
+fn (lay: ^Layer) appendCommand(cmd: Command) {
+  // Buffered allocations. Currently umka reallocates the entire array
+  // after every insert which is really taxing.
+  if lay.commandsLen & 127 == 0 {
+    var newCommands: [128]Command
+    lay.commands = append(lay.commands, newCommands)
+  }
+
+  lay.commands[lay.commandsLen] = cmd
+  lay.commandsLen++
+}
+
+fn (ctx: ^DrawContext) acquireLayer(layer: int) {
+  // Insert the layer ordering at the correct spot.
+
+  for i in ctx.layerOrder {
+    // Already exists..
+    if ctx.layerOrder[i] == layer {
+      return
+    }
+  }
+
+  insertIndex := 0
+  for i in ctx.layerOrder {
+    if ctx.layerOrder[i] > layer {
+      insertIndex = i
+      break
+    } else {
+      insertIndex = i+1
+    }
+  }
+
+  ctx.layers[layer] = new(Layer)
+  ctx.layers[layer].commands = make([]Command, 0)
+  ctx.layerOrder = insert(ctx.layerOrder, insertIndex, layer)
+}
+
+
+fn init*(): DrawContext {
+  ctx := DrawContext{layerOrder: []int{}, layers: map[int]^Layer{}}
+  ctx.acquireLayer(0)
+  return ctx
+}
+
+
+fn (ctx: ^DrawContext) setLayer*(layer: int) {
+  ctx.acquireLayer(layer)
+  ctx.currentLayer = ctx.layers[layer]
+}
+
+/*
+// DrawContext.Flush()
+//
+// Flushes all the layers and commands, outputting them onto the screen.
+*/
+fn (ctx: ^DrawContext) flush*() {
+  for _, i in ctx.layerOrder {
+    layer := ctx.layers[i]
+
+    for j := 0; j < layer.commandsLen; j++ {
+      command := &layer.commands[j]
+
+      switch command.kind {
+        case commandRect:
+          canvas.drawRect(command.color, command.rect)
+        case commandText:
+          command.font.draw(command.text, command.rect.getPos(), command.color, command.size)
+        case commandCustom:
+          command.custom.draw()
+      }
+    } 
+  }
+
+  ctx ^= init()
+}
+
+
+fn (ctx: ^DrawContext) drawText*(f: font.Font, text: str, position: th.Vf2, color: uint32, size: th.fu = 1.0) {
+  command := Command{kind: commandText, font: f, text: text, color: color, rect: rect.mk(position.x, position.y, 0, 0), size: size}
+
+  ctx.currentLayer.appendCommand(command)
+}
+
+fn (ctx: ^DrawContext) drawRect*(color: uint32, r: rect.Rect) {
+  command := Command{kind: commandRect, color: color, rect: r}
+
+  ctx.currentLayer.appendCommand(command)
+}
+
+type ImageCmd = struct {
+  image: image.Image
+  transform: th.Transform
+  tint: uint32
+}
+
+fn (d: ^ImageCmd) draw() {
+  d.image.draw(d.transform, d.tint)
+}
+
+fn (ctx: ^DrawContext) drawImage*(img: image.Image, transform: th.Transform, color: uint32 = 0xFFFFFFFF) {
+  ctx.currentLayer.appendCommand(Command{kind: commandCustom, custom: ImageCmd{img, transform, color}})
+}
+
+fn (ctx: ^DrawContext) drawCustom*(custom: CustomCommand) {
+  command := Command{kind: commandCustom, custom: custom}
+
+  ctx.currentLayer.appendCommand(command)
+}
