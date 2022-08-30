@@ -175,7 +175,7 @@ fn (e: ^Editor) queryMouse(btn: int, which: int): bool {
 // Draws a beveled rectangle in Windows 98 style.
 // It may have a problem with displaying colors somewhat incorrectly,
 //   because the middle of the rectangle is tinted gray slightly.
-fn drawBevelRect(editor: ^Editor, r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
+fn drawBevelRect(ctx: ^e_drawcmd.DrawContext, r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
   const (
     bevelOuterRect = rect.Rect{0, 0, 5, 5}
     bevelInnerRect = rect.Rect{2, 2, 1, 1}
@@ -185,9 +185,9 @@ fn drawBevelRect(editor: ^Editor, r: rect.Rect, pushed: bool = false, color: uin
   )
 
   if pushed {
-    editor.ctx.drawNinepatch(bevelImage, bevelPushedOuterRect, bevelPushedInnerRect, r, color)
+    ctx.drawNinepatch(bevelImage, bevelPushedOuterRect, bevelPushedInnerRect, r, color)
   } else {
-    editor.ctx.drawNinepatch(bevelImage, bevelOuterRect, bevelInnerRect, r, color)
+    ctx.drawNinepatch(bevelImage, bevelOuterRect, bevelInnerRect, r, color)
   }
 }
 
@@ -224,15 +224,15 @@ fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
 }
 
 // TODO: Ability to pass colour
-fn putButton(editor: ^Editor, r: rect.Rect, buttonState: ButtonState) {
+fn drawButton(ctx: ^e_drawcmd.DrawContext, r: rect.Rect, buttonState: ButtonState) {
   if buttonState.isDown {
-    drawBevelRect(editor, r, true, 0xCCCCCCFF)
+    drawBevelRect(ctx, r, true, 0xCCCCCCFF)
   } else {
-    drawBevelRect(editor, r, false)
+    drawBevelRect(ctx, r, false)
   }
 }
 
-fn putButtonTool(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
+fn putButton(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
   editor.beginTool(name,  r)
 
   buttonState := ButtonState{}
@@ -267,11 +267,11 @@ fn uiPutWindow(editor: ^Editor, title: str) {
   // Frame tool.
   editor.beginTool(title, windowRect)
   {
-    drawBevelRect(editor, windowRect)
+    drawBevelRect(&editor.ctx, windowRect)
 
     buttonSize := th.Vf2{20, titlebarHeight}
     buttonRect := rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y)
-    putButton(editor, buttonRect, putButtonTool(editor, buttonRect, "Close"))
+    drawButton(&editor.ctx, buttonRect, putButton(editor, buttonRect, "Close"))
     editor.ctx.drawRect(th.black, rect.mk(position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-1, buttonSize.x-10, 2))
     position.x += buttonSize.x + padding
 
@@ -307,7 +307,7 @@ fn uiPutWindow(editor: ^Editor, title: str) {
       if (editor.queryMouse(0, d_mouseinput.down)) {
         movement = editor.mouseState.delta
       }
-      drawBevelRect(editor, contentRect, true)
+      drawBevelRect(&editor.ctx, contentRect, true)
     }
     editor.endTool()
 
@@ -402,8 +402,8 @@ fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid) {
 
 
 fn putIconButton(editor: ^Editor, name: str, r: rect.Rect, img: image.Image): bool {
-  buttonState := putButtonTool(editor, r, name)
-  putButton(editor, r, buttonState)
+  buttonState := putButton(editor, r, name)
+  drawButton(&editor.ctx, r, buttonState)
   editor.ctx.drawImage(img, th.Transform{p: th.Vf2{r.x, r.y}, s: th.Vf2{1, 1}})
   return buttonState.isPressed
 }
@@ -420,7 +420,7 @@ fn editorPutToolbar(editor: ^Editor) {
 
   editor.beginTool("ToolBar", rectangle)
 
-  drawBevelRect(editor, rectangle, false)
+  drawBevelRect(&editor.ctx, rectangle, false)
 
   buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
 

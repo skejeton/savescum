@@ -2,7 +2,7 @@
 // Draw commands.
 */
 
-import ("th.um"; "window.um"; "rect.um"; "image.um"; "font.um"; "canvas.um"; "../d_util.um")
+import ("th.um"; "window.um"; "rect.um"; "image.um"; "font.um"; "canvas.um")
 
 type (
   DrawProperties* = struct{}
@@ -170,7 +170,7 @@ type NinepatchCmd = struct {
 
 fn (d: ^NinepatchCmd) draw(props: DrawProperties) {
   d.image.cropQuad(d.quadCrop)
-  d_util.drawRectNinepatch(d.image, d.outer, d.inner, d.dest, d.tint)
+  d.image.drawNinepatch(d.outer, d.inner, d.dest, d.tint)
 }
 
 fn (ctx: ^DrawContext) drawNinepatch*(img: image.Image, outer, inner, dest: rect.Rect, tint: uint32 = th.white) {

@@ -1,6 +1,8 @@
+// Outdated. Ninepatch is now in the engine.
+
 import (
   "window.um"; "rect.um"; "image.um";
-  "../../src/d_util.um"; "../../src/d_test.um"
+  "../../src/d_test.um"
 )
 
 fn main() {
@@ -12,9 +14,9 @@ fn main() {
   img2 := image.load(d_test.pfx()+"../dialogs/defbox.png") 
 
   for window.cycle(screen) {
-    d_util.drawRectNinepatch(img, rect.Rect{0, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{220, 10, 200, 200})
-    d_util.drawRectNinepatch(img, rect.Rect{24, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{10, 220, 200, 200})
-    d_util.drawRectNinepatch(img, rect.Rect{24*2, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{10, 10, 200, 200})
-    d_util.drawRectNinepatch(img2, rect.Rect{0, 0, 48, 48}, rect.Rect{16, 16, 16, 16}, rect.Rect{220, 220, 200, 200})
+    img.drawNinepatch(rect.Rect{0, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{220, 10, 200, 200})
+    img.drawNinepatch(rect.Rect{24, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{10, 220, 200, 200})
+    img.drawNinepatch(rect.Rect{24*2, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{10, 10, 200, 200})
+    img2.drawNinepatch(rect.Rect{0, 0, 48, 48}, rect.Rect{16, 16, 16, 16}, rect.Rect{220, 220, 200, 200})
   }
 }

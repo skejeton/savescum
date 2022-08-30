@@ -101,13 +101,13 @@ fn (d: ^Dialog) draw*() {
     textSize := d.persona.font.measure("x")
     textPos := pos.add(size.sub(textSize).div(th.Vf2{2.0, 2.0}))
 
-    d_util.drawRectNinepatch(d.persona.boximg, rnNpRectOuter, rnNpRectInner, rect.mk(pos.x, pos.y, size.x, size.y))
+    d.persona.boximg.drawNinepatch(rnNpRectOuter, rnNpRectInner, rect.mk(pos.x, pos.y, size.x, size.y))
     d.persona.font.draw("x", textPos, d.persona.fontColor)
   }  
 
 
   // RENDER FRAME & FACE //
-  d_util.drawRectNinepatch(d.persona.boximg, rnNpRectOuter, rnNpRectInner, rnBox)
+  d.persona.boximg.drawNinepatch(rnNpRectOuter, rnNpRectInner, rnBox)
   d_util.imageCropRect(d.persona.faceimg, rect.Rect{d.emote*64, d.persona.faceimgY*64, 64, 64})
   d.persona.faceimg.draw(th.Transform{p: th.Vf2{rnBox.x+8, rnBox.y+8}, s: th.Vf2{1, 1}})
  
@@ -223,7 +223,7 @@ fn (d: ^Dialogs) draw*() {
     if x == len(d.list)-1 {
       box := d.list[x].getBox()
       offs := d.list[x].getBoximgOffset()
-      d_util.drawRectNinepatch(d.list[x].persona.boximg, rect.mk(offs.x+48, offs.y, 48, 48), rect.mk(16, 16, 16, 16), box)
+      d.list[x].persona.boximg.drawNinepatch(rect.mk(offs.x+48, offs.y, 48, 48), rect.mk(16, 16, 16, 16), box)
     }
 
     d.list[x].position = prevPos
