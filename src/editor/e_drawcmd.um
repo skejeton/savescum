@@ -5,17 +5,16 @@
 import ("th.um"; "rect.um"; "image.um"; "font.um"; "canvas.um"; "../d_util.um")
 
 type (
+  DrawProperties* = struct{}
+
   CustomCommand* = interface {
-    draw(): void
+    draw(props: DrawProperties): void
   }
 
   Command = struct {
     kind: int
     rect: rect.Rect
     color: uint32
-    font: font.Font
-    size: th.fu
-    text: str
     custom: CustomCommand
   }
 
@@ -33,7 +32,6 @@ type (
 
 const (
   commandRect   = 0
-  commandText   = 1
   commandCustom = 255
 )
 
@@ -52,11 +50,8 @@ fn (lay: ^Layer) appendCommand(cmd: Command) {
 fn (ctx: ^DrawContext) acquireLayer(layer: int) {
   // Insert the layer ordering at the correct spot.
 
-  for i in ctx.layerOrder {
-    // Already exists..
-    if ctx.layerOrder[i] == layer {
-      return
-    }
+  if (validkey(ctx.layers, layer)) {
+    return
   }
 
   insertIndex := 0
@@ -78,6 +73,7 @@ fn (ctx: ^DrawContext) acquireLayer(layer: int) {
 fn init*(): DrawContext {
   ctx := DrawContext{layerOrder: []int{}, layers: map[int]^Layer{}}
   ctx.acquireLayer(0)
+  ctx.currentLayer = ctx.layers[0]
   return ctx
 }
 
@@ -102,10 +98,8 @@ fn (ctx: ^DrawContext) flush*() {
       switch command.kind {
         case commandRect:
           canvas.drawRect(command.color, command.rect)
-        case commandText:
-          command.font.draw(command.text, command.rect.getPos(), command.color, command.size)
         case commandCustom:
-          command.custom.draw()
+          command.custom.draw(DrawProperties{})
       }
     } 
   }
@@ -113,9 +107,20 @@ fn (ctx: ^DrawContext) flush*() {
   ctx ^= init()
 }
 
+type TextCmd = struct {
+  font: font.Font
+  text: str
+  pos: th.Vf2
+  color: uint32
+  size: real
+}
+
+fn (d: ^TextCmd) draw(props: DrawProperties) {
+  d.font.draw(d.text, d.pos, d.color, d.size)
+}
 
 fn (ctx: ^DrawContext) drawText*(f: font.Font, text: str, position: th.Vf2, color: uint32, size: th.fu = 1.0) {
-  command := Command{kind: commandText, font: f, text: text, color: color, rect: rect.mk(position.x, position.y, 0, 0), size: size}
+  command := Command{kind: commandCustom, custom: TextCmd{f, text, position, color, size}}
 
   ctx.currentLayer.appendCommand(command)
 }
@@ -133,7 +138,7 @@ type ImageCmd = struct {
   tint: uint32
 }
 
-fn (d: ^ImageCmd) draw() {
+fn (d: ^ImageCmd) draw(props: DrawProperties) {
   d.image.cropQuad(d.quadCrop)
   d.image.draw(d.transform, d.tint)
 }
@@ -149,7 +154,7 @@ type NinepatchCmd = struct {
   tint: uint32
 }
 
-fn (d: ^NinepatchCmd) draw() {
+fn (d: ^NinepatchCmd) draw(props: DrawProperties) {
   d.image.cropQuad(d.quadCrop)
   d_util.drawRectNinepatch(d.image, d.outer, d.inner, d.dest, d.tint)
 }

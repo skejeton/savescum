@@ -42,6 +42,7 @@ type (
     frameNumber: int
 
     // Visual data
+    ctx: e_drawcmd.DrawContext
     mainFont: th_font.Font
 
     // Editors
@@ -174,7 +175,7 @@ fn (e: ^Editor) queryMouse(btn: int, which: int): bool {
 // Draws a beveled rectangle in Windows 98 style.
 // It may have a problem with displaying colors somewhat incorrectly,
 //   because the middle of the rectangle is tinted gray slightly.
-fn drawBevelRect(r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
+fn drawBevelRect(editor: ^Editor, r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
   const (
     bevelOuterRect = rect.Rect{0, 0, 5, 5}
     bevelInnerRect = rect.Rect{2, 2, 1, 1}
@@ -184,9 +185,9 @@ fn drawBevelRect(r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
   )
 
   if pushed {
-    d_util.drawRectNinepatch(bevelImage, bevelPushedOuterRect, bevelPushedInnerRect, r, color)
+    editor.ctx.drawNinepatch(bevelImage, bevelPushedOuterRect, bevelPushedInnerRect, r, color)
   } else {
-    d_util.drawRectNinepatch(bevelImage, bevelOuterRect, bevelInnerRect, r, color)
+    editor.ctx.drawNinepatch(bevelImage, bevelOuterRect, bevelInnerRect, r, color)
   }
 }
 
@@ -223,11 +224,11 @@ fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
 }
 
 // TODO: Ability to pass colour
-fn putButton(r: rect.Rect, buttonState: ButtonState) {
+fn putButton(editor: ^Editor, r: rect.Rect, buttonState: ButtonState) {
   if buttonState.isDown {
-    drawBevelRect(r, true, 0xCCCCCCFF)
+    drawBevelRect(editor, r, true, 0xCCCCCCFF)
   } else {
-    drawBevelRect(r, false)
+    drawBevelRect(editor, r, false)
   }
 }
 
@@ -248,11 +249,11 @@ fn putButtonTool(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
 }
 
 // Draws titlebar title styled text
-fn drawTitlebarText(font: th_font.Font, text: str, p: th.Vf2) {
-  font.draw(text, p.add(th.Vf2{0, 0}), th.black)
-  font.draw(text, p.add(th.Vf2{1, 0}), th.black)
-  font.draw(text, p.add(th.Vf2{0, 1}), th.white)
-  font.draw(text, p.add(th.Vf2{1, 1}), th.white)
+fn drawTitlebarText(editor: ^Editor, font: th_font.Font, text: str, p: th.Vf2) {
+  editor.ctx.drawText(font, text, p.add(th.Vf2{0, 0}), th.black)
+  editor.ctx.drawText(font, text, p.add(th.Vf2{1, 0}), th.black)
+  editor.ctx.drawText(font, text, p.add(th.Vf2{0, 1}), th.white)
+  editor.ctx.drawText(font, text, p.add(th.Vf2{1, 1}), th.white)
 }
 
 var (
@@ -274,12 +275,12 @@ fn uiPutWindow(editor: ^Editor, title: str) {
   // Frame tool.
   editor.beginTool(title, windowRect)
   {
-    drawBevelRect(windowRect)
+    drawBevelRect(editor, windowRect)
 
     buttonSize := th.Vf2{20, titlebarHeight}
     buttonRect := rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y)
-    putButton(buttonRect, putButtonTool(editor, buttonRect, "Close"))
-    canvas.drawRect(th.black, rect.mk(position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-1, buttonSize.x-10, 2))
+    putButton(editor, buttonRect, putButtonTool(editor, buttonRect, "Close"))
+    editor.ctx.drawRect(th.black, rect.mk(position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-1, buttonSize.x-10, 2))
     position.x += buttonSize.x + padding
 
     {
@@ -295,9 +296,9 @@ fn uiPutWindow(editor: ^Editor, title: str) {
       }
       editor.endTool()
 
-      canvas.drawRect(th.blue, rectangle)
+      editor.ctx.drawRect(th.blue, rectangle)
       window.beginScissorRect(rectangle)
-        drawTitlebarText(editor.mainFont, title, centerTextWithinRect(editor.mainFont, title, rectangle))
+        drawTitlebarText(editor, editor.mainFont, title, centerTextWithinRect(editor.mainFont, title, rectangle))
       window.endScissor()
     
       position.x += handleSize.x + padding
@@ -314,7 +315,7 @@ fn uiPutWindow(editor: ^Editor, title: str) {
       if (editor.queryMouse(0, d_mouseinput.down)) {
         movement = editor.mouseState.delta
       }
-      drawBevelRect(contentRect, true)
+      drawBevelRect(editor, contentRect, true)
     }
     editor.endTool()
 
@@ -386,22 +387,22 @@ fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid) {
   )
 
   // Draw background (debug)
-  canvas.drawRect(debugColor, rectangle)
+  editor.ctx.drawRect(debugColor, rectangle)
 
   // Draw grid
   for y := visualOffset.y; y < rectangle.h; y += tileSize {
     lineRect := rect.mk(round(rectangle.x), round(rectangle.y + y), rectangle.w, 1)
-    canvas.drawRect(lineColor, lineRect)
+    editor.ctx.drawRect(lineColor, lineRect)
   }
 
   for x := visualOffset.x; x < rectangle.w; x += tileSize {
     lineRect := rect.mk(round(rectangle.x + x), round(rectangle.y), 1, rectangle.h)
-    canvas.drawRect(lineColor, lineRect)
+    editor.ctx.drawRect(lineColor, lineRect)
   }
 
   if isActive {
     // Draw highlighted tile
-    canvas.drawRect(tileColor, highlightedTileRect)
+    editor.ctx.drawRect(tileColor, highlightedTileRect)
   }
 
   editor.endTool()
@@ -410,8 +411,8 @@ fn uiPutEditorGrid(editor: ^Editor, ge: ^EditorGrid) {
 
 fn putIconButton(editor: ^Editor, name: str, r: rect.Rect, img: image.Image): bool {
   buttonState := putButtonTool(editor, r, name)
-  putButton(r, buttonState)
-  img.draw(th.Transform{p: th.Vf2{r.x, r.y}, s: th.Vf2{1, 1}})
+  putButton(editor, r, buttonState)
+  editor.ctx.drawImage(img, th.Transform{p: th.Vf2{r.x, r.y}, s: th.Vf2{1, 1}})
   return buttonState.isPressed
 }
 
@@ -427,7 +428,7 @@ fn editorPutToolbar(editor: ^Editor) {
 
   editor.beginTool("ToolBar", rectangle)
 
-  drawBevelRect(rectangle, false)
+  drawBevelRect(editor, rectangle, false)
 
   buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
 
@@ -449,6 +450,7 @@ fn editorInit(): Editor {
   rootNode ^= ToolNode{children: map[str]^ToolNode{}}
 
   return Editor{
+    ctx: e_drawcmd.init(),
     tileGrid: EditorGrid{scaling: 1.0},
     mainFont: th_font.load("data/font_mono.ttf", 16, th_font.filterNearest),
     tools: rootNode}
@@ -497,7 +499,11 @@ fn editorPutUi(editor: ^Editor) {
   // put ui
   uiPutEditorGrid(editor, &editor.tileGrid) 
   editorPutToolbar(editor)
+
   uiPutWindow(editor, "Tile Editor")
+
+  // flush render context
+  editor.ctx.flush()
  
   // put debug overlays
   if (editor.isDebugOverlayShown) {

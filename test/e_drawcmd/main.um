@@ -16,7 +16,7 @@ type OutlineRectCmd = struct {
   r: rect.Rect
 }
 
-fn (r: ^OutlineRectCmd) draw*() {
+fn (r: ^OutlineRectCmd) draw*(props: e_drawcmd.DrawProperties) {
   d_util.drawRectLines(r.color, r.r)
 }
 
@@ -62,15 +62,14 @@ fn main() {
     ctx.drawText(font2, "The quick brown fox jumps over the\nlazy dog.", th.Vf2{70, 185}, 0xFF9922FF, 2.0);
 
     ctx.setLayer(300)
-    ctx.drawImage(image1, th.Transform{p: th.Vf2{70, 250}, s: th.Vf2{2, 2}});
+    ctx.drawImage(image1, th.Transform{p: th.Vf2{70+30, 250-10}, s: th.Vf2{1, 1}, r: 45});
     image2.crop(th.Vf2{0.1, 0.1}, th.Vf2{0.95, 0.9})
-    ctx.drawImage(image2, th.Transform{p: th.Vf2{70+64, 250}, s: th.Vf2{2, 2}});
+    ctx.drawImage(image2, th.Transform{p: th.Vf2{70+64+30, 250-10}, s: th.Vf2{1, 1}, r: 45});
     image2.crop(th.Vf2{0.0, 0.0}, th.Vf2{0.0, 0.0})
 
     ctx.setLayer(10)
-    ctx.drawNinepatch(image3, rect.mk(0, 0, 5, 5), rect.mk(2, 2, 1, 1), rect.mk(70, 250, 640-140, 60));
+    ctx.drawNinepatch(image3, rect.mk(0, 0, 5, 5), rect.mk(2, 2, 1, 1), rect.mk(70, 250, 640-140, 70));
 
     ctx.flush()
-  }
-  
+  } 
 }
