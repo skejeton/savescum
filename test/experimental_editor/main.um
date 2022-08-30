@@ -248,14 +248,6 @@ fn putButtonTool(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
   return buttonState
 }
 
-// Draws titlebar title styled text
-fn drawTitlebarText(editor: ^Editor, font: th_font.Font, text: str, p: th.Vf2) {
-  editor.ctx.drawText(font, text, p.add(th.Vf2{0, 0}), th.black)
-  editor.ctx.drawText(font, text, p.add(th.Vf2{1, 0}), th.black)
-  editor.ctx.drawText(font, text, p.add(th.Vf2{0, 1}), th.white)
-  editor.ctx.drawText(font, text, p.add(th.Vf2{1, 1}), th.white)
-}
-
 var (
   windowRect: rect.Rect = rect.Rect{30, 30, 300, 500}
 )
@@ -296,10 +288,10 @@ fn uiPutWindow(editor: ^Editor, title: str) {
       }
       editor.endTool()
 
-      editor.ctx.drawRect(th.blue, rectangle)
-      window.beginScissorRect(rectangle)
-        drawTitlebarText(editor, editor.mainFont, title, centerTextWithinRect(editor.mainFont, title, rectangle))
-      window.endScissor()
+      editor.ctx.drawRect(0x000077FF, rectangle)
+      editor.ctx.beginScissorRect(rectangle)
+        editor.ctx.drawText(editor.mainFont, title, centerTextWithinRect(editor.mainFont, title, rectangle), th.white)
+      editor.ctx.endScissor()
     
       position.x += handleSize.x + padding
     }
