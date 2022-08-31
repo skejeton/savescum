@@ -32,7 +32,7 @@ fn (prev: ^MouseButtonState) updated*(button: char): MouseButtonState {
   return MouseButtonState{
     isDown: input.isPressed(button),
     isPressed: input.isJustPressed(button),
-    isReleased: prev.isDown && input.isPressed(button)}
+    isReleased: prev.isDown && !input.isPressed(button)}
 }
 
 fn (prev: ^MouseState) updated*(): MouseState {

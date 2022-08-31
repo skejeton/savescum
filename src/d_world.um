@@ -34,6 +34,10 @@ type (
   }
 )
 
+fn fromTileset*(ts: d_tileset.Tileset): World {
+  return World{tileset: ts, tilemap: [3]map[ChunkPos]Chunk{map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}}}
+}
+
 fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
   layer++
   if layer < 0 || layer > 2 {

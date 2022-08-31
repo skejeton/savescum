@@ -24,6 +24,7 @@ type (
   }
 
   DrawContext* = struct {
+    currentLayerId: int
     currentLayer: ^Layer
     layerOrder: []int
     layers: map[int]^Layer
@@ -79,10 +80,14 @@ fn init*(): DrawContext {
   return ctx
 }
 
-
 fn (ctx: ^DrawContext) setLayer*(layer: int) {
   ctx.acquireLayer(layer)
+  ctx.currentLayerId = layer
   ctx.currentLayer = ctx.layers[layer]
+}
+
+fn (ctx: ^DrawContext) moveLayer*(layerBy: int) {
+  ctx.setLayer(ctx.currentLayerId+layerBy)
 }
 
 /*
@@ -126,15 +131,11 @@ fn (d: ^TextCmd) draw(props: DrawProperties) {
 }
 
 fn (ctx: ^DrawContext) drawText*(f: font.Font, text: str, position: th.Vf2, color: uint32, size: th.fu = 1.0) {
-  command := Command{kind: commandCustom, custom: TextCmd{f, text, position, color, size}}
-
-  ctx.currentLayer.appendCommand(command)
+  ctx.currentLayer.appendCommand(Command{kind: commandCustom, custom: TextCmd{f, text, position, color, size}})
 }
 
 fn (ctx: ^DrawContext) drawRect*(color: uint32, r: rect.Rect) {
-  command := Command{kind: commandRect, color: color, rect: r}
-
-  ctx.currentLayer.appendCommand(command)
+  ctx.currentLayer.appendCommand(Command{kind: commandRect, color: color, rect: r})
 }
 
 fn (ctx: ^DrawContext) beginScissorRect*(r: rect.Rect) {
@@ -178,7 +179,5 @@ fn (ctx: ^DrawContext) drawNinepatch*(img: image.Image, outer, inner, dest: rect
 }
 
 fn (ctx: ^DrawContext) drawCustom*(custom: CustomCommand) {
-  command := Command{kind: commandCustom, custom: custom}
-
-  ctx.currentLayer.appendCommand(command)
+  ctx.currentLayer.appendCommand(Command{kind: commandCustom, custom: custom})
 }

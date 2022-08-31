@@ -46,7 +46,6 @@ fn rectChopRight*(r: ^rect.Rect, by: int): rect.Rect {
   return rect.Rect{r.x+r.w, r.y, by, r.h}
 }
 
-//
 // Crops the input image by specified rectangle in pixels
 // 
 // img: Input image
