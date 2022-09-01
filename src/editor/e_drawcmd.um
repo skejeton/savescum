@@ -2,7 +2,7 @@
 // Draw commands.
 */
 
-import ("th.um"; "window.um"; "rect.um"; "image.um"; "font.um"; "canvas.um")
+import ("th.um"; "window.um"; "rect.um"; "image.um"; "font.um"; "canvas.um"; "../d_util.um")
 
 type (
   DrawProperties* = struct{}
@@ -33,8 +33,9 @@ type (
 
 const (
   commandRect   = 0
-  commandBeginScissorRect = 1
-  commandEndScissor = 2
+  commandRectLines = 1
+  commandBeginScissorRect = 2
+  commandEndScissor = 3
   commandCustom = 255
 )
 
@@ -105,6 +106,8 @@ fn (ctx: ^DrawContext) flush*() {
       switch command.kind {
         case commandRect:
           canvas.drawRect(command.color, command.rect)
+        case commandRectLines:
+          d_util.drawRectLines(command.color, command.rect)
         case commandBeginScissorRect:
           window.beginScissorRect(command.rect)
         case commandEndScissor:
@@ -136,6 +139,10 @@ fn (ctx: ^DrawContext) drawText*(f: font.Font, text: str, position: th.Vf2, colo
 
 fn (ctx: ^DrawContext) drawRect*(color: uint32, r: rect.Rect) {
   ctx.currentLayer.appendCommand(Command{kind: commandRect, color: color, rect: r})
+}
+
+fn (ctx: ^DrawContext) drawRectLines*(color: uint32, r: rect.Rect) {
+  ctx.currentLayer.appendCommand(Command{kind: commandRectLines, color: color, rect: r})
 }
 
 fn (ctx: ^DrawContext) beginScissorRect*(r: rect.Rect) {

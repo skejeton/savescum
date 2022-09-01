@@ -30,6 +30,21 @@ fn readFileStr*(path: str): str {
   return data
 }
 
+fn writeFileStr*(path: str, dataStr: str): bool {
+  file := std.fopen(path, "w")
+  if file == null {
+    error("Failed to open file")
+  }
+  data := make([]uint8, 0)
+  for i in dataStr {
+    data = append(data, uint8(dataStr[i]))
+  }
+  std.fwrite(file, data)
+  std.fclose(file)
+
+  return true
+}
+
 fn drawRectLines*(color: uint32, r: rect.Rect) {
   // top
   canvas.drawRect(color, rect.Rect{r.x, r.y, r.w, 1})
