@@ -531,6 +531,23 @@ fn editorInit(): Editor {
   return result
 }
 
+fn keepRectInBounds(child, parent: rect.Rect): rect.Rect {
+  if child.x < parent.x {
+    child.x = parent.x
+  }
+  if child.y < parent.y {
+    child.y = parent.y
+  }
+  if (child.x+child.w) > (parent.x+parent.w) {
+    child.x = parent.x+parent.w-child.w
+  }
+  if (child.y+child.h) > (parent.y+parent.h) {
+    child.y = parent.y+parent.h-child.h
+  }
+
+  return child
+} 
+
 fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: str = "") {
   font := editor.mainFont
 
@@ -546,6 +563,7 @@ fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: s
     if editor.activeTool == toolChild {
       planeSize := font.measure(toolName)
       r := rect.mk(toolChild.rect.x, toolChild.rect.y-planeSize.y, planeSize.x, planeSize.y)
+      r = keepRectInBounds(r, rect.mk(0, 0, window.w, window.h))
       if r.y < 0 {
         r.y += planeSize.y
       }
