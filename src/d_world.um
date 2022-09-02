@@ -150,13 +150,15 @@ fn (world: ^World) save*(): str {
     for pos, chunk in layer { 
       data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y), std.itoa(layerNo)})
       
+      grid := make([][]str, chunkH)
       for ty := 0; ty < chunkH; ty++ {
-        row := make([]str, 0)
+        grid[ty] = make([]str, chunkW)
         for tx := 0; tx < chunkW; tx++ {
-          row = append(row, std.itoa(chunk[tx][ty]))
+          grid[ty][tx] = sprintf("%d", chunk[tx][ty])
         }
-        data = append(data, row)
       }
+
+      data = append(data, grid)
     }
     layerNo++
   }
@@ -166,6 +168,7 @@ fn (world: ^World) save*(): str {
 
 fn (world: ^World) load*(data: str) {
   csvData := csv.parse(data)
+  printf("%s\n", repr(csvData))
 
   world.tilemap = [3]map[ChunkPos]Chunk{map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}}
 
@@ -177,8 +180,9 @@ fn (world: ^World) load*(data: str) {
 
   row := 2
   
+  length := len(csvData)
   // NOTE: I check first column of the csv data because csv parser adds bogus row with empty string
-  for row < len(csvData) && csvData[row][0] != "" {
+  for row < length && csvData[row][0] != "" {
     chunkPos := ChunkPos{std.atoi(csvData[row][0]), std.atoi(csvData[row][1])}
     layer := std.atoi(csvData[row][2]) + 1
     row += 1

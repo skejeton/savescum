@@ -19,13 +19,9 @@ fn readFileStr*(path: str): str {
   std.fseek(file, 0, std.seekEnd)
   datasiz := std.ftell(file)
   std.fseek(file, 0, std.seekBegin)
-  buffer := make([]uint8, datasiz)
-  std.fread(file, buffer)
-  data := ""
-  
-  for i in buffer {
-    data += char(buffer[i])
-  }
+
+  data := make([]char, datasiz+1)
+  std.fread(file, data)
   
   return data
 }
@@ -35,11 +31,11 @@ fn writeFileStr*(path: str, dataStr: str): bool {
   if file == null {
     error("Failed to open file")
   }
-  data := make([]uint8, 0)
-  for i in dataStr {
-    data = append(data, uint8(dataStr[i]))
-  }
-  std.fwrite(file, data)
+
+  data := []char(dataStr)
+  data = delete(data, len(data)-1)
+
+  std.fwrite(file, &data)
   std.fclose(file)
 
   return true
