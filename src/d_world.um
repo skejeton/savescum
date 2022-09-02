@@ -168,7 +168,6 @@ fn (world: ^World) save*(): str {
 
 fn (world: ^World) load*(data: str) {
   csvData := csv.parse(data)
-  printf("%s\n", repr(csvData))
 
   world.tilemap = [3]map[ChunkPos]Chunk{map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}}
 

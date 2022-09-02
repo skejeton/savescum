@@ -133,7 +133,7 @@ fn rectVsRect*(r1, r2: rect.Rect): bool {
 //
 // Returns true if point p is in rectangle r
 fn rectVsPoint*(r: rect.Rect, p: th.Vf2): bool {
-  return p.x > r.x && p.y > r.y && p.x < (r.x + r.w) && p.y < (r.y + r.h)
+  return p.x >= r.x && p.y >= r.y && p.x < (r.x + r.w) && p.y < (r.y + r.h)
 }
 
 // Rect shrink(

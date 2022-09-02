@@ -359,7 +359,7 @@ fn drawEntities() {
   }
 }
 
-fn draw*() {
+fn update*() {
   // UPDATE PLAYER & CAMERA //
   updateEntities()
   cameraControl()
@@ -367,6 +367,9 @@ fn draw*() {
   // UPDATE DIALOG //
   dialogs.setCamPos(camera)
   dialogs.update()
+}
+
+fn draw*() {
 
   // RENDER WORLD //
   world.drawLayer(camera, -1)

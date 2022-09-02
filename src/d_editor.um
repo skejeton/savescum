@@ -601,6 +601,7 @@ fn main*() {
         }
         
       case statePlaying:
+        d_game.update()
         d_game.draw()
         uiProcessWindowId = uiFocusWindowId
         if putTrayBtn(th.Vf2{0, window.h-32}, 2, 1, true) {
