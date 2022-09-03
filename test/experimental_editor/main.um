@@ -27,6 +27,7 @@ type (
     children: map[str]^ToolNode
     parent: ^ToolNode
     lastFrameTouched: int
+    layer: int
     rect: rect.Rect
   }
 
@@ -45,6 +46,7 @@ type (
   }
 
   WindowManager = struct {
+    topmostWindowLayer: int
     frameNumber: int
     windowCount: int
     windows: map[str]Window
@@ -71,6 +73,8 @@ type (
     isRelocatingPlayer: bool
 
     // UI misc.
+    currentWindow: str
+    currentWindowLayer: int
     wm: WindowManager
 
     // Input
@@ -119,7 +123,8 @@ fn (wm: ^WindowManager) getWindowLayer(name: str): int {
 
 fn (wm: ^WindowManager) putWindowOnFront(name: str) {
   if validkey(wm.windows, name) {
-    wm.windows[name].layer += wm.windowCount
+    wm.topmostWindowLayer += 1
+    wm.windows[name].layer = wm.topmostWindowLayer
   }
 }
 
@@ -162,10 +167,16 @@ fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): ^ToolNode {
   node := e.acquireToolNode(name)
   node.lastFrameTouched = e.frameNumber
   node.rect = toolRect
+  node.layer = e.ctx.currentLayerId
 
   e.currentTool = node
+  isOverMaybeActiveTool := true
 
-  if d_util.rectVsPoint(node.rect, e.mouseState.pos) {
+  if e.maybeActiveTool != null {
+    isOverMaybeActiveTool = node.layer >= e.maybeActiveTool.layer
+  }
+
+  if isOverMaybeActiveTool && d_util.rectVsPoint(node.rect, e.mouseState.pos) {
     e.maybeActiveTool = node
   }
 
@@ -321,7 +332,7 @@ fn putButtonBase(editor: ^Editor, r: rect.Rect, name: str, revert: bool = false)
   return bs
 }
 
-fn uiPutWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
+fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
   const (
     padding = 2
     titlebarHeight = 18
@@ -330,17 +341,26 @@ fn uiPutWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
   var (
     contentRect: rect.Rect
     movement: th.Vf2
-    squishing: th.Vf2  // Same as movement but changes the window size
   )
 
   windowRect := editor.wm.getWindowRect(title, r)
 
+
   if !editor.wm.isWindowVisible(title) {
     return rect.mk(0, 0, 0, 0), false
   }
+  if editor.currentWindow != "" {
+    error("BeginWindow is called before EndWindow")
+  }
+
+  editor.currentWindow = title
+  // FIXME: This is a hack around windows being able to change their layers mid drawing.
+  //        Which would de-sync the results from getWindowLayer.
+  editor.currentWindowLayer = editor.wm.getWindowLayer(title)
 
   position := th.Vf2{padding, padding}
 
+  editor.ctx.moveLayer(1000*editor.currentWindowLayer)
   // Frame tool.
   editor.beginTool(title, windowRect^)
   {
@@ -395,23 +415,40 @@ fn uiPutWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
         movement = editor.mouseState.delta
       }
     }
-    editor.endTool()
-
-    gripSize := th.Vf2{10, 10};
-    gripRect := rect.mk(windowRect.x+windowRect.w-gripSize.x, windowRect.y+windowRect.h-gripSize.y, gripSize.x, gripSize.y)
-    editor.beginTool("Grip", gripRect)
-    {
-      if (editor.queryMouse(0, d_mouseinput.down)) {
-        squishing = editor.mouseState.delta
-      }
-    }
-    editor.endTool()
   }
-  editor.endTool()
 
   windowRect ^= d_util.rectMove(windowRect^, movement)
-  windowRect.w += squishing.x; windowRect.h += squishing.y;
 
+  return contentRect, true
+}
+
+fn uiEndWindow(editor: ^Editor) {
+  if editor.currentWindow == "" {
+    error("EndWindow has no match with BeginWindow")
+  }
+
+  title := editor.currentWindow
+  squishing := th.Vf2{0, 0} // Same as movement but changes the window size
+  windowRect := editor.wm.getWindowRect(title, rect.mk(0, 0, 0, 0))
+
+  // Finish ui tools.
+  {
+      editor.endTool()
+
+      gripSize := th.Vf2{10, 10};
+      gripRect := rect.mk(windowRect.x+windowRect.w-gripSize.x, windowRect.y+windowRect.h-gripSize.y, gripSize.x, gripSize.y)
+      editor.beginTool("Grip", gripRect)
+      {
+        if (editor.queryMouse(0, d_mouseinput.down)) {
+          squishing = editor.mouseState.delta
+        }
+      }
+      editor.endTool()
+    editor.endTool()
+  }
+  editor.ctx.moveLayer(-1000*editor.currentWindowLayer)
+
+  windowRect.w += squishing.x; windowRect.h += squishing.y;
   // Clamp
   if windowRect.w < 100 {
     windowRect.w = 100
@@ -420,7 +457,7 @@ fn uiPutWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
     windowRect.h = 100
   }
 
-  return contentRect, true
+  editor.currentWindow = ""
 }
 
 
@@ -805,7 +842,7 @@ fn editorPutUi(editor: ^Editor) {
   editorPutToolbar(editor)
 
   if !editor.isPlaying {
-    if contentRect, ok := uiPutWindow(editor, "Player Placer", rect.mk(30, 30+32*7+20, 32*5, 32*7)); ok { 
+    if contentRect, ok := uiBeginWindow(editor, "Player Placer", rect.mk(30, 30+32*7+20, 32*5, 32*7)); ok { 
       contentRect = d_util.rectShrink(contentRect, 5)
       position := contentRect.getPos()
       playerPos := editor.world.playerSpawnPos
@@ -826,9 +863,10 @@ fn editorPutUi(editor: ^Editor) {
         }
       }
       editor.ctx.endScissor()
+      uiEndWindow(editor)
     }
 
-    if contentRect, ok := uiPutWindow(editor, "Tile Picker", rect.mk(30, 30, 32*5, 32*7)); ok { 
+    if contentRect, ok := uiBeginWindow(editor, "Tile Picker", rect.mk(30, 30, 32*5, 32*7)); ok { 
       editor.beginTool("TilePicker", contentRect)
       {
         editor.ctx.drawRect(th.black, contentRect)
@@ -860,6 +898,7 @@ fn editorPutUi(editor: ^Editor) {
         editor.ctx.endScissor()
       }
       editor.endTool()
+      uiEndWindow(editor)
     }
   }
 
