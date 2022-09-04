@@ -1,7 +1,7 @@
 import (
-  "src/d_editor.um"
+  "src/editor/e_main.um"
 )
 
 fn main() {
-  d_editor.main()
+  e_main.editorMain()
 }
