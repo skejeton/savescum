@@ -762,9 +762,7 @@ fn drawLayerIcon(ctx: ^e_drawcmd.DrawContext, position: th.Vf2, layer: int, show
   }
 }
 
-type GameCmd = struct {
-
-}
+type GameCmd = struct {}
 
 fn (gc: ^GameCmd) draw(props: e_drawcmd.DrawProperties) {
   d_background.draw(rect.mk(0, 0, window.w, window.h))
@@ -867,37 +865,34 @@ fn editorPutUi(editor: ^Editor) {
     }
 
     if contentRect, ok := uiBeginWindow(editor, "Tile Picker", rect.mk(30, 30, 32*5, 32*7)); ok { 
-      editor.beginTool("TilePicker", contentRect)
-      {
-        editor.ctx.drawRect(th.black, contentRect)
-        editor.ctx.moveLayer(1)
+      editor.ctx.drawRect(th.black, contentRect)
+      editor.ctx.moveLayer(1)
 
-        selectedTile := editor.tilemapGrid.put(editor, contentRect)
+      selectedTile := editor.tilemapGrid.put(editor, contentRect)
 
-        // NOT-SURE: Currently you can only have one active window,
-        //             it's the window furthest in the hierarchy your mouse is over (roughly).
-        //           We need to create the TilePicker tool manually for that reason, because if EditorGrid did,
-        //             we wouldn't be able to query the mouse here. That means right now EditorGrid.put uses the current tool
-        //             instead of creating a new one. This seems alright for now, but it might be done differently
-        //             later.
-        if editor.queryMouse(0, d_mouseinput.down) {
-          editor.tileSelected = selectedTile
-        }
-
-        selectedTilePos := editor.tilemapGrid.mapPos(contentRect, editor.tileSelected.mulf(32))
-        
-        editor.ctx.beginScissorRect(contentRect)
-        editor.ctx.drawRect(th_color.alpha(th.green, 0.3), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32))
-        editor.ctx.endScissor()
-
-        editor.ctx.moveLayer(-1)
-        editor.ctx.beginScissorRect(contentRect)
-
-        editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
-        editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{1, 1}, p: editor.tilemapGrid.mapPos(contentRect, th.Vf2{0, 0})})
-        editor.ctx.endScissor()
+      // NOT-SURE: Currently you can only have one active window,
+      //             it's the window furthest in the hierarchy your mouse is over (roughly).
+      //           We need to create the TilePicker tool manually for that reason, because if EditorGrid did,
+      //             we wouldn't be able to query the mouse here. That means right now EditorGrid.put uses the current tool
+      //             instead of creating a new one. This seems alright for now, but it might be done differently
+      //             later.
+      if editor.queryMouse(0, d_mouseinput.down) {
+        editor.tileSelected = selectedTile
       }
-      editor.endTool()
+
+      selectedTilePos := editor.tilemapGrid.mapPos(contentRect, editor.tileSelected.mulf(32))
+      
+      editor.ctx.beginScissorRect(contentRect)
+      editor.ctx.drawRect(th_color.alpha(th.green, 0.3), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32))
+      editor.ctx.endScissor()
+
+      editor.ctx.moveLayer(-1)
+      editor.ctx.beginScissorRect(contentRect)
+
+      editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
+      editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{1, 1}, p: editor.tilemapGrid.mapPos(contentRect, th.Vf2{0, 0})})
+      editor.ctx.endScissor()
+
       uiEndWindow(editor)
     }
   }

@@ -32,10 +32,7 @@ fn writeFileStr*(path: str, dataStr: str): bool {
     error("Failed to open file")
   }
 
-  data := []char(dataStr)
-  data = delete(data, len(data)-1)
-
-  std.fwrite(file, &data)
+  std.fwrite(file, &[]char(dataStr))
   std.fclose(file)
 
   return true
