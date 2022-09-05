@@ -1,5 +1,5 @@
 import (
-  "rect.um"; "image.um"; "canvas.um"; "window.um"; "th.um"
+  "rect.um"; "image.um"; "canvas.um"; "th.um"
   "d_util.um"; "d_global.um"
 )
 

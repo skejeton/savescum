@@ -75,7 +75,7 @@ fn cameraOffsetRect(r: rect.Rect): rect.Rect {
 
 fn playerControl() {
   if input.isPressed(input.key_up) && chara.onGround {
-    chara.vel.y = -4.36
+    chara.vel.y = -2.57
   }
   if input.isPressed(input.key_left) {
     chara.vel.x = -2

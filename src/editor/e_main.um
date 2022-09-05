@@ -214,25 +214,17 @@ fn (e: ^Editor) queryMouse(btn: int, which: int): bool {
   var mouseButton: d_mouseinput.MouseButtonState
 
   switch btn {
-    case 0:
-      mouseButton = e.mouseState.lmb
-    case 1:
-      mouseButton = e.mouseState.mmb
-    case 2:
-      mouseButton = e.mouseState.rmb
-    default:
-      error(sprintf("Invalid mouse button index %d", btn))
+    case 0: mouseButton = e.mouseState.lmb
+    case 1: mouseButton = e.mouseState.mmb
+    case 2: mouseButton = e.mouseState.rmb
+    default: error(sprintf("Invalid mouse button index %d", btn))
   }
 
   switch which {
-    case d_mouseinput.down:
-      return mouseButton.isDown
-    case d_mouseinput.pressed:
-      return mouseButton.isPressed
-    case d_mouseinput.released:
-      return mouseButton.isReleased
-    default:
-      error(sprintf("Invalid mouse button property index %d", which))
+    case d_mouseinput.down: return mouseButton.isDown
+    case d_mouseinput.pressed: return mouseButton.isPressed
+    case d_mouseinput.released: return mouseButton.isReleased
+    default: error(sprintf("Invalid mouse button property index %d", which))
   }
   return false;
 }
