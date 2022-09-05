@@ -1,0 +1,5 @@
+import ("rect.um")
+
+var (
+  screen*: rect.Rect
+)

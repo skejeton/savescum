@@ -1,5 +1,5 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
-  "d_world.um"; "d_dialogs.um")
+  "d_world.um"; "d_dialogs.um"; "d_global.um")
 
 const (
   shapeBlock          = 0
@@ -63,8 +63,8 @@ fn cameraControl() {
     cameraPos.x += ((chara.rect.x)-cameraPos.x)/4
     cameraPos.y += ((chara.rect.y)-cameraPos.y)/4
   }
-  camera.x = cameraPos.x + cameraAntiPan.x - (window.w-chara.rect.w)/2
-  camera.y = cameraPos.y + cameraAntiPan.y - (window.h-chara.rect.h)/2
+  camera.x = cameraPos.x + cameraAntiPan.x - (d_global.screen.w-chara.rect.w)/2
+  camera.y = cameraPos.y + cameraAntiPan.y - (d_global.screen.h-chara.rect.h)/2
 }
 
 fn cameraOffsetRect(r: rect.Rect): rect.Rect {
@@ -320,8 +320,8 @@ fn _drawRectTangents(r: rect.Rect) {
 fn start*() {
   chara = Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
 
-  cameraPos.x = chara.rect.x-(window.w-chara.rect.w)/2
-  cameraPos.y = chara.rect.y-(window.h-chara.rect.h)/2
+  cameraPos.x = chara.rect.x-(d_global.screen.w-chara.rect.w)/2
+  cameraPos.y = chara.rect.y-(d_global.screen.h-chara.rect.h)/2
   entities = make([]Character, 0)
 }
 

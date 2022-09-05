@@ -11,10 +11,10 @@ fn isMouseInRect*(r: rect.Rect): bool {
   return p.x >= r.x && p.y >= r.y && p.x <= (r.x+r.w) && p.y <= (r.y+r.h)
 }
 
-fn readFileStr*(path: str): str {
+fn readFileStr*(path: str): (bool, str) {
   file := std.fopen(path, "r")
   if file == null {
-    error("Failed to open file")
+    return false, ""
   }
   std.fseek(file, 0, std.seekEnd)
   datasiz := std.ftell(file)
@@ -23,7 +23,7 @@ fn readFileStr*(path: str): str {
   data := make([]char, datasiz+1)
   std.fread(file, data)
   
-  return data
+  return true, data
 }
 
 fn writeFileStr*(path: str, dataStr: str): bool {
@@ -152,3 +152,27 @@ fn rectShrink*(r: rect.Rect, by: real): rect.Rect {
 fn rectMove*(r: rect.Rect, by: th.Vf2): rect.Rect {
   return rect.Rect{r.x+by.x, r.y+by.y, r.w, r.h}
 }
+
+// Rect keep in bounds(
+//   Child rect
+//   Parent rect
+// )
+//
+// Pushes the child rect into the parent rect. 
+// Won't work if child one of rect's dimensions are bigger than parents. 
+fn rectKeepInBounds*(child, parent: rect.Rect): rect.Rect {
+  if child.x < parent.x {
+    child.x = parent.x
+  }
+  if child.y < parent.y {
+    child.y = parent.y
+  }
+  if (child.x+child.w) > (parent.x+parent.w) {
+    child.x = parent.x+parent.w-child.w
+  }
+  if (child.y+child.h) > (parent.y+parent.h) {
+    child.y = parent.y+parent.h-child.h
+  }
+
+  return child
+} 

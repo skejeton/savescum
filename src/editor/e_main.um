@@ -4,6 +4,7 @@
 import (
   "e_drawcmd.um"
   
+  "../d_global.um";
   "../d_background.um"; "../d_colors.um"; "../d_world.um";
   "../d_tileset.um"; "../d_test.um"; "../d_util.um"; "../d_mouseinput.um";
   "../d_game.um"; "../d_script.um";
@@ -12,9 +13,6 @@ import (
 
   "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
 )
-
-////////////
-// USAGE
 
 type (
   EditorGrid = struct {
@@ -90,7 +88,6 @@ type (
 var (
   bevelImage: image.Image
   toolbarIcons: image.Image
-  screen: rect.Rect
 )
 
 fn initWindowManager(): WindowManager {
@@ -546,10 +543,12 @@ fn putSimpleButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = fals
   return bs
 }
 
-const worldPath = "data/sc00_sky.csv"
+const worldPath = "data/sc00_nowayup.csv"
 
 fn editorLoadWorld(editor: ^Editor) {
-  editor.world.load(d_util.readFileStr(worldPath))
+  if ok, data := d_util.readFileStr(worldPath); ok {
+    editor.world.load(data)
+  }
 }
 
 fn editorSaveWorld(editor: ^Editor) {
@@ -573,7 +572,7 @@ fn editorPutToolbar(editor: ^Editor) {
     rectangleHeight = 32 + margin * 2 + padding * 2
   )
 
-  rectangle := rect.Rect{margin, screen.h - rectangleHeight + margin, screen.w - margin * 2, rectangleHeight - margin * 2}
+  rectangle := rect.Rect{margin, d_global.screen.h - rectangleHeight + margin, d_global.screen.w - margin * 2, rectangleHeight - margin * 2}
 
   editor.beginTool("ToolBar", rectangle)
   {
@@ -636,6 +635,7 @@ fn editorInit(): Editor {
   if tilesetImage.validate() == false {
     error("Couldn't load tileset image.")
   }
+  tilesetImage.setfilter(0)
   tileset := d_tileset.fromImage(tilesetImage, 32, 32)
   world := d_world.fromTileset(tileset)
 
@@ -647,30 +647,13 @@ fn editorInit(): Editor {
     tileset: tileset,
     world: world,
     wm: initWindowManager(),
-    mainFont: th_font.load("data/font_mono.ttf", 16, th_font.filterNearest),
+    mainFont: th_font.load("data/font_mono.ttf", 16),
     tools: rootNode}
 
   editorLoadWorld(&result)
   result.tileGrid.panning = result.world.playerSpawnPos.mulf(-32)
   return result
 }
-
-fn keepRectInBounds(child, parent: rect.Rect): rect.Rect {
-  if child.x < parent.x {
-    child.x = parent.x
-  }
-  if child.y < parent.y {
-    child.y = parent.y
-  }
-  if (child.x+child.w) > (parent.x+parent.w) {
-    child.x = parent.x+parent.w-child.w
-  }
-  if (child.y+child.h) > (parent.y+parent.h) {
-    child.y = parent.y+parent.h-child.h
-  }
-
-  return child
-} 
 
 fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: str = "") {
   font := editor.mainFont
@@ -687,7 +670,7 @@ fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: s
     if editor.activeTool == toolChild {
       planeSize := font.measure(toolName)
       r := rect.mk(toolChild.rect.x, toolChild.rect.y-planeSize.y, planeSize.x, planeSize.y)
-      r = keepRectInBounds(r, rect.mk(0, 0, window.w, window.h))
+      r = d_util.rectKeepInBounds(r, rect.mk(0, 0, d_global.screen.w, d_global.screen.h))
       if r.y < 0 {
         r.y += planeSize.y
       }
@@ -764,7 +747,7 @@ fn drawLayerIcon(ctx: ^e_drawcmd.DrawContext, position: th.Vf2, layer: int, show
 type GameCmd = struct {}
 
 fn (gc: ^GameCmd) draw(props: e_drawcmd.DrawProperties) {
-  d_background.draw(rect.mk(0, 0, window.w, window.h))
+  d_background.draw(rect.mk(0, 0, d_global.screen.w, d_global.screen.h))
   d_game.draw()
 }
 
@@ -781,7 +764,7 @@ fn editorPutUi(editor: ^Editor) {
 
     editor.ctx.drawCustom(GameCmd{})
   } else {
-    tool := editor.beginTool("TileEditor", rect.mk(0, 0, window.w, window.h-34))
+    tool := editor.beginTool("TileEditor", rect.mk(0, 0, d_global.screen.w, d_global.screen.h-34))
 
     selectedTile := editor.tileGrid.put(editor, tool.rect)
 
@@ -941,30 +924,32 @@ fn editorDisconnectAllNodes(editor: ^Editor, node: ^ToolNode) {
 fn editorMain*() {
   d_test.itsNotAUnitTest()
 
-  screen = rect.mk(0, 0, 800, 600)
-  window.setup("Cool editor nice", 800, 600)
+  d_global.screen = rect.mk(0, 0, 640, 480)
+  window.setup("Cool editor nice", 640, 480)
 
   // init data
   bevelImage = image.load("data/ts04_bevelbutton.png")
   if bevelImage.validate() == false {
     error("Couldn't load bevel image.")
   }
+  bevelImage.setfilter(0)
 
   toolbarIcons = image.load("data/ts02_trayicons.png")
   if toolbarIcons.validate() == false {
     error("Couldn't load toolbar icons image.")
   }
+  toolbarIcons.setfilter(0)
 
   d_background.init()
 
   editor := editorInit()
 
   // cycle
-  for window.cycle(screen) {
-    screen.w = window.w
-    screen.h = window.h
+  for window.cycle(d_global.screen) {
+    //screen.w = window.w
+    //screen.h = window.h
 
-    canvas.drawRect(th.black, screen)
+    canvas.drawRect(th.black, d_global.screen)
     editorPutUi(&editor)
   }
 
