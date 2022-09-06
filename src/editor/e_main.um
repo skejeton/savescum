@@ -56,6 +56,11 @@ type (
     mainFont: th_font.Font
   }
 
+  ToolState = struct {
+    active: bool
+    hovered: bool
+  }
+
   Editor = struct {
     // Misc
     isDebugOverlayShown: bool
@@ -89,6 +94,7 @@ type (
     currentTool: ^ToolNode
     maybeActiveTool: ^ToolNode
     activeTool: ^ToolNode
+    hoveredTool: ^ToolNode
   }
 )
 
@@ -108,7 +114,8 @@ fn (wm: ^WindowManager) getWindowRect(name: str, fallback: rect.Rect): ^rect.Rec
 
   // Create window.
   wm.windowCount += 1
-  wm.windows[name] = Window{isVisible: true, rect: fallback, lastFrameTouched: wm.frameNumber}
+  wm.windows[name] = Window{isVisible: true, layer: wm.topmostWindowLayer, rect: fallback, lastFrameTouched: wm.frameNumber}
+  wm.topmostWindowLayer++
   return &wm.windows[name].rect
 }
 
@@ -188,8 +195,18 @@ fn (e: ^Editor) endTool() {
   e.currentTool = e.currentTool.parent
 }
 
+fn (e: ^Editor) getToolState(tool: ^ToolNode): ToolState {
+  return ToolState{
+    active: tool == e.activeTool,
+    hovered: tool == e.hoveredTool}
+}
+
+fn (e: ^Editor) getCurrentToolState(): ToolState {
+  return e.getToolState(e.currentTool)
+}
+
 fn (e: ^Editor) isCurrentToolActive(): bool {
-  return e.activeTool == e.currentTool
+  return e.getCurrentToolState().active
 }
 
 /*
@@ -304,12 +321,13 @@ fn putButton(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
   editor.beginTool(name,  r)
 
   buttonState := ButtonState{}
+  toolState := editor.getCurrentToolState()
 
-  if (editor.isCurrentToolActive()) {
+  if (toolState.active) {
     buttonState.isOver = true;
     buttonState.isDown = editor.mouseState.lmb.isDown||editor.mouseState.lmb.isReleased;
     buttonState.isPressed = editor.mouseState.lmb.isPressed;
-    buttonState.isReleased = editor.mouseState.lmb.isReleased && d_util.rectVsPoint(r, editor.mouseState.pos);
+    buttonState.isReleased = editor.mouseState.lmb.isReleased && toolState.hovered;
   }
 
   editor.endTool()
@@ -558,6 +576,24 @@ fn editorToggleGame(editor: ^Editor) {
   editor.isPlaying = !editor.isPlaying
 } 
 
+fn putToolbarIconButton(editor: ^Editor, btnName: str, buttonRectangle: ^rect.Rect, ix, iy: int, revert: bool): bool {
+  pressed := false
+  editor.resources.toolbarIcons.crop(th.Vf2{ix/4.0, iy/4.0}, th.Vf2{(ix+1)/4.0, (iy+1)/4.0})
+  if putIconButton(editor, btnName, buttonRectangle^, editor.resources.toolbarIcons, revert).isReleased {
+    pressed = true
+  }
+  buttonRectangle.x += buttonRectangle.w
+
+  return pressed
+}
+
+fn putToolbarWindowIconButton(editor: ^Editor, windowName: str, buttonRectangle: ^rect.Rect, ix, iy: int) {
+  isVisible := editor.wm.isWindowVisible(windowName)
+  if putToolbarIconButton(editor, windowName, buttonRectangle, ix, iy, isVisible) {
+    editor.wm.setWindowVisible(windowName, !isVisible)
+  }
+}
+
 // Puts window toolbar on the bottom of the screen
 fn editorPutToolbar(editor: ^Editor) {
   const (
@@ -574,32 +610,13 @@ fn editorPutToolbar(editor: ^Editor) {
 
     buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
 
-    editor.resources.toolbarIcons.crop(th.Vf2{0.25, 0.25}, th.Vf2{0.50, 0.50})
-    if (putIconButton(editor, "Play", buttonRectangle, editor.resources.toolbarIcons, editor.isPlaying).isReleased) {
+    if putToolbarIconButton(editor, "Play", &buttonRectangle, 1, 1, editor.isPlaying) {
       editorToggleGame(editor)
     }
 
-    buttonRectangle.x += buttonRectangle.w + margin
-
-
-    {
-      editor.resources.toolbarIcons.crop(th.Vf2{0.0, 0.25}, th.Vf2{0.25, 0.50})
-      isVisible := editor.wm.isWindowVisible("Tile Picker")
-      if (putIconButton(editor, "Tile Picker", buttonRectangle, editor.resources.toolbarIcons, isVisible).isReleased) {
-        editor.wm.setWindowVisible("Tile Picker", !isVisible)
-      }
-      buttonRectangle.x += buttonRectangle.w + margin
-    }
-
-    {
-      editor.resources.toolbarIcons.crop(th.Vf2{3.0/4.0, 1.0/4.0}, th.Vf2{4.0/4.0, 2.0/4.0})
-      isVisible := editor.wm.isWindowVisible("Player Placer")
-      if (putIconButton(editor, "Player Placer", buttonRectangle, editor.resources.toolbarIcons, isVisible).isReleased) {
-        editor.wm.setWindowVisible("Player Placer", !isVisible)
-      }
-      buttonRectangle.x += buttonRectangle.w + margin
-    }
-
+    putToolbarWindowIconButton(editor, "Tile Picker", &buttonRectangle, 0, 1)
+    putToolbarWindowIconButton(editor, "Player Placer", &buttonRectangle, 3, 1)
+    putToolbarWindowIconButton(editor, "Entity List", &buttonRectangle, 0, 2)
 
     // Draw Save/Load
     {
@@ -643,29 +660,74 @@ fn editorInit(resources: EditorResources): Editor {
   return result
 }
 
+type ToolDebugFrame = struct {
+  title: str
+  color: uint32
+  showTitle: bool
+  rect: rect.Rect
+}
+
+fn makeToolDebugFrameFromTool(editor: ^Editor, name: str, tool: ^ToolNode): ToolDebugFrame {
+  toolState := editor.getToolState(tool)
+
+  color := th.red
+  showTitle := false
+
+  if toolState.hovered || toolState.active {
+    showTitle = true
+    color = 0x00   
+
+    color |= int(toolState.hovered) * th.blue
+    color |= int(toolState.active) * th.green
+  }
+
+  return ToolDebugFrame{title: name, color: color, showTitle: showTitle, rect: tool.rect}
+}
+
+type RealColor = struct {
+  r, g, b, a: real
+}
+
+/**
+ * \brief Converts uint32 color to normalized RGBA.
+ */
+fn decomposeColor(color: uint32): RealColor {
+  return RealColor{((color >> 24) & 0xFF) / 255.0, ((color >> 16) & 0xFF) / 255.0, ((color >> 8) & 0xFF) / 255.0, ((color >> 0) & 0xFF) / 255.0}
+}
+
+/**
+ * \brief Returns true if the foreground will look good white,
+ *        or black. Heuristic for things like text on a background.
+ */
+fn isWhiteForeground(color: uint32): bool {
+  realColor := decomposeColor(color)
+  sum := realColor.r * 0.7 + realColor.g * 1.5 + realColor.b * 0.8
+  return sum >= 1.5
+}
+
+fn drawToolDebugFrame(frame: ToolDebugFrame, font: th_font.Font) {
+  textColor := th.white
+  if isWhiteForeground(frame.color) {
+    textColor = th.black
+  }
+
+  if frame.showTitle {
+    // Draw the title.
+    planeSize := font.measure(frame.title)
+    r := rect.mk(frame.rect.x, frame.rect.y-planeSize.y, planeSize.x, planeSize.y)
+    r = d_util.rectKeepInBounds(r, rect.mk(0, 0, d_global.screen.w, d_global.screen.h))
+
+    canvas.drawRect(frame.color, r)
+    font.draw(frame.title, r.getPos(), textColor)
+  }
+  d_util.drawRectLines(frame.color, frame.rect)
+}
+
 fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: str = "") {
   font := editor.resources.mainFont
 
   for toolName, toolChild in tool.children {
-    baseColor := th.red
-    if editor.activeTool == toolChild {
-      baseColor = th.green
-    }
-
-    toolName = prefix + toolName
-
-    // NOREP(PlaneText,TextRect,MeasureText,ColorAlpha,RectFrom2Vec2f)
-    if editor.activeTool == toolChild {
-      planeSize := font.measure(toolName)
-      r := rect.mk(toolChild.rect.x, toolChild.rect.y-planeSize.y, planeSize.x, planeSize.y)
-      r = d_util.rectKeepInBounds(r, rect.mk(0, 0, d_global.screen.w, d_global.screen.h))
-      if r.y < 0 {
-        r.y += planeSize.y
-      }
-      canvas.drawRect(baseColor&0xFFFFFFAA, r)
-      font.draw(toolName, r.getPos(), th.white)
-    }
-    d_util.drawRectLines(baseColor, toolChild.rect)
+    drawToolDebugFrame(makeToolDebugFrameFromTool(editor, toolName, toolChild), font)
 
     putEditorDebugToolFramesRecursive(editor, toolChild, toolName+"::")
   }
@@ -741,7 +803,7 @@ fn (gc: ^GameCmd) draw(props: e_drawcmd.DrawProperties) {
 }
 
 fn putPlayerPlacer(editor: ^Editor) {
-  if contentRect, ok := uiBeginWindow(editor, "Player Placer", rect.mk(30, 30+32*7+20, 32*5, 32*7)); ok { 
+  if contentRect, ok := uiBeginWindow(editor, "Player Placer", rect.mk(5, 5+32*7+20, 32*5, 32*7)); ok { 
     contentRect = d_util.rectShrink(contentRect, 5)
     position := contentRect.getPos()
     playerPos := editor.world.playerSpawnPos
@@ -767,7 +829,7 @@ fn putPlayerPlacer(editor: ^Editor) {
 }
 
 fn putTilePicker(editor: ^Editor) {
-  if contentRect, ok := uiBeginWindow(editor, "Tile Picker", rect.mk(30, 30, 32*5, 32*7)); ok { 
+  if contentRect, ok := uiBeginWindow(editor, "Tile Picker", rect.mk(5, 5, 32*5, 32*7)); ok { 
     editor.ctx.drawRect(th.black, contentRect)
     editor.ctx.moveLayer(1)
     {
@@ -795,6 +857,40 @@ fn putTilePicker(editor: ^Editor) {
     editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
     editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{1, 1}, p: editor.tilemapGrid.mapPos(contentRect, th.Vf2{0, 0})})
     editor.ctx.endScissor()
+
+    uiEndWindow(editor)
+  }
+}
+
+type EntityDesc = struct {
+  name: str
+}
+
+fn putEntityEntry(editor: ^Editor, ent: EntityDesc, r: rect.Rect) {
+  r.w -= 30
+  editor.beginTool(ent.name, r)
+  {
+    putSimpleButton(editor, r, ent.name)
+    r.x += r.w
+    r.w = 30
+    putSimpleButton(editor, r, "X")
+  }
+  editor.endTool()
+}
+
+fn putEntityList(editor: ^Editor) {
+  ents := []EntityDesc{
+    EntityDesc{name: "Elton John"},
+    EntityDesc{name: "Super Mario"},
+    EntityDesc{name: "Bill gates"}}
+
+  if contentRect, ok := uiBeginWindow(editor, "Entity List", rect.mk(800-200-5, 5, 200, 300)); ok {
+    entryRect := contentRect
+    entryRect.h = 30
+    for i, ent in ents {
+      putEntityEntry(editor, ent, entryRect)
+      entryRect.y += 30
+    }
 
     uiEndWindow(editor)
   }
@@ -873,13 +969,14 @@ fn editorPutUi(editor: ^Editor) {
   if !editor.isPlaying {
     putTilePicker(editor)
     putPlayerPlacer(editor)
+    putEntityList(editor)
   }
 
   if editor.isRelocatingPlayer {
-    editor.ctx.moveLayer(100000)
+    editor.ctx.moveLayer(10000000)
     editor.resources.toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
     editor.ctx.drawImage(editor.resources.toolbarIcons, d_util.posTrans(editor.mouseState.pos.x, editor.mouseState.pos.y))
-    editor.ctx.moveLayer(-100000)
+    editor.ctx.moveLayer(-10000000)
   }
 
   // flush render context
@@ -899,6 +996,7 @@ fn editorPutUi(editor: ^Editor) {
   if !isAnyButtonHeld(&editor.mouseState) {
     editor.activeTool = editor.maybeActiveTool
   }
+  editor.hoveredTool = editor.maybeActiveTool
   editor.maybeActiveTool = null
   editor.pruneToolsRecursive(editor.tools)
 }
@@ -938,8 +1036,8 @@ fn loadEditorResourcesOrShowErrorScreen(rl: ^d_resources.ResourceLoader): Editor
 fn editorMain*() {
   d_test.itsNotAUnitTest()
 
-  d_global.screen = rect.mk(0, 0, 640, 480)
-  window.setup("Cool editor nice", 640, 480)
+  d_global.screen = rect.mk(0, 0, 800, 600)
+  window.setup("Cool editor nice", trunc(d_global.screen.w), trunc(d_global.screen.h))
 
   // init data
   rl := d_resources.initResourceLoader()
@@ -952,8 +1050,7 @@ fn editorMain*() {
 
   // cycle
   for window.cycle(d_global.screen) {
-    //screen.w = window.w
-    //screen.h = window.h
+    d_global.screen = rect.mk(0, 0, window.w, window.h)
 
     canvas.drawRect(th.black, d_global.screen)
     editorPutUi(&editor)
