@@ -1,5 +1,5 @@
 import (
-  "std.um"; "image.um"; "th.um"; "rect.um"; "window.um"; th_font = "font.um";
+  "std.um"; "image.um"; "th.um"; "rect.um"; th_font = "font.um";
   "d_util.um"; "d_typer.um"; "d_global.um"
 )
 

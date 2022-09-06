@@ -1,4 +1,4 @@
-import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "window.um"
+import ("th.um"; "rect.um"; "canvas.um"; "input.um"; 
   "d_world.um"; "d_dialogs.um"; "d_global.um")
 
 const (

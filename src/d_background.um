@@ -1,6 +1,6 @@
 import (
   "rect.um"; "image.um"; "canvas.um"; "th.um"
-  "d_util.um"; "d_global.um"
+  "d_util.um"; "d_global.um"; "d_resources.um"
 )
 
 var (
@@ -8,8 +8,8 @@ var (
   width: real
 )
 
-fn init*() {
-  imgClouds = image.load("data/bg00_sky.png")
+fn init*(rl: ^d_resources.ResourceLoader) {
+  imgClouds = d_resources.loadImage(rl, "data/bg00_sky.png")
   width = imgClouds.getDims().x
 }
 

@@ -1,0 +1,79 @@
+import (
+  "d_resources.um"
+  "canvas.um"
+  "window.um"
+  "rect.um"
+  "th.um"
+  "input.um"
+  th_font = "font.um"
+)
+
+var (
+  font: th_font.Font
+  scroll: th.fu
+  y: th.fu
+)
+
+fn restart() {
+  y = 0
+  canvas.drawRect(th.black, rect.mk(0, 0, window.w, window.h))
+}
+
+fn cycle(): bool {
+  return window.cycle(rect.mk(0, 0, window.w, window.h))
+}
+
+fn charToUpper(c: char): char {
+  if c >= 'a' && c <= 'z' {
+    return char(int(c) + int('A')-int('a'))
+  }
+
+  return c
+}
+
+fn makeUppercase(text: str): str {
+  for i, c in text {
+    text[i] = charToUpper(c)
+  }
+
+  return text
+}
+
+fn fontHeight(): th.fu {
+  if font.validate() {
+    return font.measure(" ").y
+  }
+  return 10.0
+}
+
+fn drawText(text: str, pos: th.Vf2, color: uint32) {
+  if font.validate() {
+    font.draw(text, pos, color, 1)
+  } else {
+    canvas.drawText(makeUppercase(text), pos, color, 2)
+  }
+}
+
+fn pushText(text: str, color: uint32 = th.white) {
+  drawText(text, th.Vf2{0, y+scroll}, color)
+  y += fontHeight() + 10.0
+}
+
+fn init() {
+  // Try to load a better font, the fallback will be used otherwise.
+  font = th_font.load("data/font_mono.ttf", 16)
+}
+
+fn showResourceLoadingError*(loader: ^d_resources.ResourceLoader) {
+  init()
+  for cycle() {
+    if input.isPressed(input.mouse_up) { scroll += fontHeight() }
+    if input.isPressed(input.mouse_down) { scroll -= fontHeight() }
+    restart()
+    pushText("Drat! I couldn't load some resources:")
+    for i, error in loader.errors {
+      pushText(" "+error, th.red)
+    }
+  }
+  exit()
+}

@@ -4,7 +4,7 @@
 import (
   "e_drawcmd.um"
   
-  "../d_global.um";
+  "../d_global.um"; "../d_resources.um"; "../d_problem_screen.um";
   "../d_background.um"; "../d_colors.um"; "../d_world.um";
   "../d_tileset.um"; "../d_test.um"; "../d_util.um"; "../d_mouseinput.um";
   "../d_game.um"; "../d_script.um";
@@ -49,6 +49,13 @@ type (
     windows: map[str]Window
   }
 
+  EditorResources = struct {
+    toolbarIcons: image.Image
+    bevelImage: image.Image
+    tilesetImage: image.Image
+    mainFont: th_font.Font
+  }
+
   Editor = struct {
     // Misc
     isDebugOverlayShown: bool
@@ -56,7 +63,7 @@ type (
 
     // Visual data
     ctx: e_drawcmd.DrawContext
-    mainFont: th_font.Font
+    resources: EditorResources
 
     // Editors
     tileGrid: EditorGrid
@@ -83,11 +90,6 @@ type (
     maybeActiveTool: ^ToolNode
     activeTool: ^ToolNode
   }
-)
-
-var (
-  bevelImage: image.Image
-  toolbarIcons: image.Image
 )
 
 fn initWindowManager(): WindowManager {
@@ -238,7 +240,7 @@ fn (e: ^Editor) queryMouse(btn: int, which: int): bool {
 // Draws a beveled rectangle in Windows 98 style.
 // It may have a problem with displaying colors somewhat incorrectly,
 //   because the middle of the rectangle is tinted gray slightly.
-fn drawBevelRect(ctx: ^e_drawcmd.DrawContext, r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
+fn drawBevelRect(editor: ^Editor, r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
   const (
     bevelOuterRect = rect.Rect{0, 0, 5, 5}
     bevelInnerRect = rect.Rect{2, 2, 1, 1}
@@ -248,9 +250,9 @@ fn drawBevelRect(ctx: ^e_drawcmd.DrawContext, r: rect.Rect, pushed: bool = false
   )
 
   if pushed {
-    ctx.drawNinepatch(bevelImage, bevelPushedOuterRect, bevelPushedInnerRect, r, color)
+    editor.ctx.drawNinepatch(editor.resources.bevelImage, bevelPushedOuterRect, bevelPushedInnerRect, r, color)
   } else {
-    ctx.drawNinepatch(bevelImage, bevelOuterRect, bevelInnerRect, r, color)
+    editor.ctx.drawNinepatch(editor.resources.bevelImage, bevelOuterRect, bevelInnerRect, r, color)
   }
 }
 
@@ -287,7 +289,7 @@ fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
 }
 
 // TODO: Ability to pass colour
-fn drawButton(ctx: ^e_drawcmd.DrawContext, r: rect.Rect, buttonState: ButtonState, revert: bool = false) {
+fn drawButton(editor: ^Editor, r: rect.Rect, buttonState: ButtonState, revert: bool = false) {
   pushed := buttonState.isDown != revert
 
   colorMod := 0xFFFFFFFF
@@ -295,7 +297,7 @@ fn drawButton(ctx: ^e_drawcmd.DrawContext, r: rect.Rect, buttonState: ButtonStat
     colorMod = 0xCCCCCCFF
   }
 
-  drawBevelRect(ctx, r, pushed, colorMod)
+  drawBevelRect(editor, r, pushed, colorMod)
 }
 
 fn putButton(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
@@ -316,7 +318,7 @@ fn putButton(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
 
 fn putButtonBase(editor: ^Editor, r: rect.Rect, name: str, revert: bool = false): ButtonState {
   bs := putButton(editor, r, name)
-  drawButton(&editor.ctx, r, bs, revert)
+  drawButton(editor, r, bs, revert)
   return bs
 }
 
@@ -352,7 +354,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
   // Frame tool.
   editor.beginTool(title, windowRect^)
   {
-    drawBevelRect(&editor.ctx, windowRect^)
+    drawBevelRect(editor, windowRect^)
 
     buttonSize := th.Vf2{20, titlebarHeight}
     buttonRect := rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y)
@@ -382,7 +384,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
 
       editor.ctx.drawRect(0x000077FF, rectangle)
       editor.ctx.beginScissorRect(rectangle)
-        editor.ctx.drawText(editor.mainFont, title, centerTextWithinRect(editor.mainFont, title, rectangle), th.white)
+        editor.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, rectangle), th.white)
       editor.ctx.endScissor()
     
       position.x += handleSize.x + padding
@@ -515,8 +517,8 @@ fn (ge: ^EditorGrid) put(editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
   coordinateString := sprintf("%+-4g %+-4g", coordinate.x, coordinate.y)
 
   bottomLeft := th.Vf2{rectangle.x, rectangle.y+rectangle.h}
-  bottomLeft.y -= editor.mainFont.measure(coordinateString).y
-  editor.ctx.drawText(editor.mainFont, coordinateString, bottomLeft, th.white)
+  bottomLeft.y -= editor.resources.mainFont.measure(coordinateString).y
+  editor.ctx.drawText(editor.resources.mainFont, coordinateString, bottomLeft, th.white)
 
   editor.ctx.endScissor()
 
@@ -531,7 +533,7 @@ fn putIconButton(editor: ^Editor, name: str, r: rect.Rect, img: image.Image, rev
 
 fn putSimpleButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = false): ButtonState {
   bs := putButtonBase(editor, r, text, revert)
-  editor.ctx.drawText(editor.mainFont, text, centerTextWithinRect(editor.mainFont, text, r), th.black)
+  editor.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), th.black)
   return bs
 }
 
@@ -568,12 +570,12 @@ fn editorPutToolbar(editor: ^Editor) {
 
   editor.beginTool("ToolBar", rectangle)
   {
-    drawBevelRect(&editor.ctx, rectangle, false)
+    drawBevelRect(editor, rectangle, false)
 
     buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
 
-    toolbarIcons.crop(th.Vf2{0.25, 0.25}, th.Vf2{0.50, 0.50})
-    if (putIconButton(editor, "Play", buttonRectangle, toolbarIcons, editor.isPlaying).isReleased) {
+    editor.resources.toolbarIcons.crop(th.Vf2{0.25, 0.25}, th.Vf2{0.50, 0.50})
+    if (putIconButton(editor, "Play", buttonRectangle, editor.resources.toolbarIcons, editor.isPlaying).isReleased) {
       editorToggleGame(editor)
     }
 
@@ -581,18 +583,18 @@ fn editorPutToolbar(editor: ^Editor) {
 
 
     {
-      toolbarIcons.crop(th.Vf2{0.0, 0.25}, th.Vf2{0.25, 0.50})
+      editor.resources.toolbarIcons.crop(th.Vf2{0.0, 0.25}, th.Vf2{0.25, 0.50})
       isVisible := editor.wm.isWindowVisible("Tile Picker")
-      if (putIconButton(editor, "Tile Picker", buttonRectangle, toolbarIcons, isVisible).isReleased) {
+      if (putIconButton(editor, "Tile Picker", buttonRectangle, editor.resources.toolbarIcons, isVisible).isReleased) {
         editor.wm.setWindowVisible("Tile Picker", !isVisible)
       }
       buttonRectangle.x += buttonRectangle.w + margin
     }
 
     {
-      toolbarIcons.crop(th.Vf2{3.0/4.0, 1.0/4.0}, th.Vf2{4.0/4.0, 2.0/4.0})
+      editor.resources.toolbarIcons.crop(th.Vf2{3.0/4.0, 1.0/4.0}, th.Vf2{4.0/4.0, 2.0/4.0})
       isVisible := editor.wm.isWindowVisible("Player Placer")
-      if (putIconButton(editor, "Player Placer", buttonRectangle, toolbarIcons, isVisible).isReleased) {
+      if (putIconButton(editor, "Player Placer", buttonRectangle, editor.resources.toolbarIcons, isVisible).isReleased) {
         editor.wm.setWindowVisible("Player Placer", !isVisible)
       }
       buttonRectangle.x += buttonRectangle.w + margin
@@ -618,17 +620,11 @@ fn editorPutToolbar(editor: ^Editor) {
   editor.endTool()
 }
 
-fn editorInit(): Editor {
+fn editorInit(resources: EditorResources): Editor {
   rootNode := new(ToolNode)
   rootNode ^= ToolNode{children: map[str]^ToolNode{}}
 
-
-  tilesetImage := image.load("data/ts00_sky.png")
-  if tilesetImage.validate() == false {
-    error("Couldn't load tileset image.")
-  }
-  tilesetImage.setfilter(0)
-  tileset := d_tileset.fromImage(tilesetImage, 32, 32)
+  tileset := d_tileset.fromImage(resources.tilesetImage, 32, 32)
   world := d_world.fromTileset(tileset)
 
   result := Editor{
@@ -638,8 +634,8 @@ fn editorInit(): Editor {
     tilemapShowAllLayers: true,
     tileset: tileset,
     world: world,
+    resources: resources,
     wm: initWindowManager(),
-    mainFont: th_font.load("data/font_mono.ttf", 16),
     tools: rootNode}
 
   editorLoadWorld(&result)
@@ -648,7 +644,7 @@ fn editorInit(): Editor {
 }
 
 fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: str = "") {
-  font := editor.mainFont
+  font := editor.resources.mainFont
 
   for toolName, toolChild in tool.children {
     baseColor := th.red
@@ -685,6 +681,7 @@ fn isAnyButtonHeld(mouseState: ^d_mouseinput.MouseState): bool {
 
 type WorldEditCmd = struct {
   showLayers: uint // 3 bits
+  toolbarIcons: image.Image
   rect: rect.Rect
   offset: th.Vf2
   world: ^d_world.World
@@ -702,9 +699,9 @@ fn (d: ^WorldEditCmd) draw(props: e_drawcmd.DrawProperties) {
     d.world.drawLayer(d.offset, 1)
   }
 
-  toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
+  d.toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
   pos := d.world.playerSpawnPos.mulf(32).sub(d.offset)
-  toolbarIcons.draw(d_util.posTrans(pos.x, pos.y))
+  d.toolbarIcons.draw(d_util.posTrans(pos.x, pos.y))
 }
 
 fn getShownLayersBitmap(layerSelected: int, showAllLayers: bool): uint {
@@ -741,6 +738,66 @@ type GameCmd = struct {}
 fn (gc: ^GameCmd) draw(props: e_drawcmd.DrawProperties) {
   d_background.draw(rect.mk(0, 0, d_global.screen.w, d_global.screen.h))
   d_game.draw()
+}
+
+fn putPlayerPlacer(editor: ^Editor) {
+  if contentRect, ok := uiBeginWindow(editor, "Player Placer", rect.mk(30, 30+32*7+20, 32*5, 32*7)); ok { 
+    contentRect = d_util.rectShrink(contentRect, 5)
+    position := contentRect.getPos()
+    playerPos := editor.world.playerSpawnPos
+
+    editor.ctx.beginScissorRect(contentRect)
+    {
+      text := sprintf("Player at: %d %d", trunc(playerPos.x), trunc(playerPos.y))
+      editor.ctx.drawText(editor.resources.mainFont, text, position, th.black)
+      position.y += editor.resources.mainFont.measure(text).y+10
+
+      if (putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Relocate", editor.isRelocatingPlayer).isReleased) {
+        editor.isRelocatingPlayer = !editor.isRelocatingPlayer
+      }
+      position.y += 30+10
+
+      if (editor.isRelocatingPlayer) {
+        editor.ctx.drawText(editor.resources.mainFont, "Click on the grid\nTo place player.", position, th.black)
+      }
+    }
+    editor.ctx.endScissor()
+    uiEndWindow(editor)
+  }
+}
+
+fn putTilePicker(editor: ^Editor) {
+  if contentRect, ok := uiBeginWindow(editor, "Tile Picker", rect.mk(30, 30, 32*5, 32*7)); ok { 
+    editor.ctx.drawRect(th.black, contentRect)
+    editor.ctx.moveLayer(1)
+    {
+      selectedTile := editor.tilemapGrid.put(editor, contentRect)
+
+      // NOT-SURE: Currently you can only have one active window,
+      //             it's the window furthest in the hierarchy your mouse is over (roughly).
+      //           We need to create the TilePicker tool manually for that reason, because if EditorGrid did,
+      //             we wouldn't be able to query the mouse here. That means right now EditorGrid.put uses the current tool
+      //             instead of creating a new one. This seems alright for now, but it might be done differently
+      //             later.
+      if editor.queryMouse(0, d_mouseinput.down) {
+        editor.tileSelected = selectedTile
+      }
+
+      selectedTilePos := editor.tilemapGrid.mapPos(contentRect, editor.tileSelected.mulf(32))
+      
+      editor.ctx.beginScissorRect(contentRect)
+      editor.ctx.drawRect(th_color.alpha(th.green, 0.3), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32))
+      editor.ctx.endScissor()
+    }
+    editor.ctx.moveLayer(-1)
+    editor.ctx.beginScissorRect(contentRect)
+
+    editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
+    editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{1, 1}, p: editor.tilemapGrid.mapPos(contentRect, th.Vf2{0, 0})})
+    editor.ctx.endScissor()
+
+    uiEndWindow(editor)
+  }
 }
 
 fn editorPutUi(editor: ^Editor) {
@@ -806,7 +863,7 @@ fn editorPutUi(editor: ^Editor) {
     }
 
     editor.ctx.moveLayer(-1)
-    editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), tool.rect, editor.tileGrid.mapPos(tool.rect, th.Vf2{0, 0}).mulf(-1), &editor.world})
+    editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tileGrid.mapPos(tool.rect, th.Vf2{0, 0}).mulf(-1), &editor.world})
     editor.ctx.moveLayer(1)
 
     editor.endTool()
@@ -814,67 +871,14 @@ fn editorPutUi(editor: ^Editor) {
   editorPutToolbar(editor)
 
   if !editor.isPlaying {
-    if contentRect, ok := uiBeginWindow(editor, "Player Placer", rect.mk(30, 30+32*7+20, 32*5, 32*7)); ok { 
-      contentRect = d_util.rectShrink(contentRect, 5)
-      position := contentRect.getPos()
-      playerPos := editor.world.playerSpawnPos
-
-      editor.ctx.beginScissorRect(contentRect)
-      {
-        text := sprintf("Player at: %d %d", trunc(playerPos.x), trunc(playerPos.y))
-        editor.ctx.drawText(editor.mainFont, text, position, th.black)
-        position.y += editor.mainFont.measure(text).y+10
-
-        if (putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Relocate", editor.isRelocatingPlayer).isReleased) {
-          editor.isRelocatingPlayer = !editor.isRelocatingPlayer
-        }
-        position.y += 30+10
-
-        if (editor.isRelocatingPlayer) {
-          editor.ctx.drawText(editor.mainFont, "Click on the grid\nTo place player.", position, th.black)
-        }
-      }
-      editor.ctx.endScissor()
-      uiEndWindow(editor)
-    }
-
-    if contentRect, ok := uiBeginWindow(editor, "Tile Picker", rect.mk(30, 30, 32*5, 32*7)); ok { 
-      editor.ctx.drawRect(th.black, contentRect)
-      editor.ctx.moveLayer(1)
-      {
-        selectedTile := editor.tilemapGrid.put(editor, contentRect)
-
-        // NOT-SURE: Currently you can only have one active window,
-        //             it's the window furthest in the hierarchy your mouse is over (roughly).
-        //           We need to create the TilePicker tool manually for that reason, because if EditorGrid did,
-        //             we wouldn't be able to query the mouse here. That means right now EditorGrid.put uses the current tool
-        //             instead of creating a new one. This seems alright for now, but it might be done differently
-        //             later.
-        if editor.queryMouse(0, d_mouseinput.down) {
-          editor.tileSelected = selectedTile
-        }
-
-        selectedTilePos := editor.tilemapGrid.mapPos(contentRect, editor.tileSelected.mulf(32))
-        
-        editor.ctx.beginScissorRect(contentRect)
-        editor.ctx.drawRect(th_color.alpha(th.green, 0.3), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32))
-        editor.ctx.endScissor()
-      }
-      editor.ctx.moveLayer(-1)
-      editor.ctx.beginScissorRect(contentRect)
-
-      editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
-      editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{1, 1}, p: editor.tilemapGrid.mapPos(contentRect, th.Vf2{0, 0})})
-      editor.ctx.endScissor()
-
-      uiEndWindow(editor)
-    }
+    putTilePicker(editor)
+    putPlayerPlacer(editor)
   }
 
   if editor.isRelocatingPlayer {
     editor.ctx.moveLayer(100000)
-    toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
-    editor.ctx.drawImage(toolbarIcons, d_util.posTrans(editor.mouseState.pos.x, editor.mouseState.pos.y))
+    editor.resources.toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
+    editor.ctx.drawImage(editor.resources.toolbarIcons, d_util.posTrans(editor.mouseState.pos.x, editor.mouseState.pos.y))
     editor.ctx.moveLayer(-100000)
   }
 
@@ -913,6 +917,24 @@ fn editorDisconnectAllNodes(editor: ^Editor, node: ^ToolNode) {
   }
 }
 
+
+/** 
+ * \brief It will try to load the editor resources. 
+ *        If it fails to load the "resource not found" screen will appear then.
+ *        
+ * NOTE: This must be called after you've done the window setup.
+ */
+fn loadEditorResourcesOrShowErrorScreen(rl: ^d_resources.ResourceLoader): EditorResources {
+
+  editorResources := EditorResources {
+    bevelImage: d_resources.loadImage(rl, "data/ts04_bevelbutton.png"),
+    tilesetImage: d_resources.loadImage(rl, "data/ts00_sky.png"),
+    toolbarIcons: d_resources.loadImage(rl, "data/ts02_trayicons.png"),
+    mainFont: d_resources.loadFont(rl, "data/font_mono.ttf", 16, 0)}
+
+  return editorResources
+}
+
 fn editorMain*() {
   d_test.itsNotAUnitTest()
 
@@ -920,21 +942,13 @@ fn editorMain*() {
   window.setup("Cool editor nice", 640, 480)
 
   // init data
-  bevelImage = image.load("data/ts04_bevelbutton.png")
-  if bevelImage.validate() == false {
-    error("Couldn't load bevel image.")
+  rl := d_resources.initResourceLoader()
+  d_background.init(&rl)
+  editor := editorInit(loadEditorResourcesOrShowErrorScreen(&rl))
+
+  if d_resources.hasErrors(&rl) {
+    d_problem_screen.showResourceLoadingError(&rl)
   }
-  bevelImage.setfilter(0)
-
-  toolbarIcons = image.load("data/ts02_trayicons.png")
-  if toolbarIcons.validate() == false {
-    error("Couldn't load toolbar icons image.")
-  }
-  toolbarIcons.setfilter(0)
-
-  d_background.init()
-
-  editor := editorInit()
 
   // cycle
   for window.cycle(d_global.screen) {

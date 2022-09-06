@@ -1,0 +1,1 @@
+Dialogs currently don't use resource loader, so if the loading fails, RIP. 
