@@ -159,10 +159,9 @@ fn (e: ^Editor) pruneToolsRecursive(node: ^ToolNode) {
     e.pruneToolsRecursive(node.children[key])
 
     if node.children[key].lastFrameTouched < e.frameNumber {
-      node.children = delete(node.children, key)
-
       // Fix leak
-      node.parent = null
+      node.children[key].parent = null
+      node.children = delete(node.children, key)
     }
 
   }
@@ -173,7 +172,6 @@ fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): ^ToolNode {
   node.lastFrameTouched = e.frameNumber
   node.rect = toolRect
   node.layer = e.ctx.currentLayerId
-
   e.currentTool = node
   isOverMaybeActiveTool := true
 
@@ -873,7 +871,11 @@ fn putEntityEntry(editor: ^Editor, ent: EntityDesc, r: rect.Rect) {
     putSimpleButton(editor, r, ent.name)
     r.x += r.w
     r.w = 30
-    putSimpleButton(editor, r, "X")
+    if input.isPressed(input.key_shift) {
+      putSimpleButton(editor, r, "␡")
+    } else {
+      putSimpleButton(editor, r, "✎")
+    }
   }
   editor.endTool()
 }
@@ -1022,7 +1024,7 @@ fn editorDisconnectAllNodes(editor: ^Editor, node: ^ToolNode) {
  *        
  * NOTE: This must be called after you've done the window setup.
  */
-fn loadEditorResourcesOrShowErrorScreen(rl: ^d_resources.ResourceLoader): EditorResources {
+fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
 
   editorResources := EditorResources {
     bevelImage: d_resources.loadImage(rl, "data/ts04_bevelbutton.png"),
@@ -1042,7 +1044,7 @@ fn editorMain*() {
   // init data
   rl := d_resources.initResourceLoader()
   d_background.init(&rl)
-  editor := editorInit(loadEditorResourcesOrShowErrorScreen(&rl))
+  editor := editorInit(loadEditorResources(&rl))
 
   if d_resources.hasErrors(&rl) {
     d_problem_screen.showResourceLoadingError(&rl)
