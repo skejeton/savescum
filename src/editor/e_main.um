@@ -4,6 +4,7 @@
 import (
   "e_drawcmd.um"
   
+  "../d_hashname.um"
   "../d_global.um"; "../d_resources.um"; "../d_problem_screen.um";
   "../d_background.um"; "../d_colors.um"; "../d_world.um";
   "../d_tileset.um"; "../d_test.um"; "../d_util.um"; "../d_mouseinput.um";
@@ -23,6 +24,7 @@ type (
   ToolNode = struct {
     children: map[str]^ToolNode
     parent: ^ToolNode
+    userdata: interface{}
     lastFrameTouched: int
     layer: int
     rect: rect.Rect
@@ -49,6 +51,18 @@ type (
     windows: map[str]Window
   }
 
+  ScrollAreaInfo = struct {
+    areaRect: rect.Rect
+    contentRect: rect.Rect
+  }
+
+  WindowInfo = struct {
+    contentRect: rect.Rect
+    titlebarRect: rect.Rect
+  }
+
+  EntityListAction = int
+
   EditorResources = struct {
     toolbarIcons: image.Image
     bevelImage: image.Image
@@ -59,6 +73,16 @@ type (
   ToolState = struct {
     active: bool
     hovered: bool
+  }
+
+  EntityDesc = struct {
+    id: str
+    name: str
+    tags: str
+  }
+
+  EditorEntities = struct {
+    list: []EntityDesc
   }
 
   Editor = struct {
@@ -80,6 +104,7 @@ type (
     world: d_world.World
     isPlaying: bool
     isRelocatingPlayer: bool
+    entities: EditorEntities
 
     // UI misc.
     currentWindow: str
@@ -96,6 +121,12 @@ type (
     activeTool: ^ToolNode
     hoveredTool: ^ToolNode
   }
+)
+
+const (
+  entityListActionNone = EntityListAction(0)
+  entityListActionRemove = EntityListAction(1)
+  entityListActionEdit = EntityListAction(2)
 )
 
 fn initWindowManager(): WindowManager {
@@ -178,6 +209,10 @@ fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): ^ToolNode {
   if e.maybeActiveTool != null {
     isOverMaybeActiveTool = node.layer >= e.maybeActiveTool.layer
   }
+ 
+  if ok, scissorRect := e.ctx.getCurrentScissorRect(); ok {
+    isOverMaybeActiveTool = isOverMaybeActiveTool && d_util.rectVsPoint(scissorRect, e.mouseState.pos)
+  }
 
   if isOverMaybeActiveTool && d_util.rectVsPoint(node.rect, e.mouseState.pos) {
     e.maybeActiveTool = node
@@ -191,6 +226,18 @@ fn (e: ^Editor) endTool() {
     error("Parent node is null, beginTool/endTool mismatched!")
   }
   e.currentTool = e.currentTool.parent
+}
+
+fn (e: ^Editor) getProperty(name: str, def: interface{}): interface{} {
+  // Create a dummy tool where we'll store the data.
+  tool := e.beginTool(name, rect.mk(-100000, -100000, 0, 0))
+  e.endTool()
+
+  if !valid(tool.userdata) {
+    tool.userdata = def
+  }
+
+  return tool.userdata
 }
 
 fn (e: ^Editor) getToolState(tool: ^ToolNode): ToolState {
@@ -244,6 +291,14 @@ fn (e: ^Editor) queryMouse(btn: int, which: int): bool {
     default: error(sprintf("Invalid mouse button property index %d", which))
   }
   return false;
+}
+
+fn (e: ^Editor) queryScroll(): real {
+  if e.isCurrentToolActive() == false {
+    return 0
+  }
+
+  return e.mouseState.wheelY
 }
 
 // Draw bevel rect(
@@ -300,7 +355,7 @@ fn vf2IntMod(a, b: th.Vf2): th.Vf2 {
 //   The rect to center in
 // )
 fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
-  return r.getDims().sub(font.measure(text)).divf(2.0).add(r.getPos())
+  return r.getDims().sub(font.measure(text)).divf(2.0).add(r.getPos()).subf(1)
 }
 
 // TODO: Ability to pass colour
@@ -338,7 +393,7 @@ fn putButtonBase(editor: ^Editor, r: rect.Rect, name: str, revert: bool = false)
   return bs
 }
 
-fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
+fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) {
   const (
     padding = 2
     titlebarHeight = 18
@@ -346,14 +401,14 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
 
   var (
     contentRect: rect.Rect
+    titlebarRect: rect.Rect
     movement: th.Vf2
   )
 
   windowRect := editor.wm.getWindowRect(title, r)
 
-
   if !editor.wm.isWindowVisible(title) {
-    return rect.mk(0, 0, 0, 0), false
+    return WindowInfo{}, false
   }
   if editor.currentWindow != "" {
     error("BeginWindow is called before EndWindow")
@@ -372,7 +427,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
   {
     drawBevelRect(editor, windowRect^)
 
-    buttonSize := th.Vf2{20, titlebarHeight}
+    buttonSize := th.Vf2{titlebarHeight, titlebarHeight}
     buttonRect := rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y)
 
     if (putButtonBase(editor, buttonRect, "Close").isReleased) {
@@ -384,10 +439,10 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
 
     {
       handleSize := th.Vf2{windowRect.w - position.x - padding, titlebarHeight}
-      rectangle := rect.mk(position.x+windowRect.x, position.y+windowRect.y, handleSize.x-1, handleSize.y)
+      titlebarRect = rect.mk(position.x+windowRect.x, position.y+windowRect.y, handleSize.x-1, handleSize.y)
 
       // Titlebar tool.
-      editor.beginTool("Titlebar", rectangle)
+      editor.beginTool("Titlebar", titlebarRect)
       {
         if (editor.queryMouse(0, d_mouseinput.pressed)) {
           editor.wm.putWindowOnFront(title)
@@ -398,9 +453,9 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
       }
       editor.endTool()
 
-      editor.ctx.drawRect(0x000077FF, rectangle)
-      editor.ctx.beginScissorRect(rectangle)
-        editor.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, rectangle), th.white)
+      editor.ctx.drawRect(0x000077FF, titlebarRect)
+      editor.ctx.beginScissorRect(titlebarRect)
+        editor.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, titlebarRect), th.white)
       editor.ctx.endScissor()
     
       position.x += handleSize.x + padding
@@ -425,7 +480,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (rect.Rect, bool) {
 
   windowRect ^= d_util.rectMove(windowRect^, movement)
 
-  return contentRect, true
+  return WindowInfo{contentRect: contentRect, titlebarRect: titlebarRect}, true
 }
 
 fn uiEndWindow(editor: ^Editor) {
@@ -553,6 +608,74 @@ fn putSimpleButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = fals
   return bs
 }
 
+fn clamp(a, x, b: real): real {
+  if x < a {
+    x = a
+  }
+  if x > b {
+    x = b
+  }
+  return x
+}
+
+fn putScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (bool, ScrollAreaInfo) {
+  const (
+    handleSize = 18
+  )
+
+  editor.beginTool("ScrollArea", areaRect)
+
+  scroll := ^real(editor.getProperty("ScrollAreaScroll", 0.0))
+  overflow := clamp(contentSize.y-areaRect.h, 0, contentSize.y)
+  scrollValue := clamp(scroll^, 0, overflow)
+  yScrollOverflowFactor := 0.0
+  if areaRect.h != 0 {
+    yScrollOverflowFactor = contentSize.y/areaRect.h
+  }
+  doNotTruncateScroll := false
+
+  editor.ctx.drawRect(0x777777FF, areaRect)
+  rightHandleRect := d_util.rectCutRight(areaRect, handleSize)
+
+  // If there's yknow, some overflow..
+  if yScrollOverflowFactor > 1 {
+    thumbHeight := rightHandleRect.h/yScrollOverflowFactor
+    thumbGap := (rightHandleRect.h-thumbHeight)
+    thumbOffset := thumbGap*(scrollValue/overflow)
+    thumbRect := rightHandleRect
+    thumbRect.h = thumbHeight
+    thumbRect.y += thumbOffset
+
+    thumbState := putButtonBase(editor, d_util.rectShrink(thumbRect, 2), "ScrollbarThumb")
+    if thumbState.isDown {
+      doNotTruncateScroll = true
+      scroll ^+= editor.mouseState.delta.y*yScrollOverflowFactor
+    }
+  }
+
+  if editor.isDebugOverlayShown {
+    // Show where the content ends.
+    editor.ctx.moveLayer(1)
+    editor.ctx.drawRect(th.magenta, rect.mk(areaRect.x, areaRect.y+contentSize.y, contentSize.x, 1))
+    editor.ctx.moveLayer(-1)
+  }
+
+  if !doNotTruncateScroll {
+    // Clamp the scroll to the valid scroll range.
+    scroll^ = clamp(scroll^, 0, overflow)
+  }
+
+  areaRect.w -= handleSize
+  areaRect = d_util.rectShrink(areaRect, 1)
+  areaRect.w += 1 // Account for uneven padding between content and border
+  contentRect := areaRect
+  contentRect.y -= scrollValue
+
+  editor.endTool()
+
+  return true, ScrollAreaInfo{areaRect: areaRect, contentRect: contentRect}
+}
+
 const worldPath = "data/sc00_nowayup.csv"
 
 fn editorLoadWorld(editor: ^Editor) {
@@ -604,7 +727,9 @@ fn editorPutToolbar(editor: ^Editor) {
 
   editor.beginTool("ToolBar", rectangle)
   {
-    drawBevelRect(editor, rectangle, false)
+    if !editor.isPlaying {
+      drawBevelRect(editor, rectangle, false)
+    }
 
     buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
 
@@ -612,50 +737,29 @@ fn editorPutToolbar(editor: ^Editor) {
       editorToggleGame(editor)
     }
 
-    putToolbarWindowIconButton(editor, "Tile Picker", &buttonRectangle, 0, 1)
-    putToolbarWindowIconButton(editor, "Player Placer", &buttonRectangle, 3, 1)
-    putToolbarWindowIconButton(editor, "Entity List", &buttonRectangle, 0, 2)
+    if !editor.isPlaying {
+      putToolbarWindowIconButton(editor, "Tile Picker", &buttonRectangle, 0, 1)
+      putToolbarWindowIconButton(editor, "Player Placer", &buttonRectangle, 3, 1)
+      putToolbarWindowIconButton(editor, "Entity List", &buttonRectangle, 0, 2)
 
-    // Draw Save/Load
-    {
-      position := rectangle.getEnd()
-      position.y -= rectangle.h
-      
-      position.x -= 80
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Save").isReleased) {
-        editorSaveWorld(editor)
-      }
+      // Draw Save/Load
+      {
+        position := rectangle.getEnd()
+        position.y -= rectangle.h
+        
+        position.x -= 80
+        if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Save").isReleased) {
+          editorSaveWorld(editor)
+        }
 
-      position.x -= 80
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Load").isReleased) {
-        editorLoadWorld(editor)
+        position.x -= 80
+        if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Load").isReleased) {
+          editorLoadWorld(editor)
+        }
       }
     }
   }
   editor.endTool()
-}
-
-fn editorInit(resources: EditorResources): Editor {
-  rootNode := new(ToolNode)
-  rootNode ^= ToolNode{children: map[str]^ToolNode{}}
-
-  tileset := d_tileset.fromImage(resources.tilesetImage, 32, 32)
-  world := d_world.fromTileset(tileset)
-
-  result := Editor{
-    ctx: e_drawcmd.init(),
-    tileGrid: EditorGrid{scaling: 1.0},
-    tilemapGrid: EditorGrid{scaling: 1.0},
-    tilemapShowAllLayers: true,
-    tileset: tileset,
-    world: world,
-    resources: resources,
-    wm: initWindowManager(),
-    tools: rootNode}
-
-  editorLoadWorld(&result)
-  result.tileGrid.panning = result.world.playerSpawnPos.mulf(-32)
-  return result
 }
 
 type ToolDebugFrame = struct {
@@ -703,7 +807,7 @@ fn isWhiteForeground(color: uint32): bool {
   return sum >= 1.5
 }
 
-fn drawToolDebugFrame(frame: ToolDebugFrame, font: th_font.Font) {
+fn drawToolDebugFrame(ctx: ^e_drawcmd.DrawContext, frame: ToolDebugFrame, font: th_font.Font) {
   textColor := th.white
   if isWhiteForeground(frame.color) {
     textColor = th.black
@@ -715,18 +819,19 @@ fn drawToolDebugFrame(frame: ToolDebugFrame, font: th_font.Font) {
     r := rect.mk(frame.rect.x, frame.rect.y-planeSize.y, planeSize.x, planeSize.y)
     r = d_util.rectKeepInBounds(r, rect.mk(0, 0, d_global.screen.w, d_global.screen.h))
 
-    canvas.drawRect(frame.color, r)
-    font.draw(frame.title, r.getPos(), textColor)
+    ctx.drawRect(frame.color, r)
+    ctx.drawText(font, frame.title, r.getPos(), textColor)
   }
-  d_util.drawRectLines(frame.color, frame.rect)
+  ctx.drawRectLines(frame.color, frame.rect)
 }
 
 fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: str = "") {
   font := editor.resources.mainFont
 
   for toolName, toolChild in tool.children {
-    drawToolDebugFrame(makeToolDebugFrameFromTool(editor, toolName, toolChild), font)
+    editor.ctx.setLayer(toolChild.layer)
 
+    drawToolDebugFrame(&editor.ctx, makeToolDebugFrameFromTool(editor, toolName, toolChild), font)
     putEditorDebugToolFramesRecursive(editor, toolChild, toolName+"::")
   }
 }
@@ -801,8 +906,9 @@ fn (gc: ^GameCmd) draw(props: e_drawcmd.DrawProperties) {
 }
 
 fn putPlayerPlacer(editor: ^Editor) {
-  if contentRect, ok := uiBeginWindow(editor, "Player Placer", rect.mk(5, 5+32*7+20, 32*5, 32*7)); ok { 
-    contentRect = d_util.rectShrink(contentRect, 5)
+  if windowInfo, ok := uiBeginWindow(editor, "Player Placer", rect.mk(5, 5+32*7+20, 32*5, 32*7)); ok { 
+
+    contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
     position := contentRect.getPos()
     playerPos := editor.world.playerSpawnPos
 
@@ -827,74 +933,139 @@ fn putPlayerPlacer(editor: ^Editor) {
 }
 
 fn putTilePicker(editor: ^Editor) {
-  if contentRect, ok := uiBeginWindow(editor, "Tile Picker", rect.mk(5, 5, 32*5, 32*7)); ok { 
-    editor.ctx.drawRect(th.black, contentRect)
-    editor.ctx.moveLayer(1)
+  if windowInfo, ok := uiBeginWindow(editor, "Tile Picker", rect.mk(5, 5, 32*5, 32*7)); ok { 
+    // NOTE: This is to cancel the window-body dragging thing.
+    //       Probably not the best way to do it.
+    contentRect := windowInfo.contentRect
+
+    editor.beginTool("Picker", contentRect)
     {
-      selectedTile := editor.tilemapGrid.put(editor, contentRect)
+      editor.ctx.drawRect(th.black, contentRect)
+      editor.ctx.moveLayer(1)
+      {
+        selectedTile := editor.tilemapGrid.put(editor, contentRect)
 
-      // NOT-SURE: Currently you can only have one active window,
-      //             it's the window furthest in the hierarchy your mouse is over (roughly).
-      //           We need to create the TilePicker tool manually for that reason, because if EditorGrid did,
-      //             we wouldn't be able to query the mouse here. That means right now EditorGrid.put uses the current tool
-      //             instead of creating a new one. This seems alright for now, but it might be done differently
-      //             later.
-      if editor.queryMouse(0, d_mouseinput.down) {
-        editor.tileSelected = selectedTile
+        // NOT-SURE: Currently you can only have one active window,
+        //             it's the window furthest in the hierarchy your mouse is over (roughly).
+        //           We need to create the TilePicker tool manually for that reason, because if EditorGrid did,
+        //             we wouldn't be able to query the mouse here. That means right now EditorGrid.put uses the current tool
+        //             instead of creating a new one. This seems alright for now, but it might be done differently
+        //             later.
+        if editor.queryMouse(0, d_mouseinput.down) {
+          editor.tileSelected = selectedTile
+        }
+
+        selectedTilePos := editor.tilemapGrid.mapPos(contentRect, editor.tileSelected.mulf(32))
+        
+        editor.ctx.beginScissorRect(contentRect)
+        editor.ctx.drawRect(th_color.alpha(th.green, 0.3), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32))
+        editor.ctx.endScissor()
       }
-
-      selectedTilePos := editor.tilemapGrid.mapPos(contentRect, editor.tileSelected.mulf(32))
-      
+      editor.ctx.moveLayer(-1)
       editor.ctx.beginScissorRect(contentRect)
-      editor.ctx.drawRect(th_color.alpha(th.green, 0.3), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32))
+
+      editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
+      editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{1, 1}, p: editor.tilemapGrid.mapPos(contentRect, th.Vf2{0, 0})})
       editor.ctx.endScissor()
     }
-    editor.ctx.moveLayer(-1)
-    editor.ctx.beginScissorRect(contentRect)
-
-    editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
-    editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{1, 1}, p: editor.tilemapGrid.mapPos(contentRect, th.Vf2{0, 0})})
-    editor.ctx.endScissor()
-
+    editor.endTool()
     uiEndWindow(editor)
   }
 }
 
-type EntityDesc = struct {
-  name: str
-}
-
-fn putEntityEntry(editor: ^Editor, ent: EntityDesc, r: rect.Rect) {
+fn putEntityEntry(editor: ^Editor, ent: EntityDesc, r: rect.Rect): EntityListAction  {
   r.w -= 30
-  editor.beginTool(ent.name, r)
+  action := entityListActionNone
+
+  editor.beginTool(ent.id, r)
   {
     putSimpleButton(editor, r, ent.name)
     r.x += r.w
     r.w = 30
     if input.isPressed(input.key_shift) {
-      putSimpleButton(editor, r, "␡")
+      if putSimpleButton(editor, r, "␡").isReleased {
+        action = entityListActionRemove
+      }
     } else {
-      putSimpleButton(editor, r, "✎")
+      if putSimpleButton(editor, r, "✎").isReleased {
+        action = entityListActionEdit
+      }
     }
   }
   editor.endTool()
+
+  return action
+}
+
+fn createEditorEntities(): EditorEntities {
+  return EditorEntities{list: []EntityDesc{}}
+}
+
+fn appendEntity(editorEntities: ^EditorEntities, entity: EntityDesc) {
+  editorEntities.list = append(editorEntities.list, entity)
+} 
+
+fn removeEntity(editorEntities: ^EditorEntities, index: int) {
+  editorEntities.list = delete(editorEntities.list, index)
+}
+
+/*
+ * \brief Creates a random entity with a random ID and name, empty tags
+ */
+fn makeRandomEntity(): EntityDesc {
+  ident := d_hashname.random()
+  return EntityDesc{name: ident, id: ident, tags: ""}
+}
+
+/*
+ * \brief Creates an entity with same name and id, empty tags
+ */
+fn makeNamedEntity(name: str): EntityDesc {
+  return EntityDesc{name: name, id: name, tags: ""}
 }
 
 fn putEntityList(editor: ^Editor) {
-  ents := []EntityDesc{
-    EntityDesc{name: "Elton John"},
-    EntityDesc{name: "Super Mario"},
-    EntityDesc{name: "Bill gates"}}
+  entryRemoveIndex := -1
 
-  if contentRect, ok := uiBeginWindow(editor, "Entity List", rect.mk(800-200-5, 5, 200, 300)); ok {
-    entryRect := contentRect
-    entryRect.h = 30
-    for i, ent in ents {
-      putEntityEntry(editor, ent, entryRect)
-      entryRect.y += 30
+  if windowInfo, ok := uiBeginWindow(editor, "Entity List", rect.mk(800-200-5, 5, 200, 300)); ok {
+    // Apply padding.
+    contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
+
+    // Put add button.
+    {
+      buttonRect := d_util.rectShrink(d_util.rectCutRight(windowInfo.titlebarRect, 20), 0)
+
+      if (putSimpleButton(editor, buttonRect, "+").isReleased) {
+        appendEntity(&editor.entities, makeRandomEntity())
+      }
+    }
+
+    // Put entries.
+    {
+      // Get content size.
+      contentSize := ^th.Vf2(editor.getProperty("ContentSize", th.Vf2{0, 0}))
+
+      if ok, scrollAreaInfo := putScrollArea(editor, contentRect, contentSize^); ok {
+        editor.ctx.beginScissorRect(scrollAreaInfo.areaRect)
+        entryRect := scrollAreaInfo.contentRect
+        entryRect.h = 30
+        for i, ent in editor.entities.list {
+          if putEntityEntry(editor, ent, entryRect) == entityListActionRemove {
+            entryRemoveIndex = i
+          }
+          entryRect.y += 30
+        }
+
+        contentSize ^= th.Vf2{entryRect.w, entryRect.y-scrollAreaInfo.contentRect.y}
+        editor.ctx.endScissor()
+      }
     }
 
     uiEndWindow(editor)
+  }
+
+  if entryRemoveIndex != -1 {
+    removeEntity(&editor.entities, entryRemoveIndex)
   }
 }
 
@@ -980,14 +1151,14 @@ fn editorPutUi(editor: ^Editor) {
     editor.ctx.drawImage(editor.resources.toolbarIcons, d_util.posTrans(editor.mouseState.pos.x, editor.mouseState.pos.y))
     editor.ctx.moveLayer(-10000000)
   }
-
-  // flush render context
-  editor.ctx.flush()
  
   // put debug overlays
   if (editor.isDebugOverlayShown) {
     putEditorDebugToolFrames(editor)
   }
+
+  // flush render context
+  editor.ctx.flush()
 
   // handle post input states
   if (input.isJustPressed(input.key_escape)) {
@@ -1034,6 +1205,36 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
 
   return editorResources
 }
+
+fn editorInit(resources: EditorResources): Editor {
+  rootNode := new(ToolNode)
+  rootNode ^= ToolNode{children: map[str]^ToolNode{}}
+
+  tileset := d_tileset.fromImage(resources.tilesetImage, 32, 32)
+  world := d_world.fromTileset(tileset)
+
+  result := Editor{
+    ctx: e_drawcmd.init(),
+    tileGrid: EditorGrid{scaling: 1.0},
+    tilemapGrid: EditorGrid{scaling: 1.0},
+    tilemapShowAllLayers: true,
+    tileset: tileset,
+    world: world,
+    resources: resources,
+    entities: createEditorEntities(),
+    wm: initWindowManager(),
+    tools: rootNode}
+
+
+  appendEntity(&result.entities, makeNamedEntity("Elton John"))
+  appendEntity(&result.entities, makeNamedEntity("Super Mario"))
+  appendEntity(&result.entities, makeNamedEntity("Bill Gates"))
+
+  editorLoadWorld(&result)
+  result.tileGrid.panning = result.world.playerSpawnPos.mulf(-32)
+  return result
+}
+
 
 fn editorMain*() {
   d_test.itsNotAUnitTest()

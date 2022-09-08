@@ -1,1 +1,2 @@
-Dialogs currently don't use resource loader, so if the loading fails, RIP. 
+* Dialogs currently don't use resource loader, so if the loading fails, RIP. 
+* The scrollbar area currently doesn't work with horizontal scrolling.

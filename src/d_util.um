@@ -176,3 +176,13 @@ fn rectKeepInBounds*(child, parent: rect.Rect): rect.Rect {
 
   return child
 } 
+
+/*
+ * \brief Creates a split of rect `r` at `by` starting from the right side.
+ */
+fn rectCutRight*(r: rect.Rect, by: real): rect.Rect {
+  result := r
+  result.x += r.w-by
+  result.w = by
+  return result
+}

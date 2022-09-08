@@ -2,23 +2,18 @@
 // Names for hashes
 //
 
+import ("std.um")
+
 const (
   prefixes = [21]str{"MO", "NO", "NE", "BRE", "BOR", "BU", "BO", "RU", "DAL", "PER",
-         "SOR", "KO", "NOG", "KRO", "FER", "RAL", "LOA", "ROI", "FU", "YGG", "DRA"}
+  "SOR", "KO", "NOG", "KRO", "FER", "RAL", "LOA", "ROI", "FU", "YGG", "DRA"}
   suffices = [18]str{"ETH", "YOR", "KKA", "TTU", "KIRK", "KER", "HAR", "KROK",
-         "ROT", "TER", "FI", "AKKEN", "FOK", "TROL", "VARG", "LYR", "SIR", "SIL"}
-         /*
-  prefixes = [21]str{"МО", "НО", "НЕ", "БРЕ", "БОР", "БУ", "БO", "PУ", "ДАЛ", "ПЕР",
-         "СОР", "КО", "НОГ", "КРО", "ФЕР", "РАЛ", "ЛОА", "РОЙ", "ФУ", "ИГГ", "ДРА"}
-  suffices = [18]str{"ЭТ", "ЙОР", "ККА", "ТТУ", "KЁРK", "KЕР", "ХАР", "КРОК",
-         "РОТ", "ТЕР", "ФИ", "АККЕН", "ФОК", "ТРОЛ", "ВАРГ", "ЛИР", "СИР", "СИЛЬ"}
-         */
+  "ROT", "TER", "FI", "AKKEN", "FOK", "TROL", "VARG", "LYR", "SIR", "SIL"}
 ) 
-
 
 fn xorshift(x: uint): uint {
 	x = x ~ (x << 13)
-	x = x ~ (x >> 7)
+  x = x ~ (x >> 7)
 	x = x ~ (x << 17);
 	return x + 1
 }
@@ -37,4 +32,11 @@ fn name*(hash: uint): str {
   hash = xorshift(hash)
   s += suffices[hash%18]
   return s
+}
+
+/*
+ * \brief Generates a random name, can be useful for something like Id's
+ */
+fn random*(): str {
+  return name(std.rand())
 }

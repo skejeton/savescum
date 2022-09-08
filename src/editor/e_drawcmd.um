@@ -24,6 +24,8 @@ type (
   }
 
   DrawContext* = struct {
+    // TODO: Stackable scissor rects
+    currentScissorRect: ^rect.Rect
     currentLayerId: int
     currentLayer: ^Layer
     layerOrder: []int
@@ -91,6 +93,13 @@ fn (ctx: ^DrawContext) moveLayer*(layerBy: int) {
   ctx.setLayer(ctx.currentLayerId+layerBy)
 }
 
+fn (ctx: ^DrawContext) getCurrentScissorRect*(): (bool, rect.Rect) {
+  if ctx.currentScissorRect != null {
+    return true, ctx.currentScissorRect^
+  }
+  return false, rect.Rect{}
+}
+
 /*
 // DrawContext.Flush()
 //
@@ -146,10 +155,13 @@ fn (ctx: ^DrawContext) drawRectLines*(color: uint32, r: rect.Rect) {
 }
 
 fn (ctx: ^DrawContext) beginScissorRect*(r: rect.Rect) {
+  ctx.currentScissorRect = new(rect.Rect)
+  ctx.currentScissorRect ^= r
   ctx.currentLayer.appendCommand(Command{kind: commandBeginScissorRect, rect: r})
 }
 
 fn (ctx: ^DrawContext) endScissor*() {
+  ctx.currentScissorRect = null
   ctx.currentLayer.appendCommand(Command{kind: commandEndScissor})
 }
 
