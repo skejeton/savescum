@@ -2,7 +2,7 @@
 // (C) skejeton
 
 import (
-  "e_drawcmd.um"
+  "e_drawcmd.um"; "e_buffer.um"; 
   
   "../d_hashname.um"
   "../d_global.um"; "../d_resources.um"; "../d_problem_screen.um";
@@ -13,6 +13,8 @@ import (
   th_font = "font.um"; th_color = "color.um"; 
 
   "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
+
+  "utf8.um"
 )
 
 type (
@@ -618,6 +620,96 @@ fn clamp(a, x, b: real): real {
   return x
 }
 
+fn insertInputTextIntoOneLineBuffer(buffer: ^e_buffer.Buffer, cursor: ^e_buffer.Cursor, text: str) {
+  runes := utf8.decode(text)
+
+  for index, rune in runes {
+    
+    // Ignore non printable characters.
+    if rune >= 32 {
+      e_buffer.insertAt(buffer, cursor, rune.encode())
+    }
+  }
+}
+
+fn getFirstLineOfBuffer(buffer: ^e_buffer.Buffer): str {
+  if len(buffer.lines) == 0 {
+    return ""
+  }
+
+  return buffer.lines[0]
+}
+
+type SingleLineEdit = struct {
+  scrollX: real
+  buffer: e_buffer.Buffer
+  cursor: e_buffer.Cursor
+}
+
+fn initSingleLineEdit(): SingleLineEdit {
+  return SingleLineEdit{0, e_buffer.Buffer{lines: []str{""}}, e_buffer.Cursor{}}
+}
+
+fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect.Rect, drawCursor: bool) {
+
+  editor.ctx.beginScissorRect(r)
+
+  firstLine := getFirstLineOfBuffer(&edit.buffer)
+  precursor := e_buffer.unicodeTextSlice(firstLine, 0, edit.cursor.column)
+  precursorMeasured := editor.resources.mainFont.measure(precursor)
+  cursorRect := rect.mk(precursorMeasured.x, 0, 1, precursorMeasured.y)
+ 
+  // Make sure the cursor is visible on the screen
+  // NOTE: Maybe I shouldn't modify the editor state while drawing eh?
+  if (cursorRect.x+cursorRect.w) > (r.w-edit.scrollX) {
+    edit.scrollX = -(cursorRect.x+cursorRect.w-r.w)
+  }
+  if cursorRect.x < -edit.scrollX {
+    edit.scrollX = -cursorRect.x
+  }
+
+  cursorRect.x += r.x+edit.scrollX
+  cursorRect.y += r.y
+
+  if drawCursor {
+    editor.ctx.drawRect(th.black, cursorRect)
+  }
+  editor.ctx.drawText(editor.resources.mainFont, firstLine, r.getPos().add(th.Vf2{edit.scrollX, 0}), th.black)
+
+  editor.ctx.endScissor()
+}
+
+fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str) {
+  editor.beginTool(name, r)
+    edit := ^SingleLineEdit(editor.getProperty("Editor", initSingleLineEdit()))
+
+    // Handle input.
+    if (editor.isCurrentToolActive()) {
+      insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input.getStr())
+      if input.isJustPressed(input.key_backspace) {
+        e_buffer.erase(&edit.buffer, &edit.cursor)
+      }
+      if input.isJustPressed(input.key_left) {
+        edit.cursor = e_buffer.moveCursor(&edit.buffer, edit.cursor, -1, 0)
+      }
+      if input.isJustPressed(input.key_right) {
+        edit.cursor = e_buffer.moveCursor(&edit.buffer, edit.cursor, 1, 0)
+      }
+    }
+
+    // Draw.
+    {
+      drawBevelRect(editor, r, true)
+      // Draw the inside white
+      editor.ctx.drawRect(th.white, d_util.rectShrink(r, 2))
+
+      fontHeight := editor.resources.mainFont.measure(" ").y
+      textRect := rect.mk(r.x+5, r.y+(r.h-fontHeight)/2.0, r.w-10, fontHeight)
+      drawSingleLineEdit(editor, edit, textRect, editor.isCurrentToolActive())
+    }
+  editor.endTool()
+}
+
 fn putScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (bool, ScrollAreaInfo) {
   const (
     handleSize = 18
@@ -756,6 +848,11 @@ fn editorPutToolbar(editor: ^Editor) {
         if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Load").isReleased) {
           editorLoadWorld(editor)
         }
+
+        position.x -= 120
+
+
+        putTextEditOneLine(editor, rect.mk(position.x, position.y, 120, rectangle.h), "SomeText")
       }
     }
   }
@@ -1027,13 +1124,13 @@ fn makeNamedEntity(name: str): EntityDesc {
 fn putEntityList(editor: ^Editor) {
   entryRemoveIndex := -1
 
-  if windowInfo, ok := uiBeginWindow(editor, "Entity List", rect.mk(800-200-5, 5, 200, 300)); ok {
+  if windowInfo, ok := uiBeginWindow(editor, "Entity List", rect.mk(800-300-5, 5, 300, 300)); ok {
     // Apply padding.
     contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
 
     // Put add button.
     {
-      buttonRect := d_util.rectShrink(d_util.rectCutRight(windowInfo.titlebarRect, 20), 0)
+      buttonRect := d_util.rectShrink(d_util.rectCutRight(windowInfo.titlebarRect, 20), 1)
 
       if (putSimpleButton(editor, buttonRect, "+").isReleased) {
         appendEntity(&editor.entities, makeRandomEntity())
@@ -1229,6 +1326,7 @@ fn editorInit(resources: EditorResources): Editor {
   appendEntity(&result.entities, makeNamedEntity("Elton John"))
   appendEntity(&result.entities, makeNamedEntity("Super Mario"))
   appendEntity(&result.entities, makeNamedEntity("Bill Gates"))
+  appendEntity(&result.entities, makeNamedEntity("R.I.P. Queen Elizabeth"))
 
   editorLoadWorld(&result)
   result.tileGrid.panning = result.world.playerSpawnPos.mulf(-32)

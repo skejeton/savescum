@@ -1,14 +1,14 @@
 import ("../../src/d_util.um"; "../../src/d_test.um")
 
 fn main() {
-  lf := d_util.readFileStr(d_test.pfx()+"local.txt")
-  gf := d_util.readFileStr("data/global.txt")
+  oklf, lf := d_util.readFileStr(d_test.pfx()+"local.txt")
+  okgf, gf := d_util.readFileStr("data/global.txt")
   
-  if lf != "I'm a local file!\n" {
+  if !oklf || lf != "I'm a local file!\n" {
     error("Invalid local file")
   } 
   
-  if gf != "I'm a global file!\n" {
+  if !okgf || gf != "I'm a global file!\n" {
     error("Invalid global file")
   }
 

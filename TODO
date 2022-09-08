@@ -1,2 +1,10 @@
 * Dialogs currently don't use resource loader, so if the loading fails, RIP. 
 * The scrollbar area currently doesn't work with horizontal scrolling.
+* Currently scrollbar area can't scroll with the scrollbar! Why?
+  It's because of the stupid way the input handling is implemented,
+  ideally each element should be able to sink some sort of input event and if not,
+  pass it up to the parent. But currently only the exact element you are hovering
+  over can intercept the input events. What a bummer.
+* Add getPropertyLazy to lazily evaluate the default parameter, because
+  sometimes initialization may be expensive and we don't want to execute it every time.
+* Scissor rect currently doesn't support nesting. I think I should fix this on tophat level.

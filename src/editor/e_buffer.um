@@ -1,0 +1,214 @@
+import (
+  "utf8.um"
+)
+
+/*
+// TextSplitBy(text, by)
+//
+// Splits provided `text` with `by`. `by` is not a unicode char.
+*/
+fn textSplitBy(text: str, by: char): []str {
+  items := []str{}
+  last := 0
+  for i, c in text {
+    if c == by {
+      items = append(items, slice(text, last, i))
+      last = i+1 // Skip the character by adding one.
+    }
+  }
+  items = append(items, slice(text, last))
+  return items
+}
+
+/*
+// UnicodeTextSliceFrom()
+//
+// Slices UTF-8 `text` starting from grapheme at index `start`.
+*/
+fn unicodeTextSliceFrom(text: str, start: uint): str {
+  startPos := 0
+  for i := 0; i < start; i++ {
+    rune := utf8.getNextRune(text, startPos)
+    startPos += rune.size()
+  }
+
+  return slice(text, startPos)
+}
+
+/*
+// UnicodeTextSlice()
+//
+// Slices UTF-8 `text` starting from grapheme at index `start` until grapheme at index `size`
+*/
+fn unicodeTextSlice*(text: str, start, size: uint): str {
+  startPos := 0
+  for i := 0; i < start; i++ {
+    rune := utf8.getNextRune(text, startPos)
+    startPos += rune.size()
+  }
+
+  endPos := startPos
+  for i := 0; i < size; i++ {
+    rune := utf8.getNextRune(text, endPos)
+    endPos += rune.size()
+  }
+
+  return slice(text, startPos, endPos)
+}
+
+/*
+// UnicodeTextRemoveLastCharacter()
+//
+// Removes last grapheme from the unicode string.
+*/
+fn unicodeTextRemove(text: str, start, size: uint): str {
+  return unicodeTextSlice(text, 0, start)+unicodeTextSliceFrom(text, start+size)
+}
+
+/*
+// UnicodeTextInsert()
+//
+// Inserts `other` to a UTF-8 `text` `at` specified point.
+*/
+fn unicodeTextInsert(text: str, at: uint, other: str): str {
+  return unicodeTextSlice(text, 0, at)+other+unicodeTextSliceFrom(text, at)
+}  
+
+type Buffer* = struct {
+  lines: []str
+}
+
+type Cursor* = struct {
+  line, column: int
+}
+
+/*
+// BufferSplitLine()
+//
+// Splits line at the cursor. Equivalent to inserting a newline.
+*/
+fn splitLine*(buffer: ^Buffer, cursor: ^Cursor) {
+  firstHalf, secondHalf := unicodeTextSlice(buffer.lines[cursor.line], 0, cursor.column), unicodeTextSliceFrom(buffer.lines[cursor.line], cursor.column)
+
+  buffer.lines[cursor.line] = firstHalf
+
+  newLines := slice(buffer.lines, 0, cursor.line+1)
+  newLines = append(newLines, secondHalf)
+  newLines = append(newLines, slice(buffer.lines, cursor.line+1))
+  buffer.lines = newLines
+
+  cursor.column = 0
+  cursor.line += 1
+}
+
+/*
+// BufferErase()
+//
+// Erases character under cursor. If cursor is at the start of the line,
+//  it will join the previous line, and line it's currently on.
+*/
+fn erase*(buffer: ^Buffer, cursor: ^Cursor) {
+  cursor.column -= 1
+  if cursor.column < 0 {
+    // Join lines strategy.
+    cursor.line -= 1
+    if cursor.line >= 0 {
+      cursor.column = utf8.realLength(buffer.lines[cursor.line])
+      buffer.lines[cursor.line] += buffer.lines[cursor.line+1]
+      buffer.lines = delete(buffer.lines, cursor.line+1)
+    } else {
+      cursor.column = 0
+      cursor.line = 0
+    }
+  } else {
+    // Remove char strategy.
+    buffer.lines[cursor.line] = unicodeTextRemove(buffer.lines[cursor.line], cursor.column, 1)
+  }
+}
+
+/*
+// BufferInsert()
+//
+// Inserts provided text into buffer. 
+*/
+fn insertAt*(buffer: ^Buffer, cursor: ^Cursor, text: str) {
+  linesToInsert := textSplitBy(text, '\n')
+  for index, line in linesToInsert {
+    // Reset the column if we're on a new line.
+    if index != 0 { 
+      splitLine(buffer, cursor)
+    }
+    buffer.lines[cursor.line] = unicodeTextInsert(buffer.lines[cursor.line], cursor.column, line)
+    cursor.column += utf8.realLength(line)
+  }
+}
+
+/*
+// BufferSanitizeCursor()
+//
+// Sanitizes the `cursor` so it doesn't go outside bounds of `buffer`.
+*/
+fn sanitizeCursor*(buffer: ^Buffer, cursor: Cursor): Cursor {
+  if cursor.line < 0 {
+    cursor.line = 0
+  }
+  if cursor.line > len(buffer.lines)-1 {
+    cursor.line = len(buffer.lines)-1
+  }
+
+  realLength := utf8.realLength(buffer.lines[cursor.line])
+  
+  if cursor.column < 0 {
+    cursor.column = 0
+  }
+  for cursor.column > realLength {
+    cursor.column = realLength
+  }
+  
+  return cursor
+}
+
+/*
+// BufferMoveCursor()
+//
+// Moves cursor within buffer by dx columns, dy rows.
+//  rows grow downwards.
+*/
+fn moveCursor*(buffer: ^Buffer, cursor: Cursor, dx, dy: int): Cursor {
+  cursor.line += dy
+
+  cursor = sanitizeCursor(buffer, cursor)
+
+  if dx < 0 {
+    for dx != 0 {
+      dx += 1
+
+      if cursor.column == 0 {
+        cursor.line -= 1
+        if cursor.line > 0 {
+          cursor.column = utf8.realLength(buffer.lines[cursor.line])
+        } else {
+          cursor.line = 0
+        }
+      } else {
+        cursor.column -= 1
+      }
+    }
+  } else {
+    for dx != 0 {
+      dx -= 1
+
+      if cursor.column == utf8.realLength(buffer.lines[cursor.line]) {
+        if cursor.line < len(buffer.lines)-1 {
+          cursor.column = 0
+          cursor.line += 1
+        }
+      } else {
+        cursor.column += 1
+      }
+    }
+  }
+
+  return cursor
+}
+
