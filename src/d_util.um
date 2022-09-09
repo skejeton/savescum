@@ -186,3 +186,26 @@ fn rectCutRight*(r: rect.Rect, by: real): rect.Rect {
   result.w = by
   return result
 }
+
+fn min(a, b: real): real {
+  if a < b {
+    return a
+  }
+  return b
+}
+
+fn max(a, b: real): real {
+  if a > b {
+    return a
+  }
+  return b
+}
+
+fn rectDiff*(a, b: rect.Rect): rect.Rect {
+  x := max(a.x, b.x);
+  y := max(a.y, b.y);
+  return rect.Rect{
+    x,y, 
+    min(a.x + a.w, b.x + b.w) - x,
+    min(a.y + a.h, b.y + b.h) - y};
+}

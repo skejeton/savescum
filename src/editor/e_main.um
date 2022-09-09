@@ -1146,6 +1146,8 @@ fn putEntityList(editor: ^Editor) {
         editor.ctx.beginScissorRect(scrollAreaInfo.areaRect)
         entryRect := scrollAreaInfo.contentRect
         entryRect.h = 30
+        putTextEditOneLine(editor, entryRect, "Bleh")
+        entryRect.y += 30
         for i, ent in editor.entities.list {
           if putEntityEntry(editor, ent, entryRect) == entityListActionRemove {
             entryRemoveIndex = i

@@ -25,7 +25,7 @@ type (
 
   DrawContext* = struct {
     // TODO: Stackable scissor rects
-    currentScissorRect: ^rect.Rect
+    scissorRectStack: []rect.Rect
     currentLayerId: int
     currentLayer: ^Layer
     layerOrder: []int
@@ -77,7 +77,7 @@ fn (ctx: ^DrawContext) acquireLayer(layer: int) {
 
 
 fn init*(): DrawContext {
-  ctx := DrawContext{layerOrder: []int{}, layers: map[int]^Layer{}}
+  ctx := DrawContext{layerOrder: []int{}, scissorRectStack: []rect.Rect{}, layers: map[int]^Layer{}}
   ctx.acquireLayer(0)
   ctx.currentLayer = ctx.layers[0]
   return ctx
@@ -94,8 +94,8 @@ fn (ctx: ^DrawContext) moveLayer*(layerBy: int) {
 }
 
 fn (ctx: ^DrawContext) getCurrentScissorRect*(): (bool, rect.Rect) {
-  if ctx.currentScissorRect != null {
-    return true, ctx.currentScissorRect^
+  if len(ctx.scissorRectStack) > 0 {
+    return true, ctx.scissorRectStack[len(ctx.scissorRectStack)-1]
   }
   return false, rect.Rect{}
 }
@@ -154,15 +154,52 @@ fn (ctx: ^DrawContext) drawRectLines*(color: uint32, r: rect.Rect) {
   ctx.currentLayer.appendCommand(Command{kind: commandRectLines, color: color, rect: r})
 }
 
-fn (ctx: ^DrawContext) beginScissorRect*(r: rect.Rect) {
-  ctx.currentScissorRect = new(rect.Rect)
-  ctx.currentScissorRect ^= r
+fn (ctx: ^DrawContext) beginScissorRectRaw*(r: rect.Rect) {
+  ctx.scissorRectStack = append(ctx.scissorRectStack, r)
   ctx.currentLayer.appendCommand(Command{kind: commandBeginScissorRect, rect: r})
 }
 
+fn mergeScissorRects(child, parent: rect.Rect): rect.Rect {
+  if d_util.rectVsRect(child, parent) == false {
+    // At this point we just need to disable rendering since child isn't even inside the parent,
+    //  so it shouldn't be visible. 
+    //
+    // In this case I return a scissor rect that will remove all rendering for once.
+    return rect.mk(0, 0, 0, 0)
+  }
+
+  // Otherwise return the intersection rect.
+  return d_util.rectDiff(child, parent)
+}
+
+fn (ctx: ^DrawContext) beginScissorRect*(r: rect.Rect) {
+  // Merge scissor rects to make sure the rect `r` doesn't show content
+  // outside of the parent scissor rect too. 
+  // 
+  // This is needed for cases like
+  // scroll containers, where you don't want text to overflow outside of scroll buffer
+  // AND the text box. 
+  if len(ctx.scissorRectStack) > 0 {
+    r = mergeScissorRects(r, ctx.scissorRectStack[len(ctx.scissorRectStack)-1])
+  }
+
+  ctx.beginScissorRectRaw(r)
+}
+
 fn (ctx: ^DrawContext) endScissor*() {
-  ctx.currentScissorRect = null
-  ctx.currentLayer.appendCommand(Command{kind: commandEndScissor})
+  if len(ctx.scissorRectStack) == 0 {
+    error("Mismatched beginScissor/endScissor")
+  }
+
+  ctx.scissorRectStack = delete(ctx.scissorRectStack, len(ctx.scissorRectStack)-1)
+
+  // Only call window.endScissor on the final call.
+  // Otherwise pop the previous scissor rect from the stack.
+  if len(ctx.scissorRectStack) == 0 {
+    ctx.currentLayer.appendCommand(Command{kind: commandEndScissor})
+  } else {
+    ctx.currentLayer.appendCommand(Command{kind: commandBeginScissorRect, rect: ctx.scissorRectStack[len(ctx.scissorRectStack)-1]})
+  }
 }
 
 type ImageCmd = struct {

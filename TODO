@@ -11,7 +11,5 @@
 * Add getPropertyLazy to lazily evaluate the default parameter, because
   sometimes initialization may be expensive and we don't want to execute it every time.
 
-* Scissor rect currently doesn't support nesting. I think I should fix this on tophat level.
-
 * The text editor currently is very janky as it requires you to hover over it to enter anything,
   I should somehow facilitate "focused" elements in the editor.
