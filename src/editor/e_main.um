@@ -4,7 +4,7 @@
 import (
   "e_drawcmd.um"; "e_buffer.um"; 
   
-  "../d_hashname.um"
+  "../d_hashname.um"; "../d_fps.um";
   "../d_global.um"; "../d_resources.um"; "../d_problem_screen.um";
   "../d_background.um"; "../d_colors.um"; "../d_world.um";
   "../d_tileset.um"; "../d_test.um"; "../d_util.um"; "../d_mouseinput.um";
@@ -81,9 +81,11 @@ type (
     id: str
     name: str
     tags: str
+    rect: rect.Rect
   }
 
   EditorEntities = struct {
+    entitySelected: int
     list: []EntityDesc
   }
 
@@ -650,6 +652,10 @@ fn initSingleLineEdit(): SingleLineEdit {
   return SingleLineEdit{0, e_buffer.Buffer{lines: []str{""}}, e_buffer.Cursor{}}
 }
 
+fn initBufferFromString(s: str): e_buffer.Buffer {
+  return e_buffer.Buffer{lines: []str{s}}
+}
+
 fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect.Rect, drawCursor: bool) {
 
   editor.ctx.beginScissorRect(r)
@@ -679,9 +685,11 @@ fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect.Rect, draw
   editor.ctx.endScissor()
 }
 
-fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str) {
+fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str) {
   editor.beginTool(name, r)
     edit := ^SingleLineEdit(editor.getProperty("Editor", initSingleLineEdit()))
+    edit.buffer = initBufferFromString(value^)
+    edit.cursor = e_buffer.sanitizeCursor(&edit.buffer, edit.cursor)
 
     // Handle input.
     if (editor.isCurrentToolActive()) {
@@ -707,6 +715,9 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str) {
       textRect := rect.mk(r.x+5, r.y+(r.h-fontHeight)/2.0, r.w-10, fontHeight)
       drawSingleLineEdit(editor, edit, textRect, editor.isCurrentToolActive())
     }
+
+    // Sync buffer up with the value.
+    value ^= getFirstLineOfBuffer(&edit.buffer)
   editor.endTool()
 }
 
@@ -833,6 +844,7 @@ fn editorPutToolbar(editor: ^Editor) {
       putToolbarWindowIconButton(editor, "Tile Picker", &buttonRectangle, 0, 1)
       putToolbarWindowIconButton(editor, "Player Placer", &buttonRectangle, 3, 1)
       putToolbarWindowIconButton(editor, "Entity List", &buttonRectangle, 0, 2)
+      putToolbarWindowIconButton(editor, "Entity Editor", &buttonRectangle, 1, 2)
 
       // Draw Save/Load
       {
@@ -850,9 +862,6 @@ fn editorPutToolbar(editor: ^Editor) {
         }
 
         position.x -= 120
-
-
-        putTextEditOneLine(editor, rect.mk(position.x, position.y, 120, rectangle.h), "SomeText")
       }
     }
   }
@@ -1002,6 +1011,11 @@ fn (gc: ^GameCmd) draw(props: e_drawcmd.DrawProperties) {
   d_game.draw()
 }
 
+fn putLabelY(editor: ^Editor, text: str, color: uint32, position: ^th.Vf2) {
+  editor.ctx.drawText(editor.resources.mainFont, text, position^, color)
+  position.y += editor.resources.mainFont.measure(text).y
+}
+
 fn putPlayerPlacer(editor: ^Editor) {
   if windowInfo, ok := uiBeginWindow(editor, "Player Placer", rect.mk(5, 5+32*7+20, 32*5, 32*7)); ok { 
 
@@ -1011,9 +1025,8 @@ fn putPlayerPlacer(editor: ^Editor) {
 
     editor.ctx.beginScissorRect(contentRect)
     {
-      text := sprintf("Player at: %d %d", trunc(playerPos.x), trunc(playerPos.y))
-      editor.ctx.drawText(editor.resources.mainFont, text, position, th.black)
-      position.y += editor.resources.mainFont.measure(text).y+10
+      putLabelY(editor, sprintf("Player at: %d %d", trunc(playerPos.x), trunc(playerPos.y)), th.black, &position)
+      position.y += 10
 
       if (putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Relocate", editor.isRelocatingPlayer).isReleased) {
         editor.isRelocatingPlayer = !editor.isRelocatingPlayer
@@ -1021,7 +1034,7 @@ fn putPlayerPlacer(editor: ^Editor) {
       position.y += 30+10
 
       if (editor.isRelocatingPlayer) {
-        editor.ctx.drawText(editor.resources.mainFont, "Click on the grid\nTo place player.", position, th.black)
+        putLabelY(editor, "Click on the grid\nTo place player.", th.black, &position)
       }
     }
     editor.ctx.endScissor()
@@ -1070,13 +1083,16 @@ fn putTilePicker(editor: ^Editor) {
   }
 }
 
-fn putEntityEntry(editor: ^Editor, ent: EntityDesc, r: rect.Rect): EntityListAction  {
+fn putEntityEntry(editor: ^Editor, ent: EntityDesc, r: rect.Rect, selected: bool): EntityListAction  {
   r.w -= 30
   action := entityListActionNone
 
   editor.beginTool(ent.id, r)
   {
     putSimpleButton(editor, r, ent.name)
+    if selected {
+      editor.ctx.drawRectLines(th.yellow, r)
+    }
     r.x += r.w
     r.w = 30
     if input.isPressed(input.key_shift) {
@@ -1095,7 +1111,7 @@ fn putEntityEntry(editor: ^Editor, ent: EntityDesc, r: rect.Rect): EntityListAct
 }
 
 fn createEditorEntities(): EditorEntities {
-  return EditorEntities{list: []EntityDesc{}}
+  return EditorEntities{list: []EntityDesc{}, entitySelected: -1}
 }
 
 fn appendEntity(editorEntities: ^EditorEntities, entity: EntityDesc) {
@@ -1103,6 +1119,14 @@ fn appendEntity(editorEntities: ^EditorEntities, entity: EntityDesc) {
 } 
 
 fn removeEntity(editorEntities: ^EditorEntities, index: int) {
+  // Unselect the entity
+  if index == editorEntities.entitySelected { 
+    editorEntities.entitySelected = -1
+  }
+  // Shift the selected entity index down if entity below to be removed
+  if index < editorEntities.entitySelected { 
+    editorEntities.entitySelected -= 1
+  }
   editorEntities.list = delete(editorEntities.list, index)
 }
 
@@ -1121,6 +1145,19 @@ fn makeNamedEntity(name: str): EntityDesc {
   return EntityDesc{name: name, id: name, tags: ""}
 }
 
+fn selectEntity(entities: ^EditorEntities, index: int) {
+  entities.entitySelected = index
+}
+
+fn isEntitySelected(entities: ^EditorEntities, index: int): bool {
+  return entities.entitySelected == index
+}
+
+fn initEntityAtCenter(editor: ^Editor, ent: EntityDesc): EntityDesc {
+  ent.rect = rect.Rect{-editor.tileGrid.panning.x+d_global.screen.w/2, -editor.tileGrid.panning.y+d_global.screen.h/2, 32, 32}
+  return ent
+}
+
 fn putEntityList(editor: ^Editor) {
   entryRemoveIndex := -1
 
@@ -1133,7 +1170,7 @@ fn putEntityList(editor: ^Editor) {
       buttonRect := d_util.rectShrink(d_util.rectCutRight(windowInfo.titlebarRect, 20), 1)
 
       if (putSimpleButton(editor, buttonRect, "+").isReleased) {
-        appendEntity(&editor.entities, makeRandomEntity())
+        appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity()))
       }
     }
 
@@ -1146,11 +1183,12 @@ fn putEntityList(editor: ^Editor) {
         editor.ctx.beginScissorRect(scrollAreaInfo.areaRect)
         entryRect := scrollAreaInfo.contentRect
         entryRect.h = 30
-        putTextEditOneLine(editor, entryRect, "Bleh")
-        entryRect.y += 30
         for i, ent in editor.entities.list {
-          if putEntityEntry(editor, ent, entryRect) == entityListActionRemove {
-            entryRemoveIndex = i
+          switch putEntityEntry(editor, ent, entryRect, isEntitySelected(&editor.entities, i)) {
+            case entityListActionRemove:
+              entryRemoveIndex = i
+            case entityListActionEdit:
+              selectEntity(&editor.entities, i)
           }
           entryRect.y += 30
         }
@@ -1165,6 +1203,71 @@ fn putEntityList(editor: ^Editor) {
 
   if entryRemoveIndex != -1 {
     removeEntity(&editor.entities, entryRemoveIndex)
+  }
+}
+
+fn getEntitySelectedIndex(entities: ^EditorEntities): int {
+  return entities.entitySelected
+}
+
+fn getEntitySelected(entities: ^EditorEntities): ^EntityDesc {
+  if entities.entitySelected < 0 {
+    return null
+  }
+
+  return &entities.list[entities.entitySelected]
+}
+
+fn putEntityEditor(editor: ^Editor) {
+  entitySelected := getEntitySelected(&editor.entities)
+
+  if entitySelected != null {
+    if windowInfo, ok := uiBeginWindow(editor, "Entity Editor", rect.mk(800-300-5, 5+300+5, 300, 300)); ok {
+      contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
+
+      editor.ctx.beginScissorRect(contentRect)
+      position := contentRect.getPos()
+      putLabelY(editor, "Name", th.black, &position)
+      putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Name ", &entitySelected.name)
+      position.y += 30
+      putLabelY(editor, "Id", th.black, &position)
+      putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Id ", &entitySelected.id)
+      position.y += 30
+      putLabelY(editor, "Tags", th.black, &position)
+      putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Tags ", &entitySelected.tags)
+      position.y += 30
+      position.y += 10
+      if putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Delete").isReleased {
+        removeEntity(&editor.entities, getEntitySelectedIndex(&editor.entities))
+      } 
+      editor.ctx.endScissor()
+
+      uiEndWindow(editor)
+    }
+  }
+}
+
+fn putWorldEntities(editor: ^Editor) {
+  for i in editor.entities.list {
+    ent := &editor.entities.list[i]
+
+    entVisRect := d_util.rectMove(ent.rect, editor.tileGrid.panning)
+    editor.beginTool("Ent"+ent.name, entVisRect)
+    editor.ctx.drawRect(th.red, entVisRect)
+    if editor.isCurrentToolActive() {
+      editor.ctx.drawRectLines(th.blue, d_util.rectShrink(entVisRect, -1))
+    }
+    if isEntitySelected(&editor.entities, i) {
+      editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
+    }
+    if editor.queryMouse(0, d_mouseinput.pressed) {
+      selectEntity(&editor.entities, i)
+    }
+    if editor.queryMouse(0, d_mouseinput.down) {
+      ent.rect.x += editor.mouseState.delta.x
+      ent.rect.y += editor.mouseState.delta.y
+    }
+    editor.endTool()
   }
 }
 
@@ -1200,6 +1303,8 @@ fn editorPutUi(editor: ^Editor) {
         editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), 0)
       }
     }
+
+    putWorldEntities(editor)
 
     // Draw ToggleAll/FG/MG/BG buttons.
     {
@@ -1242,6 +1347,7 @@ fn editorPutUi(editor: ^Editor) {
     putTilePicker(editor)
     putPlayerPlacer(editor)
     putEntityList(editor)
+    putEntityEditor(editor)
   }
 
   if editor.isRelocatingPlayer {
@@ -1324,12 +1430,6 @@ fn editorInit(resources: EditorResources): Editor {
     wm: initWindowManager(),
     tools: rootNode}
 
-
-  appendEntity(&result.entities, makeNamedEntity("Elton John"))
-  appendEntity(&result.entities, makeNamedEntity("Super Mario"))
-  appendEntity(&result.entities, makeNamedEntity("Bill Gates"))
-  appendEntity(&result.entities, makeNamedEntity("R.I.P. Queen Elizabeth"))
-
   editorLoadWorld(&result)
   result.tileGrid.panning = result.world.playerSpawnPos.mulf(-32)
   return result
@@ -1353,11 +1453,15 @@ fn editorMain*() {
 
   // cycle
   for window.cycle(d_global.screen) {
+    d_fps.update()
     d_global.screen = rect.mk(0, 0, window.w, window.h)
 
     canvas.drawRect(th.black, d_global.screen)
     editorPutUi(&editor)
+    editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
+    editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
   }
+
 
   editorDisconnectAllNodes(&editor, null)
 }
