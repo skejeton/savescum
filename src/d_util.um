@@ -201,6 +201,13 @@ fn max(a, b: real): real {
   return b
 }
 
+fn abs*(a: real): real {
+  if a < 0 {
+    return -a
+  }
+  return a
+}
+
 fn rectDiff*(a, b: rect.Rect): rect.Rect {
   x := max(a.x, b.x);
   y := max(a.y, b.y);

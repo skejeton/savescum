@@ -1247,18 +1247,85 @@ fn putEntityEditor(editor: ^Editor) {
   }
 }
 
+type RectResizeCommand = struct {
+  posFactor: th.Vf2   // Factor to multiply MouseDelta by to move the rectangle
+  sizeFactor: th.Vf2  // Factor to multiply MouseDelta by to resize the rectangle
+}
+
+type EditGrip = struct {
+  position: th.Vf2
+  resizeCommand: RectResizeCommand
+}
+
+fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
+  // Grips positions are initialized as relative here.
+  // Will be multiplied by rect.w/h and added rect.x/y to them.
+  const eightGrips = [8]EditGrip{
+    EditGrip{th.Vf2{0.0, 0.0}, RectResizeCommand{th.Vf2{1, 1}, th.Vf2{-1, -1}}},
+    EditGrip{th.Vf2{0.5, 0.0}, RectResizeCommand{th.Vf2{0, 1}, th.Vf2{ 0, -1}}},
+    EditGrip{th.Vf2{1.0, 0.0}, RectResizeCommand{th.Vf2{0, 1}, th.Vf2{ 1, -1}}},
+
+    EditGrip{th.Vf2{0.0, 0.5}, RectResizeCommand{th.Vf2{1, 0}, th.Vf2{-1,  0}}},
+    EditGrip{th.Vf2{1.0, 0.5}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 1,  0}}},
+
+    EditGrip{th.Vf2{0.0, 1.0}, RectResizeCommand{th.Vf2{1, 0}, th.Vf2{-1,  1}}},
+    EditGrip{th.Vf2{0.5, 1.0}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 0,  1}}},
+    EditGrip{th.Vf2{1.0, 1.0}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 1,  1}}}}
+
+  activeGrip := -1
+
+  for i, grip in eightGrips {
+    gripPos := r.getDims().mul(grip.position).add(r.getPos())
+    gripRect := rect.mk(gripPos.x-4, gripPos.y-4, 8, 8)
+
+    editor.beginTool(sprintf("Grip%d", i), gripRect)
+ 
+    color := th.blue
+
+    if editor.isCurrentToolActive() {
+      color = th.cyan
+    }
+
+    editor.ctx.drawRect(color, gripRect)
+    editor.ctx.drawRectLines(th.black, gripRect)
+
+    if editor.queryMouse(0, d_mouseinput.down) {
+      activeGrip = i
+    }
+
+    editor.endTool()
+  }
+
+  if activeGrip == -1 {
+    return RectResizeCommand{}
+  }
+
+  return eightGrips[activeGrip].resizeCommand
+}
+
+fn applyRectResizeCommand(resizeCommand: RectResizeCommand, r: rect.Rect, delta: th.Vf2): rect.Rect {
+  r.x += delta.x * resizeCommand.posFactor.x
+  r.y += delta.y * resizeCommand.posFactor.y
+  r.w += delta.x * resizeCommand.sizeFactor.x
+  r.h += delta.y * resizeCommand.sizeFactor.y
+  return r
+}
+
 fn putWorldEntities(editor: ^Editor) {
   for i in editor.entities.list {
     ent := &editor.entities.list[i]
 
     entVisRect := d_util.rectMove(ent.rect, editor.tileGrid.panning)
     editor.beginTool("Ent"+ent.name, entVisRect)
+
     editor.ctx.drawRect(th.red, entVisRect)
     if editor.isCurrentToolActive() {
       editor.ctx.drawRectLines(th.blue, d_util.rectShrink(entVisRect, -1))
     }
     if isEntitySelected(&editor.entities, i) {
       editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
+
+      ent.rect = applyRectResizeCommand(putRectGrips(editor, entVisRect), ent.rect, editor.mouseState.delta)
     }
     if editor.queryMouse(0, d_mouseinput.pressed) {
       selectEntity(&editor.entities, i)
