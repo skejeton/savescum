@@ -1339,7 +1339,19 @@ fn putWorldEntities(editor: ^Editor) {
   }
 }
 
+fn deselectEntity(entities: ^EditorEntities) {
+  entities.entitySelected = -1
+}
+
 fn editorPutUi(editor: ^Editor) {
+  if (input.isPressed(input.key_ctrl) && input.isJustPressed(input.key_escape)) {
+    input.clear(input.key_escape)
+    editor.isDebugOverlayShown = !editor.isDebugOverlayShown
+  }
+
+  if (input.isJustPressed(input.key_escape)) {
+    deselectEntity(&editor.entities)
+  }
 
   editor.mouseState = editor.mouseState.updated()
 
@@ -1432,11 +1444,6 @@ fn editorPutUi(editor: ^Editor) {
 
   // flush render context
   editor.ctx.flush()
-
-  // handle post input states
-  if (input.isJustPressed(input.key_escape)) {
-    editor.isDebugOverlayShown = !editor.isDebugOverlayShown
-  }
 
   // swap frame census
   if !isAnyButtonHeld(&editor.mouseState) {
