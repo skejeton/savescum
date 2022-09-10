@@ -1276,7 +1276,8 @@ fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
 
   for i, grip in eightGrips {
     gripPos := r.getDims().mul(grip.position).add(r.getPos())
-    gripRect := rect.mk(gripPos.x-4, gripPos.y-4, 8, 8)
+    gripRect := rect.mk(gripPos.x-6, gripPos.y-6, 12, 12)
+    gripDrawRect := d_util.rectShrink(gripRect, 2)
 
     editor.beginTool(sprintf("Grip%d", i), gripRect)
  
@@ -1286,8 +1287,8 @@ fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
       color = th.cyan
     }
 
-    editor.ctx.drawRect(color, gripRect)
-    editor.ctx.drawRectLines(th.black, gripRect)
+    editor.ctx.drawRect(color, gripDrawRect)
+    editor.ctx.drawRectLines(th.black, gripDrawRect)
 
     if editor.queryMouse(0, d_mouseinput.down) {
       activeGrip = i
