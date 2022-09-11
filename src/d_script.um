@@ -20,12 +20,13 @@ fn init*() {
 
 fn setScene(id: int) {
   mapping := []str{"data/sc00_sky.csv", "data/sc02_hole.csv"}
-  d_game.sceneId = id
+/*  d_game.sceneId = id
   if ok, data := d_util.readFileStr(mapping[id]); ok {
     d_game.world.load(data)
   } else {
     error(sprintf("Failed to load scene %d", id))
   }
+  */
   d_game.init()
   init()
 }

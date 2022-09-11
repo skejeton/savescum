@@ -4,7 +4,7 @@
 import (
   "e_drawcmd.um"; "e_buffer.um"; 
   
-  "../d_hashname.um"; "../d_fps.um";
+  "../d_hashname.um"; "../d_fps.um"; "../d_worlddata.um"
   "../d_global.um"; "../d_resources.um"; "../d_problem_screen.um";
   "../d_background.um"; "../d_colors.um"; "../d_world.um";
   "../d_tileset.um"; "../d_test.um"; "../d_util.um"; "../d_mouseinput.um";
@@ -77,16 +77,9 @@ type (
     hovered: bool
   }
 
-  EntityDesc = struct {
-    id: str
-    name: str
-    tags: str
-    rect: rect.Rect
-  }
-
   EditorEntities = struct {
     entitySelected: int
-    list: []EntityDesc
+    list: []d_worlddata.EntityDesc
   }
 
   Editor = struct {
@@ -783,12 +776,15 @@ const worldPath = "data/sc00_nowayup.csv"
 
 fn editorLoadWorld(editor: ^Editor) {
   if ok, data := d_util.readFileStr(worldPath); ok {
-    editor.world.load(data)
+    worldData := d_worlddata.load(editor.world, data)
+
+    editor.world = worldData.world
+    editor.entities.list = worldData.entities
   }
 }
 
 fn editorSaveWorld(editor: ^Editor) {
-  d_util.writeFileStr(worldPath, editor.world.save())
+  d_util.writeFileStr(worldPath, d_worlddata.save(d_worlddata.WorldData{editor.world, editor.entities.list}))
 }
 
 fn editorToggleGame(editor: ^Editor) {
@@ -1083,7 +1079,7 @@ fn putTilePicker(editor: ^Editor) {
   }
 }
 
-fn putEntityEntry(editor: ^Editor, ent: EntityDesc, r: rect.Rect, selected: bool): EntityListAction  {
+fn putEntityEntry(editor: ^Editor, ent: d_worlddata.EntityDesc, r: rect.Rect, selected: bool): EntityListAction  {
   r.w -= 30
   action := entityListActionNone
 
@@ -1111,10 +1107,10 @@ fn putEntityEntry(editor: ^Editor, ent: EntityDesc, r: rect.Rect, selected: bool
 }
 
 fn createEditorEntities(): EditorEntities {
-  return EditorEntities{list: []EntityDesc{}, entitySelected: -1}
+  return EditorEntities{list: []d_worlddata.EntityDesc{}, entitySelected: -1}
 }
 
-fn appendEntity(editorEntities: ^EditorEntities, entity: EntityDesc) {
+fn appendEntity(editorEntities: ^EditorEntities, entity: d_worlddata.EntityDesc) {
   editorEntities.list = append(editorEntities.list, entity)
 } 
 
@@ -1133,16 +1129,16 @@ fn removeEntity(editorEntities: ^EditorEntities, index: int) {
 /*
  * \brief Creates a random entity with a random ID and name, empty tags
  */
-fn makeRandomEntity(): EntityDesc {
+fn makeRandomEntity(): d_worlddata.EntityDesc {
   ident := d_hashname.random()
-  return EntityDesc{name: ident, id: ident, tags: ""}
+  return d_worlddata.EntityDesc{name: ident, id: ident, tags: ""}
 }
 
 /*
  * \brief Creates an entity with same name and id, empty tags
  */
-fn makeNamedEntity(name: str): EntityDesc {
-  return EntityDesc{name: name, id: name, tags: ""}
+fn makeNamedEntity(name: str): d_worlddata.EntityDesc {
+  return d_worlddata.EntityDesc{name: name, id: name, tags: ""}
 }
 
 fn selectEntity(entities: ^EditorEntities, index: int) {
@@ -1153,7 +1149,7 @@ fn isEntitySelected(entities: ^EditorEntities, index: int): bool {
   return entities.entitySelected == index
 }
 
-fn initEntityAtCenter(editor: ^Editor, ent: EntityDesc): EntityDesc {
+fn initEntityAtCenter(editor: ^Editor, ent: d_worlddata.EntityDesc): d_worlddata.EntityDesc {
   ent.rect = rect.Rect{-editor.tileGrid.panning.x+d_global.screen.w/2, -editor.tileGrid.panning.y+d_global.screen.h/2, 32, 32}
   return ent
 }
@@ -1210,7 +1206,7 @@ fn getEntitySelectedIndex(entities: ^EditorEntities): int {
   return entities.entitySelected
 }
 
-fn getEntitySelected(entities: ^EditorEntities): ^EntityDesc {
+fn getEntitySelected(entities: ^EditorEntities): ^d_worlddata.EntityDesc {
   if entities.entitySelected < 0 {
     return null
   }
@@ -1393,6 +1389,8 @@ fn editorPutUi(editor: ^Editor) {
 
       position := tool.rect.getEnd().subf(padding).subf(elementSize)
 
+
+
       if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "BG", editor.tilemapLayer == -1).isReleased) {
         editor.tilemapLayer = -1
       }
@@ -1411,8 +1409,12 @@ fn editorPutUi(editor: ^Editor) {
       if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "", editor.tilemapShowAllLayers).isReleased) {
         editor.tilemapShowAllLayers = !editor.tilemapShowAllLayers
       }
+
       drawLayerIcon(&editor.ctx, position.add(th.Vf2{1, 5}), editor.tilemapLayer, editor.tilemapShowAllLayers)
       position.x -= elementSize
+
+      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "✋").isReleased) {
+      }
     }
 
     editor.ctx.moveLayer(-1)
@@ -1468,13 +1470,6 @@ fn editorDisconnectAllNodes(editor: ^Editor, node: ^ToolNode) {
   }
 }
 
-
-/** 
- * \brief It will try to load the editor resources. 
- *        If it fails to load the "resource not found" screen will appear then.
- *        
- * NOTE: This must be called after you've done the window setup.
- */
 fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
 
   editorResources := EditorResources {
@@ -1536,7 +1531,6 @@ fn editorMain*() {
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
   }
-
 
   editorDisconnectAllNodes(&editor, null)
 }

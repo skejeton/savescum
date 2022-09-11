@@ -1,4 +1,4 @@
-// Last id: 8
+// Last id: 9
 
 1. Dialogs currently don't use resource loader, so if the loading fails, RIP. 
 
@@ -27,3 +27,10 @@
   with the "Pre-Demo".
 
 8. Do something with rectangles that have inverted size. You can't select them currently although they are drawn.
+
+9. Currently worlddata needs to accept a world as a parameter because it needs some data initialized prior,
+  The tilemap needs its image, tile size set, etc.
+  * Make a "world patch" to change some of the world's fields without altering everything else, then
+    the worlddata can return that patch which user can apply.
+  * Decouple world from it's rendering and everything else, instead make it a bare tilemap, removing all connections to
+    tilesets and so on. Probably a better option.

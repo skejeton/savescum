@@ -7,14 +7,13 @@
 //    1: the foreground layer, this is drawn over the character, no collision checks
 
 import (
-  "th.um"; "std.um"; "csv.um"; "rect.um"
+  "th.um"; "rect.um"
   "d_util.um"; "d_tileset.um"
 )
 
 const (
   chunkW* = 320/16*2
   chunkH* = 240/16*2
-  lastVersion* = "000"
 )
 
 type (
@@ -133,72 +132,6 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int) {
 fn (world: ^World) draw*(pan: th.Vf2) {
   for i := -1; i < 2; i++ {
     world.drawLayer(pan, i)
-  }
-}
-
-fn (world: ^World) save*(): str {
-  data := make([][]str, 0)
-  // ver
-  data = append(data, []str{lastVersion})
-  // player pos
-  data = append(data, []str{std.itoa(trunc(world.playerSpawnPos.x)), std.itoa(trunc(world.playerSpawnPos.y))})
-
-  // Start from -1, because that's the background layer, which maps to index 0
-  layerNo := -1
-  for i in world.tilemap {
-    layer := &world.tilemap[i]
-    for pos, chunk in layer { 
-      data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y), std.itoa(layerNo)})
-      
-      grid := make([][]str, chunkH)
-      for ty := 0; ty < chunkH; ty++ {
-        grid[ty] = make([]str, chunkW)
-        for tx := 0; tx < chunkW; tx++ {
-          grid[ty][tx] = sprintf("%d", chunk[tx][ty])
-        }
-      }
-
-      data = append(data, grid)
-    }
-    layerNo++
-  }
-
-  return csv.encode(data)
-}
-
-fn (world: ^World) load*(data: str) {
-  csvData := csv.parse(data)
-
-  world.tilemap = [3]map[ChunkPos]Chunk{map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}}
-
-  if csvData[0][0] != lastVersion {
-    error("Scene version mismatch")
-  }
-
-  world.playerSpawnPos = th.Vf2{real(std.atoi(csvData[1][0])), real(std.atoi(csvData[1][1]))}
-
-  row := 2
-  
-  length := len(csvData)
-  // NOTE: I check first column of the csv data because csv parser adds bogus row with empty string
-  for row < length && csvData[row][0] != "" {
-    chunkPos := ChunkPos{std.atoi(csvData[row][0]), std.atoi(csvData[row][1])}
-    layer := std.atoi(csvData[row][2]) + 1
-    row += 1
-
-    if layer < 0 || layer > 2 {
-      continue
-    }
-    var chunk: Chunk
-    for y := 0; y < chunkH; y++ {
-      for x := 0; x < chunkW; x++ {
-        tileId := std.atoi(csvData[row+y][x])
-        chunk[x][y] = tileId        
-      }
-    }
-    row += chunkH
-
-    world.tilemap[layer][chunkPos] = chunk
   }
 }
 
