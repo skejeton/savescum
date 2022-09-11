@@ -7,7 +7,7 @@ import (
 //
 // Splits provided `text` with `by`. `by` is not a unicode char.
 */
-fn textSplitBy(text: str, by: char): []str {
+fn textSplitBy*(text: str, by: char): []str {
   items := []str{}
   last := 0
   for i, c in text {

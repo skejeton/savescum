@@ -792,8 +792,7 @@ fn editorSaveWorld(editor: ^Editor) {
 
 fn editorToggleGame(editor: ^Editor) {
   if (!editor.isPlaying) {
-    d_game.world = editor.world
-    d_game.start()
+    d_game.start(d_worlddata.WorldData{editor.world, editor.entities.list})
     d_script.init()
   }
   editor.isPlaying = !editor.isPlaying

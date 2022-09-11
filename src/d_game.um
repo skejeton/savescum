@@ -1,5 +1,7 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"; 
-  "d_util.um"; "d_world.um"; "d_dialogs.um"; "d_global.um")
+  "editor/e_buffer.um";
+  "d_rerp.um";
+  "d_util.um"; "d_world.um"; "d_dialogs.um"; "d_global.um"; "d_worlddata.um")
 
 const (
   shapeBlock          = 0
@@ -15,15 +17,41 @@ type (
     shape: int
   }
 
+  TagSet* = struct {
+    tags: map[str]bool
+  }
+
   Character* = struct {
+    tags: TagSet
+    originalRect: rect.Rect
     rect: rect.Rect
     vel: th.Vf2
     onGround: bool
     onSlope: bool
+    activated: bool // For levers.
   }
 )
 
+fn (t: ^TagSet) set(tag: str) {
+  t.tags[tag] = true
+}
+
+fn (t: ^TagSet) isSet(tag: str): bool {
+  return validkey(t.tags, tag) && t.tags[tag]
+} 
+
+fn initTagSetFromString(s: str): TagSet {
+  tagSet := TagSet{map[str]bool{}}
+  tags := e_buffer.textSplitBy(s, ';')
+  for i, tag in tags {
+    tagSet.set(tag)
+  }
+
+  return tagSet
+}
+
 var (
+  power, newPower: real
   entities*: []Character
   sceneId*: int
   world*: d_world.World
@@ -313,12 +341,22 @@ fn _drawRectTangents(r: rect.Rect) {
   }
 }
 
-fn start*() {
+fn convertEntityDescToCharacter(ent: d_worlddata.EntityDesc): Character {
+  return Character{tags: initTagSetFromString(ent.tags), originalRect: ent.rect, rect: ent.rect}
+}
+
+fn start*(worldData: d_worlddata.WorldData) {
+  world=  worldData.world
+
   chara = Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
 
   cameraPos.x = chara.rect.x-(d_global.screen.w-chara.rect.w)/2
   cameraPos.y = chara.rect.y-(d_global.screen.h-chara.rect.h)/2
+
   entities = make([]Character, 0)
+  for i, ent in worldData.entities {
+    entities = append(entities, convertEntityDescToCharacter(ent))
+  }
 }
 
 fn init*() {
@@ -327,32 +365,67 @@ fn init*() {
 }
 
 fn updateEntities() {
+  entPhysics(&chara)
+  entSolveCollision(&chara)
+
   for i := 0; i < len(entities); i++ {
+    // FIXME: Disabled this for now, but later should
+    //        make it accessible through flags/tags.
+    /*
     entPhysics(&entities[i])
     entSolveCollision(&entities[i])
+    */
+
+    ent := &entities[i]
+
+    if ent.tags.isSet("Boulder") {
+      boulderTargetRect := d_util.rectMove(ent.originalRect, th.Vf2{0, -ent.originalRect.h*power})
+      ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/1000.0*10.0)
+
+      // Resolve player collision
+      entShape := Shape{rect: ent.rect}
+      entVsShape(&chara, entShape)
+    }
+
+    if ent.tags.isSet("Lever") {
+      if d_util.rectVsRect(ent.rect, chara.rect) {
+        if input.isJustPressed(' ') {
+          ent.activated = !ent.activated
+        } 
+      }
+
+      if ent.activated {
+        newPower += 1
+      }
+    }
+
+
   }
 
   if ok, _ := dialogs.getTopPos(); !ok {
     playerControl()
   }
-  entPhysics(&chara)
-  entSolveCollision(&chara)
+}
+
+fn drawEntity(ent: ^Character) {
+  color := th.blue
+  if ent.onGround {
+    color = th.red
+  }
+
+  if ent.activated {
+    color = th.green 
+  }
+
+  canvas.drawRect(color, cameraOffsetRect(ent.rect))
 }
 
 fn drawEntities() {
   for i := 0; i < len(entities); i++ {
-    if entities[i].onGround {
-      canvas.drawRect(th.red, cameraOffsetRect(entities[i].rect))
-    } else {
-      canvas.drawRect(th.blue, cameraOffsetRect(entities[i].rect))
-    }
+    drawEntity(&entities[i])
   }
 
-  if chara.onGround { 
-    canvas.drawRect(th.red, cameraOffsetRect(chara.rect))
-  } else {
-    canvas.drawRect(th.blue, cameraOffsetRect(chara.rect))
-  }
+  drawEntity(&chara)
 }
 
 fn update*() {
@@ -360,7 +433,12 @@ fn update*() {
   updateEntities()
   cameraControl()
 
+  power = newPower
+  newPower = 0
+
   // UPDATE DIALOG //
+  dialogs.advance(input.isPressed('x'))
+
   dialogs.setCamPos(camera)
   dialogs.update()
 }
@@ -369,12 +447,9 @@ fn draw*() {
 
   // RENDER WORLD //
   world.drawLayer(camera, -1)
-  drawEntities()
-
   world.drawLayer(camera, 0)
+  drawEntities()
   world.drawLayer(camera, 1)
-
-  dialogs.advance(input.isPressed('x'))
 
   // RENDER DIALOG //
   dialogs.draw()
