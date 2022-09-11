@@ -22,13 +22,25 @@ type (
   }
 
   Character* = struct {
+    id: str
     tags: TagSet
     originalRect: rect.Rect
     rect: rect.Rect
     vel: th.Vf2
     onGround: bool
     onSlope: bool
-    activated: bool // For levers.
+  }
+
+  SaveState* = struct {
+    entities: []Character
+    sceneId: int
+    world: d_world.World
+    chara: Character
+    dialogs: d_dialogs.Dialogs
+    camera: th.Vf2
+    cameraPos: th.Vf2
+    cameraAntiPanVel: th.Vf2
+    cameraAntiPan: th.Vf2
   }
 )
 
@@ -52,6 +64,9 @@ fn initTagSetFromString(s: str): TagSet {
 
 var (
   power, newPower: real
+  saveSlot: SaveState
+  levers: map[str]bool
+
   entities*: []Character
   sceneId*: int
   world*: d_world.World
@@ -342,13 +357,41 @@ fn _drawRectTangents(r: rect.Rect) {
 }
 
 fn convertEntityDescToCharacter(ent: d_worlddata.EntityDesc): Character {
-  return Character{tags: initTagSetFromString(ent.tags), originalRect: ent.rect, rect: ent.rect}
+  return Character{id: ent.id, tags: initTagSetFromString(ent.tags), originalRect: ent.rect, rect: ent.rect}
 }
 
-fn start*(worldData: d_worlddata.WorldData) {
-  world=  worldData.world
+fn loadState() {
+  entities = append(saveSlot.entities, []Character{})
+  sceneId = saveSlot.sceneId
+  world = saveSlot.world
+  chara = saveSlot.chara
+  dialogs = saveSlot.dialogs
+  camera = saveSlot.camera
+  cameraPos = saveSlot.cameraPos
+  cameraAntiPanVel = saveSlot.cameraAntiPanVel
+  cameraAntiPan = saveSlot.cameraAntiPan
+}
 
-  chara = Character{rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
+fn saveState() {
+  saveSlot = SaveState{
+    entities: append(entities, []Character{}), 
+    sceneId: sceneId,
+    world: world,
+    chara: chara,
+    dialogs: dialogs,
+    camera: camera,
+    cameraPos: cameraPos,
+    cameraAntiPanVel: cameraAntiPanVel,
+    cameraAntiPan: cameraAntiPan}
+}
+
+
+fn start*(worldData: d_worlddata.WorldData) {
+  levers = map[str]bool{}
+
+  world =  worldData.world
+
+  chara = Character{id: ">>player", rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
 
   cameraPos.x = chara.rect.x-(d_global.screen.w-chara.rect.w)/2
   cameraPos.y = chara.rect.y-(d_global.screen.h-chara.rect.h)/2
@@ -357,6 +400,8 @@ fn start*(worldData: d_worlddata.WorldData) {
   for i, ent in worldData.entities {
     entities = append(entities, convertEntityDescToCharacter(ent))
   }
+
+  saveState()
 }
 
 fn init*() {
@@ -390,16 +435,14 @@ fn updateEntities() {
     if ent.tags.isSet("Lever") {
       if d_util.rectVsRect(ent.rect, chara.rect) {
         if input.isJustPressed(' ') {
-          ent.activated = !ent.activated
+          levers[ent.id] = !levers[ent.id]
         } 
       }
 
-      if ent.activated {
+      if levers[ent.id] {
         newPower += 1
       }
     }
-
-
   }
 
   if ok, _ := dialogs.getTopPos(); !ok {
@@ -413,7 +456,7 @@ fn drawEntity(ent: ^Character) {
     color = th.red
   }
 
-  if ent.activated {
+  if levers[ent.id] {
     color = th.green 
   }
 
@@ -435,6 +478,16 @@ fn update*() {
 
   power = newPower
   newPower = 0
+
+  // Load state
+  if input.isJustPressed('a') {
+    loadState()
+  }
+
+  // Save state
+  if input.isJustPressed('s') {
+    saveState()
+  }
 
   // UPDATE DIALOG //
   dialogs.advance(input.isPressed('x'))

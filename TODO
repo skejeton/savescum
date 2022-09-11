@@ -1,4 +1,4 @@
-// Last id: 9
+// Last id: 10
 
 1. Dialogs currently don't use resource loader, so if the loading fails, RIP. 
 
@@ -28,3 +28,6 @@
     the worlddata can return that patch which user can apply.
   * Decouple world from it's rendering and everything else, instead make it a bare tilemap, removing all connections to
     tilesets and so on. Probably a better option.
+
+10. Currently I'm doing `append(entities, []Character{})` in d_game to copy entities because umka copies only the pointer of the slice
+  (it's an umka bug, can't do much about it for now). I reported the issue already and it should be fixed soon.
