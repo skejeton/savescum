@@ -19,6 +19,7 @@ import (
 
 type (
   EditorGrid = struct {
+    rect: rect.Rect
     scaling: real
     panning: th.Vf2
   }
@@ -519,13 +520,15 @@ fn uiEndWindow(editor: ^Editor) {
 }
 
 
-fn (ge: ^EditorGrid) mapPos(rectangle: rect.Rect, pos: th.Vf2): th.Vf2 {
-  return ge.panning.mulf(ge.scaling).add(pos).add(rectangle.getPos()).add(rectangle.getDims().divf(2))
+fn (ge: ^EditorGrid) mapPos(pos: th.Vf2): th.Vf2 {
+  return ge.panning.mulf(ge.scaling).add(pos).add(ge.rect.getPos()).add(ge.rect.getDims().divf(2))
 }
 
 // Puts editor grid spanning the entire screen
 // TODO: Fix scaling
 fn (ge: ^EditorGrid) put(editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
+  ge.rect = rectangle
+
   const (
     lineColor = th.white&0xFFFFFF11
     tileColor = th.white&0xFFFFFF22
@@ -1061,7 +1064,7 @@ fn putTilePicker(editor: ^Editor) {
           editor.tileSelected = selectedTile
         }
 
-        selectedTilePos := editor.tilemapGrid.mapPos(contentRect, editor.tileSelected.mulf(32))
+        selectedTilePos := editor.tilemapGrid.mapPos(editor.tileSelected.mulf(32))
         
         editor.ctx.beginScissorRect(contentRect)
         editor.ctx.drawRect(th_color.alpha(th.green, 0.3), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32))
@@ -1071,7 +1074,7 @@ fn putTilePicker(editor: ^Editor) {
       editor.ctx.beginScissorRect(contentRect)
 
       editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
-      editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{1, 1}, p: editor.tilemapGrid.mapPos(contentRect, th.Vf2{0, 0})})
+      editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{1, 1}, p: editor.tilemapGrid.mapPos(th.Vf2{0, 0})})
       editor.ctx.endScissor()
     }
     editor.endTool()
@@ -1150,7 +1153,7 @@ fn isEntitySelected(entities: ^EditorEntities, index: int): bool {
 }
 
 fn initEntityAtCenter(editor: ^Editor, ent: d_worlddata.EntityDesc): d_worlddata.EntityDesc {
-  ent.rect = rect.Rect{-editor.tileGrid.panning.x+d_global.screen.w/2, -editor.tileGrid.panning.y+d_global.screen.h/2, 32, 32}
+  ent.rect = rect.Rect{-editor.tileGrid.panning.x-16, -editor.tileGrid.panning.y-16, 32, 32}
   return ent
 }
 
@@ -1312,7 +1315,7 @@ fn putWorldEntities(editor: ^Editor) {
   for i in editor.entities.list {
     ent := &editor.entities.list[i]
 
-    entVisRect := d_util.rectMove(ent.rect, editor.tileGrid.panning)
+    entVisRect := d_util.rectMove(ent.rect, editor.tileGrid.mapPos(th.Vf2{0, 0}))
     editor.beginTool("Ent"+ent.name, entVisRect)
 
     editor.ctx.drawRect(th.red, entVisRect)
@@ -1418,7 +1421,7 @@ fn editorPutUi(editor: ^Editor) {
     }
 
     editor.ctx.moveLayer(-1)
-    editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tileGrid.mapPos(tool.rect, th.Vf2{0, 0}).mulf(-1), &editor.world})
+    editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tileGrid.mapPos(th.Vf2{0, 0}).mulf(-1), &editor.world})
     editor.ctx.moveLayer(1)
 
     editor.endTool()

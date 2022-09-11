@@ -20,12 +20,6 @@
   * Ctrl+Left/Right to stride by words.
   * Placing cursor with mouse pointer. 
 
-7. Adding a new entity in the list will by default try to spawn it in the middle of the window,
-  but it really should do it in the middle of the world view. I can't do that because
-  there's not a good way to get the world view rectangle yet, and I can't really think of any,
-  other than storing the rectangle in the EditorGrid itself. I'll think of it when I'm done
-  with the "Pre-Demo".
-
 8. Do something with rectangles that have inverted size. You can't select them currently although they are drawn.
 
 9. Currently worlddata needs to accept a world as a parameter because it needs some data initialized prior,
