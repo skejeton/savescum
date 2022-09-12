@@ -122,7 +122,7 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0) {
 
         if tileId > 0 {
           world.tileset.selectTilePos(tileId)
-          world.tileset.image.draw(th.Transform{p: th.Vf2{(tx * world.tileset.tileSizeX - pan.x)*scale, (ty * world.tileset.tileSizeY - pan.y)*scale}, s: th.Vf2{scale, scale}})
+          world.tileset.image.draw(th.Transform{p: th.Vf2{(tx * world.tileset.tileSizeX - pan.x)*scale, (ty * world.tileset.tileSizeY - pan.y)*scale}, s: th.Vf2{scale*world.tileset.scale, scale*world.tileset.scale}})
         }
       }
     }

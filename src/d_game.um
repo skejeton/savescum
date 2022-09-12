@@ -1,6 +1,6 @@
-import ("th.um"; "rect.um"; "canvas.um"; "input.um"; 
+import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "image.um"
   "editor/e_buffer.um";
-  "d_rerp.um";
+  "d_rerp.um"; "d_background.um"; "d_resources.um";
   "d_util.um"; "d_world.um"; "d_dialogs.um"; "d_global.um"; "d_worlddata.um")
 
 const (
@@ -59,6 +59,9 @@ fn initTagSetFromString*(s: str): TagSet {
 }
 
 var (
+  // Resources:
+  imgObj: image.Image
+
   power, newPower: real
   saveSlot: SaveState
   levers: map[str]bool
@@ -74,7 +77,7 @@ var (
 )
 
 fn getCameraRect(): rect.Rect {
-  return rect.mk(chara.rect.x+chara.rect.w/2-640/2, chara.rect.y+chara.rect.h/2-480/2, 640, 480)
+  return rect.mk(chara.rect.x+chara.rect.w/2-d_global.screen.w/2, chara.rect.y+chara.rect.h/2-d_global.screen.h/2, d_global.screen.w, d_global.screen.h)
 }
 
 fn findGuideInPoint(p: th.Vf2): rect.Rect {
@@ -113,8 +116,9 @@ fn getCameraProperties*(): CameraProperties {
 
 fn cameraControl() {
   props := getCameraProperties()
-  camera = camera.add(props.pos.sub(camera).mulf(th.delta/100.0))
-  cameraScale += (props.scale-cameraScale)*(th.delta/100.0)
+
+  camera = d_rerp.iVf2(camera, props.pos, th.delta/100.0)
+  cameraScale = d_rerp.iReal(cameraScale, props.scale, th.delta/100.0)
 }
 
 fn cameraOffsetRect(r: rect.Rect): rect.Rect {
@@ -394,10 +398,11 @@ fn start*(worldData: d_worlddata.WorldData) {
 
   world =  worldData.world
 
-  chara = Character{id: ">>player", rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
+  chara = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
 
   entities = make([]Character, 0)
   guides = make([]rect.Rect, 0)
+  levers = map[str]bool{}
 
   for i, ent in worldData.entities {
     chr := convertEntityDescToCharacter(ent)
@@ -408,10 +413,15 @@ fn start*(worldData: d_worlddata.WorldData) {
     }
   }
 
+  camera = getCameraProperties().pos
+  cameraScale = getCameraProperties().scale
+
   saveState()
 }
 
-fn init*() {
+fn init*(rl: ^d_resources.ResourceLoader) {
+  imgObj = d_resources.loadImage(rl, "data/obj_interactive.png")
+  imgObj.setfilter(0)
   dialogs = d_dialogs.init()
   d_game.dialogs.register("receptionist" , "data/ts03_dialog.png", 0, "data/sp00_receptionist.png", 0, "data/font_mono.ttf", 16, 0xFFFFFFFF, 0.1 , []str{"smirk"})
 }
@@ -457,17 +467,42 @@ fn updateEntities() {
   }
 }
 
+const (
+  cropBoulder = rect.Rect{0, 0, 64, 128}
+  cropLeverOn = rect.Rect{64, 64, 64, 64}
+  cropLeverOff = rect.Rect{64, 0, 64, 64}
+)
+
+fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect) {
+  d_util.imageCropRect(img, src)
+  pos := dst.getPos()
+  scale := dst.getDims().div(src.getDims())
+  img.draw(th.Transform{p: pos, s: scale})
+}
+
 fn drawEntity(ent: ^Character) {
-  color := th.blue
-  if ent.onGround {
-    color = th.red
-  }
+  destRect := d_util.rectShrink(cameraOffsetRect(ent.rect), -2*cameraScale)
 
-  if levers[ent.id] {
-    color = th.green 
-  }
+  if ent.tags.isSet("Lever") {
+    if levers[ent.id] {
+      drawImageRect(imgObj, cropLeverOn, destRect)
+    } else {
+      drawImageRect(imgObj, cropLeverOff, destRect)
+    }
+  } else if ent.tags.isSet("Boulder") {
+    drawImageRect(imgObj, cropBoulder, destRect)
+  } else {
+    color := th.blue
+    if ent.onGround {
+      color = th.red
+    }
 
-  canvas.drawRect(color, cameraOffsetRect(ent.rect))
+    if levers[ent.id] {
+      color = th.green 
+    }
+
+    canvas.drawRect(color, cameraOffsetRect(ent.rect))
+  }
 }
 
 fn drawEntities() {
@@ -510,6 +545,8 @@ fn drawGuideRects() {
 }
 
 fn draw*() {
+  // RENDER BG //
+  d_background.draw(rect.mk(camera.x, camera.y, d_global.screen.w/cameraScale, d_global.screen.h/cameraScale))
 
   // RENDER WORLD //
   world.drawLayer(camera, -1, cameraScale)
@@ -521,7 +558,8 @@ fn draw*() {
   dialogs.draw()
 
   // DEBUG OVERYALS //
-  /*_drawRectTangents(chara.rect)
+  /*
+  _drawRectTangents(chara.rect)
   drawGuideRects()
   d_util.drawRectLines(th.green, cameraOffsetRect(getCameraTargetRect()))
   */

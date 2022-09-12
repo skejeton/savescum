@@ -100,7 +100,7 @@ fn load*(world: d_world.World, data: str): WorldData {
   }
   row += entityCount
 
-  world.playerSpawnPos = th.Vf2{real(std.atoi(csvData[2][0])), real(std.atoi(csvData[2][1]))}
+  world.playerSpawnPos = th.Vf2{real(std.atoi(csvData[row][0])), real(std.atoi(csvData[row][1]))}
 
   row += 1
 

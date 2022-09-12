@@ -1006,8 +1006,8 @@ fn drawLayerIcon(ctx: ^e_drawcmd.DrawContext, position: th.Vf2, layer: int, show
 type GameCmd = struct {}
 
 fn (gc: ^GameCmd) draw(props: e_drawcmd.DrawProperties) {
-  d_background.draw(rect.mk(0, 0, d_global.screen.w, d_global.screen.h))
   d_game.draw()
+  d_script.draw()
 }
 
 fn putLabelY(editor: ^Editor, text: str, color: uint32, position: ^th.Vf2) {
@@ -1074,7 +1074,7 @@ fn putTilePicker(editor: ^Editor) {
       editor.ctx.beginScissorRect(contentRect)
 
       editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
-      editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{1, 1}, p: editor.tilemapGrid.mapPos(th.Vf2{0, 0})})
+      editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{0.5, 0.5}, p: editor.tilemapGrid.mapPos(th.Vf2{0, 0})})
       editor.ctx.endScissor()
     }
     editor.endTool()
@@ -1160,7 +1160,7 @@ fn initEntityAtCenter(editor: ^Editor, ent: d_worlddata.EntityDesc): d_worlddata
 fn putEntityList(editor: ^Editor) {
   entryRemoveIndex := -1
 
-  if windowInfo, ok := uiBeginWindow(editor, "Entity List", rect.mk(800-300-5, 5, 300, 300)); ok {
+  if windowInfo, ok := uiBeginWindow(editor, "Entity List", rect.mk(800-200-5, 5, 200, 200)); ok {
     // Apply padding.
     contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
 
@@ -1221,7 +1221,7 @@ fn putEntityEditor(editor: ^Editor) {
   entitySelected := getEntitySelected(&editor.entities)
 
   if entitySelected != null {
-    if windowInfo, ok := uiBeginWindow(editor, "Entity Editor", rect.mk(800-300-5, 5+300+5, 300, 300)); ok {
+    if windowInfo, ok := uiBeginWindow(editor, "Entity Editor", rect.mk(800-200-5, 5+200+5, 200, 220)); ok {
       contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
 
       editor.ctx.beginScissorRect(contentRect)
@@ -1499,7 +1499,7 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
     toolbarIcons: d_resources.loadImage(rl, "data/ts02_trayicons.png"),
     mainFont: d_resources.loadFont(rl, "data/font_mono.ttf", 16, 0)}
 
-  //editorResources.tilesetImage.setfilter(0)
+  editorResources.tilesetImage.setfilter(0)
 
   return editorResources
 }
@@ -1508,7 +1508,7 @@ fn editorInit(resources: EditorResources): Editor {
   rootNode := new(ToolNode)
   rootNode ^= ToolNode{children: map[str]^ToolNode{}}
 
-  tileset := d_tileset.fromImage(resources.tilesetImage, 32, 32)
+  tileset := d_tileset.fromImage(resources.tilesetImage, 32, 32, 0.5)
   world := d_world.fromTileset(tileset)
 
   result := Editor{
@@ -1539,6 +1539,7 @@ fn editorMain*() {
   // init data
   rl := d_resources.initResourceLoader()
   d_background.init(&rl)
+  d_game.init(&rl)
   editor := editorInit(loadEditorResources(&rl))
 
   if d_resources.hasErrors(&rl) {

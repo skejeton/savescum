@@ -1,4 +1,4 @@
-// Last id: 10
+// Last id: 11
 
 1. Dialogs currently don't use resource loader, so if the loading fails, RIP. 
 
@@ -31,3 +31,5 @@
 
 10. Currently I'm doing `append(entities, []Character{})` in d_game to copy entities because umka copies only the pointer of the slice
   (it's an umka bug, can't do much about it for now). I reported the issue already and it should be fixed soon.
+
+11. Maybe savestates should be stackable instead.

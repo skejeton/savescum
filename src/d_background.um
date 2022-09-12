@@ -5,11 +5,15 @@ import (
 
 var (
   imgClouds: image.Image
+  imgRocks: image.Image
   width: real
 )
 
 fn init*(rl: ^d_resources.ResourceLoader) {
   imgClouds = d_resources.loadImage(rl, "data/bg00_sky.png")
+  imgRocks = d_resources.loadImage(rl, "data/bg01_pit.png")
+  imgRocks.setfilter(0)
+
   width = imgClouds.getDims().x
 }
 
@@ -24,6 +28,7 @@ fn drawCloudStrip(scroll: real, y: real, colorMod: uint32) {
 }
 
 fn draw*(screen: rect.Rect) {
+/*
   const (
     step = 60
     stripeCount = 5
@@ -35,7 +40,6 @@ fn draw*(screen: rect.Rect) {
 
   canvas.drawRect(0x001133FF, screen) 
 
-/*
   for i := 0; i < stripeCount; i++ {
     yOffset := origin+i*step
     scroll := (i + 1) * (i + 1) * th.time/1000.0 * -120/stripeCount
@@ -44,4 +48,12 @@ fn draw*(screen: rect.Rect) {
     drawCloudStrip(scroll, yOffset, color);
   }
   */
+  scale := th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h}.mulf(0.5)
+
+  for x := -16; x < 16; x++ {
+    for y := -16; y < 16; y++ {
+      pos := th.Vf2{x, y}.mul(imgRocks.getDims().mul(scale)).sub(screen.getPos().divf(4))
+      imgRocks.draw(th.Transform{p: pos, s: scale})
+    }
+  } 
 }

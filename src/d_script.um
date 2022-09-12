@@ -2,14 +2,16 @@
   Scripted events for game
 */
 
-import ("th.um"; "rect.um"
-  "d_game.um"; "d_util.um")
+import ("th.um"; "rect.um"; "canvas.um";
+  "d_game.um"; "d_util.um"; "d_global.um")
 
 var (
   dialogActivated: bool
+  t: real
 )
 
 fn init*() {
+  t = 0
   switch d_game.sceneId {
   case 0:
   case 1:
@@ -27,13 +29,21 @@ fn setScene(id: int) {
     error(sprintf("Failed to load scene %d", id))
   }
   */
-  d_game.init()
-  init()
+  // d_game.init()
+  // init()
 }
 
 fn update*() {
+  if t > 0.006 {
+    t += th.delta/1000.0
+  }
   switch d_game.sceneId {
   case 0:
+    if d_game.chara.rect.y > 640 {
+      d_game.chara.rect.y -= 128
+      d_game.camera.y -= 128
+      t += 0.001
+    }
   case 1:
     
     if d_game.chara.onGround && !dialogActivated {
@@ -41,4 +51,8 @@ fn update*() {
       dialogActivated = true
     }
   }
+}
+
+fn draw*() {
+  canvas.drawRect(th.black, rect.mk(0, d_global.screen.h, d_global.screen.w, -d_global.screen.h*t*t))
 }
