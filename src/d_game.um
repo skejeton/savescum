@@ -37,10 +37,6 @@ type (
     world: d_world.World
     chara: Character
     dialogs: d_dialogs.Dialogs
-    camera: th.Vf2
-    cameraPos: th.Vf2
-    cameraAntiPanVel: th.Vf2
-    cameraAntiPan: th.Vf2
   }
 )
 
@@ -73,47 +69,61 @@ var (
   world*: d_world.World
   chara*: Character
   dialogs*: d_dialogs.Dialogs
-  camera: th.Vf2
-  cameraPos: th.Vf2
-  cameraAntiPanVel: th.Vf2
-  cameraAntiPan: th.Vf2
+  camera*: th.Vf2
+  cameraScale*: real
 )
 
+fn getCameraRect(): rect.Rect {
+  return rect.mk(chara.rect.x+chara.rect.w/2-640/2, chara.rect.y+chara.rect.h/2-480/2, 640, 480)
+}
+
+fn findGuideInPoint(p: th.Vf2): rect.Rect {
+  for i, guide in guides {
+    if d_util.rectVsPoint(guide, p) {
+      return guide
+    }
+  }
+
+  return getCameraRect()
+}
+
+fn getCameraTargetRect(): rect.Rect {
+  guide := findGuideInPoint(chara.rect.getPos())
+  cameraRect := getCameraRect()
+  scale := d_util.min(guide.w/cameraRect.w, guide.h/cameraRect.h)
+  cameraRect.w *= scale
+  cameraRect.h *= scale
+  // put at center
+  cameraRect.x = chara.rect.x+chara.rect.w/2-cameraRect.w/2
+  cameraRect.y = chara.rect.y+chara.rect.h/2-cameraRect.h/2
+
+
+  return d_util.rectKeepInBounds(cameraRect, guide)
+}
+
+type CameraProperties = struct {
+  pos: th.Vf2
+  scale: real
+}
+
+fn getCameraProperties*(): CameraProperties {
+  targetRect := getCameraTargetRect()
+  return CameraProperties{targetRect.getPos(), d_util.min(d_global.screen.w/targetRect.w, d_global.screen.h/targetRect.h)}
+}
+
 fn cameraControl() {
-  cameraAntiPanVel.x += chara.vel.x
-  cameraAntiPanVel.x /= 2.6
-  cameraAntiPanVel.y = chara.vel.y
-  cameraAntiPanVel.y /= 2.6
-  cameraAntiPan.x += cameraAntiPanVel.x/5.0
-  cameraAntiPan.y += cameraAntiPanVel.y/5.0
-
-  if cameraAntiPan.x < -50 {
-    cameraAntiPan.x = -50
-  }
-  if cameraAntiPan.x > 50 {
-    cameraAntiPan.x = 50
-  }
-  if cameraAntiPan.y < -50 {
-    cameraAntiPan.y = -50
-  }
-  if cameraAntiPan.y > 50 {
-    cameraAntiPan.y = 50
-  }
-
-  if ok, pos := dialogs.getTopPos(); ok {
-    cameraPos.x += (pos.x-cameraPos.x)/20
-    cameraPos.y += (pos.y-cameraPos.y)/20
-  } else {
-    cameraPos.x += ((chara.rect.x)-cameraPos.x)/4
-    cameraPos.y += ((chara.rect.y)-cameraPos.y)/4
-  }
-  camera.x = cameraPos.x + cameraAntiPan.x - (d_global.screen.w-chara.rect.w)/2
-  camera.y = cameraPos.y + cameraAntiPan.y - (d_global.screen.h-chara.rect.h)/2
+  props := getCameraProperties()
+  camera = camera.add(props.pos.sub(camera).mulf(th.delta/100.0))
+  cameraScale += (props.scale-cameraScale)*(th.delta/100.0)
 }
 
 fn cameraOffsetRect(r: rect.Rect): rect.Rect {
   r.x -= camera.x
   r.y -= camera.y
+  r.x *= cameraScale
+  r.y *= cameraScale
+  r.w *= cameraScale
+  r.h *= cameraScale
   return r
 }
 
@@ -367,10 +377,6 @@ fn loadState() {
   world = saveSlot.world
   chara = saveSlot.chara
   dialogs = saveSlot.dialogs
-  camera = saveSlot.camera
-  cameraPos = saveSlot.cameraPos
-  cameraAntiPanVel = saveSlot.cameraAntiPanVel
-  cameraAntiPan = saveSlot.cameraAntiPan
 }
 
 fn saveState() {
@@ -379,11 +385,7 @@ fn saveState() {
     sceneId: sceneId,
     world: world,
     chara: chara,
-    dialogs: dialogs,
-    camera: camera,
-    cameraPos: cameraPos,
-    cameraAntiPanVel: cameraAntiPanVel,
-    cameraAntiPan: cameraAntiPan}
+    dialogs: dialogs}
 }
 
 
@@ -393,9 +395,6 @@ fn start*(worldData: d_worlddata.WorldData) {
   world =  worldData.world
 
   chara = Character{id: ">>player", rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
-
-  cameraPos.x = chara.rect.x-(d_global.screen.w-chara.rect.w)/2
-  cameraPos.y = chara.rect.y-(d_global.screen.h-chara.rect.h)/2
 
   entities = make([]Character, 0)
   guides = make([]rect.Rect, 0)
@@ -506,22 +505,24 @@ fn update*() {
 
 fn drawGuideRects() {
   for i, guide in guides {
-    d_util.drawRectLines(th.yellow, d_util.rectMove(guide, camera.mulf(-1)))
+    d_util.drawRectLines(th.yellow, cameraOffsetRect(guide))
   }
 }
 
 fn draw*() {
 
   // RENDER WORLD //
-  world.drawLayer(camera, -1)
-  world.drawLayer(camera, 0)
+  world.drawLayer(camera, -1, cameraScale)
+  world.drawLayer(camera, 0, cameraScale)
   drawEntities()
-  world.drawLayer(camera, 1)
+  world.drawLayer(camera, 1, cameraScale)
 
   // RENDER DIALOG //
   dialogs.draw()
 
   // DEBUG OVERYALS //
-  _drawRectTangents(chara.rect)
+  /*_drawRectTangents(chara.rect)
   drawGuideRects()
+  d_util.drawRectLines(th.green, cameraOffsetRect(getCameraTargetRect()))
+  */
 }

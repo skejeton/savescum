@@ -35,6 +35,7 @@ fn draw*(screen: rect.Rect) {
 
   canvas.drawRect(0x001133FF, screen) 
 
+/*
   for i := 0; i < stripeCount; i++ {
     yOffset := origin+i*step
     scroll := (i + 1) * (i + 1) * th.time/1000.0 * -120/stripeCount
@@ -42,4 +43,5 @@ fn draw*(screen: rect.Rect) {
 
     drawCloudStrip(scroll, yOffset, color);
   }
+  */
 }

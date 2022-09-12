@@ -187,14 +187,14 @@ fn rectCutRight*(r: rect.Rect, by: real): rect.Rect {
   return result
 }
 
-fn min(a, b: real): real {
+fn min*(a, b: real): real {
   if a < b {
     return a
   }
   return b
 }
 
-fn max(a, b: real): real {
+fn max*(a, b: real): real {
   if a > b {
     return a
   }
