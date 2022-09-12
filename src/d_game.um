@@ -44,15 +44,15 @@ type (
   }
 )
 
-fn (t: ^TagSet) set(tag: str) {
+fn (t: ^TagSet) set*(tag: str) {
   t.tags[tag] = true
 }
 
-fn (t: ^TagSet) isSet(tag: str): bool {
+fn (t: ^TagSet) isSet*(tag: str): bool {
   return validkey(t.tags, tag) && t.tags[tag]
 } 
 
-fn initTagSetFromString(s: str): TagSet {
+fn initTagSetFromString*(s: str): TagSet {
   tagSet := TagSet{map[str]bool{}}
   tags := e_buffer.textSplitBy(s, ';')
   for i, tag in tags {
@@ -67,6 +67,7 @@ var (
   saveSlot: SaveState
   levers: map[str]bool
 
+  guides: []rect.Rect
   entities*: []Character
   sceneId*: int
   world*: d_world.World
@@ -397,8 +398,15 @@ fn start*(worldData: d_worlddata.WorldData) {
   cameraPos.y = chara.rect.y-(d_global.screen.h-chara.rect.h)/2
 
   entities = make([]Character, 0)
+  guides = make([]rect.Rect, 0)
+
   for i, ent in worldData.entities {
-    entities = append(entities, convertEntityDescToCharacter(ent))
+    chr := convertEntityDescToCharacter(ent)
+    if chr.tags.isSet("Guide") {
+      guides = append(guides, chr.rect)
+    } else {
+      entities = append(entities, chr)
+    }
   }
 
   saveState()
@@ -496,6 +504,12 @@ fn update*() {
   dialogs.update()
 }
 
+fn drawGuideRects() {
+  for i, guide in guides {
+    d_util.drawRectLines(th.yellow, d_util.rectMove(guide, camera.mulf(-1)))
+  }
+}
+
 fn draw*() {
 
   // RENDER WORLD //
@@ -507,8 +521,7 @@ fn draw*() {
   // RENDER DIALOG //
   dialogs.draw()
 
-/*
   // DEBUG OVERYALS //
   _drawRectTangents(chara.rect)
-*/
+  drawGuideRects()
 }

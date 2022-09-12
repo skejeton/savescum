@@ -14,7 +14,7 @@ import (
 
   "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
 
-  "utf8.um"
+  "utf8.um"; "std.um"
 )
 
 type (
@@ -102,6 +102,7 @@ type (
     world: d_world.World
     isPlaying: bool
     isRelocatingPlayer: bool
+    isIgnoringGuides: bool
     entities: EditorEntities
 
     // UI misc.
@@ -1310,30 +1311,47 @@ fn applyRectResizeCommand(resizeCommand: RectResizeCommand, r: rect.Rect, delta:
   return r
 }
 
+fn drawTaggedEntityRect(editor: ^Editor, r: rect.Rect, tags: ^d_game.TagSet) {
+  if tags.isSet("Guide") {
+    editor.ctx.drawRectLines(th.yellow, r)
+  } else {
+    editor.ctx.drawRect(th.red, r)
+  }
+}
+
 fn putWorldEntities(editor: ^Editor) {
   for i in editor.entities.list {
     ent := &editor.entities.list[i]
 
     entVisRect := d_util.rectMove(ent.rect, editor.tileGrid.mapPos(th.Vf2{0, 0}))
-    editor.beginTool("Ent"+ent.name, entVisRect)
 
-    editor.ctx.drawRect(th.red, entVisRect)
-    if editor.isCurrentToolActive() {
-      editor.ctx.drawRectLines(th.blue, d_util.rectShrink(entVisRect, -1))
-    }
-    if isEntitySelected(&editor.entities, i) {
-      editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
+    // FIXME: Initializing tag set every time we render an entity is not efficent at all.
+    tags := d_game.initTagSetFromString(ent.tags)
+    ignore := tags.isSet("Guide") && editor.isIgnoringGuides && !isEntitySelected(&editor.entities, i);
 
-      ent.rect = applyRectResizeCommand(putRectGrips(editor, entVisRect), ent.rect, editor.mouseState.delta)
+    drawTaggedEntityRect(editor, entVisRect, &tags)
+
+    if !ignore {
+      editor.beginTool("Ent"+ent.name, entVisRect)
+
+      if editor.isCurrentToolActive() {
+        editor.ctx.drawRectLines(th.blue, d_util.rectShrink(entVisRect, -1))
+      }
+      if isEntitySelected(&editor.entities, i) {
+        editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
+
+        ent.rect = applyRectResizeCommand(putRectGrips(editor, entVisRect), ent.rect, editor.mouseState.delta)
+      }
+      if editor.queryMouse(0, d_mouseinput.pressed) {
+        selectEntity(&editor.entities, i)
+      }
+      if editor.queryMouse(0, d_mouseinput.down) {
+        ent.rect.x += editor.mouseState.delta.x
+        ent.rect.y += editor.mouseState.delta.y
+      }
+
+      editor.endTool()
     }
-    if editor.queryMouse(0, d_mouseinput.pressed) {
-      selectEntity(&editor.entities, i)
-    }
-    if editor.queryMouse(0, d_mouseinput.down) {
-      ent.rect.x += editor.mouseState.delta.x
-      ent.rect.y += editor.mouseState.delta.y
-    }
-    editor.endTool()
   }
 }
 
@@ -1415,7 +1433,8 @@ fn editorPutUi(editor: ^Editor) {
       drawLayerIcon(&editor.ctx, position.add(th.Vf2{1, 5}), editor.tilemapLayer, editor.tilemapShowAllLayers)
       position.x -= elementSize
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "✋").isReleased) {
+      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "✋", editor.isIgnoringGuides).isReleased) {
+        editor.isIgnoringGuides = !editor.isIgnoringGuides;
       }
     }
 
@@ -1509,6 +1528,7 @@ fn editorInit(resources: EditorResources): Editor {
 
 
 fn editorMain*() {
+  std.srand(std.time())
   d_test.itsNotAUnitTest()
 
   d_global.screen = rect.mk(0, 0, 800, 600)
