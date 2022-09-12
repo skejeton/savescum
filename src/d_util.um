@@ -153,6 +153,10 @@ fn rectMove*(r: rect.Rect, by: th.Vf2): rect.Rect {
   return rect.Rect{r.x+by.x, r.y+by.y, r.w, r.h}
 }
 
+fn rectCenter*(r: rect.Rect): th.Vf2 {
+  return th.Vf2{r.x+r.w/2, r.y+r.h/2}
+}
+
 // Rect keep in bounds(
 //   Child rect
 //   Parent rect

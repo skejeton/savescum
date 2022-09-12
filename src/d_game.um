@@ -60,7 +60,11 @@ fn initTagSetFromString*(s: str): TagSet {
 
 var (
   // Resources:
+  chumDir: int
+  chumRotTime: real
+  chumWalkTime: real
   imgObj: image.Image
+  imgChum: image.Image
 
   power, newPower: real
   saveSlot: SaveState
@@ -136,10 +140,17 @@ fn playerControl() {
     chara.vel.y = -2.57
   }
   if input.isPressed(input.key_left) {
+    chumDir = 0
+    chumWalkTime += th.delta/1000.0
     chara.vel.x = -2
   }
   if input.isPressed(input.key_right) {
+    chumDir = 1
+    chumWalkTime += th.delta/1000.0
     chara.vel.x = 2
+  } 
+  if !input.isPressed(input.key_left) && !input.isPressed(input.key_right) {
+    chumWalkTime = 0
   }
 
   if chara.rect.y > 2e3 {
@@ -422,6 +433,8 @@ fn start*(worldData: d_worlddata.WorldData) {
 fn init*(rl: ^d_resources.ResourceLoader) {
   imgObj = d_resources.loadImage(rl, "data/obj_interactive.png")
   imgObj.setfilter(0)
+  imgChum = d_resources.loadImage(rl, "data/chr_chum.png")
+  imgChum.setfilter(0)
   dialogs = d_dialogs.init()
   d_game.dialogs.register("receptionist" , "data/ts03_dialog.png", 0, "data/sp00_receptionist.png", 0, "data/font_mono.ttf", 16, 0xFFFFFFFF, 0.1 , []str{"smirk"})
 }
@@ -473,11 +486,14 @@ const (
   cropLeverOff = rect.Rect{64, 0, 64, 64}
 )
 
-fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect) {
+fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0) {
   d_util.imageCropRect(img, src)
+
+  // TODO: I have to fix the origin for image crops.. Need to report this to tophat.
+  origin := th.Vf2{dst.w/2+(src.x/src.w*dst.w), dst.h/2+(src.y/src.h*dst.h)}
   pos := dst.getPos()
   scale := dst.getDims().div(src.getDims())
-  img.draw(th.Transform{p: pos, s: scale})
+  img.draw(th.Transform{p: pos, s: scale, r: rot, o: origin})
 }
 
 fn drawEntity(ent: ^Character) {
@@ -505,12 +521,49 @@ fn drawEntity(ent: ^Character) {
   }
 }
 
+const (
+  chumStateStand = 0
+  chumStateJump = 1
+  chumStateFall = 2
+  chumStateWalk = 3
+  chumStateWalk2 = 4
+  chumFaceRect = rect.Rect{0, 0, 94, 107}
+)
+
+fn drawChum(state: int) {
+  bodyRect := rect.mk(chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h)
+  chumDestRect := cameraOffsetRect(rect.mk(chara.rect.x-10, chara.rect.y-20, chumFaceRect.w/2, chumFaceRect.h/2))
+  if chumDir == 0 {
+    // Mirror.
+    chumDestRect.x += chumDestRect.w;
+    chumDestRect.w *= -1;
+  }
+  drawImageRect(imgChum, bodyRect, chumDestRect, chumRotTime)
+  drawImageRect(imgChum, chumFaceRect, chumDestRect, chumRotTime)
+}
+
 fn drawEntities() {
   for i := 0; i < len(entities); i++ {
     drawEntity(&entities[i])
   }
 
   drawEntity(&chara)
+  if chara.vel.y > 0 {
+    if chara.vel.y > 3 {
+      chumRotTime += th.delta/10.0
+    }
+    drawChum(chumStateFall)
+  } else if chara.vel.y < 0 {
+    chumRotTime = 0
+    drawChum(chumStateJump)
+  } else {
+    chumRotTime = 0
+    switch trunc(chumWalkTime*8.0) % 3 {
+      case 0: drawChum(chumStateStand)
+      case 1: drawChum(chumStateJump)
+      case 2: drawChum(chumStateJump)
+    }
+  }
 }
 
 fn update*() {
@@ -543,6 +596,8 @@ fn drawGuideRects() {
     d_util.drawRectLines(th.yellow, cameraOffsetRect(guide))
   }
 }
+
+
 
 fn draw*() {
   // RENDER BG //
