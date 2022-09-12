@@ -66,6 +66,8 @@ var (
   imgObj: image.Image
   imgChum: image.Image
 
+  savePosAppearTimer: real
+  savePos: th.Vf2
   power, newPower: real
   saveSlot: SaveState
   levers: map[str]bool
@@ -405,6 +407,8 @@ fn saveState() {
 
 
 fn start*(worldData: d_worlddata.WorldData) {
+  savePos.x = -1000
+  savePos.y = -1000
   levers = map[str]bool{}
 
   world =  worldData.world
@@ -484,6 +488,7 @@ const (
   cropBoulder = rect.Rect{0, 0, 64, 128}
   cropLeverOn = rect.Rect{64, 64, 64, 64}
   cropLeverOff = rect.Rect{64, 0, 64, 64}
+  cropDiskette = rect.Rect{128, 0, 64, 64}
 )
 
 fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0) {
@@ -547,7 +552,7 @@ fn drawEntities() {
     drawEntity(&entities[i])
   }
 
-  drawEntity(&chara)
+  //drawEntity(&chara)
   if chara.vel.y > 0 {
     if chara.vel.y > 3 {
       chumRotTime += th.delta/10.0
@@ -581,8 +586,13 @@ fn update*() {
 
   // Save state
   if input.isJustPressed('s') {
+    savePos.x = chara.rect.x
+    savePos.y = chara.rect.y
+    savePosAppearTimer = 0
     saveState()
   }
+
+  savePosAppearTimer += th.delta/1000.0
 
   // UPDATE DIALOG //
   dialogs.advance(input.isPressed('x'))
@@ -597,7 +607,16 @@ fn drawGuideRects() {
   }
 }
 
+fn drawSavePos() {
+  shrink := savePosAppearTimer*savePosAppearTimer*10.0
 
+  if shrink > 1 {
+    shrink = 1
+  }
+
+  shrink = (1-shrink)*16
+  drawImageRect(imgObj, cropDiskette, cameraOffsetRect(d_util.rectShrink(rect.mk(savePos.x, savePos.y, 32, 32), shrink)))
+}
 
 fn draw*() {
   // RENDER BG //
@@ -608,6 +627,7 @@ fn draw*() {
   world.drawLayer(camera, 0, cameraScale)
   drawEntities()
   world.drawLayer(camera, 1, cameraScale)
+  drawSavePos()
 
   // RENDER DIALOG //
   dialogs.draw()
