@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [[ ! -f data/ui00_img_test.png ]]; then
   echo -e "There's asset files missing. You probably need to install Git LFS.\nAfter installing do \`git lfs install\` and \`git lfs pull\` while in the repo's root folder.\nOtherwise, this shouldn't happen really, I recommend to check if all files are in place."
