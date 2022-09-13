@@ -1,5 +1,5 @@
 ===============
-Tophat Doukutsu
+Save Game (Temp name)
 ===============
 
 This is an example platforming engine which uses tophat
