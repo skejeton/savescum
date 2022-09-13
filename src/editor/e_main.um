@@ -1516,6 +1516,7 @@ fn editorInit(resources: EditorResources): Editor {
     tileGrid: EditorGrid{scaling: 1.0},
     tilemapGrid: EditorGrid{scaling: 1.0},
     tilemapShowAllLayers: true,
+    isIgnoringGuides: true,
     tileset: tileset,
     world: world,
     resources: resources,
