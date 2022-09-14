@@ -389,7 +389,7 @@ fn convertEntityDescToCharacter(ent: d_worlddata.EntityDesc): Character {
 }
 
 fn loadState() {
-  entities = append(saveSlot.entities, []Character{})
+  entities = copy(saveSlot.entities)
   sceneId = saveSlot.sceneId
   world = saveSlot.world
   chara = saveSlot.chara
@@ -398,7 +398,7 @@ fn loadState() {
 
 fn saveState() {
   saveSlot = SaveState{
-    entities: append(entities, []Character{}), 
+    entities: copy(entities),
     sceneId: sceneId,
     world: world,
     chara: chara,
@@ -633,9 +633,10 @@ fn draw*() {
   dialogs.draw()
 
   // DEBUG OVERYALS //
-  /*
+
+/* 
   _drawRectTangents(chara.rect)
   drawGuideRects()
   d_util.drawRectLines(th.green, cameraOffsetRect(getCameraTargetRect()))
-  */
+*/
 }

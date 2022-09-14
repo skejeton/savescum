@@ -32,11 +32,12 @@ fn charToUpper(c: char): char {
 }
 
 fn makeUppercase(text: str): str {
+  newText := ""
   for i, c in text {
-    text[i] = charToUpper(c)
+    newText += charToUpper(c)
   }
 
-  return text
+  return newText
 }
 
 fn fontHeight(): th.fu {
