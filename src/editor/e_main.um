@@ -17,6 +17,14 @@ import (
   "utf8.um"; "std.um"
 )
 
+const (
+  eventMouseLeft = 0
+  eventMouseMiddle = 1
+  eventMouseRight = 2
+  eventMouseScroll = 3
+  eventCount = 4
+)
+
 type (
   EditorGrid = struct {
     rect: rect.Rect
@@ -81,6 +89,10 @@ type (
   EditorEntities = struct {
     entitySelected: int
     list: []d_worlddata.EntityDesc
+  }
+
+  InputSink = struct {
+    sunk: [eventCount]bool
   }
 
   Editor = struct {

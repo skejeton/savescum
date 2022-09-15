@@ -1,12 +1,13 @@
+import ("image.um"; "font.um"; "../../src/d_resources.um"; "../../src/d_test.um"; "../../src/d_problem_screen.um")
+
 type (
   Prs* = struct {
     name: str
-    box: str
+    box: image.Image
     boxY: int
-    image: str
+    image: image.Image
     imageY: int
-    font: str
-    fontH: int
+    font: font.Font
     fontColor: uint32
     speed: real
     emotes: []str
@@ -14,9 +15,21 @@ type (
 )
 
 fn getPersonas*(): []Prs {
+  rl := d_resources.initResourceLoader()
+
+  defbox := d_resources.loadImage(&rl, d_test.pfx()+"defbox.png")
+  faces := d_resources.loadImage(&rl, d_test.pfx()+"faces.png")
+  fontmono := d_resources.loadFont(&rl, "data/font_mono.ttf", 16, 1)
+
+  if d_resources.hasErrors(&rl) {
+    d_problem_screen.showResourceLoadingError(&rl)
+    exit()
+  }
+
   return []Prs{
-    Prs{"triangle" , "defbox.png", 0, "faces.png", 0, "data/font_mono.ttf", 16, 0xFFFFFFFF, 0.1 , []str{"think", "happy", "sad"}},
-    Prs{"rectangle", "defbox.png", 1, "faces.png", 1, "data/font_mono.ttf", 16, 0xFFAA00FF, 0.4 , []str{"think", "happy", "sad"}},
-    Prs{"star"     , "defbox.png", 2, "faces.png", 2, "data/font_mono.ttf", 16, 0x0000FFFF, 0.2 , []str{"think", "happy", "sad"}},
-    Prs{"circle"   , "defbox.png", 3, "faces.png", 3, "data/font_mono.ttf", 16, 0x000000FF, 0.06, []str{"think", "happy", "sad"}}}
+    Prs{"triangle" , defbox, 0, faces, 0, fontmono, 0xFFFFFFFF, 0.1 , []str{"think", "happy", "sad"}},
+    Prs{"rectangle", defbox, 1, faces, 1, fontmono, 0xFFAA00FF, 0.4 , []str{"think", "happy", "sad"}},
+    Prs{"star"     , defbox, 2, faces, 2, fontmono, 0x0000FFFF, 0.2 , []str{"think", "happy", "sad"}},
+    Prs{"circle"   , defbox, 3, faces, 3, fontmono, 0x000000FF, 0.06, []str{"think", "happy", "sad"}}}
 }
+

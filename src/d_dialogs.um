@@ -130,14 +130,14 @@ fn init*(): Dialogs {
   return Dialogs{personas: map[str]Persona{}, list: make([]Dialog, 0)}
 }
 
-fn (d: ^Dialogs) register*(name: str, boximgPath: str, boximgY: int, faceimgPath: str, faceimgY: int, fontPath: str, fontH: int, fontColor: uint32, speed: real, emotes: []str) {
+fn (d: ^Dialogs) register*(name: str, boximg: image.Image, boximgY: int, faceimg: image.Image, faceimgY: int, font: th_font.Font, fontColor: uint32, speed: real, emotes: []str) {
   var persona: Persona
   persona.name = name
-  persona.boximg = image.load(boximgPath)
+  persona.boximg = boximg
   persona.boximgY = boximgY
-  persona.faceimg = image.load(faceimgPath)
+  persona.faceimg = faceimg
   persona.faceimgY = faceimgY
-  persona.font = th_font.load(fontPath, fontH)
+  persona.font = font
   persona.fontColor = fontColor
   persona.speed = speed
   persona.emotes = map[str]int{}

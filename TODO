@@ -1,7 +1,5 @@
 // Last id: 11
 
-1. Dialogs currently don't use resource loader, so if the loading fails, RIP. 
-
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
 3. Currently scrollbar area can't scroll with the mouse wheel! Why?
@@ -28,8 +26,5 @@
     the worlddata can return that patch which user can apply.
   * Decouple world from it's rendering and everything else, instead make it a bare tilemap, removing all connections to
     tilesets and so on. Probably a better option.
-
-10. Currently I'm doing `append(entities, []Character{})` in d_game to copy entities because umka copies only the pointer of the slice
-  (it's an umka bug, can't do much about it for now). I reported the issue already and it should be fixed soon.
 
 11. Maybe savestates should be stackable instead.
