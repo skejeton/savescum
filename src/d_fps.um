@@ -1,4 +1,4 @@
-import ("th.um")
+import ("th.um"; "window.um")
 
 var (
   record: [60]real
@@ -12,6 +12,10 @@ fn avgFps() {
     fps += datum
   }
   fps /= 60
+}
+
+fn limit*(to: int) {
+  window.fpsLimit = to
 }
 
 fn update*() {

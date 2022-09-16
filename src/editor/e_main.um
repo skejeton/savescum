@@ -542,14 +542,16 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
       titlebarRect = rect.mk(position.x+windowRect.x, position.y+windowRect.y, handleSize.x-1, handleSize.y)
 
       // Titlebar tool.
-      editor.beginTool("Titlebar", titlebarRect)
-      events := editor.endTool()
+      {
+        editor.beginTool("Titlebar", titlebarRect)
+        events := editor.endTool()
 
-      if (events.queryMouse(0, d_mouseinput.pressed)) {
-        editor.wm.putWindowOnFront(title)
-      }
-      if (events.queryMouse(0, d_mouseinput.down)) {
-        movement = events.mouseState.delta
+        if (events.queryMouse(0, d_mouseinput.pressed)) {
+          editor.wm.putWindowOnFront(title)
+        }
+        if (events.queryMouse(0, d_mouseinput.down)) {
+          movement = events.mouseState.delta
+        }
       }
 
       editor.ctx.drawRect(0x000077FF, titlebarRect)
@@ -567,14 +569,6 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
     contentRect = rect.mk(position.x+windowRect.x, position.y+windowRect.y, contentSize.x-1, contentSize.y-1)
 
     editor.beginTool("Body", contentRect)
-    {
-      if (editor.queryMouse(0, d_mouseinput.pressed)) {
-        editor.wm.putWindowOnFront(title)
-      }
-      if (editor.queryMouse(0, d_mouseinput.down)) {
-        movement = editor.mouseState.delta
-      }
-    }
   }
 
   windowRect ^= d_util.rectMove(windowRect^, movement)
@@ -588,12 +582,20 @@ fn uiEndWindow(editor: ^Editor) {
   }
 
   title := editor.currentWindow
+  movement := th.Vf2{0, 0} // Same as movement but changes the window size
   squishing := th.Vf2{0, 0} // Same as movement but changes the window size
   windowRect := editor.wm.getWindowRect(title, rect.mk(0, 0, 0, 0))
 
   // Finish ui tools.
   {
-      editor.endTool()
+      events := editor.endTool()
+
+      if (events.queryMouse(0, d_mouseinput.pressed)) {
+        editor.wm.putWindowOnFront(title)
+      }
+      if (events.queryMouse(0, d_mouseinput.down)) {
+        movement = events.mouseState.delta
+      }
 
       gripSize := th.Vf2{10, 10};
       gripRect := rect.mk(windowRect.x+windowRect.w-gripSize.x, windowRect.y+windowRect.h-gripSize.y, gripSize.x, gripSize.y)
@@ -608,6 +610,7 @@ fn uiEndWindow(editor: ^Editor) {
   }
   editor.ctx.moveLayer(-1000*editor.currentWindowLayer)
 
+  windowRect ^= d_util.rectMove(windowRect^, movement)
   windowRect.w += squishing.x; windowRect.h += squishing.y;
   // Clamp
   if windowRect.w < 100 {
@@ -1651,7 +1654,9 @@ fn editorMain*() {
   }
 
   // cycle
+  d_fps.limit(30)
   for window.cycle(d_global.screen) {
+
     d_fps.update()
     d_global.screen = rect.mk(0, 0, window.w, window.h)
 

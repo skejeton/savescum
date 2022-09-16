@@ -1,4 +1,4 @@
-// Last id: 11
+// Last id: 12
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -28,3 +28,5 @@
     tilesets and so on. Probably a better option.
 
 11. Maybe savestates should be stackable instead.
+
+12. You can load state when you fall into the pit. Wack.

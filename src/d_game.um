@@ -166,17 +166,17 @@ fn playerControl() {
 
 fn entPhysics(ent: ^Character) {
   if ent.onSlope {
-    ent.vel.y += 0.1
+    ent.vel.y += 0.1*th.delta/1000.0*60.0
   } else {
-    ent.vel.y += 0.1
+    ent.vel.y += 0.1*th.delta/1000.0*60.0
   }
 
   if ent.vel.y > 10 {
     ent.vel.y = 10
   }
 
-  ent.rect.x += ent.vel.x
-  ent.rect.y += ent.vel.y
+  ent.rect.x += ent.vel.x*th.delta/1000.0*60.0
+  ent.rect.y += ent.vel.y*th.delta/1000.0*60.0
 
   ent.onGround = false
   ent.onSlope = false
