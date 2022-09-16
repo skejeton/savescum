@@ -95,6 +95,14 @@ type (
     sunk: [eventCount]bool
   }
 
+  EditorEvents = struct {
+    sink: ^InputSink
+    // The events the element itself has sunk, so we can return true if the event were to be queried again.
+    acquired: InputSink
+    mask: InputSink
+    mouseState: d_mouseinput.MouseState
+  }
+
   Editor = struct {
     // Misc
     isDebugOverlayShown: bool
@@ -118,6 +126,7 @@ type (
     entities: EditorEntities
 
     // UI misc.
+    inputSink: InputSink
     currentWindow: str
     currentWindowLayer: int
     wm: WindowManager
@@ -140,6 +149,85 @@ const (
   entityListActionEdit = EntityListAction(2)
 )
 
+// Creates an input sink with all inputs set to 1.
+// Can be used for masking.
+fn initInputSinkSet(): InputSink {
+  sink := InputSink{}
+ 
+  for i in sink.sunk {
+    sink.sunk[i] = true
+  }
+
+  return sink
+}
+
+fn sinkAcquireMaskEvent(sink, acquire: ^InputSink, mask: InputSink, event: int): bool {
+  if event < 0 || event >= eventCount {
+    error(sprintf("Invalid event id: %d", event))
+  }
+ 
+  // This event is masked so we can't process it.
+  if mask.sunk[event] {
+    return false
+  }
+
+  // This event was acquired, so it's successful.
+  if acquire.sunk[event] {
+    return true
+  }
+
+  // This event was already sunk. Can't sink it again.
+  if sink.sunk[event] {
+    return false 
+  }
+
+  // Sink and acquire the event.
+  sink.sunk[event] = true;
+  acquire.sunk[event] = true;
+
+  return true
+}
+
+fn sinkEditorEvent(events: ^EditorEvents, event: int): bool {
+  return sinkAcquireMaskEvent(events.sink, &events.acquired, events.mask, event)
+}
+
+fn convertButtonToEvent(btn: int): int {
+  return btn
+}
+
+fn (events: ^EditorEvents) queryMouse(btn: int, which: int): bool {
+  if sinkEditorEvent(events, convertButtonToEvent(btn)) == false {
+    return false
+  }
+
+  var mouseButton: d_mouseinput.MouseButtonState
+
+  switch btn {
+    case 0: mouseButton = events.mouseState.lmb
+    case 1: mouseButton = events.mouseState.mmb
+    case 2: mouseButton = events.mouseState.rmb
+    default: error(sprintf("Invalid mouse button index %d", btn))
+  }
+
+  switch which {
+    case d_mouseinput.down: return mouseButton.isDown
+    case d_mouseinput.pressed: return mouseButton.isPressed
+    case d_mouseinput.released: return mouseButton.isReleased
+    default: error(sprintf("Invalid mouse button property index %d", which))
+  }
+  return false;
+
+}
+
+fn (events: ^EditorEvents) queryScroll(): real {
+  if sinkEditorEvent(events, eventMouseScroll) == false {
+    return 0
+  }
+
+  return events.mouseState.wheelY
+}
+
 fn initWindowManager(): WindowManager {
   return WindowManager{windows: map[str]Window{}}
 }
@@ -152,7 +240,7 @@ fn (wm: ^WindowManager) getWindowRect(name: str, fallback: rect.Rect): ^rect.Rec
   if validkey(wm.windows, name) {
     wm.windows[name].lastFrameTouched = wm.frameNumber
     return &wm.windows[name].rect
-  } 
+  }
 
   // Create window.
   wm.windowCount += 1
@@ -232,25 +320,6 @@ fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): ^ToolNode {
   return e.currentTool
 }
 
-fn (e: ^Editor) endTool() {
-  if e.currentTool.parent == null {
-    error("Parent node is null, beginTool/endTool mismatched!")
-  }
-  e.currentTool = e.currentTool.parent
-}
-
-fn (e: ^Editor) getProperty(name: str, def: interface{}): interface{} {
-  // Create a dummy tool where we'll store the data.
-  tool := e.beginTool(name, rect.mk(-100000, -100000, 0, 0))
-  e.endTool()
-
-  if !valid(tool.userdata) {
-    tool.userdata = def
-  }
-
-  return tool.userdata
-}
-
 fn (e: ^Editor) getToolState(tool: ^ToolNode): ToolState {
   return ToolState{
     active: tool == e.activeTool,
@@ -263,6 +332,34 @@ fn (e: ^Editor) getCurrentToolState(): ToolState {
 
 fn (e: ^Editor) isCurrentToolActive(): bool {
   return e.getCurrentToolState().active
+}
+
+fn (e: ^Editor) endTool(): EditorEvents {
+  if e.currentTool.parent == null {
+    error("Parent node is null, beginTool/endTool mismatched!")
+  }
+
+  mask := InputSink{}
+  if !e.isCurrentToolActive() {
+    // Block all events if the current tool isn't hovered.
+    mask = initInputSinkSet()
+  }
+
+  e.currentTool = e.currentTool.parent
+
+  return EditorEvents{sink: &e.inputSink, mask: mask, mouseState: e.mouseState}
+}
+
+fn (e: ^Editor) getProperty(name: str, def: interface{}): interface{} {
+  // Create a dummy tool where we'll store the data.
+  tool := e.beginTool(name, rect.mk(-100000, -100000, 0, 0))
+  e.endTool()
+
+  if !valid(tool.userdata) {
+    tool.userdata = def
+  }
+
+  return tool.userdata
 }
 
 /*
@@ -302,14 +399,6 @@ fn (e: ^Editor) queryMouse(btn: int, which: int): bool {
     default: error(sprintf("Invalid mouse button property index %d", which))
   }
   return false;
-}
-
-fn (e: ^Editor) queryScroll(): real {
-  if e.isCurrentToolActive() == false {
-    return 0
-  }
-
-  return e.mouseState.wheelY
 }
 
 // Draw bevel rect(
@@ -454,15 +543,14 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
 
       // Titlebar tool.
       editor.beginTool("Titlebar", titlebarRect)
-      {
-        if (editor.queryMouse(0, d_mouseinput.pressed)) {
-          editor.wm.putWindowOnFront(title)
-        }
-        if (editor.queryMouse(0, d_mouseinput.down)) {
-          movement = editor.mouseState.delta
-        }
+      events := editor.endTool()
+
+      if (events.queryMouse(0, d_mouseinput.pressed)) {
+        editor.wm.putWindowOnFront(title)
       }
-      editor.endTool()
+      if (events.queryMouse(0, d_mouseinput.down)) {
+        movement = events.mouseState.delta
+      }
 
       editor.ctx.drawRect(0x000077FF, titlebarRect)
       editor.ctx.beginScissorRect(titlebarRect)
@@ -1372,6 +1460,9 @@ fn deselectEntity(entities: ^EditorEntities) {
 }
 
 fn editorPutUi(editor: ^Editor) {
+  // Clear the input sink.
+  editor.inputSink = InputSink{}
+
   if (input.isPressed(input.key_ctrl) && input.isJustPressed(input.key_escape)) {
     input.clear(input.key_escape)
     editor.isDebugOverlayShown = !editor.isDebugOverlayShown
