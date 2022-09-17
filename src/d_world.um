@@ -117,18 +117,19 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0) {
   // TODO: Just don't draw tiles we don't need to draw.
   for pos in layer {
     chunk := &layer[pos]
-    transform := th.Transform{p: th.Vf2{pos.x*chunkW*tileSizeX-pan.x, pos.y*chunkH*tileSizeY-pan.y}, s: th.Vf2{scale*world.tileset.scale, scale*world.tileset.scale}}
+    initialTransform := th.Transform{p: th.Vf2{(pos.x*chunkW*tileSizeX-pan.x)*scale, (pos.y*chunkH*tileSizeY-pan.y)*scale}, s: th.Vf2{scale*world.tileset.scale, scale*world.tileset.scale}}
+    transform := initialTransform
+    
     for cx := 0; cx < chunkW; cx++ {
-      transform.p.x += tileSizeX*scale
-      transform.p.y = pos.y*chunkH*tileSizeY-pan.y
+      transform.p.y = initialTransform.p.y
       for cy := 0; cy < chunkH; cy++ {
-        transform.p.y += tileSizeY*scale
-
         if chunk[cx][cy] > 0 {
           world.tileset.selectTilePos(chunk[cx][cy])
           world.tileset.image.draw(transform)
         }
+        transform.p.y += tileSizeY*scale
       }
+      transform.p.x += tileSizeX*scale
     }
   }
 }
