@@ -1616,7 +1616,7 @@ fn editorMain*() {
     d_problem_screen.showResourceLoadingError(&rl)
   }
 
-  d_fps.limit(30)
+  d_fps.limit(60)
   // cycle
   for window.cycle(d_global.screen) {
 
