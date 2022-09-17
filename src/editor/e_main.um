@@ -362,45 +362,6 @@ fn (e: ^Editor) getProperty(name: str, def: interface{}): interface{} {
   return tool.userdata
 }
 
-/*
-// QueryMouse()
-// 
-// Queries mouse button `btn` if it has the `which` property set.
-// Returns false if the current tool is not focused.
-//
-// `btn` maybe be on of the following values:
-//   0 :: Left mouse button
-//   1 :: Middle mouse button
-//   2 :: Right mouse button
-//
-// `which` may be one of those values:
-//   d_mouseinput.down     :: IsDown
-//   d_mouseinput.pressed  :: IsPressed
-//   d_mouseinput.released :: IsReleased
-*/
-fn (e: ^Editor) queryMouse(btn: int, which: int): bool {
-  if e.isCurrentToolActive() == false {
-    return false
-  }
-
-  var mouseButton: d_mouseinput.MouseButtonState
-
-  switch btn {
-    case 0: mouseButton = e.mouseState.lmb
-    case 1: mouseButton = e.mouseState.mmb
-    case 2: mouseButton = e.mouseState.rmb
-    default: error(sprintf("Invalid mouse button index %d", btn))
-  }
-
-  switch which {
-    case d_mouseinput.down: return mouseButton.isDown
-    case d_mouseinput.pressed: return mouseButton.isPressed
-    case d_mouseinput.released: return mouseButton.isReleased
-    default: error(sprintf("Invalid mouse button property index %d", which))
-  }
-  return false;
-}
-
 // Draw bevel rect(
 //   Rectangle to draw,
 //   Does rectangle look pushed in,
@@ -475,15 +436,15 @@ fn putButton(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
 
   buttonState := ButtonState{}
   toolState := editor.getCurrentToolState()
+  events := editor.endTool()
 
   if (toolState.active) {
     buttonState.isOver = true;
-    buttonState.isDown = editor.mouseState.lmb.isDown||editor.mouseState.lmb.isReleased;
-    buttonState.isPressed = editor.mouseState.lmb.isPressed;
-    buttonState.isReleased = editor.mouseState.lmb.isReleased && toolState.hovered;
+    buttonState.isDown = events.queryMouse(0, d_mouseinput.down) || events.queryMouse(0, d_mouseinput.released);
+    buttonState.isPressed = events.queryMouse(0, d_mouseinput.pressed);
+    buttonState.isReleased = events.queryMouse(0, d_mouseinput.released) && toolState.hovered;
   }
 
-  editor.endTool()
   return buttonState
 }
 
@@ -599,13 +560,15 @@ fn uiEndWindow(editor: ^Editor) {
 
       gripSize := th.Vf2{10, 10};
       gripRect := rect.mk(windowRect.x+windowRect.w-gripSize.x, windowRect.y+windowRect.h-gripSize.y, gripSize.x, gripSize.y)
-      editor.beginTool("Grip", gripRect)
+
       {
-        if (editor.queryMouse(0, d_mouseinput.down)) {
+        editor.beginTool("Grip", gripRect)
+        events := editor.endTool()
+        if events.queryMouse(0, d_mouseinput.down) {
           squishing = editor.mouseState.delta
         }
       }
-      editor.endTool()
+
     editor.endTool()
   }
   editor.ctx.moveLayer(-1000*editor.currentWindowLayer)
@@ -648,6 +611,8 @@ fn (ge: ^EditorGrid) put(editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
     mouseDelta: th.Vf2 = editor.mouseState.delta
   )
 
+  // TODO: Create a new tool instead of quering the state of existing tool. 
+  // Then I can use events.queryMouse()
   if editor.isCurrentToolActive() {
     // Handle input
     if editor.mouseState.mmb.isDown {
@@ -1149,23 +1114,14 @@ fn putTilePicker(editor: ^Editor) {
     // NOTE: This is to cancel the window-body dragging thing.
     //       Probably not the best way to do it.
     contentRect := windowInfo.contentRect
+    var selectedTile: th.Vf2
 
     editor.beginTool("Picker", contentRect)
     {
       editor.ctx.drawRect(th.black, contentRect)
       editor.ctx.moveLayer(1)
       {
-        selectedTile := editor.tilemapGrid.put(editor, contentRect)
-
-        // NOT-SURE: Currently you can only have one active window,
-        //             it's the window furthest in the hierarchy your mouse is over (roughly).
-        //           We need to create the TilePicker tool manually for that reason, because if EditorGrid did,
-        //             we wouldn't be able to query the mouse here. That means right now EditorGrid.put uses the current tool
-        //             instead of creating a new one. This seems alright for now, but it might be done differently
-        //             later.
-        if editor.queryMouse(0, d_mouseinput.down) {
-          editor.tileSelected = selectedTile
-        }
+        selectedTile = editor.tilemapGrid.put(editor, contentRect)
 
         selectedTilePos := editor.tilemapGrid.mapPos(editor.tileSelected.mulf(32))
         
@@ -1180,7 +1136,12 @@ fn putTilePicker(editor: ^Editor) {
       editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{0.5, 0.5}, p: editor.tilemapGrid.mapPos(th.Vf2{0, 0})})
       editor.ctx.endScissor()
     }
-    editor.endTool()
+    events := editor.endTool()
+
+    if events.queryMouse(0, d_mouseinput.down) {
+      editor.tileSelected = selectedTile
+    }
+
     uiEndWindow(editor)
   }
 }
@@ -1392,11 +1353,11 @@ fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
     editor.ctx.drawRect(color, gripDrawRect)
     editor.ctx.drawRectLines(th.black, gripDrawRect)
 
-    if editor.queryMouse(0, d_mouseinput.down) {
+    events := editor.endTool()
+
+    if events.queryMouse(0, d_mouseinput.down) {
       activeGrip = i
     }
-
-    editor.endTool()
   }
 
   if activeGrip == -1 {
@@ -1445,15 +1406,16 @@ fn putWorldEntities(editor: ^Editor) {
 
         ent.rect = applyRectResizeCommand(putRectGrips(editor, entVisRect), ent.rect, editor.mouseState.delta)
       }
-      if editor.queryMouse(0, d_mouseinput.pressed) {
+
+      events := editor.endTool()
+
+      if events.queryMouse(0, d_mouseinput.pressed) {
         selectEntity(&editor.entities, i)
       }
-      if editor.queryMouse(0, d_mouseinput.down) {
-        ent.rect.x += editor.mouseState.delta.x
-        ent.rect.y += editor.mouseState.delta.y
+      if events.queryMouse(0, d_mouseinput.down) {
+        ent.rect.x += events.mouseState.delta.x
+        ent.rect.y += events.mouseState.delta.y
       }
-
-      editor.endTool()
     }
   }
 }
@@ -1489,22 +1451,6 @@ fn editorPutUi(editor: ^Editor) {
     tool := editor.beginTool("TileEditor", rect.mk(0, 0, d_global.screen.w, d_global.screen.h-34))
 
     selectedTile := editor.tileGrid.put(editor, tool.rect)
-
-    if editor.isRelocatingPlayer {
-      if (editor.queryMouse(0, d_mouseinput.down)) {
-        editor.world.playerSpawnPos = selectedTile
-      }
-      if (editor.queryMouse(0, d_mouseinput.released)) {
-        editor.isRelocatingPlayer = false
-      }
-    } else {
-      if editor.queryMouse(0, d_mouseinput.down) {
-        editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), editor.tileset.tileToPos(trunc(editor.tileSelected.x), trunc(editor.tileSelected.y)))
-      }
-      if editor.queryMouse(2, d_mouseinput.down) {
-        editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), 0)
-      }
-    }
 
     putWorldEntities(editor)
 
@@ -1548,7 +1494,24 @@ fn editorPutUi(editor: ^Editor) {
     editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tileGrid.mapPos(th.Vf2{0, 0}).mulf(-1), &editor.world})
     editor.ctx.moveLayer(1)
 
-    editor.endTool()
+    events := editor.endTool()
+
+    if editor.isRelocatingPlayer {
+      if (events.queryMouse(0, d_mouseinput.down)) {
+        editor.world.playerSpawnPos = selectedTile
+      }
+      if (events.queryMouse(0, d_mouseinput.released)) {
+        editor.isRelocatingPlayer = false
+      }
+    } else {
+      if events.queryMouse(0, d_mouseinput.down) {
+        editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), editor.tileset.tileToPos(trunc(editor.tileSelected.x), trunc(editor.tileSelected.y)))
+      }
+      if events.queryMouse(2, d_mouseinput.down) {
+        editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), 0)
+      }
+    }
+
   }
   editorPutToolbar(editor)
 
@@ -1653,8 +1616,8 @@ fn editorMain*() {
     d_problem_screen.showResourceLoadingError(&rl)
   }
 
-  // cycle
   d_fps.limit(30)
+  // cycle
   for window.cycle(d_global.screen) {
 
     d_fps.update()
