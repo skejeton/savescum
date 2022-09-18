@@ -36,6 +36,7 @@ type (
     children: map[str]^ToolNode
     parent: ^ToolNode
     userdata: interface{}
+    // If set to -1, the node is frozen and not pruned therefore.
     lastFrameTouched: int
     layer: int
     rect: rect.Rect
@@ -269,22 +270,40 @@ fn (wm: ^WindowManager) setWindowVisible(name: str, to: bool) {
   } 
 }
 
-fn (e: ^Editor) acquireToolNode(name: str): ^ToolNode {
+fn (e: ^Editor) maybeAcquireToolNode(name: str): ^ToolNode {
   if e.currentTool == null {
     e.currentTool = e.tools
   }
 
   if !validkey(e.currentTool.children, name) {
-    tool := new(ToolNode)
-    tool ^= ToolNode{children: map[str]^ToolNode{}, parent: e.currentTool}
-    e.currentTool.children[name] = tool
+    return null
   }
 
   return e.currentTool.children[name]
 }
 
+fn (e: ^Editor) acquireToolNode(name: str): ^ToolNode {
+  node := e.maybeAcquireToolNode(name)
+
+  if node == null {
+    tool := new(ToolNode)
+    tool ^= ToolNode{children: map[str]^ToolNode{}, parent: e.currentTool}
+    node = tool
+    e.currentTool.children[name] = node    
+  }
+
+  return node
+}
+
 // Prunes all tools untouched last frame
 fn (e: ^Editor) pruneToolsRecursive(node: ^ToolNode) {
+  if node.lastFrameTouched == -1 {
+    // Nodes with last frame -1 are not candidates to pruning (just a hardcoded value).
+    // Here we automatically unfreeze the node because you need to freeze it every time.
+    node.lastFrameTouched = e.frameNumber
+    return
+  }
+
   for key in node.children {
     e.pruneToolsRecursive(node.children[key])
 
@@ -294,6 +313,13 @@ fn (e: ^Editor) pruneToolsRecursive(node: ^ToolNode) {
       node.children = delete(node.children, key)
     }
 
+  }
+}
+
+fn (e: ^Editor) freezeTool(name: str) {
+  node := e.maybeAcquireToolNode(name)
+  if node != null {
+    node.lastFrameTouched = -1
   }
 }
 
@@ -470,6 +496,9 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
   windowRect := editor.wm.getWindowRect(title, r)
 
   if !editor.wm.isWindowVisible(title) {
+    // Prevent from getting pruned
+    editor.freezeTool(title)
+
     return WindowInfo{}, false
   }
   if editor.currentWindow != "" {
