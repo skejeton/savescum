@@ -12,6 +12,7 @@ type (
   }
 
   Command = struct {
+    attr: real
     kind: int
     rect: rect.Rect
     color: uint32
@@ -116,7 +117,7 @@ fn (ctx: ^DrawContext) flush*() {
         case commandRect:
           canvas.drawRect(command.color, command.rect)
         case commandRectLines:
-          d_util.drawRectLines(command.color, command.rect)
+          d_util.drawRectLines(command.color, command.rect, command.attr)
         case commandBeginScissorRect:
           window.beginScissorRect(command.rect)
         case commandEndScissor:
@@ -150,8 +151,8 @@ fn (ctx: ^DrawContext) drawRect*(color: uint32, r: rect.Rect) {
   ctx.currentLayer.appendCommand(Command{kind: commandRect, color: color, rect: r})
 }
 
-fn (ctx: ^DrawContext) drawRectLines*(color: uint32, r: rect.Rect) {
-  ctx.currentLayer.appendCommand(Command{kind: commandRectLines, color: color, rect: r})
+fn (ctx: ^DrawContext) drawRectLines*(color: uint32, r: rect.Rect, thicc: real = 1.0) {
+  ctx.currentLayer.appendCommand(Command{kind: commandRectLines, color: color, rect: r, attr: thicc})
 }
 
 fn (ctx: ^DrawContext) beginScissorRectRaw*(r: rect.Rect) {

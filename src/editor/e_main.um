@@ -955,6 +955,7 @@ type ToolDebugFrame = struct {
   title: str
   color: uint32
   showTitle: bool
+  background: bool
   rect: rect.Rect
 }
 
@@ -962,7 +963,12 @@ fn makeToolDebugFrameFromTool(editor: ^Editor, name: str, tool: ^ToolNode): Tool
   toolState := editor.getToolState(tool)
 
   color := th.red
+  background := false
   showTitle := false
+
+  if toolState.active {
+    background = true
+  }
 
   if toolState.hovered || toolState.active {
     showTitle = true
@@ -972,7 +978,7 @@ fn makeToolDebugFrameFromTool(editor: ^Editor, name: str, tool: ^ToolNode): Tool
     color |= int(toolState.active) * th.green
   }
 
-  return ToolDebugFrame{title: name, color: color, showTitle: showTitle, rect: tool.rect}
+  return ToolDebugFrame{title: name, color: color, showTitle: showTitle, rect: tool.rect, background: background}
 }
 
 type RealColor = struct {
@@ -1008,8 +1014,14 @@ fn drawToolDebugFrame(ctx: ^e_drawcmd.DrawContext, frame: ToolDebugFrame, font: 
     r := rect.mk(frame.rect.x, frame.rect.y-planeSize.y, planeSize.x, planeSize.y)
     r = d_util.rectKeepInBounds(r, rect.mk(0, 0, d_global.screen.w, d_global.screen.h))
 
+    if frame.background {
+      ctx.drawRect(textColor, d_util.rectShrink(r, -1))
+    }
     ctx.drawRect(frame.color, r)
     ctx.drawText(font, frame.title, r.getPos(), textColor)
+  }
+  if frame.background {
+    ctx.drawRectLines(textColor, frame.rect, 3)
   }
   ctx.drawRectLines(frame.color, frame.rect)
 }
