@@ -334,13 +334,20 @@ fn (e: ^Editor) isCurrentToolActive(): bool {
   return e.getCurrentToolState().active
 }
 
+fn areToolsRelated(parent, child: ^ToolNode): bool {
+  for child != null && child != parent {
+    child = child.parent
+  }
+  return child == parent;
+}
+
 fn (e: ^Editor) endTool(): EditorEvents {
   if e.currentTool.parent == null {
     error("Parent node is null, beginTool/endTool mismatched!")
   }
 
   mask := InputSink{}
-  if !e.isCurrentToolActive() {
+  if !areToolsRelated(e.currentTool, e.activeTool) {
     // Block all events if the current tool isn't hovered.
     mask = initInputSinkSet()
   }
@@ -787,7 +794,7 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str) {
   editor.endTool()
 }
 
-fn putScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (bool, ScrollAreaInfo) {
+fn beginScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (bool, ScrollAreaInfo) {
   const (
     handleSize = 18
   )
@@ -820,6 +827,7 @@ fn putScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (bo
       doNotTruncateScroll = true
       scroll ^+= editor.mouseState.delta.y*yScrollOverflowFactor
     }
+
   }
 
   if editor.isDebugOverlayShown {
@@ -840,9 +848,16 @@ fn putScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (bo
   contentRect := areaRect
   contentRect.y -= scrollValue
 
-  editor.endTool()
 
   return true, ScrollAreaInfo{areaRect: areaRect, contentRect: contentRect}
+}
+
+fn endScrollArea(editor: ^Editor) {
+  scroll := ^real(editor.getProperty("ScrollAreaScroll", 0.0))
+  
+  events := editor.endTool()
+
+  scroll ^-= events.queryScroll()*20.0
 }
 
 const worldPath = "data/sc00_nowayup.csv"
@@ -1243,7 +1258,7 @@ fn putEntityList(editor: ^Editor) {
       // Get content size.
       contentSize := ^th.Vf2(editor.getProperty("ContentSize", th.Vf2{0, 0}))
 
-      if ok, scrollAreaInfo := putScrollArea(editor, contentRect, contentSize^); ok {
+      if ok, scrollAreaInfo := beginScrollArea(editor, contentRect, contentSize^); ok {
         editor.ctx.beginScissorRect(scrollAreaInfo.areaRect)
         entryRect := scrollAreaInfo.contentRect
         entryRect.h = 30
@@ -1259,6 +1274,7 @@ fn putEntityList(editor: ^Editor) {
 
         contentSize ^= th.Vf2{entryRect.w, entryRect.y-scrollAreaInfo.contentRect.y}
         editor.ctx.endScissor()
+        endScrollArea(editor)
       }
     }
 
