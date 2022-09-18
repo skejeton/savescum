@@ -113,7 +113,9 @@ fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0) {
   tileSize := getTileSizeInPixels(world).mulf(scale)
   chunkSize := tileSize.mul(th.Vf2{chunkW, chunkH})
   chunkRect := rect.mk(offset.x, offset.y, chunkSize.x, chunkSize.y)
+
   intersectionRect := d_util.rectDiff(chunkRect, d_global.screen)
+  imgScale := th.Vf2{scale*world.tileset.scale, scale*world.tileset.scale}
 
 
   // Debug.
@@ -124,16 +126,19 @@ fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0) {
 
   startTileIndex := intersectionRect.getPos().sub(chunkRect.getPos()).div(tileSize)
   endTileIndex := intersectionRect.getEnd().sub(chunkRect.getPos()).div(tileSize)
-  if endTileIndex.x > chunkW { endTileIndex.x = chunkW }
-  if endTileIndex.y > chunkH { endTileIndex.y = chunkH }
 
-  for cx := trunc(startTileIndex.x); cx < endTileIndex.x; cx++ {
-    for cy := trunc(startTileIndex.y); cy < endTileIndex.y; cy++ {
+  sx, sy, ex, ey := trunc(startTileIndex.x), trunc(startTileIndex.y), ceil(endTileIndex.x), ceil(endTileIndex.y)
+
+  if ex > chunkW { ex = chunkW }
+  if ey > chunkH { ey = chunkH }
+
+  for cx := sx; cx < ex; cx++ {
+    for cy := sy; cy < ey; cy++ {
       if chunk[cx][cy] > 0 {
         pos := th.Vf2{cx, cy}.mul(tileSize).add(offset)
 
         world.tileset.selectTilePos(chunk[cx][cy])
-        world.tileset.image.draw(th.Transform{p: pos, s: th.Vf2{scale*world.tileset.scale, scale*world.tileset.scale}})
+        world.tileset.image.draw(th.Transform{p: pos, s: imgScale})
       }
     }
   }
@@ -147,7 +152,6 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0) {
   
   layer := &world.tilemap[layerId]
 
-  // TODO: Just don't draw tiles we don't need to draw.
   for pos in layer {
     rpos := th.Vf2{pos.x, pos.y}
     drawChunk(world, &layer[pos], rpos.mul(th.Vf2{chunkW, chunkH}).mul(getTileSizeInPixels(world)).add(pan), scale)

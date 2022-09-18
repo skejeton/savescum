@@ -4,6 +4,7 @@ type (
   Tileset* = struct {
     image: image.Image
     scale: real
+    selectedTile: real
     tileSizeX, tileSizeY: int
     tileCountX, tileCountY: int
   }
@@ -32,6 +33,11 @@ fn (ts: ^Tileset) selectTile*(x, y: int) {
 }
 
 fn (ts: ^Tileset) selectTilePos*(pos: int) {
+  if ts.selectedTile == pos {
+    return
+  }
+  ts.selectedTile = pos
+ m
   pos -= 1
   ts.selectTile(pos%ts.tileCountX, pos/ts.tileCountX)
 }
