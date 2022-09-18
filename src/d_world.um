@@ -119,7 +119,7 @@ fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0) {
 
 
   // Debug.
-  if false {
+  if true {
     d_util.drawRectLines(th.green, intersectionRect, 3)
     d_util.drawRectLines(th.black, chunkRect)
   }
@@ -132,12 +132,18 @@ fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0) {
   if ex > chunkW { ex = chunkW }
   if ey > chunkH { ey = chunkH }
 
+  tileSel := 0
+
   for cx := sx; cx < ex; cx++ {
     for cy := sy; cy < ey; cy++ {
       if chunk[cx][cy] > 0 {
+        tile := chunk[cx][cy]
         pos := th.Vf2{cx, cy}.mul(tileSize).add(offset)
 
-        world.tileset.selectTilePos(chunk[cx][cy])
+        if tileSel != tile {
+          world.tileset.selectTilePos(tile)
+          tileSel = tile
+        }
         world.tileset.image.draw(th.Transform{p: pos, s: imgScale})
       }
     }
