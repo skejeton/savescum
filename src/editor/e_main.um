@@ -687,13 +687,18 @@ fn clamp(a, x, b: real): real {
   return x
 }
 
+fn isprint(c: uint32): bool {
+  // Check if not first 32 reserved ASCII chars and not DEL
+  return c >= 32 && c != 127
+}
+
 fn insertInputTextIntoOneLineBuffer(buffer: ^e_buffer.Buffer, cursor: ^e_buffer.Cursor, text: str) {
   runes := utf8.decode(text)
 
   for index, rune in runes {
     
     // Ignore non printable characters.
-    if rune >= 32 {
+    if isprint(uint32(rune)) {
       e_buffer.insertAt(buffer, cursor, rune.encode())
     }
   }
@@ -759,6 +764,8 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str) {
     // Handle input.
     if (editor.isCurrentToolActive()) {
       insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input.getStr())
+      // TODO: Add DEL check for deleting the character in front. 
+      //       I currently can't do that because tophat doesn't support DEL.
       if input.isJustPressed(input.key_backspace) {
         e_buffer.erase(&edit.buffer, &edit.cursor)
       }

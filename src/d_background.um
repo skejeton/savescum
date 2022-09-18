@@ -27,8 +27,7 @@ fn drawCloudStrip(scroll: real, y: real, colorMod: uint32) {
   }
 }
 
-fn draw*(screen: rect.Rect) {
-/*
+fn drawClouds*(screen: rect.Rect) {
   const (
     step = 60
     stripeCount = 5
@@ -47,7 +46,9 @@ fn draw*(screen: rect.Rect) {
 
     drawCloudStrip(scroll, yOffset, color);
   }
-  */
+}
+
+fn drawCave*(screen: rect.Rect) {
   scale := th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h}.mulf(0.5)
 
   step := imgRocks.getDims().mul(scale)
@@ -61,4 +62,8 @@ fn draw*(screen: rect.Rect) {
       imgRocks.draw(th.Transform{p: pos, s: scale})    
     }
   } 
+}
+
+fn draw*(screen: rect.Rect) {
+  drawCave(screen)
 }
