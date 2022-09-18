@@ -1095,7 +1095,7 @@ fn (d: ^WorldEditCmd) draw(props: e_drawcmd.DrawProperties) {
   }
 
   d.toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
-  pos := d.world.playerSpawnPos.mulf(32).sub(d.offset)
+  pos := d.world.playerSpawnPos.mulf(32).add(d.offset)
   d.toolbarIcons.draw(d_util.posTrans(pos.x, pos.y))
 }
 
@@ -1549,7 +1549,7 @@ fn editorPutUi(editor: ^Editor) {
     }
 
     editor.ctx.moveLayer(-1)
-    editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tileGrid.mapPos(th.Vf2{0, 0}).mulf(-1), &editor.world})
+    editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tileGrid.mapPos(th.Vf2{0, 0}), &editor.world})
     editor.ctx.moveLayer(1)
 
     events := editor.endTool()

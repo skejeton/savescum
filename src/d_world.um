@@ -8,7 +8,7 @@
 
 import (
   "th.um"; "rect.um"
-  "d_util.um"; "d_tileset.um"
+  "d_util.um"; "d_tileset.um"; "d_global.um";
 )
 
 const (
@@ -104,6 +104,41 @@ fn (world: ^World) getTangentTiles*(r: rect.Rect): []Tangent {
   return tangents
 }
 
+fn getTileSizeInPixels(world: ^World): th.Vf2 {
+  return th.Vf2{world.tileset.tileSizeX, world.tileset.tileSizeY}
+}
+
+fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0) {
+  offset = offset.mulf(scale)
+  tileSize := getTileSizeInPixels(world).mulf(scale)
+  chunkSize := tileSize.mul(th.Vf2{chunkW, chunkH})
+  chunkRect := rect.mk(offset.x, offset.y, chunkSize.x, chunkSize.y)
+  intersectionRect := d_util.rectDiff(chunkRect, d_global.screen)
+
+
+  // Debug.
+  if false {
+    d_util.drawRectLines(th.green, intersectionRect, 3)
+    d_util.drawRectLines(th.black, chunkRect)
+  }
+
+  startTileIndex := intersectionRect.getPos().sub(chunkRect.getPos()).div(tileSize)
+  endTileIndex := intersectionRect.getEnd().sub(chunkRect.getPos()).div(tileSize)
+  if endTileIndex.x > chunkW { endTileIndex.x = chunkW }
+  if endTileIndex.y > chunkH { endTileIndex.y = chunkH }
+
+  for cx := trunc(startTileIndex.x); cx < endTileIndex.x; cx++ {
+    for cy := trunc(startTileIndex.y); cy < endTileIndex.y; cy++ {
+      if chunk[cx][cy] > 0 {
+        pos := th.Vf2{cx, cy}.mul(tileSize).add(offset)
+
+        world.tileset.selectTilePos(chunk[cx][cy])
+        world.tileset.image.draw(th.Transform{p: pos, s: th.Vf2{scale*world.tileset.scale, scale*world.tileset.scale}})
+      }
+    }
+  }
+}
+
 fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0) {
   layerId++
   if layerId < 0 || layerId > 2 {
@@ -111,26 +146,11 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0) {
   }
   
   layer := &world.tilemap[layerId]
-  tileSizeX := world.tileset.tileSizeX 
-  tileSizeY := world.tileset.tileSizeY
 
   // TODO: Just don't draw tiles we don't need to draw.
   for pos in layer {
-    chunk := &layer[pos]
-    initialTransform := th.Transform{p: th.Vf2{(pos.x*chunkW*tileSizeX-pan.x)*scale, (pos.y*chunkH*tileSizeY-pan.y)*scale}, s: th.Vf2{scale*world.tileset.scale, scale*world.tileset.scale}}
-    transform := initialTransform
-    
-    for cx := 0; cx < chunkW; cx++ {
-      transform.p.y = initialTransform.p.y
-      for cy := 0; cy < chunkH; cy++ {
-        if chunk[cx][cy] > 0 {
-          world.tileset.selectTilePos(chunk[cx][cy])
-          world.tileset.image.draw(transform)
-        }
-        transform.p.y += tileSizeY*scale
-      }
-      transform.p.x += tileSizeX*scale
-    }
+    rpos := th.Vf2{pos.x, pos.y}
+    drawChunk(world, &layer[pos], rpos.mul(th.Vf2{chunkW, chunkH}).mul(getTileSizeInPixels(world)).add(pan), scale)
   }
 }
 

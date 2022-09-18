@@ -1,6 +1,6 @@
 import (
   "rect.um"; "image.um"; "canvas.um"; "th.um"
-  "d_util.um"; "d_global.um"; "d_resources.um"
+  "d_util.um"; "d_global.um"; "d_resources.um"; "d_partition.um";
 )
 
 var (
@@ -8,18 +8,6 @@ var (
   imgRocks: image.Image
   width: real
 )
-
-type TileRepeat = struct {
-  pos: th.Vf2
-  w, h: uint
-}
-
-fn calculateTileRepeatOnScreen(tileSize, position: th.Vf2, screen: rect.Rect): TileRepeat {
-  return TileRepeat{
-    w: ceil(screen.w/tileSize.x+1), // Add one for tiles drawn in middle of scroll
-    h: ceil(screen.h/tileSize.y+1),
-    pos: th.Vf2{-d_util.fmod(screen.x+position.x, tileSize.x), -d_util.fmod(screen.y+position.y, tileSize.y)}}
-}
 
 fn init*(rl: ^d_resources.ResourceLoader) {
   imgClouds = d_resources.loadImage(rl, "data/bg00_sky.png")
@@ -67,11 +55,20 @@ fn drawImageScaled(img: image.Image, pos: th.Vf2, scale: th.Vf2) {
 fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
   tileSize := imgRocks.getDims()
   scr := rect.mk(position.x, position.y, screen.w/scale.x, screen.h/scale.y)
-  tileRepeat := calculateTileRepeatOnScreen(tileSize, th.Vf2{0, 0}, scr)
+  tileRepeat := d_partition.calculateTileSpanOnScreen(tileSize, scr)
 
   for x := 0; x < tileRepeat.w; x++ {
     for y := 0; y < tileRepeat.h; y++ {
-      imgRocks.draw(th.Transform{p: th.Vf2{x*tileSize.x, y*tileSize.y}.add(tileRepeat.pos).mul(scale).add(screen.getPos()), s: scale})
+      tilePos := th.Vf2{x*tileSize.x, y*tileSize.y}.add(tileRepeat.pos).mul(scale).add(screen.getPos())
+
+      imgRocks.draw(th.Transform{p: tilePos, s: scale})
+
+      // Debug 
+      if false {
+        tileSize := imgRocks.getDims().mul(scale)
+        d_util.drawRectLines(th.white, rect.mk(tilePos.x, tilePos.y, tileSize.x, tileSize.y))
+        canvas.drawText(sprintf("\n %d %d", tileRepeat.x+x, tileRepeat.y+y), tilePos, th.white, 1)
+      }
     }
   }
 }

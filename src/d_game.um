@@ -631,10 +631,10 @@ fn draw*() {
   d_background.draw(bgCam)
 
   // RENDER WORLD //
-  world.drawLayer(camera, -1, cameraScale)
-  world.drawLayer(camera, 0, cameraScale)
+  world.drawLayer(camera.mulf(-1), -1, cameraScale)
+  world.drawLayer(camera.mulf(-1), 0, cameraScale)
   drawEntities()
-  world.drawLayer(camera, 1, cameraScale)
+  world.drawLayer(camera.mulf(-1), 1, cameraScale)
   drawSavePos()
 
   // RENDER DIALOG //

@@ -39,7 +39,7 @@ fn update*() {
   }
   switch d_game.sceneId {
   case 0:
-    if d_game.chara.rect.y > 640 {
+    if d_game.chara.rect.y > 608 {
       d_game.chara.rect.y -= 128
       d_game.camera.y -= 128
       t += 0.001
