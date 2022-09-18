@@ -157,6 +157,12 @@ fn rectCenter*(r: rect.Rect): th.Vf2 {
   return th.Vf2{r.x+r.w/2, r.y+r.h/2}
 }
 
+fn rectCenterWithinRect*(child, parent: rect.Rect): rect.Rect {
+  child.x = parent.x+(parent.w-child.w)/2
+  child.y = parent.y+(parent.h-child.h)/2
+  return child
+}
+
 // Rect keep in bounds(
 //   Child rect
 //   Parent rect

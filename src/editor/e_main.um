@@ -409,12 +409,6 @@ fn vf2IntMod(a, b: th.Vf2): th.Vf2 {
   return th.Vf2{trunc(a.x)%trunc(b.x), trunc(a.y)%trunc(b.y)}
 }
 
-// Draw text centered(
-//   The font
-//   The text
-//   The color
-//   The rect to center in
-// )
 fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
   return r.getDims().sub(font.measure(text)).divf(2.0).add(r.getPos()).subf(1)
 }

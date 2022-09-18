@@ -9,6 +9,18 @@ var (
   width: real
 )
 
+type TileRepeat = struct {
+  pos: th.Vf2
+  w, h: uint
+}
+
+fn calculateTileRepeatOnScreen(tileSize, position: th.Vf2, screen: rect.Rect): TileRepeat {
+  return TileRepeat{
+    w: ceil(screen.w/tileSize.x+1), // Add one for tiles drawn in middle of scroll
+    h: ceil(screen.h/tileSize.y+1),
+    pos: th.Vf2{-d_util.fmod(screen.x+position.x, tileSize.x), -d_util.fmod(screen.y+position.y, tileSize.y)}}
+}
+
 fn init*(rl: ^d_resources.ResourceLoader) {
   imgClouds = d_resources.loadImage(rl, "data/bg00_sky.png")
   imgRocks = d_resources.loadImage(rl, "data/bg01_pit.png")
@@ -48,22 +60,22 @@ fn drawClouds*(screen: rect.Rect) {
   }
 }
 
-fn drawCave*(screen: rect.Rect) {
-  scale := th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h}.mulf(0.5)
+fn drawImageScaled(img: image.Image, pos: th.Vf2, scale: th.Vf2) {
+  imgRocks.draw(th.Transform{p: th.Vf2{pos.x*scale.x, pos.y*scale.y}, s: scale})
+} 
 
-  step := imgRocks.getDims().mul(scale)
-  pos0 := th.Vf2{-16, -16}.mul(step).sub(screen.getPos().divf(4))
+fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
+  tileSize := imgRocks.getDims()
+  scr := rect.mk(position.x, position.y, screen.w/scale.x, screen.h/scale.y)
+  tileRepeat := calculateTileRepeatOnScreen(tileSize, th.Vf2{0, 0}, scr)
 
-  for pos := pos0; pos.x < d_global.screen.w; pos.x += step.x {
-    if pos.x + step.x < 0 {continue}
-    pos.y = pos0.y
-    for pos.y < d_global.screen.h; pos.y += step.y {
-      if pos.y + step.y < 0 {continue}
-      imgRocks.draw(th.Transform{p: pos, s: scale})    
+  for x := 0; x < tileRepeat.w; x++ {
+    for y := 0; y < tileRepeat.h; y++ {
+      imgRocks.draw(th.Transform{p: th.Vf2{x*tileSize.x, y*tileSize.y}.add(tileRepeat.pos).mul(scale).add(screen.getPos()), s: scale})
     }
-  } 
+  }
 }
 
 fn draw*(screen: rect.Rect) {
-  drawCave(screen)
+  drawCave(d_global.screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
 }
