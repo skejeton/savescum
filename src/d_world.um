@@ -119,7 +119,7 @@ fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0) {
 
 
   // Debug.
-  if true {
+  if false {
     d_util.drawRectLines(th.green, intersectionRect, 3)
     d_util.drawRectLines(th.black, chunkRect)
   }
