@@ -1,4 +1,4 @@
-import ("rect.um")
+import ("rect.um"; "th.um")
 
 var (
   screen*: rect.Rect

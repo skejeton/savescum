@@ -13,3 +13,6 @@
 *.swp
 *.swo
 
+# Other artifacts
+tophat
+tophat.exe

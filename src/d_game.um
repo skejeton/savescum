@@ -464,7 +464,7 @@ fn updateEntities() {
 
     if ent.tags.isSet("Boulder") {
       boulderTargetRect := d_util.rectMove(ent.originalRect, th.Vf2{0, -ent.originalRect.h*power})
-      ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/1000.0*10.0)
+      ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/100.0)
 
       // Resolve player collision
       entShape := Shape{rect: ent.rect}
