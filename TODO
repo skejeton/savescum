@@ -2,21 +2,13 @@
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
-3. Currently scrollbar area can't scroll with the mouse wheel! Why?
-  It's because of the stupid way the input handling is implemented,
-  ideally each element should be able to sink some sort of input event and if not,
-  pass it up to the parent. But currently only the exact element you are hovering
-  over can intercept the input events. What a bummer.
-
 4. Add getPropertyLazy to lazily evaluate the default parameter, because
   sometimes initialization may be expensive and we don't want to execute it every time.
 
 5. The text editor currently is very janky as it requires you to hover over it to enter anything,
-  I should somehow facilitate "focused" elements in the editor.
+  I should somehow facilitate "focused" elements in the editor. #7
 
-6. Text box improvements:
-  * Ctrl+Left/Right to stride by words.
-  * Placing cursor with mouse pointer. 
+6. Text box improvements: #7
 
 8. Do something with rectangles that have inverted size. You can't select them currently although they are drawn.
 
