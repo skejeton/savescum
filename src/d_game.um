@@ -421,6 +421,9 @@ fn start*(worldData: d_worlddata.WorldData) {
 
   for i, ent in worldData.entities {
     chr := convertEntityDescToCharacter(ent)
+    if chr.tags.isSet("Comment") {
+      continue;
+    }
     if chr.tags.isSet("Guide") {
       guides = append(guides, chr.rect)
     } else {

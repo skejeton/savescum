@@ -1433,11 +1433,15 @@ fn applyRectResizeCommand(resizeCommand: RectResizeCommand, r: rect.Rect, delta:
   return r
 }
 
-fn drawTaggedEntityRect(editor: ^Editor, r: rect.Rect, tags: ^d_game.TagSet) {
+fn drawTaggedEntityRect(editor: ^Editor, entity: ^d_worlddata.EntityDesc, r: rect.Rect, tags: ^d_game.TagSet) {
   if tags.isSet("Guide") {
     editor.ctx.drawRectLines(th.yellow, r)
   } else {
     editor.ctx.drawRect(th.red, r)
+  }
+
+  if tags.isSet("Comment") {
+    editor.ctx.drawText(editor.resources.mainFont, entity.name, th.Vf2{r.x, r.y}, th.white)
   }
 }
 
@@ -1451,7 +1455,7 @@ fn putWorldEntities(editor: ^Editor) {
     tags := d_game.initTagSetFromString(ent.tags)
     ignore := tags.isSet("Guide") && editor.isIgnoringGuides && !isEntitySelected(&editor.entities, i);
 
-    drawTaggedEntityRect(editor, entVisRect, &tags)
+    drawTaggedEntityRect(editor, ent, entVisRect, &tags)
 
     if !ignore {
       editor.beginTool("Ent"+ent.name, entVisRect)
@@ -1459,6 +1463,7 @@ fn putWorldEntities(editor: ^Editor) {
       if editor.isCurrentToolActive() {
         editor.ctx.drawRectLines(th.blue, d_util.rectShrink(entVisRect, -1))
       }
+
       if isEntitySelected(&editor.entities, i) {
         editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
 
