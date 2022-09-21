@@ -5,7 +5,7 @@ fn main() {
            "dbg.world = true\n"+
            "  fps = 60\n"+
            "\tstyle = cute\r\n"+
-           "  "
+           "help=me to get out of russia"
 
   output := d_otenv.parseKeyValuePairs(input)
   for i in output {

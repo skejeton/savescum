@@ -1,5 +1,5 @@
-fn isPrint(c: char): bool {
-  return c != ' ' && c != '\n' && c != '\t' && c != '\r';
+fn isSpace(c: char): bool {
+  return c == ' ' || c == '\n' || c == '\t' || c == '\r';
 }
 
 type Parser = struct {
@@ -18,7 +18,7 @@ fn fetch(p: ^Parser): char {
 
 fn getpos(p: ^Parser): uint {
   if p.pos >= p.length {
-    return p.length-1
+    return p.length
   }
   return p.pos
 }
@@ -29,13 +29,13 @@ fn skip(p: ^Parser) {
 
 fn trim(s: str): str {
   var begin: int = 0
-  for begin < len(s) && !isPrint(s[begin]) {
+  for begin < len(s) && isSpace(s[begin]) {
     begin += 1
   }
 
   var end: int = len(s)-1
   
-  for end > 0 && !isPrint(s[end]) {
+  for end > 0 && isSpace(s[end]) {
     end -= 1
   }
 
