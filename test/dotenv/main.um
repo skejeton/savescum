@@ -1,0 +1,14 @@
+import ("../../src/d_otenv.um")
+
+fn main() {
+  input := "  test = true\n"+
+           "dbg.world = true\n"+
+           "  fps = 60\n"+
+           "\tstyle = cute\r\n"+
+           "  "
+
+  output := d_otenv.parseKeyValuePairs(input)
+  for i in output {
+    printf("%-16s = %-16s\n", output[i][0], output[i][1])
+  } 
+}

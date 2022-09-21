@@ -1,0 +1,78 @@
+fn isPrint(c: char): bool {
+  return c != ' ' && c != '\n' && c != '\t' && c != '\r';
+}
+
+type Parser = struct {
+  source: str
+  pos: uint
+  length: uint
+}
+
+fn fetch(p: ^Parser): char {
+  if p.pos >= p.length {
+    return '\0'
+  }
+
+  return p.source[p.pos]
+}
+
+fn getpos(p: ^Parser): uint {
+  if p.pos >= p.length {
+    return p.length-1
+  }
+  return p.pos
+}
+
+fn skip(p: ^Parser) {
+  p.pos += 1
+}
+
+fn trim(s: str): str {
+  var begin: int = 0
+  for begin < len(s) && !isPrint(s[begin]) {
+    begin += 1
+  }
+
+  var end: int = len(s)-1
+  
+  for end > 0 && !isPrint(s[end]) {
+    end -= 1
+  }
+
+  // NOTE: It's all spaces
+  if end < begin {
+    return ""
+  }
+
+  return slice(s, begin, end+1)
+}
+
+fn parseKeyValuePairs*(source: str): [][2]str {
+  parser := Parser{source: source, length: len(source)}
+
+  pairs := [][2]str{}
+
+  for fetch(&parser) != '\0' {
+    keyStart := getpos(&parser)
+    for fetch(&parser) != '\0' && fetch(&parser) != '=' {
+      skip(&parser)
+    } 
+    keyEnd := getpos(&parser)
+    skip(&parser)
+    valueStart := getpos(&parser)
+    for fetch(&parser) != '\0' && fetch(&parser) != '\n' {
+      skip(&parser)
+    } 
+    valueEnd := getpos(&parser)
+    skip(&parser)
+
+    key := trim(slice(source, keyStart, keyEnd))
+    value := trim(slice(source, valueStart, valueEnd))
+    
+    if key != "" {
+      pairs = append(pairs, [2]str{key, value})
+    }
+  }
+
+  return pairs
+}
