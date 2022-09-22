@@ -1,0 +1,18 @@
+import ("d_util.um"; "d_otenv.um"; "th.um")
+
+var (
+  configData: [][2]str
+  lastTimeGot: int
+)
+
+fn get*(): [][2]str {
+  if lastTimeGot == 0 || th.time - lastTimeGot > 1000 {
+    lastTimeGot = th.time
+    ok, file := d_util.readFileStr(".env")
+    if ok {
+      configData = d_otenv.parseKeyValuePairs(file)
+    }
+  }
+
+  return configData
+}

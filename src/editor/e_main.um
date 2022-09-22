@@ -3,7 +3,8 @@
 
 import (
   "e_drawcmd.um"; "e_buffer.um"; 
-  
+
+  "../d_config.um";  
   "../d_hashname.um"; "../d_fps.um"; "../d_worlddata.um"
   "../d_global.um"; "../d_resources.um"; "../d_problem_screen.um";
   "../d_background.um"; "../d_colors.um"; "../d_world.um";
@@ -1661,6 +1662,12 @@ fn editorInit(resources: EditorResources): Editor {
   return result
 }
 
+fn drawEnv(font: th_font.Font, pos: th.Vf2, env: [][2]str) {
+  for i in env {
+    font.draw(sprintf("%s: %s", env[i][0], env[i][1]), pos, th.red)
+    pos.y += 16
+  }
+}
 
 fn editorMain*() {
   std.srand(std.time())
@@ -1696,6 +1703,8 @@ fn editorMain*() {
     editorPutUi(&editor)
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
+
+    drawEnv(editor.resources.mainFont, th.Vf2{50, 50}, d_config.get())
   }
 
   editorDisconnectAllNodes(&editor, null)
