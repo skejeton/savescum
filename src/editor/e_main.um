@@ -1669,6 +1669,23 @@ fn drawEnv(font: th_font.Font, pos: th.Vf2, env: [][2]str) {
   }
 }
 
+fn getFps*(): int {
+  fps := 0
+  config := d_config.get()
+
+  for i in config {
+    if config[i][0] == "fps" {
+      fps = std.atoi(config[i][1])
+    }
+  }
+
+  if fps <= 0 {
+    return 60
+  }
+  
+  return fps;
+}
+
 fn editorMain*() {
   std.srand(std.time())
   d_test.itsNotAUnitTest()
@@ -1686,9 +1703,9 @@ fn editorMain*() {
     d_problem_screen.showResourceLoadingError(&rl)
   }
 
-  d_fps.limit(60)
   // cycle
   for window.cycle(d_global.screen) {
+    d_fps.limit(getFps())
     d_fps.update()
 
     // NOTE(skejeton): Clamping delta to 50 gives generally consistent physics and reduces jitter.
