@@ -1469,6 +1469,13 @@ fn putWorldEntities(editor: ^Editor) {
         editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
 
         ent.rect = applyRectResizeCommand(putRectGrips(editor, entVisRect), ent.rect, editor.mouseState.delta)
+
+        if ent.rect.w < 10 {
+          ent.rect.w = 10
+        }
+        if ent.rect.h < 10 {
+          ent.rect.h = 10
+        }
       }
 
       events := editor.endTool()

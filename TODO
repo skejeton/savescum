@@ -10,8 +10,6 @@
 
 6. Text box improvements: #7
 
-8. Do something with rectangles that have inverted size. You can't select them currently although they are drawn.
-
 9. Currently worlddata needs to accept a world as a parameter because it needs some data initialized prior,
   The tilemap needs its image, tile size set, etc.
   * Make a "world patch" to change some of the world's fields without altering everything else, then
