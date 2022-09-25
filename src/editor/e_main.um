@@ -1212,7 +1212,7 @@ fn putEntityEntry(editor: ^Editor, ent: d_worlddata.EntityDesc, r: rect.Rect, se
   {
     putSimpleButton(editor, r, ent.name)
     if selected {
-      editor.ctx.drawRectLines(th.yellow, r)
+      editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(r, 1))
     }
     r.x += r.w
     r.w = 30
