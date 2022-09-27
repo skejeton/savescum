@@ -1508,6 +1508,13 @@ fn editorPutUi(editor: ^Editor) {
     deselectEntity(&editor.entities)
   }
 
+  if (input.isJustPressed(input.key_delete)) {
+    input.clear(input.key_delete)
+    if editor.entities.entitySelected > 0 {
+      removeEntity(&editor.entities, editor.entities.entitySelected)
+    }
+  }
+
   editor.mouseState = editor.mouseState.updated()
 
   editor.frameNumber += 1;
