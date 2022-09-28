@@ -1,4 +1,4 @@
-// Last id: 13
+// Last id: 14
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -22,3 +22,7 @@
 12. You can load state when you fall into the pit. Wack.
 
 13. Fix input system ordering going from first sibling to last, it should be from last to first.
+
+14. Editor sessions.
+  Editor sessions will allow you to restore window positions, sizes, selected options, et al. after you load the editor again.
+  Lovely <3
