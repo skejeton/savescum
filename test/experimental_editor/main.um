@@ -1,5 +1,6 @@
-import ("../../src/editor/e_main.um")
+import ("../../src/editor/e_main.um"; "../../src/d_test.um")
 
 fn main() {
+  d_test.isUnitTest(false)
   e_main.editorMain()
 }

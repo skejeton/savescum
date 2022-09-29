@@ -1,6 +1,8 @@
-import ("../../src/d_hashname.um")
+import ("../../src/d_hashname.um"; "../../src/d_test.um")
 
 fn main() {
+  d_test.isUnitTest(true)
+
   for i := 0; i < 100; i++ {
     printf("%2d %s\n", i, d_hashname.name(i))
   }

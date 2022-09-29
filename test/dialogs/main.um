@@ -20,7 +20,7 @@ fn moveCamera() {
 }
 
 fn main() {
-  d_test.itsNotAUnitTest()
+  d_test.isUnitTest(false)
 
   dialogs = d_dialogs.init()
   window.setup("Dialogs test", 640, 480)

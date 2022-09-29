@@ -1,4 +1,4 @@
-// Last id: 14
+// Last id: 15
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -26,3 +26,6 @@
 14. Editor sessions.
   Editor sessions will allow you to restore window positions, sizes, selected options, et al. after you load the editor again.
   Lovely <3
+
+15. Editor theming.
+  I just removed d_colors.um and I intend to make a theme structure instead, could look sweet <3

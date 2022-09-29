@@ -1,6 +1,8 @@
-import ("../../src/d_otenv.um")
+import ("../../src/d_otenv.um"; "../../src/d_test.um")
 
 fn main() {
+  d_test.isUnitTest(true)
+
   input := "  test = true\n"+
            "dbg.world = true\n"+
            "  fps = 60\n"+

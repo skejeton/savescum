@@ -1,6 +1,7 @@
 import ("../../src/d_util.um"; "../../src/d_test.um")
 
 fn main() {
+  d_test.isUnitTest(true)
   oklf, lf := d_util.readFileStr(d_test.pfx()+"local.txt")
   okgf, gf := d_util.readFileStr("data/global.txt")
   

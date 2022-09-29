@@ -7,8 +7,8 @@ import (
   "../d_config.um";  
   "../d_hashname.um"; "../d_fps.um"; "../d_worlddata.um"
   "../d_global.um"; "../d_resources.um"; "../d_problem_screen.um";
-  "../d_background.um"; "../d_colors.um"; "../d_world.um";
-  "../d_tileset.um"; "../d_test.um"; "../d_util.um"; "../d_mouseinput.um";
+  "../d_background.um"; "../d_world.um";
+  "../d_tileset.um"; "../d_util.um"; "../d_mouseinput.um";
   "../d_game.um"; "../d_script.um";
 
   th_font = "font.um"; th_color = "color.um"; 
@@ -1123,7 +1123,7 @@ fn drawLayerIcon(ctx: ^e_drawcmd.DrawContext, position: th.Vf2, layer: int, show
       ctx.drawRect(0xf0b5afFF, rec)
       ctx.drawRectLines(0xFFFFFFFF, rec)
     } else {
-      ctx.drawRect(d_colors.cPrimary, rec)
+      ctx.drawRect(0x99a9a9a9, rec)
       ctx.drawRectLines(0xFFFFFFFF, rec)
     }
   }
@@ -1702,7 +1702,6 @@ fn getFps*(): int {
 
 fn editorMain*() {
   std.srand(std.time())
-  d_test.itsNotAUnitTest()
 
   d_global.screen = rect.mk(0, 0, 800, 600)
   window.setup("Cool editor nice", trunc(d_global.screen.w), trunc(d_global.screen.h))

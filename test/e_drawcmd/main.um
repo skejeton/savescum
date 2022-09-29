@@ -21,7 +21,7 @@ fn (r: ^OutlineRectCmd) draw*(props: e_drawcmd.DrawProperties) {
 }
 
 fn main() {
-  d_test.itsNotAUnitTest()
+  d_test.isUnitTest(false)
 
   window.setup("Hello", 640, 480)
   ctx := e_drawcmd.init()

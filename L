@@ -8,7 +8,7 @@ fi
 ARGS=( $@ )
 SILENT=""
 PROF=""
-ISUNITTEST=""
+ISUNITTEST="false"
 NARG=0
 PROG_NAME=$0
 

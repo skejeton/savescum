@@ -4,7 +4,7 @@ import (
   "../../src/d_util.um"; "../../src/d_resources.um"; "../../src/d_problem_screen.um";)
 
 fn main() {
-  d_test.itsNotAUnitTest()
+  d_test.isUnitTest(false)
 
   window.setup("Bg test", 800, 600)
 
