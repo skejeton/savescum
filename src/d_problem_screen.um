@@ -10,7 +10,7 @@ import (
 
 var (
   font: th_font.Font
-  scroll: th.fu
+  scroll: th.Vf2
   y: th.fu
 )
 
@@ -56,7 +56,7 @@ fn drawText(text: str, pos: th.Vf2, color: uint32) {
 }
 
 fn pushText(text: str, color: uint32 = th.white) {
-  drawText(text, th.Vf2{0, y+scroll}, color)
+  drawText(text, th.Vf2{0, y}.add(scroll), color)
   y += fontHeight() + 10.0
 }
 
@@ -65,16 +65,23 @@ fn init() {
   font = th_font.load("data/font_mono.ttf", 16)
 }
 
+oldMousePos := th.Vf2{0, 0}
+
 fn showResourceLoadingError*(loader: ^d_resources.ResourceLoader) {
   init()
   for cycle() {
-    if input.isPressed(input.mouse_up) { scroll += fontHeight() }
-    if input.isPressed(input.mouse_down) { scroll -= fontHeight() }
+    newMousePos := input.getMousePos()
+
+    if input.isPressed(input.mouse2) {
+      scroll = scroll.add(newMousePos.sub(oldMousePos))
+    }
+
     restart()
     pushText("Drat! I couldn't load some resources:")
     for i, error in loader.errors {
       pushText(" "+error, th.red)
     }
+    oldMousePos = newMousePos
   }
   exit()
 }

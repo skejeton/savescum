@@ -1,4 +1,4 @@
-// Last id: 15
+// Last id: 16
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -29,3 +29,5 @@
 
 15. Editor theming.
   I just removed d_colors.um and I intend to make a theme structure instead, could look sweet <3
+
+16. Problem screen test.

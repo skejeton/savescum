@@ -1641,11 +1641,11 @@ fn editorDisconnectAllNodes(editor: ^Editor, node: ^ToolNode) {
 fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
 
   editorResources := EditorResources {
-    bevelImage: d_resources.loadImage(rl, "data/ts04_bevelbutton.png"),
-    tilesetImage: d_resources.loadImage(rl, "data/ts00_sky.png"),
-    toolbarIcons: d_resources.loadImage(rl, "data/ts02_trayicons.png"),
-    mainFont: d_resources.loadFont(rl, "data/font_mono.ttf", 16, 0)}
-
+    bevelImage: d_resources.loadImage(rl, "data/ts04_bevel button.png"),
+    tilesetImage: d_resources.loadImage(rl, "data/ts00_sk y.png"),
+    toolbarIcons: d_resources.loadImage(rl, "data/ts02_tray icons.png"),
+    mainFont: d_resources.loadFont(rl, "data/font _mono.ttf", 16, 0)}
+ 
   editorResources.tilesetImage.setfilter(0)
 
   return editorResources
