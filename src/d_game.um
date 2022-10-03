@@ -553,6 +553,7 @@ fn drawChum(state: int) {
   }
   drawImageRect(imgChum, bodyRect, chumDestRect, chumRotTime)
   drawImageRect(imgChum, chumFaceRect, chumDestRect, chumRotTime)
+  canvas.drawText(sprintf("%d %d", trunc(chara.rect.x/32), trunc(chara.rect.y/32)), chumDestRect.getPos(), th.red, 1)
 }
 
 fn drawEntities() {
@@ -604,8 +605,6 @@ fn update*() {
 
   // UPDATE DIALOG //
   dialogs.advance(input.isPressed('x'))
-
-  dialogs.setCamPos(camera)
   dialogs.update()
 }
 
@@ -643,7 +642,7 @@ fn draw*() {
   drawSavePos()
 
   // RENDER DIALOG //
-  dialogs.draw()
+  dialogs.draw(cameraOffsetRect(rect.mk(0, 0, 0, 0)).getPos(), cameraScale)
 
   // DEBUG OVERYALS //
 

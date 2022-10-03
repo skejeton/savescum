@@ -11,6 +11,7 @@ var (
 )
 
 fn init*() {
+  d_game.dialogs.say("receptionist", "", "La-la-la. More than 100 years and I still do the same job.", th.Vf2{32*2, 32*-14})
   t = 0
   switch d_game.sceneId {
   case 0:
