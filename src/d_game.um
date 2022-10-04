@@ -72,6 +72,7 @@ var (
   saveSlot: SaveState
   levers: map[str]bool
 
+  lockInput*: bool
   guides: []rect.Rect
   entities*: []Character
   sceneId*: int
@@ -407,6 +408,7 @@ fn saveState() {
 
 
 fn start*(worldData: d_worlddata.WorldData) {
+  lockInput = false
   savePos.x = -1000
   savePos.y = -1000
   levers = map[str]bool{}
@@ -485,10 +487,6 @@ fn updateEntities() {
         newPower += 1
       }
     }
-  }
-
-  if ok, _ := dialogs.getTopPos(); !ok {
-    playerControl()
   }
 }
 
@@ -588,23 +586,29 @@ fn update*() {
   power = newPower
   newPower = 0
 
-  // Load state
-  if input.isJustPressed('a') {
-    loadState()
+  if !lockInput {
+    if ok, _ := dialogs.getTopPos(); !ok {
+      playerControl()
+    }
+    
+    // Load state
+    if input.isJustPressed('a') {
+      loadState()
+    }
+
+    // Save state
+    if input.isJustPressed('s') {
+      savePos.x = chara.rect.x
+      savePos.y = chara.rect.y
+      savePosAppearTimer = 0
+      saveState()
+    }
+
+    savePosAppearTimer += th.delta/1000.0
+
+    // UPDATE DIALOG //
+    dialogs.advance(input.isPressed('x'))
   }
-
-  // Save state
-  if input.isJustPressed('s') {
-    savePos.x = chara.rect.x
-    savePos.y = chara.rect.y
-    savePosAppearTimer = 0
-    saveState()
-  }
-
-  savePosAppearTimer += th.delta/1000.0
-
-  // UPDATE DIALOG //
-  dialogs.advance(input.isPressed('x'))
   dialogs.update()
 }
 

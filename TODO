@@ -19,8 +19,6 @@
 
 11. Maybe savestates should be stackable instead.
 
-12. You can load state when you fall into the pit. Wack.
-
 13. Fix input system ordering going from first sibling to last, it should be from last to first.
 
 14. Editor sessions.
