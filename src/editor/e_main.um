@@ -1676,21 +1676,35 @@ fn editorInit(resources: EditorResources): Editor {
   return result
 }
 
-fn drawEnv(font: th_font.Font, pos: th.Vf2, env: [][2]str) {
+fn drawEnv(font: th_font.Font, pos: ^th.Vf2, env: map[str]interface{}, depth: int) {
+  initPosX := pos.x
+  pos.x += 30*depth
+
+  stride := font.measure(" ").y
+
   for i in env {
-    font.draw(sprintf("%s: %s", env[i][0], env[i][1]), pos, th.red)
-    pos.y += 16
+    if strValue := ^str(env[i]); strValue != null {
+      font.draw(sprintf("%s = \"%s\"", i, strValue^), pos^, th.red)
+      pos.y += stride
+    } else if mapValue := ^map[str]interface{}(env[i]); mapValue != null {
+      font.draw(sprintf("%s = {", i), pos^, th.red)
+      pos.y += stride
+      drawEnv(font, pos, mapValue^, depth+1)
+      font.draw(sprintf("}"), pos^, th.red)
+      pos.y += stride
+    }
   }
+
+  pos.x = initPosX
+
 }
 
 fn getFps*(): int {
   fps := 0
-  config := d_config.get()
-
-  for i in config {
-    if config[i][0] == "fps" {
-      fps = std.atoi(config[i][1])
-    }
+  
+  // FIXME: Currently toml only supports strings so I have to call atoi
+  if fpsProp := ^str(d_config.getProperty("fps")); fpsProp != null {
+    fps = std.atoi(fpsProp^)
   }
 
   if fps <= 0 {
@@ -1734,7 +1748,7 @@ fn editorMain*() {
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
 
-    drawEnv(editor.resources.mainFont, th.Vf2{50, 50}, d_config.get())
+    drawEnv(editor.resources.mainFont, &th.Vf2{50, 50}, d_config.getTree(), 0)
   }
 
   editorDisconnectAllNodes(&editor, null)

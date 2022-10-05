@@ -1,18 +1,35 @@
-import ("d_util.um"; "d_otenv.um"; "th.um")
+import ("d_util.um"; "toml.um"; "th.um")
 
 var (
-  configData: [][2]str
+  configData: map[str]interface{} 
   lastTimeGot: int
 )
 
-fn get*(): [][2]str {
-  if lastTimeGot == 0 || th.time - lastTimeGot > 1000 {
-    lastTimeGot = th.time
-    ok, file := d_util.readFileStr(".env")
-    if ok {
-      configData = d_otenv.parseKeyValuePairs(file)
+fn reloadSession() {
+  if ok, file := d_util.readFileStr("session.toml"); ok {
+    result := toml.parse(file)
+    if error := result.getError(); error != null {
+      printf("TOML ERROR: %s\n", toml.formatError(error, file))
+    } else {
+      configData = result.data
     }
   }
+}
 
+fn probeSessionUpdate(): bool {
+  shouldRedo := lastTimeGot == 0 || th.time - lastTimeGot > 1000
+  if shouldRedo {
+    lastTimeGot = th.time
+  }
+  return shouldRedo
+}
+
+fn getTree*(): map[str]interface{} {
   return configData
+}
+
+fn getProperty*(key: str): interface{} {
+  if probeSessionUpdate() { reloadSession() }
+
+  return getTree()[key]
 }
