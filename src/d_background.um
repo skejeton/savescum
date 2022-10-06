@@ -10,8 +10,8 @@ var (
 )
 
 fn init*(rl: ^d_resources.ResourceLoader) {
-  imgClouds = d_resources.loadImage(rl, "data/bg00_sky.png")
-  imgRocks = d_resources.loadImage(rl, "data/bg01_pit.png")
+  imgClouds = d_resources.loadImage(rl, "data/img/bg_sky.png")
+  imgRocks = d_resources.loadImage(rl, "data/img/bg_pit.png")
   imgRocks.setfilter(0)
 
   width = imgClouds.getDims().x

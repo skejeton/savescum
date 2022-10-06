@@ -440,17 +440,17 @@ fn start*(worldData: d_worlddata.WorldData) {
 }
 
 fn init*(rl: ^d_resources.ResourceLoader) {
-  imgObj = d_resources.loadImage(rl, "data/obj_interactive.png")
+  imgObj = d_resources.loadImage(rl, "data/img/obj_interactive.png")
   imgObj.setfilter(0)
-  imgChum = d_resources.loadImage(rl, "data/chr_chum.png")
+  imgChum = d_resources.loadImage(rl, "data/img/chr_chum.png")
   imgChum.setfilter(0)
   dialogs = d_dialogs.init()
 
   // TODO: Maybe for registering dialogs I should have a "DialogEntry" struct that I can load via resource loader directly? This is jank!
   d_game.dialogs.register("receptionist", 
-    d_resources.loadImage(rl, "data/ts03_dialog.png"), 0, 
-    d_resources.loadImage(rl, "data/sp00_receptionist.png"), 0,
-    d_resources.loadFont(rl, "data/font_mono.ttf", 16, 0), 0xFFFFFFFF, 0.1, []str{"smirk"})
+    d_resources.loadImage(rl, "data/img/dialog_frames.png"), 0, 
+    d_resources.loadImage(rl, "data/img/dlg_receptionist.png"), 0,
+    d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 0), 0xFFFFFFFF, 0.1, []str{"smirk"})
 }
 
 fn updateEntities() {

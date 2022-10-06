@@ -25,11 +25,11 @@ fn main() {
 
   window.setup("Hello", 640, 480)
   ctx := e_drawcmd.init()
-  font1 := font.load("data/font_mono.ttf", 16, 1)
-  font2 := font.load("data/font_sans.ttf", 16)
-  image1 := image.load("data/ui00_img_test.png")
-  image2 := image.load("data/ui00_img_test.png")
-  image3 := image.load("data/ts04_bevelbutton.png")
+  font1 := font.load("data/font/monospace.ttf", 16, 1)
+  font2 := font.load("data/font/sans.ttf", 16)
+  image1 := image.load("data/img/test.png")
+  image2 := image.load("data/img/test.png")
+  image3 := image.load("data/img/ui_bevelbutton.png")
   image2.setfilter(0)
 
   var colors: [7][2]uint32

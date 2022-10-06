@@ -890,7 +890,7 @@ fn endScrollArea(editor: ^Editor) {
   scroll ^-= events.queryScroll()*20.0
 }
 
-const worldPath = "data/sc00_nowayup.csv"
+const worldPath = "data/spiel/sc_genesis.csv"
 
 fn editorLoadWorld(editor: ^Editor) {
   if ok, data := d_util.readFileStr(worldPath); ok {
@@ -1641,10 +1641,10 @@ fn editorDisconnectAllNodes(editor: ^Editor, node: ^ToolNode) {
 fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
 
   editorResources := EditorResources {
-    bevelImage: d_resources.loadImage(rl, "data/ts04_bevelbutton.png"),
-    tilesetImage: d_resources.loadImage(rl, "data/ts00_sky.png"),
-    toolbarIcons: d_resources.loadImage(rl, "data/ts02_trayicons.png"),
-    mainFont: d_resources.loadFont(rl, "data/font_mono.ttf", 16, 0)}
+    bevelImage: d_resources.loadImage(rl, "data/img/ui_bevelbutton.png"),
+    tilesetImage: d_resources.loadImage(rl, "data/img/ts_sky.png"),
+    toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png"),
+    mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 0)}
  
   editorResources.tilesetImage.setfilter(0)
 

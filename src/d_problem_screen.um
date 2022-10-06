@@ -62,7 +62,7 @@ fn pushText(text: str, color: uint32 = th.white) {
 
 fn init() {
   // Try to load a better font, the fallback will be used otherwise.
-  font = th_font.load("data/font_mono.ttf", 16)
+  font = th_font.load("data/font/monospace.ttf", 16)
 }
 
 oldMousePos := th.Vf2{0, 0}
