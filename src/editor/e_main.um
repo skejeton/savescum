@@ -890,7 +890,7 @@ fn endScrollArea(editor: ^Editor) {
   scroll ^-= events.queryScroll()*20.0
 }
 
-const worldPath = "data/spiel/sc_genesis.csv"
+const worldPath = "data/spiel/sc_hub.csv"
 
 fn editorLoadWorld(editor: ^Editor) {
   if ok, data := d_util.readFileStr(worldPath); ok {

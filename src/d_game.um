@@ -500,11 +500,9 @@ const (
 fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0) {
   d_util.imageCropRect(img, src)
 
-  // TODO: I have to fix the origin for image crops.. Need to report this to tophat.
-  origin := th.Vf2{dst.w/2+(src.x/src.w*dst.w), dst.h/2+(src.y/src.h*dst.h)}
   pos := dst.getPos()
   scale := dst.getDims().div(src.getDims())
-  img.draw(th.Transform{p: pos, s: scale, r: rot, o: origin})
+  img.draw(th.Transform{p: pos, s: scale, r: rot, o: th.Vf2{dst.w/2, dst.h/2}})
 }
 
 fn drawEntity(ent: ^Character) {
