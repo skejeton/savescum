@@ -1676,35 +1676,89 @@ fn editorInit(resources: EditorResources): Editor {
   return result
 }
 
-fn drawEnv(font: th_font.Font, pos: ^th.Vf2, env: map[str]interface{}, depth: int) {
-  initPosX := pos.x
-  pos.x += 30*depth
+type PushText = struct {
+  font: th_font.Font
+  initPos: th.Vf2
+  pos: th.Vf2
+  indents: int
+}
 
-  stride := font.measure(" ").y
+fn mkPushText(font: th_font.Font, pos: th.Vf2): PushText {
+  return PushText{font, pos, pos, 0}
+}
 
-  for i in env {
-    if strValue := ^str(env[i]); strValue != null {
-      font.draw(sprintf("%s = \"%s\"", i, strValue^), pos^, th.red)
-      pos.y += stride
-    } else if mapValue := ^map[str]interface{}(env[i]); mapValue != null {
-      font.draw(sprintf("%s = {", i), pos^, th.red)
-      pos.y += stride
-      drawEnv(font, pos, mapValue^, depth+1)
-      font.draw(sprintf("}"), pos^, th.red)
-      pos.y += stride
+fn (pushy: ^PushText) push(txt: str, color: uint32 = 0xFFFFFFFF) {
+  pushy.font.draw(txt, pushy.pos, color)
+  pushy.pos.x += pushy.font.measure(txt).x
+}
+
+
+fn (pushy: ^PushText) shouldWrap(): bool {
+  return pushy.pos.x - pushy.initPos.x > 200
+}
+
+fn (pushy: ^PushText) newLine() {
+  pushy.pos.y += pushy.font.measure(" ").y
+  pushy.pos.x = pushy.indents*30+pushy.initPos.x
+}
+
+fn (pushy: ^PushText) indent(by: int) {
+  pushy.indents += by
+}
+
+
+fn drawEnv(pushy: ^PushText, env: interface{}) {
+  if arrValue := ^[]interface{}(env); arrValue != null {
+    pushy.push(sprintf("["))
+    pushy.indent(1)
+    pushy.newLine()
+
+    for i in arrValue {
+      drawEnv(pushy, arrValue[i])
+      if i != len(arrValue^)-1 {
+        pushy.push(", ")
+        if pushy.shouldWrap() {
+          pushy.newLine()
+        }
+      }
     }
+
+    pushy.indent(-1)
+    pushy.newLine()
+    pushy.push("]")
+  } else if mapValue := ^map[str]interface{}(env); mapValue != null {
+    pushy.push(sprintf("{"))
+    pushy.indent(1)
+    pushy.newLine()
+
+    i := 0
+    keyCount := len(keys(mapValue^))
+    for k in mapValue {
+      pushy.push(k, 0xFF007FFF)
+      pushy.push(sprintf(" = "))
+      drawEnv(pushy, mapValue[k])
+      if i != keyCount-1 {
+        pushy.push(", ")
+        pushy.newLine()
+      }
+      i++
+    }
+
+    pushy.indent(-1)
+    pushy.newLine()
+    pushy.push("}")
+  } else {
+    represented := repr(env)
+    pushy.push(slice(represented, 0, len(represented)-1), 0xFFFF00FF)
   }
-
-  pos.x = initPosX
-
 }
 
 fn getFps*(): int {
   fps := 0
   
   // FIXME: Currently toml only supports strings so I have to call atoi
-  if fpsProp := ^str(d_config.getProperty("fps")); fpsProp != null {
-    fps = std.atoi(fpsProp^)
+  if fpsProp := ^int(d_config.getProperty("fps")); fpsProp != null {
+    fps = fpsProp^
   }
 
   if fps <= 0 {
@@ -1748,7 +1802,8 @@ fn editorMain*() {
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
 
-    drawEnv(editor.resources.mainFont, &th.Vf2{50, 50}, d_config.getTree(), 0)
+    canvas.drawRect(th.black, rect.mk(50, 50, 500, 500))
+    drawEnv(&mkPushText(editor.resources.mainFont, th.Vf2{50, 50}), d_config.getTree())
   }
 
   editorDisconnectAllNodes(&editor, null)

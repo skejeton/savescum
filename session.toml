@@ -1,3 +1,16 @@
-fps = "60"
+fps = 60
 [dbg]
 overlays = "true"
+
+values = [1, 2, 3,
+          4, 5, 6, {2.x = 42}]
+
+[[test]]
+value = 123
+
+[[test]]
+value = 64
+
+
+[[test]]
+value = {key = "hello \" world"}
