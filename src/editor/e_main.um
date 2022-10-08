@@ -1687,9 +1687,11 @@ fn mkPushText(font: th_font.Font, pos: th.Vf2): PushText {
   return PushText{font, pos, pos, 0}
 }
 
-fn (pushy: ^PushText) push(txt: str, color: uint32 = 0xFFFFFFFF) {
+fn (pushy: ^PushText) push(txt: str, color: uint32 = 0xFFFFFFFF): rect.Rect {
   pushy.font.draw(txt, pushy.pos, color)
-  pushy.pos.x += pushy.font.measure(txt).x
+  size := pushy.font.measure(txt)
+  pushy.pos.x += size.x
+  return rect.mk(pushy.pos.x-size.x, pushy.pos.y, size.x, size.y)
 }
 
 
@@ -1706,15 +1708,33 @@ fn (pushy: ^PushText) indent(by: int) {
   pushy.indents += by
 }
 
+fn valueTypeName(value: interface{}): str {
+  if ^[]interface{}(value) != null {
+    return "array"
+  } 
+  if ^map[str]interface{}(value) != null {
+    return "map"
+  }
+  if ^int(value) != null {
+    return "int"
+  }
+  if ^str(value) != null {
+    return "str"
+  }
+  if ^real(value) != null {
+    return "real"
+  }
+  return ""
+}
 
-fn drawEnv(pushy: ^PushText, env: interface{}) {
+fn drawEnv(pushy: ^PushText, hover: ^str, env: interface{}) {
   if arrValue := ^[]interface{}(env); arrValue != null {
     pushy.push(sprintf("["))
     pushy.indent(1)
     pushy.newLine()
 
     for i in arrValue {
-      drawEnv(pushy, arrValue[i])
+      drawEnv(pushy, hover, arrValue[i])
       if i != len(arrValue^)-1 {
         pushy.push(", ")
         if pushy.shouldWrap() {
@@ -1734,9 +1754,11 @@ fn drawEnv(pushy: ^PushText, env: interface{}) {
     i := 0
     keyCount := len(keys(mapValue^))
     for k in mapValue {
-      pushy.push(k, 0xFF007FFF)
+      if d_util.isMouseInRect(pushy.push(k, 0xFF007FFF)) {
+        hover ^= valueTypeName(mapValue[k])
+      }
       pushy.push(sprintf(" = "))
-      drawEnv(pushy, mapValue[k])
+      drawEnv(pushy, hover, mapValue[k])
       if i != keyCount-1 {
         pushy.push(", ")
         pushy.newLine()
@@ -1749,7 +1771,10 @@ fn drawEnv(pushy: ^PushText, env: interface{}) {
     pushy.push("}")
   } else {
     represented := repr(env)
-    pushy.push(slice(represented, 0, len(represented)-1), 0xFFFF00FF)
+
+    if d_util.isMouseInRect(pushy.push(slice(represented, 0, len(represented)-1), 0xFFFF00FF)) {
+      hover ^= valueTypeName(env)
+    }
   }
 }
 
@@ -1766,6 +1791,15 @@ fn getFps*(): int {
   }
   
   return fps;
+}
+
+fn drawTooltip(font: th_font.Font, pos: th.Vf2, tooltip: str) {
+  size := font.measure(tooltip)
+  r := rect.mk(pos.x, pos.y, size.x, size.y)
+
+  canvas.drawRect(th.white, d_util.rectShrink(r, -1))
+  canvas.drawRect(th.black, d_util.rectShrink(r, 0))
+  font.draw(tooltip, pos, th.white)
 }
 
 fn editorMain*() {
@@ -1803,7 +1837,11 @@ fn editorMain*() {
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
 
     canvas.drawRect(th.black, rect.mk(50, 50, 500, 500))
-    drawEnv(&mkPushText(editor.resources.mainFont, th.Vf2{50, 50}), d_config.getTree())
+    hover := ""
+    drawEnv(&mkPushText(editor.resources.mainFont, th.Vf2{50, 50}), &hover, d_config.getTree())
+    if hover != "" {
+      drawTooltip(editor.resources.mainFont, editor.mouseState.pos.addf(10), hover)
+    }
   }
 
   editorDisconnectAllNodes(&editor, null)
