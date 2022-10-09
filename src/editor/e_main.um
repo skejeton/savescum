@@ -1724,6 +1724,9 @@ fn valueTypeName(value: interface{}): str {
   if ^real(value) != null {
     return "real"
   }
+  if ^bool(value) != null {
+    return "bool"
+  }
   return ""
 }
 
@@ -1769,6 +1772,17 @@ fn drawEnv(pushy: ^PushText, hover: ^str, env: interface{}) {
     pushy.indent(-1)
     pushy.newLine()
     pushy.push("}")
+  } else if boolValue := ^bool(env); boolValue != null {
+    represented := repr(env)
+
+    color := 0xFF0040FF
+    if boolValue^ {
+      color = 0x00FF40FF
+    }
+
+    if d_util.isMouseInRect(pushy.push(slice(represented, 0, len(represented)-1), color)) {
+      hover ^= valueTypeName(env)
+    }
   } else {
     represented := repr(env)
 
