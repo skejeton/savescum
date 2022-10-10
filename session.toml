@@ -15,4 +15,4 @@ value = 64
 boolean = [false, true, true, true, false, {false = true}]
 
 [[test]]
-value = {key = "hello \" world"}
+value = {key = "hello \n world"}

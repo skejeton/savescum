@@ -1681,15 +1681,19 @@ type PushText = struct {
   initPos: th.Vf2
   pos: th.Vf2
   indents: int
+  lineHeight: real
 }
 
 fn mkPushText(font: th_font.Font, pos: th.Vf2): PushText {
-  return PushText{font, pos, pos, 0}
+  return PushText{font, pos, pos, 0, font.measure(" ").y}
 }
 
 fn (pushy: ^PushText) push(txt: str, color: uint32 = 0xFFFFFFFF): rect.Rect {
   pushy.font.draw(txt, pushy.pos, color)
   size := pushy.font.measure(txt)
+  if size.y > pushy.lineHeight {
+    pushy.lineHeight = size.y
+  }
   pushy.pos.x += size.x
   return rect.mk(pushy.pos.x-size.x, pushy.pos.y, size.x, size.y)
 }
@@ -1700,7 +1704,8 @@ fn (pushy: ^PushText) shouldWrap(): bool {
 }
 
 fn (pushy: ^PushText) newLine() {
-  pushy.pos.y += pushy.font.measure(" ").y
+  pushy.pos.y += pushy.lineHeight
+  pushy.lineHeight = pushy.font.measure(" ").y
   pushy.pos.x = pushy.indents*30+pushy.initPos.x
 }
 
@@ -1728,6 +1733,23 @@ fn valueTypeName(value: interface{}): str {
     return "bool"
   }
   return ""
+}
+
+fn representString(s: str): str {
+  result := ""
+  split := e_buffer.textSplitBy(s, '\n')
+  for i, item in split {
+    result += item
+    if i != len(split)-1 {
+      result += '\n'
+    }
+  }
+
+  if len(split) == 1 {
+    return "\""+result+"\""
+  }
+
+  return "\"\"\""+result+"\"\"\""
 }
 
 fn drawEnv(pushy: ^PushText, hover: ^str, env: interface{}) {
@@ -1781,6 +1803,11 @@ fn drawEnv(pushy: ^PushText, hover: ^str, env: interface{}) {
     }
 
     if d_util.isMouseInRect(pushy.push(slice(represented, 0, len(represented)-1), color)) {
+      hover ^= valueTypeName(env)
+    }
+  } else if strValue := ^str(env); strValue != null {
+
+    if d_util.isMouseInRect(pushy.push(representString(strValue^), 0x007FFFFF)) {
       hover ^= valueTypeName(env)
     }
   } else {
