@@ -890,7 +890,7 @@ fn endScrollArea(editor: ^Editor) {
   scroll ^-= events.queryScroll()*20.0
 }
 
-const worldPath = "data/spiel/sc_hub.csv"
+const worldPath = "data/spiel/sc_genesis.csv"
 
 fn editorLoadWorld(editor: ^Editor) {
   if ok, data := d_util.readFileStr(worldPath); ok {
@@ -1694,6 +1694,11 @@ fn (pushy: ^PushText) push(txt: str, color: uint32 = 0xFFFFFFFF): rect.Rect {
   if size.y > pushy.lineHeight {
     pushy.lineHeight = size.y
   }
+
+  if len(e_buffer.textSplitBy(txt, '\n')) > 1 {
+    canvas.drawRect(color&0xFFFFFF7F, rect.mk(pushy.pos.x-1, pushy.pos.y, 1, size.y))
+  }
+
   pushy.pos.x += size.x
   return rect.mk(pushy.pos.x-size.x, pushy.pos.y, size.x, size.y)
 }
