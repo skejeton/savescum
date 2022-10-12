@@ -138,13 +138,12 @@ fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0) {
     for cy := sy; cy < ey; cy++ {
       if chunk[cx][cy] > 0 {
         tile := chunk[cx][cy]
-        pos := th.Vf2{cx, cy}.mul(tileSize).add(offset)
 
         if tileSel != tile {
           world.tileset.selectTilePos(tile)
           tileSel = tile
         }
-        world.tileset.image.draw(th.Transform{p: pos, s: imgScale})
+        world.tileset.image.draw(th.Transform{p: th.Vf2{cx*tileSize.x+offset.x, cy*tileSize.y+offset.y}, s: imgScale})
       }
     }
   }

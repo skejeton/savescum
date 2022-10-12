@@ -16,3 +16,5 @@
 # Other artifacts
 tophat
 tophat.exe
+# Prof artifact
+trace.json

@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 if [[ ! -f data/img/test.png ]]; then
@@ -17,13 +18,23 @@ getarg() {
   echo ${ARGS[$NARG + $1]}
 }
 
+engage() {
+  if [ -z "$PROF" ]; then
+    ../../tophat $SILENT $@
+  else
+    # https://github.com/colrdavidson/spall
+    # https://skejeton.github.io/spall
+    ../../tophat $PROF trace.json $SILENT $@
+  fi
+}
+
 # $1 test name
 target_test() {
   if [ -z "$1" ]; then
     echo -e "What am I gonna test? \n$PROG_NAME test test_name" 
     exit 1
   elif [[ -d "test/$1" && -f "test/$1/main.um" ]]; then 
-    ISUNITTEST=$ISUNITTEST TEST_PFX="test/$1/" ../../tophat $PROF $SILENT main "test/$1/main.um"
+    ISUNITTEST=$ISUNITTEST TEST_PFX="test/$1/" engage main "test/$1/main.um"
   else
     echo -e "I don't know test \"$1\".\nTests are in ./test directory, you must make a folder named \"$1\" inside it, and put a main.um file in it. That's the way it is!" 
     exit 2
@@ -42,8 +53,8 @@ while [ $hasargs -eq 1 ]
 do
   case `getarg 0` in
     prof)
+      PROF=xprof
       NARG=$(( $NARG + 1 ))
-      SILENT=prof
     ;; 
     silent)
       NARG=$(( $NARG + 1 ))
@@ -63,13 +74,13 @@ target_compile_extern
 
 case `getarg 0` in
   play)
-    ../../tophat $PROF $SILENT main src/main.um
+    engage main src/main.um
   ;;
   check)
-    ../../tophat $PROF $SILENT check main src/main.um
+    engage check main src/main.um
     
     for d in test/*; do
-      TEST_PFX="%d/" ../../tophat $PROF $SILENT check main "$d/main.um"
+      TEST_PFX="%d/" ../../tophat $SILENT check main "$d/main.um"
     done
   ;;
   testall)
