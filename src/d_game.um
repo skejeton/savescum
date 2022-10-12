@@ -1,6 +1,6 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "image.um"
   "editor/e_buffer.um";
-  "d_rerp.um"; "d_background.um"; "d_resources.um";
+  "d_rerp.um"; "d_background.um"; "d_resources.um"; "d_config.um"
   "d_util.um"; "d_world.um"; "d_dialogs.um"; "d_global.um"; "d_worlddata.um")
 
 const (
@@ -549,7 +549,9 @@ fn drawChum(state: int) {
   }
   drawImageRect(imgChum, bodyRect, chumDestRect, chumRotTime)
   drawImageRect(imgChum, chumFaceRect, chumDestRect, chumRotTime)
-  canvas.drawText(sprintf("%d %d", trunc(chara.rect.x/32), trunc(chara.rect.y/32)), chumDestRect.getPos(), th.red, 1)
+  if d_config.checkFlag(d_config.flagDebugOverlays) {
+    canvas.drawText(sprintf("%d %d", trunc(chara.rect.x/32), trunc(chara.rect.y/32)), chumDestRect.getPos(), th.red, 1)
+  }
 }
 
 fn drawEntities() {
@@ -648,9 +650,9 @@ fn draw*() {
 
   // DEBUG OVERYALS //
 
-/* 
-  _drawRectTangents(chara.rect)
-  drawGuideRects()
-  d_util.drawRectLines(th.green, cameraOffsetRect(getCameraTargetRect()))
-*/
+  if d_config.checkFlag(d_config.flagDebugOverlays) {
+    _drawRectTangents(chara.rect)
+    drawGuideRects()
+    d_util.drawRectLines(th.green, cameraOffsetRect(getCameraTargetRect()))
+  }
 }

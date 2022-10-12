@@ -1,5 +1,15 @@
 import ("d_util.um"; "toml.um"; "th.um")
 
+type (
+  Path* = struct {
+    sector, property: str
+  }
+)
+
+const (
+  flagDebugOverlays* = Path{"dbg", "overlays"}
+)
+
 var (
   configData: map[str]interface{} 
   lastTimeGot: int
@@ -31,5 +41,21 @@ fn getTree*(): map[str]interface{} {
 fn getProperty*(key: str): interface{} {
   if probeSessionUpdate() { reloadSession() }
 
-  return getTree()[key]
+  tree := getTree()
+  if !validkey(tree, key) {
+    return null
+  }
+
+  return tree[key]
 }
+
+fn checkFlag*(path: Path): bool {
+  if mapValue := ^map[str]interface{}(getProperty(path.sector)); mapValue != null {
+    if boolValue := ^bool(mapValue[path.property]); boolValue != null {
+      return boolValue^
+    }
+  }
+
+  return false
+}
+

@@ -1882,11 +1882,13 @@ fn editorMain*() {
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
 
-    canvas.drawRect(th.black, rect.mk(50, 50, 500, 500))
-    hover := ""
-    drawEnv(&mkPushText(editor.resources.mainFont, th.Vf2{50, 50}), &hover, d_config.getTree())
-    if hover != "" {
-      drawTooltip(editor.resources.mainFont, editor.mouseState.pos.addf(10), hover)
+    if d_config.checkFlag(d_config.flagDebugOverlays) {
+      canvas.drawRect(th.black, rect.mk(50, 50, 500, 500))
+      hover := ""
+      drawEnv(&mkPushText(editor.resources.mainFont, th.Vf2{50, 50}), &hover, d_config.getTree())
+      if hover != "" {
+        drawTooltip(editor.resources.mainFont, editor.mouseState.pos.addf(10), hover)
+      }
     }
   }
 
