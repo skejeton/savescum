@@ -126,6 +126,9 @@ type (
     isRelocatingPlayer: bool
     isIgnoringGuides: bool
     entities: EditorEntities
+    potentialPortal: str // the portal which is in the text box
+    currentPortal: str
+
 
     // UI misc.
     inputSink: InputSink
@@ -457,6 +460,11 @@ fn drawButton(editor: ^Editor, r: rect.Rect, buttonState: ButtonState, revert: b
   }
 
   drawBevelRect(editor, r, pushed, colorMod)
+}
+
+fn drawButtonInactive(editor: ^Editor, r: rect.Rect, text: str) {
+  editor.ctx.drawRect(0x999999FF, r)
+  editor.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), 0x000000FF)
 }
 
 fn putButton(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
@@ -890,19 +898,23 @@ fn endScrollArea(editor: ^Editor) {
   scroll ^-= events.queryScroll()*20.0
 }
 
-const worldPath = "data/spiel/sc_genesis.csv"
+fn portalToPath(portal: str): str {
+  return "data/spiel/sc_"+portal+".csv"
+}
 
-fn editorLoadWorld(editor: ^Editor) {
-  if ok, data := d_util.readFileStr(worldPath); ok {
+fn editorLoadWorld(editor: ^Editor, portal: str): bool {
+  if ok, data := d_util.readFileStr(portalToPath(portal)); ok {
     worldData := d_worlddata.load(editor.world, data)
 
     editor.world = worldData.world
     editor.entities.list = worldData.entities
+    return true
   }
+  return false
 }
 
 fn editorSaveWorld(editor: ^Editor) {
-  d_util.writeFileStr(worldPath, d_worlddata.save(d_worlddata.WorldData{editor.world, editor.entities.list}))
+  d_util.writeFileStr(portalToPath(editor.currentPortal), d_worlddata.save(d_worlddata.WorldData{editor.world, editor.entities.list}))
 }
 
 fn editorToggleGame(editor: ^Editor) {
@@ -958,6 +970,7 @@ fn editorPutToolbar(editor: ^Editor) {
       putToolbarWindowIconButton(editor, "Player Placer", &buttonRectangle, 3, 1)
       putToolbarWindowIconButton(editor, "Entity List", &buttonRectangle, 0, 2)
       putToolbarWindowIconButton(editor, "Entity Editor", &buttonRectangle, 1, 2)
+      putToolbarWindowIconButton(editor, "Portal", &buttonRectangle, 2, 2)
 
       // Draw Save/Load
       {
@@ -971,7 +984,7 @@ fn editorPutToolbar(editor: ^Editor) {
 
         position.x -= 80
         if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Load").isReleased) {
-          editorLoadWorld(editor)
+          editorLoadWorld(editor, editor.currentPortal)
         }
 
         position.x -= 120
@@ -1495,6 +1508,32 @@ fn deselectEntity(entities: ^EditorEntities) {
   entities.entitySelected = -1
 }
 
+fn loadPortal(editor: ^Editor, portal: str) {
+  editor.currentPortal = portal
+  editorLoadWorld(editor, portal)
+  editor.tileGrid.panning = editor.world.playerSpawnPos.mulf(-32)
+}
+
+fn putPortalEditor(editor: ^Editor) {
+  if windowInfo, ok := uiBeginWindow(editor, "Portal", rect.mk(30, 30, 200, 300)); ok {
+    contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
+    position := contentRect.getPos()
+
+    putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Portal name", &editor.potentialPortal)
+
+    position.y += 40
+    if input.isPressed(input.key_shift) {
+      if putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Load").isReleased {
+        loadPortal(editor, editor.potentialPortal)
+      }
+    } else {
+      drawButtonInactive(editor, rect.mk(position.x, position.y, contentRect./lw, 30), "Hold shift!")
+    }
+
+    uiEndWindow(editor)
+  }
+}
+
 fn editorPutUi(editor: ^Editor) {
   // Clear the input sink.
   editor.inputSink = InputSink{}
@@ -1598,6 +1637,7 @@ fn editorPutUi(editor: ^Editor) {
     putPlayerPlacer(editor)
     putEntityList(editor)
     putEntityEditor(editor)
+    putPortalEditor(editor)
   }
 
   if editor.isRelocatingPlayer {
@@ -1658,7 +1698,7 @@ fn editorInit(resources: EditorResources): Editor {
   tileset := d_tileset.fromImage(resources.tilesetImage, 32, 32, 0.5)
   world := d_world.fromTileset(tileset)
 
-  result := Editor{
+  return Editor{
     ctx: e_drawcmd.init(),
     tileGrid: EditorGrid{scaling: 1.0},
     tilemapGrid: EditorGrid{scaling: 1.0},
@@ -1670,10 +1710,6 @@ fn editorInit(resources: EditorResources): Editor {
     entities: createEditorEntities(),
     wm: initWindowManager(),
     tools: rootNode}
-
-  editorLoadWorld(&result)
-  result.tileGrid.panning = result.world.playerSpawnPos.mulf(-32)
-  return result
 }
 
 type PushText = struct {
@@ -1858,7 +1894,9 @@ fn editorMain*() {
   rl := d_resources.initResourceLoader()
   d_background.init(&rl)
   d_game.init(&rl)
+
   editor := editorInit(loadEditorResources(&rl))
+  loadPortal(&editor, "genesis")
 
   if d_resources.hasErrors(&rl) {
     d_problem_screen.showResourceLoadingError(&rl)

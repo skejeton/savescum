@@ -568,11 +568,13 @@ fn drawEntities() {
   } else if chara.vel.y < 0 {
     chumRotTime = 0
     drawChum(chumStateJump)
+  } else if chumWalkTime == 0.0 {
+    drawChum(chumStateStand)
   } else {
     chumRotTime = 0
     switch trunc(chumWalkTime*8.0) % 3 {
-      case 0: drawChum(chumStateStand)
-      case 1: drawChum(chumStateJump)
+      case 0: drawChum(chumStateJump)
+      case 1: drawChum(chumStateStand)
       case 2: drawChum(chumStateJump)
     }
   }
