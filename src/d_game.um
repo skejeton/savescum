@@ -416,6 +416,9 @@ fn start*(worldData: d_worlddata.WorldData) {
   world =  worldData.world
 
   chara = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
+  chumRotTime = 0
+  chumWalkTime = 0
+  chumDir = 0
 
   entities = make([]Character, 0)
   guides = make([]rect.Rect, 0)
