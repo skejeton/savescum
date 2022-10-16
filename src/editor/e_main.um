@@ -1510,6 +1510,7 @@ fn deselectEntity(entities: ^EditorEntities) {
 
 fn loadPortal(editor: ^Editor, portal: str) {
   editor.currentPortal = portal
+  editor.potentialPortal = portal
   editorLoadWorld(editor, portal)
   editor.tileGrid.panning = editor.world.playerSpawnPos.mulf(-32)
 }
@@ -1527,7 +1528,7 @@ fn putPortalEditor(editor: ^Editor) {
         loadPortal(editor, editor.potentialPortal)
       }
     } else {
-      drawButtonInactive(editor, rect.mk(position.x, position.y, contentRect./lw, 30), "Hold shift!")
+      drawButtonInactive(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Hold shift!")
     }
 
     uiEndWindow(editor)
