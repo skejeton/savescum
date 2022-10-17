@@ -19,10 +19,7 @@ type (
     custom: CustomCommand
   }
 
-  Layer = struct {
-    commands: []Command
-    commandsLen: uint
-  }
+  Layer = []Command
 
   DrawContext* = struct {
     // TODO: Stackable scissor rects
@@ -30,7 +27,7 @@ type (
     currentLayerId: int
     currentLayer: ^Layer
     layerOrder: []int
-    layers: map[int]^Layer
+    layers: map[int]Layer
   }
 )
 
@@ -43,15 +40,7 @@ const (
 )
 
 fn (lay: ^Layer) appendCommand(cmd: Command) {
-  // Buffered allocations. Currently umka reallocates the entire array
-  // after every insert which is really taxing.
-  if lay.commandsLen & 127 == 0 {
-    var newCommands: [128]Command
-    lay.commands = append(lay.commands, newCommands)
-  }
-
-  lay.commands[lay.commandsLen] = cmd
-  lay.commandsLen++
+  lay ^= Layer(append([]Command(lay^), cmd))
 }
 
 fn (ctx: ^DrawContext) acquireLayer(layer: int) {
@@ -71,23 +60,22 @@ fn (ctx: ^DrawContext) acquireLayer(layer: int) {
     }
   }
 
-  ctx.layers[layer] = new(Layer)
-  ctx.layers[layer].commands = make([]Command, 0)
+  ctx.layers[layer] = Layer(make([]Command, 0))
   ctx.layerOrder = insert(ctx.layerOrder, insertIndex, layer)
 }
 
 
 fn init*(): DrawContext {
-  ctx := DrawContext{layerOrder: []int{}, scissorRectStack: []rect.Rect{}, layers: map[int]^Layer{}}
+  ctx := DrawContext{layerOrder: []int{}, scissorRectStack: []rect.Rect{}, layers: map[int]Layer{}}
   ctx.acquireLayer(0)
-  ctx.currentLayer = ctx.layers[0]
+  ctx.currentLayer = &ctx.layers[0]
   return ctx
 }
 
 fn (ctx: ^DrawContext) setLayer*(layer: int) {
   ctx.acquireLayer(layer)
   ctx.currentLayerId = layer
-  ctx.currentLayer = ctx.layers[layer]
+  ctx.currentLayer = &ctx.layers[layer]
 }
 
 fn (ctx: ^DrawContext) moveLayer*(layerBy: int) {
@@ -110,9 +98,7 @@ fn (ctx: ^DrawContext) flush*() {
   for _, i in ctx.layerOrder {
     layer := ctx.layers[i]
 
-    for j := 0; j < layer.commandsLen; j++ {
-      command := &layer.commands[j]
-
+    for j, command in layer {
       switch command.kind {
         case commandRect:
           canvas.drawRect(command.color, command.rect)
