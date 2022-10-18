@@ -1916,8 +1916,8 @@ fn editorMain*() {
     
     d_global.screen = rect.mk(0, 0, window.w, window.h)
 
-    canvas.drawRect(th.black, d_global.screen)
     editorPutUi(&editor)
+
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
 
