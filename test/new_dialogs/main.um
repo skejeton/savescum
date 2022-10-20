@@ -63,6 +63,7 @@ fn wrapTextItems(font: ^th_font.Font, items: []str, boundary: real): []str {
   return result
 }
 
+// TODO: fix the fact that 
 fn wrapText(font: ^th_font.Font, text: str, boundary: real): []str {
   split := textSplitBy(text, ' ')
   for i in split {
