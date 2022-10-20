@@ -63,7 +63,8 @@ fn wrapTextItems(font: ^th_font.Font, items: []str, boundary: real): []str {
   return result
 }
 
-// TODO: fix the fact that 
+// TODO: fix the fact that I need to add spaces at the end, this has side effect that they are also
+//       accounted in measurements, so the word doesn't wrap at the end of the word.
 fn wrapText(font: ^th_font.Font, text: str, boundary: real): []str {
   split := textSplitBy(text, ' ')
   for i in split {
