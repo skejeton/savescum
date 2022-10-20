@@ -7,22 +7,69 @@ import (
   th_font = "font.um"
 )
 
-fn wrapText(font: ^th_font.Font, text: str, boundary: real): []str {
-  result := []str{}
-  lastIndex := 0
-  shift := 0.0
-
-  for i, chr in text {
-    if (shift+font.measure(""+chr).x) > boundary {
-      shift = 0
-      result = append(result, slice(text, lastIndex, i))
-      lastIndex = i
+fn textSplitBy(text: str, by: char): []str {
+  items := []str{}
+  last := 0
+  for i, c in text {
+    if c == by {
+      items = append(items, slice(text, last, i))
+      last = i+1 // Skip the character by adding one.
     }
-    shift += font.measure(""+chr).x
   }
-  result = append(result, slice(text, lastIndex))
+  items = append(items, slice(text, last))
+  return items
+}
+
+fn join(strl: []str): str {
+  result := ""
+  for i, s in strl {
+    result += s
+  }
+  return result
+}
+
+fn wrapBoundaryRow(font: ^th_font.Font, offset: int, items: []str, boundary: real): int {
+  fit := 0
+  pos := 0.0
+
+  for offset+fit < len(items) {
+    pos += font.measure(items[offset+fit]).x
+
+    if pos < boundary {
+      fit += 1
+    } else {
+      break
+    }
+  }
+
+  return fit
+}
+
+fn wrapTextItems(font: ^th_font.Font, items: []str, boundary: real): []str {
+  result := []str{}
+  offset := 0
+  for offset < len(items) {
+    nWrapped := wrapBoundaryRow(font, offset, items, boundary)
+
+    // NOTE: Still draw one word even if we can't fit it
+    if nWrapped == 0 {
+      nWrapped = 1
+    }
+
+    result = append(result, join(slice(items, offset, offset+nWrapped)))
+    offset += nWrapped
+  } 
 
   return result
+}
+
+fn wrapText(font: ^th_font.Font, text: str, boundary: real): []str {
+  split := textSplitBy(text, ' ')
+  for i in split {
+    // necessary to make calculations in wrapboundaryrow count spaces
+    split[i] = split[i]+' '
+  }
+  return wrapTextItems(font, split, boundary)
 }
 
 fn main() {
@@ -31,10 +78,11 @@ fn main() {
   font := th_font.load("data/font/monospace.ttf", 16)
   screen := rect.mk(0, 0, 800, 600)
   boundary := 100.0
+  sampleText := "Lorem ipsum dolor sit amet. Hello world! Now this is a story all about how my life got turned upside down." 
 
   for window.cycle(screen) {
     boundary = input.getMousePos().x
-    lines := wrapText(&font, "Lorem ipsum dolor sit amet. Hello world! Now this is a story all about how my life got turned upside down.", boundary)
+    lines := wrapText(&font, sampleText, boundary)
 
     for i, line in lines {
       font.draw(line, th.Vf2{0, i*font.measure(" ").y}, th.black)
