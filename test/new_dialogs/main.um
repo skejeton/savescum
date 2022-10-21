@@ -28,6 +28,17 @@ fn join(strl: []str): str {
   return result
 }
 
+// inserts string `sub` at the end of every string in array except for last
+fn intersperse(strl: []str, sub: str): []str {
+  newl := copy(strl)
+
+  for i := 0; i < len(newl)-1; i++ {
+    newl[i] += sub
+  }
+
+  return newl
+}
+
 fn wrapBoundaryRow(font: ^th_font.Font, offset: int, items: []str, boundary: real): int {
   fit := 0
   pos := 0.0
@@ -66,12 +77,8 @@ fn wrapTextItems(font: ^th_font.Font, items: []str, boundary: real): []str {
 // TODO: fix the fact that I need to add spaces at the end, this has side effect that they are also
 //       accounted in measurements, so the word doesn't wrap at the end of the word.
 fn wrapText(font: ^th_font.Font, text: str, boundary: real): []str {
-  split := textSplitBy(text, ' ')
-  for i in split {
-    // necessary to make calculations in wrapboundaryrow count spaces
-    split[i] = split[i]+' '
-  }
-  return wrapTextItems(font, split, boundary)
+  // intersperse necessary to make calculations in wrapboundaryrow count spaces
+  return wrapTextItems(font, intersperse(textSplitBy(text, ' '), ' '), boundary)
 }
 
 fn main() {
