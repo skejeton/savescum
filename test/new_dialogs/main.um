@@ -13,7 +13,7 @@ fn textSplitBy(text: str, by: char): []str {
   for i, c in text {
     if c == by {
       items = append(items, slice(text, last, i))
-      last = i+1 // Skip the character by adding one.
+      last = i+1 // NOTE: Skip the character by adding one.
     }
   }
   items = append(items, slice(text, last))
@@ -77,7 +77,7 @@ fn wrapTextItems(font: ^th_font.Font, items: []str, boundary: real): []str {
 // TODO: fix the fact that I need to add spaces at the end, this has side effect that they are also
 //       accounted in measurements, so the word doesn't wrap at the end of the word.
 fn wrapText(font: ^th_font.Font, text: str, boundary: real): []str {
-  // intersperse necessary to make calculations in wrapboundaryrow count spaces
+  // NOTE: intersperse necessary to make calculations in wrapboundaryrow count spaces
   return wrapTextItems(font, intersperse(textSplitBy(text, ' '), ' '), boundary)
 }
 
