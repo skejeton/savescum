@@ -7,6 +7,37 @@ import (
   th_font = "font.um"
 )
 
+type PushLayout = struct {
+  boundary: real
+  position: th.Vf2
+  maxY: real
+  line: int
+}
+
+fn makePushLayout(boundary: real): PushLayout {
+  return PushLayout{boundary: boundary}
+}
+
+fn (pl: ^PushLayout) pushLine() {
+  pl.position.x = 0
+  pl.position.y += pl.maxY
+  pl.maxY = 0
+  pl.line += 1
+}
+
+fn (pl: ^PushLayout) push(size: th.Vf2): th.Vf2 {
+  if pl.position.x + size.x > pl.boundary {
+    pl.pushLine()
+  }
+
+  pl.position.x += size.x
+  if pl.maxY < size.y {
+    pl.maxY = size.y
+  }
+
+  return pl.position
+}
+
 fn textSplitBy(text: str, by: char): []str {
   items := []str{}
   last := 0
@@ -18,6 +49,15 @@ fn textSplitBy(text: str, by: char): []str {
   }
   items = append(items, slice(text, last))
   return items
+}
+
+fn pushTextLayout(pl: ^PushLayout, font: ^th_font.Font, text: str) {
+  split := textSplitBy(text, "\n")
+  pl.push(font.measure(split[0]))
+  for i := 1; i < len(split); i++ {
+    pl.pushLine()
+    pl.push(split[i])
+  }
 }
 
 fn join(strl: []str): str {
@@ -39,46 +79,24 @@ fn intersperse(strl: []str, sub: str): []str {
   return newl
 }
 
-fn wrapBoundaryRow(font: ^th_font.Font, offset: int, items: []str, boundary: real): int {
-  fit := 0
-  pos := 0.0
-
-  for offset+fit < len(items) {
-    pos += font.measure(items[offset+fit]).x
-
-    if pos < boundary {
-      fit += 1
-    } else {
-      break
-    }
-  }
-
-  return fit
-}
-
-fn wrapTextItems(font: ^th_font.Font, items: []str, boundary: real): []str {
-  result := []str{}
-  offset := 0
-  for offset < len(items) {
-    nWrapped := wrapBoundaryRow(font, offset, items, boundary)
-
-    // NOTE: Still draw one word even if we can't fit it
-    if nWrapped == 0 {
-      nWrapped = 1
-    }
-
-    result = append(result, join(slice(items, offset, offset+nWrapped)))
-    offset += nWrapped
-  } 
-
-  return result
-}
-
 // TODO: fix the fact that I need to add spaces at the end, this has side effect that they are also
 //       accounted in measurements, so the word doesn't wrap at the end of the word.
 fn wrapText(font: ^th_font.Font, text: str, boundary: real): []str {
-  // NOTE: intersperse necessary to make calculations in wrapboundaryrow count spaces
-  return wrapTextItems(font, intersperse(textSplitBy(text, ' '), ' '), boundary)
+  items := textSplitBy(text, ' ')
+  pl := makePushLayout(boundary)
+
+  for i, item in items {
+    items := textSplitBy(text, '\n')
+
+    for i, item in items {
+      if pushTextLayout(&pl, font, item) {
+
+      }
+      pushTextLayout(&pl, font, " ")
+    }
+  }
+
+
 }
 
 fn main() {
