@@ -66,7 +66,7 @@ fn (ctx: ^DrawContext) acquireLayer(layer: int) {
 
 
 fn init*(): DrawContext {
-  ctx := DrawContext{layerOrder: []int{}, scissorRectStack: []rect.Rect{}, layers: map[int]Layer{}}
+  ctx := DrawContext{}
   ctx.acquireLayer(0)
   ctx.currentLayer = &ctx.layers[0]
   return ctx
