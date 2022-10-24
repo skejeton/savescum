@@ -7,57 +7,24 @@ import (
   th_font = "font.um"
 )
 
-type PushLayout = struct {
+type Wrapping = struct {
+  position: real
   boundary: real
-  position: th.Vf2
-  maxY: real
-  line: int
+  lastSize: real // FIXME: lastSize is kind of meh way to solve ressetting previous elements to new line
 }
 
-fn makePushLayout(boundary: real): PushLayout {
-  return PushLayout{boundary: boundary}
-}
-
-fn (pl: ^PushLayout) pushLine() {
-  pl.position.x = 0
-  pl.position.y += pl.maxY
-  pl.maxY = 0
-  pl.line += 1
-}
-
-fn (pl: ^PushLayout) push(size: th.Vf2): th.Vf2 {
-  if pl.position.x + size.x > pl.boundary {
-    pl.pushLine()
+fn (w: ^Wrapping) wrap(): bool {
+  if w.position > w.boundary {
+    w.position = w.lastSize
+    return true
   }
 
-  pl.position.x += size.x
-  if pl.maxY < size.y {
-    pl.maxY = size.y
-  }
-
-  return pl.position
+  return false
 }
 
-fn textSplitBy(text: str, by: char): []str {
-  items := []str{}
-  last := 0
-  for i, c in text {
-    if c == by {
-      items = append(items, slice(text, last, i))
-      last = i+1 // NOTE: Skip the character by adding one.
-    }
-  }
-  items = append(items, slice(text, last))
-  return items
-}
-
-fn pushTextLayout(pl: ^PushLayout, font: ^th_font.Font, text: str) {
-  split := textSplitBy(text, "\n")
-  pl.push(font.measure(split[0]))
-  for i := 1; i < len(split); i++ {
-    pl.pushLine()
-    pl.push(split[i])
-  }
+fn (w: ^Wrapping) push(size: real) {
+  w.position += size
+  w.lastSize = size
 }
 
 fn join(strl: []str): str {
@@ -79,24 +46,52 @@ fn intersperse(strl: []str, sub: str): []str {
   return newl
 }
 
-// TODO: fix the fact that I need to add spaces at the end, this has side effect that they are also
-//       accounted in measurements, so the word doesn't wrap at the end of the word.
-fn wrapText(font: ^th_font.Font, text: str, boundary: real): []str {
-  items := textSplitBy(text, ' ')
-  pl := makePushLayout(boundary)
-
-  for i, item in items {
-    items := textSplitBy(text, '\n')
-
-    for i, item in items {
-      if pushTextLayout(&pl, font, item) {
-
-      }
-      pushTextLayout(&pl, font, " ")
+fn textSplitBy*(text: str, by: char): []str {
+  items := []str{}
+  last := 0
+  for i, c in text {
+    if c == by {
+      items = append(items, slice(text, last, i))
+      last = i+1 // Skip the character by adding one.
     }
   }
+  items = append(items, slice(text, last))
+  return items
+}
 
+fn pushText(w: ^Wrapping, font: th_font.Font, text: str) {
+  w.push(font.measure(text).x)
+}
 
+fn wrapTextLine(font: th_font.Font, text: str, boundary: real): []str {
+  words := textSplitBy(text, ' ')
+  lines := []str{}
+  wrapper := Wrapping{position: 0, boundary: boundary}
+  line := ""
+
+  for i, word in words {
+    pushText(&wrapper, font, word)
+    if i != 0 && wrapper.wrap() {
+      lines = append(lines, line)
+      line = ""
+    }
+    pushText(&wrapper, font, " ")
+    line += word+" "
+  }
+  lines = append(lines, line)
+
+  return lines
+}
+
+fn wrapText(font: th_font.Font, text: str, boundary: real): []str {
+  lines := textSplitBy(text, '\n')
+  resultLines := []str{}
+
+  for i, line in lines {
+    resultLines = append(resultLines, wrapTextLine(font, line, boundary))
+  }
+
+  return resultLines
 }
 
 fn main() {
@@ -109,7 +104,7 @@ fn main() {
 
   for window.cycle(screen) {
     boundary = input.getMousePos().x
-    lines := wrapText(&font, sampleText, boundary)
+    lines := wrapText(font, sampleText, boundary)
 
     for i, line in lines {
       font.draw(line, th.Vf2{0, i*font.measure(" ").y}, th.black)
