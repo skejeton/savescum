@@ -19,6 +19,11 @@ if grep -qi microsoft /proc/version; then
   TOPHAT=./tophat.exe
 fi
 
+# Probe if we are running some bash emulator on Windows
+if [[ "`uname`" == "WindowsNT" ]]; then
+  TOPHAT=./tophat.exe
+fi
+
 # $1 offset
 getarg() {
   echo ${ARGS[$NARG + $1]}
