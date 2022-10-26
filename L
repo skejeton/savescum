@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 if [[ ! -f data/img/test.png ]]; then
@@ -6,12 +5,19 @@ if [[ ! -f data/img/test.png ]]; then
   exit -1
 fi
 
+
 ARGS=( $@ )
 SILENT=""
 PROF=""
 ISUNITTEST="false"
 NARG=0
 PROG_NAME=$0
+TOPHAT=./tophat
+
+# Probe if we are running WSL.
+if grep -qi microsoft /proc/version; then
+  TOPHAT=./tophat.exe
+fi
 
 # $1 offset
 getarg() {
@@ -20,11 +26,11 @@ getarg() {
 
 engage() {
   if [ -z "$PROF" ]; then
-    ../../tophat $SILENT $@
+    $TOPHAT $SILENT $@
   else
     # https://github.com/colrdavidson/spall
     # https://skejeton.github.io/spall
-    ../../tophat $PROF trace.json $SILENT $@
+    $TOPHAT $PROF trace.json $SILENT $@
   fi
 }
 
@@ -43,7 +49,12 @@ target_test() {
 
 # Compiles external C code
 target_compile_extern() {
-  cc external/jumbo.c -shared -o src/d_extern.umi
+  # TODO(skejeton): Remove this when I'll need to have umi modules for real.
+  #                 I commented it out temporarily because windows doesn't have cc set in bash.
+  # cc external/jumbo.c -shared -o src/d_extern.umi
+  
+  # NOTE(skejeton): This is required for function to compile without errors /shrug
+  echo
 }
 
 hasargs=1
@@ -80,7 +91,7 @@ case `getarg 0` in
     engage check main src/main.um
     
     for d in test/*; do
-      TEST_PFX="%d/" ../../tophat $SILENT check main "$d/main.um"
+      TEST_PFX="%d/" $TOPHAT $SILENT check main "$d/main.um"
     done
   ;;
   testall)
