@@ -902,6 +902,10 @@ fn portalToPath(portal: str): str {
   return "data/spiel/sc_"+portal+".csv"
 }
 
+fn createEditorEntities(): EditorEntities {
+  return EditorEntities{list: []d_worlddata.EntityDesc{}, entitySelected: -1}
+}
+
 fn editorLoadWorld(editor: ^Editor, portal: str): bool {
   if ok, data := d_util.readFileStr(portalToPath(portal)); ok {
     worldData := d_worlddata.load(editor.world, data)
@@ -909,6 +913,11 @@ fn editorLoadWorld(editor: ^Editor, portal: str): bool {
     editor.world = worldData.world
     editor.entities.list = worldData.entities
     return true
+  } else {
+    // TODO(skejeton): maybe I shouldn't initialize empty world like that??!
+    editor.world = d_world.fromTileset(editor.world.tileset)
+    editor.entities = createEditorEntities()
+    
   }
   return false
 }
@@ -1242,10 +1251,6 @@ fn putEntityEntry(editor: ^Editor, ent: d_worlddata.EntityDesc, r: rect.Rect, se
   editor.endTool()
 
   return action
-}
-
-fn createEditorEntities(): EditorEntities {
-  return EditorEntities{list: []d_worlddata.EntityDesc{}, entitySelected: -1}
 }
 
 fn appendEntity(editorEntities: ^EditorEntities, entity: d_worlddata.EntityDesc) {
@@ -1889,7 +1894,7 @@ fn editorMain*() {
   std.srand(std.time())
 
   d_global.screen = rect.mk(0, 0, 800, 600)
-  window.setup("Cool editor nice", trunc(d_global.screen.w), trunc(d_global.screen.h))
+  window.setup("Editor", trunc(d_global.screen.w), trunc(d_global.screen.h))
 
   // init data
   rl := d_resources.initResourceLoader()
@@ -1903,9 +1908,11 @@ fn editorMain*() {
     d_problem_screen.showResourceLoadingError(&rl)
   }
 
+  d_fps.limit(120)
+
+
   // cycle
   for window.cycle(d_global.screen) {
-    d_fps.limit(getFps())
     d_fps.update()
 
     // NOTE(skejeton): Clamping delta to 50 gives generally consistent physics and reduces jitter.

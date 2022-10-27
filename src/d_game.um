@@ -572,6 +572,7 @@ fn drawEntities() {
     chumRotTime = 0
     drawChum(chumStateJump)
   } else if chumWalkTime == 0.0 {
+    chumRotTime = 0;
     drawChum(chumStateStand)
   } else {
     chumRotTime = 0
