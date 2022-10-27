@@ -1,9 +1,26 @@
+// TODO(skejeton): 
+//  Currently typer operates on the original text,
+//  but that's an issue, because the words will wrap as they are typed,
+//  it really impairs readability of the dialogs.
+//  
+//  How I can solve this is by putting the entire word width into the word wrapper routine.
+//  I can also try operating on the transformed text, but that comes with a problem of "disappearing characters",
+//  for example if I make the boundary so narrow, there's going to be more newline characters, and the typer will 
+//  return to a few characters back because there's more characters in the new string added. One way to avoid this
+//  is not counting newlines as characters, but that would require a sequential typer, which may be a price worth paying
+//  considering the typer in d_typer is also sequential by nature, it has commands that can't be executed out of order,
+//  or repeatedly. But when the boundary changes, the text also changes, I'll probably have to re-do the typer somehow again.
+//  
+//  Another option is to have a word wrapping routine specifically designed for this purpose, that works around the original
+//  word wrapping routine by adding the rest of the word when wrapping, but removing the untyped letters when rendering.
+
 import (
   "window.um"
   "rect.um"
   "th.um"
   "canvas.um"
   "input.um"
+  "../../src/d_typer.um"
   th_font = "font.um"
 )
 
@@ -25,6 +42,23 @@ fn (w: ^Wrapping) wrap(): bool {
 fn (w: ^Wrapping) push(size: real) {
   w.position += size
   w.lastSize = size
+}
+
+
+type TextTyper = struct {
+  text: str
+  at: uint
+}
+
+fn (tt: ^TextTyper) seek(to: uint) {
+  if to < len(tt.text) {
+    tt.at = to
+  }
+}
+
+fn (tt: ^TextTyper) getText(): str {
+  // TODO(skejeton): unicode support.
+  return slice(tt.text, 0, tt.at)
 }
 
 fn join(strl: []str): str {
@@ -101,10 +135,16 @@ fn main() {
   screen := rect.mk(0, 0, 800, 600)
   boundary := 100.0
   sampleText := "Lorem ipsum dolor sit amet. Hello world! Now this is a story all about how my life got turned upside down." 
+  
+  typer := TextTyper{sampleText, 0}
 
   for window.cycle(screen) {
     boundary = input.getMousePos().x
-    text := join(intersperse(wrapText(font, sampleText, boundary), "\n"))
+    
+    // NOTE(skejeton) Show a new letter every 100 milliseconds.
+    typer.seek(trunc(th.time/1000.0*10.0))
+    typerText := typer.getText()
+    text := join(intersperse(wrapText(font, typerText, boundary), "\n"))
 
     font.draw(text, th.Vf2{0, 0}, th.black)
 
