@@ -54,9 +54,12 @@ type TextTyper = struct {
 }
 
 fn (tt: ^TextTyper) seek(to: uint) {
-  if to < len(tt.text) {
-    tt.at = to
+  if to < 0 {
+    to = 0
+  } else if to > len(tt.text) {
+    to = len(tt.text)
   }
+  tt.at = to
 }
 
 fn (tt: ^TextTyper) getText(): str {
@@ -117,7 +120,8 @@ fn wrapTextLine(font: th_font.Font, text: str, boundary: real): []str {
     pushText(&wrapper, font, " ")
     line += word+" "
   }
-  lines = append(lines, line)
+  // NOTE(skejeton): Remove last space
+  lines = append(lines, slice(line, 0, len(line)-1))
 
   return lines
 }
@@ -132,9 +136,31 @@ fn wrapText(font: th_font.Font, text: str, boundary: real): []str {
   return resultLines
 }
 
+type VisualTextCursor = struct {
+  position: th.Vf2
+  height: real
+}
+
+fn visualTextCursorFromEnd(font: th_font.Font, text: str): VisualTextCursor {
+  lines := textSplitBy(text, '\n')
+  fontHeight := font.measure(" ").y
+
+  return VisualTextCursor{
+    position: th.Vf2{font.measure(lines[len(lines)-1]).x, (len(lines)-1) * fontHeight},
+    height: fontHeight}
+}
+
+fn blockCursorFromVisualTextCursor(cursor: VisualTextCursor, font: th_font.Font): rect.Rect {
+  return rect.Rect{cursor.position.x, cursor.position.y, font.measure(" ").x, cursor.height}
+}
+
 fn drawDialog(font: th_font.Font, text: str, boundingBox: rect.Rect) {
   canvas.drawRect(th.black, boundingBox)
   font.draw(text, boundingBox.getPos(), th.white)
+  cursor := blockCursorFromVisualTextCursor(visualTextCursorFromEnd(font, text), font)
+  cursor.x += boundingBox.x
+  cursor.y += boundingBox.y
+  d_util.drawRectLines(th.yellow, cursor, 1)
 }
 
 fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, rectangle: ^rect.Rect) {
@@ -163,11 +189,20 @@ fn main() {
   boundingBox := rect.mk(0, 0, 400, 300)
   mouseInput := d_mouseinput.MouseState{}
 
+  typerPosition := 0.0
+
   for window.cycle(screen) {
     mouseInput = mouseInput.updated()
     
     // XXX(skejeton): Show a new letter every 100 milliseconds.
-    typer.seek(trunc(th.time/1000.0*10.0))
+    typer.seek(trunc(typerPosition))
+    if input.isPressed(input.key_left) {
+      typerPosition -= th.delta/100.0
+    }
+    if input.isPressed(input.key_right) {
+      typerPosition += th.delta/100.0
+    } 
+
     typerText := typer.getText()
     text := join(intersperse(wrapText(font, typerText, boundingBox.w), "\n"))
 
