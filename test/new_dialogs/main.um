@@ -21,6 +21,9 @@ import (
   "canvas.um"
   "input.um"
   "../../src/d_typer.um"
+  "../../src/d_util.um"
+  "../../src/d_mouseinput.um"
+  "../../src/d_fps.um"
   th_font = "font.um"
 )
 
@@ -103,6 +106,8 @@ fn wrapTextLine(font: th_font.Font, text: str, boundary: real): []str {
   wrapper := Wrapping{position: 0, boundary: boundary}
   line := ""
 
+
+
   for i, word in words {
     pushText(&wrapper, font, word)
     if i != 0 && wrapper.wrap() {
@@ -124,30 +129,50 @@ fn wrapText(font: th_font.Font, text: str, boundary: real): []str {
   for i, line in lines {
     resultLines = append(resultLines, wrapTextLine(font, line, boundary))
   }
-
   return resultLines
 }
 
+fn drawDialog(font: th_font.Font, text: str, boundingBox: rect.Rect) {
+  canvas.drawRect(th.black, boundingBox)
+  font.draw(text, boundingBox.getPos(), th.white)
+}
+
+fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, rectangle: ^rect.Rect) {
+  motion := mouseInput.delta
+
+  if d_util.rectVsPoint(rectangle^, mouseInput.lastPos) {
+    if mouseInput.lmb.isDown {
+      rectangle.x += motion.x
+      rectangle.y += motion.y
+    }
+    if mouseInput.rmb.isDown {
+      rectangle.w += motion.x
+      rectangle.h += motion.y
+    }
+  }
+}
+
 fn main() {
-  window.setup("New dialogs", 800, 600) 
-  
+  window.setup("New dialogs", 800, 600)
+
   font := th_font.load("data/font/monospace.ttf", 16)
   screen := rect.mk(0, 0, 800, 600)
-  boundary := 100.0
   sampleText := "Lorem ipsum dolor sit amet. Hello world! Now this is a story all about how my life got turned upside down." 
   
   typer := TextTyper{sampleText, 0}
+  boundingBox := rect.mk(0, 0, 400, 300)
+  mouseInput := d_mouseinput.MouseState{}
 
   for window.cycle(screen) {
-    boundary = input.getMousePos().x
+    mouseInput = mouseInput.updated()
     
-    // NOTE(skejeton) Show a new letter every 100 milliseconds.
+    // XXX(skejeton): Show a new letter every 100 milliseconds.
     typer.seek(trunc(th.time/1000.0*10.0))
     typerText := typer.getText()
-    text := join(intersperse(wrapText(font, typerText, boundary), "\n"))
+    text := join(intersperse(wrapText(font, typerText, boundingBox.w), "\n"))
 
-    font.draw(text, th.Vf2{0, 0}, th.black)
+    handleResizableRectangle(mouseInput, &boundingBox)
 
-    canvas.drawLine(th.red, th.Vf2{boundary, 0}, th.Vf2{boundary, font.measure(text).y}, 1)
+    drawDialog(font, text, boundingBox)
   }
 }
