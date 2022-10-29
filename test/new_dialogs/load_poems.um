@@ -1,0 +1,22 @@
+import (
+  "strings.um"
+  "std.um"
+)
+
+fn loadPoems*(poemsSource: str): []str {
+  poemsUnprocessed := strings.splitBy(poemsSource, '~')
+  poems := []str{}
+
+  for _, unprocessedPoem in poemsUnprocessed {
+    poems = append(poems, std.trim(unprocessedPoem))
+  }
+
+  return poems
+}
+
+fn getPoem*(poems: []str, id: int): (bool, str) {
+  if id < 0 || id >= len(poems) {
+    return false, ""
+  }
+  return true, poems[id]
+}

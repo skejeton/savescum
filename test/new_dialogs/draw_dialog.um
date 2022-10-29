@@ -1,0 +1,61 @@
+import (
+  // shame
+  "th.um"
+  "strings.um"
+  th_color = "color.um"
+  th_font = "font.um"
+)
+
+type AppearingText* = struct {
+  text: str
+  // NOTE(skejeton): Making "next" a string is gonna be useful for unicode later
+  next: str
+  t: real
+}
+
+fn constructAppearingTextFromTime*(text: str, time, timePerLetter: real): AppearingText {
+  if time < 0 {
+    error("bad time")
+  }
+  
+  position := time/timePerLetter
+  at := trunc(position)
+  
+  // NOTE(skejeton): Check if there's anything more to type
+  if at >= len(text) {
+    return AppearingText{
+      text: text,
+      next: '\0',
+      t:    0}
+  }
+
+  return AppearingText{
+    text: slice(text, 0, at),
+    next: text[at]+"",
+    t:    position-real(at)}
+}
+
+//wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+type VisualTextCursor* = struct {
+  position: th.Vf2
+  height: real
+}
+
+fn visualTextCursorFromEnd*(font: th_font.Font, text: str): VisualTextCursor {
+  lines := strings.splitBy(text, '\n')
+  fontHeight := font.measure(" ").y
+
+  return VisualTextCursor{
+    position: th.Vf2{font.measure(lines[len(lines)-1]).x, (len(lines)-1) * fontHeight},
+    height: fontHeight}
+}
+
+fn drawAppearingText*(subject: ^AppearingText, font: th_font.Font, at: th.Vf2, color: uint32) {
+  // Draw previous text
+  font.draw(subject.text, at, color)
+  
+  // Draw appearing letter
+  appearingLetterPosition := visualTextCursorFromEnd(font, subject.text).position
+  font.draw(subject.next, at.add(appearingLetterPosition), th_color.alpha(color, subject.t), 2-subject.t)
+}

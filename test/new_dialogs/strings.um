@@ -1,0 +1,32 @@
+fn join*(strl: []str): str {
+  result := ""
+  for i, s in strl {
+    result += s
+  }
+  return result
+}
+
+// inserts string `sub` at the end of every string in array except for last
+fn intersperse*(strl: []str, sub: str): []str {
+  newl := copy(strl)
+
+  for i := 0; i < len(newl)-1; i++ {
+    newl[i] += sub
+  }
+
+  return newl
+}
+
+fn splitBy*(text: str, by: char): []str {
+  items := []str{}
+  last := 0
+  for i, c in text {
+    if c == by {
+      items = append(items, slice(text, last, i))
+      last = i+1 // Skip the character by adding one.
+    }
+  }
+  items = append(items, slice(text, last))
+  return items
+}
+

@@ -13,6 +13,21 @@
 //  
 //  Another option is to have a word wrapping routine specifically designed for this purpose, that works around the original
 //  word wrapping routine by adding the rest of the word when wrapping, but removing the untyped letters when rendering.
+//
+// TODO(skejeton):
+//  The way text is currently typed is really boring and has no expression at all.
+//   
+//  I want to be able to emphasize and make things go faster if the writer wants, but making it too manual would
+//  make things hard to make.
+//
+//  I should experiment with what looks emotional enough, and of course reserve different typing styles for
+//  certain types of moods. The current style, where letters just appear linearly, can be called "typewriter".
+//  My charecters won't be typewriters :P
+//
+//  An idea of a typing style I have rn is when words are typed fast, then spaces wait for a bit, then commas wait for a bit longer,
+//  and dots wait for even longer, in theory that could even work in other alphabetic languages like Russian, Ukrainian, Spanish, Portuguese, German etc
+//     
+
 
 import (
   "window.um"
@@ -20,11 +35,16 @@ import (
   "th.um"
   "canvas.um"
   "input.um"
+  "strings.um"
+  "load_poems.um"
+  "draw_dialog.um"
+  "../../src/d_test.um"
   "../../src/d_typer.um"
   "../../src/d_util.um"
   "../../src/d_mouseinput.um"
   "../../src/d_fps.um"
   th_font = "font.um"
+  th_color = "color.um"
 )
 
 type Wrapping = struct {
@@ -47,64 +67,12 @@ fn (w: ^Wrapping) push(size: real) {
   w.lastSize = size
 }
 
-
-type TextTyper = struct {
-  text: str
-  at: uint
-}
-
-fn (tt: ^TextTyper) seek(to: uint) {
-  if to < 0 {
-    to = 0
-  } else if to > len(tt.text) {
-    to = len(tt.text)
-  }
-  tt.at = to
-}
-
-fn (tt: ^TextTyper) getText(): str {
-  // TODO(skejeton): unicode support.
-  return slice(tt.text, 0, tt.at)
-}
-
-fn join(strl: []str): str {
-  result := ""
-  for i, s in strl {
-    result += s
-  }
-  return result
-}
-
-// inserts string `sub` at the end of every string in array except for last
-fn intersperse(strl: []str, sub: str): []str {
-  newl := copy(strl)
-
-  for i := 0; i < len(newl)-1; i++ {
-    newl[i] += sub
-  }
-
-  return newl
-}
-
-fn textSplitBy*(text: str, by: char): []str {
-  items := []str{}
-  last := 0
-  for i, c in text {
-    if c == by {
-      items = append(items, slice(text, last, i))
-      last = i+1 // Skip the character by adding one.
-    }
-  }
-  items = append(items, slice(text, last))
-  return items
-}
-
 fn pushText(w: ^Wrapping, font: th_font.Font, text: str) {
   w.push(font.measure(text).x)
 }
 
 fn wrapTextLine(font: th_font.Font, text: str, boundary: real): []str {
-  words := textSplitBy(text, ' ')
+  words := strings.splitBy(text, ' ')
   lines := []str{}
   wrapper := Wrapping{position: 0, boundary: boundary}
   line := ""
@@ -127,7 +95,7 @@ fn wrapTextLine(font: th_font.Font, text: str, boundary: real): []str {
 }
 
 fn wrapText(font: th_font.Font, text: str, boundary: real): []str {
-  lines := textSplitBy(text, '\n')
+  lines := strings.splitBy(text, '\n')
   resultLines := []str{}
 
   for i, line in lines {
@@ -136,31 +104,26 @@ fn wrapText(font: th_font.Font, text: str, boundary: real): []str {
   return resultLines
 }
 
-type VisualTextCursor = struct {
-  position: th.Vf2
-  height: real
-}
-
-fn visualTextCursorFromEnd(font: th_font.Font, text: str): VisualTextCursor {
-  lines := textSplitBy(text, '\n')
-  fontHeight := font.measure(" ").y
-
-  return VisualTextCursor{
-    position: th.Vf2{font.measure(lines[len(lines)-1]).x, (len(lines)-1) * fontHeight},
-    height: fontHeight}
-}
-
-fn blockCursorFromVisualTextCursor(cursor: VisualTextCursor, font: th_font.Font): rect.Rect {
+fn blockCursorFromVisualTextCursor(cursor: draw_dialog.VisualTextCursor, font: th_font.Font): rect.Rect {
   return rect.Rect{cursor.position.x, cursor.position.y, font.measure(" ").x, cursor.height}
 }
 
-fn drawDialog(font: th_font.Font, text: str, boundingBox: rect.Rect) {
-  canvas.drawRect(th.black, boundingBox)
-  font.draw(text, boundingBox.getPos(), th.white)
-  cursor := blockCursorFromVisualTextCursor(visualTextCursorFromEnd(font, text), font)
+//wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+fn drawTempDialogBackdrop(boundingBox: rect.Rect) {
+  canvas.drawRect(th.black, d_util.rectShrink(boundingBox, -5))
+  d_util.drawRectLines(th.white, d_util.rectShrink(boundingBox, -4), 1)
+  canvas.drawRect(0xFF8888FF, d_util.rectShrink(boundingBox, -3))
+}
+
+fn drawTempDialog(subject: draw_dialog.AppearingText, font: th_font.Font, boundingBox: rect.Rect) {
+  drawTempDialogBackdrop(boundingBox)
+  draw_dialog.drawAppearingText(&subject, font, boundingBox.getPos(), th.black)
+
+  cursor := blockCursorFromVisualTextCursor(draw_dialog.visualTextCursorFromEnd(font, subject.text), font)
   cursor.x += boundingBox.x
   cursor.y += boundingBox.y
-  d_util.drawRectLines(th.yellow, cursor, 1)
+  d_util.drawRectLines(th_color.alpha(th.yellow, 0.1), cursor, 1)
 }
 
 fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, rectangle: ^rect.Rect) {
@@ -178,36 +141,63 @@ fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, rectangle: ^rec
   }
 }
 
+const poemNoFile = 
+  "After error and trial\n"+
+  "I couldn't find your poem file\n"+
+  "(No poem file found)";
+
+const poemBadId = 
+  "Searching far and above\n"+
+  "Poem up and below\n"+
+  "I've came to realise\n"+
+  "It will not materialise\n"+
+  "(Invalid poem ID)";
+
+fn loadPoemFromFile(file: str, poemId: int): str {
+  if ok, poems := d_util.readFileStr(file); ok {
+    if ok, poem := load_poems.getPoem(load_poems.loadPoems(poems), poemId); ok {
+      return poem
+    }
+    return poemBadId
+  }
+  return poemNoFile
+}
+
+fn controlTypingTime(typingTime: ^real) {
+  if input.isPressed(input.key_left) {
+    typingTime^ -= th.delta/1000.0
+  }
+  if input.isPressed(input.key_right) {
+    typingTime^ += th.delta/1000.0
+  }  
+  if typingTime^ < 0 {
+    typingTime^ = 0
+  }      
+}
+
 fn main() {
+  d_test.isUnitTest(false)
   window.setup("New dialogs", 800, 600)
 
-  font := th_font.load("data/font/monospace.ttf", 16)
+  font := th_font.load(d_test.pfx()+"FuzzyBubbles-Bold.ttf", 24)
   screen := rect.mk(0, 0, 800, 600)
-  sampleText := "Lorem ipsum dolor sit amet. Hello world! Now this is a story all about how my life got turned upside down." 
-  
-  typer := TextTyper{sampleText, 0}
+  sampleText := loadPoemFromFile(d_test.pfx()+"poems.txt", 0)
+
   boundingBox := rect.mk(0, 0, 400, 300)
   mouseInput := d_mouseinput.MouseState{}
 
-  typerPosition := 0.0
+  typingTime := 0.0
+  const timePerLetter = 0.1
 
   for window.cycle(screen) {
     mouseInput = mouseInput.updated()
+    controlTypingTime(&typingTime)
+
+    text := strings.join(strings.intersperse(wrapText(font, sampleText, boundingBox.w), "\n"))
+    appearingText := draw_dialog.constructAppearingTextFromTime(text, typingTime, timePerLetter)
     
-    // XXX(skejeton): Show a new letter every 100 milliseconds.
-    typer.seek(trunc(typerPosition))
-    if input.isPressed(input.key_left) {
-      typerPosition -= th.delta/100.0
-    }
-    if input.isPressed(input.key_right) {
-      typerPosition += th.delta/100.0
-    } 
-
-    typerText := typer.getText()
-    text := join(intersperse(wrapText(font, typerText, boundingBox.w), "\n"))
-
     handleResizableRectangle(mouseInput, &boundingBox)
 
-    drawDialog(font, text, boundingBox)
+    drawTempDialog(appearingText, font, boundingBox)
   }
 }
