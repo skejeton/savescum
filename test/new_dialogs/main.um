@@ -77,8 +77,6 @@ fn wrapTextLine(font: th_font.Font, text: str, boundary: real): []str {
   wrapper := Wrapping{position: 0, boundary: boundary}
   line := ""
 
-
-
   for i, word in words {
     pushText(&wrapper, font, word)
     if i != 0 && wrapper.wrap() {
@@ -116,14 +114,11 @@ fn drawTempDialogBackdrop(boundingBox: rect.Rect) {
   canvas.drawRect(0xFF8888FF, d_util.rectShrink(boundingBox, -3))
 }
 
-fn drawTempDialog(subject: draw_dialog.AppearingText, font: th_font.Font, boundingBox: rect.Rect) {
+fn drawTempDialog(lines: []draw_dialog.AppearingText, font: th_font.Font, boundingBox: rect.Rect) {
   drawTempDialogBackdrop(boundingBox)
-  draw_dialog.drawAppearingText(&subject, font, boundingBox.getPos(), th.black)
-
-  cursor := blockCursorFromVisualTextCursor(draw_dialog.visualTextCursorFromEnd(font, subject.text), font)
-  cursor.x += boundingBox.x
-  cursor.y += boundingBox.y
-  d_util.drawRectLines(th_color.alpha(th.yellow, 0.1), cursor, 1)
+  for i in lines {
+    draw_dialog.drawAppearingText(&lines[i], font, boundingBox.getPos().add(th.Vf2{0, font.measure(" ").y*i}), th.black)
+  }
 }
 
 fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, rectangle: ^rect.Rect) {
@@ -175,6 +170,22 @@ fn controlTypingTime(typingTime: ^real) {
   }      
 }
 
+fn makeAppearingTextArrayFromLines(lines: []str, time: real, timePerLetter: real): []draw_dialog.AppearingText {
+  appearingTexts := []draw_dialog.AppearingText{}
+  offset := 0
+  
+  for i in lines {
+    timeShift := offset*timePerLetter
+    if time - timeShift < 0 {
+      timeShift = time
+    }
+    appearingTexts = append(appearingTexts, draw_dialog.constructAppearingTextFromTime(lines[i], time-timeShift, timePerLetter))
+    offset += len(lines[i])
+  } 
+
+  return appearingTexts
+}
+
 fn main() {
   d_test.isUnitTest(false)
   window.setup("New dialogs", 800, 600)
@@ -192,12 +203,13 @@ fn main() {
   for window.cycle(screen) {
     mouseInput = mouseInput.updated()
     controlTypingTime(&typingTime)
+  
+    // Transform lines into appearing texts
+    lines := wrapText(font, sampleText, boundingBox.w)
 
-    text := strings.join(strings.intersperse(wrapText(font, sampleText, boundingBox.w), "\n"))
-    appearingText := draw_dialog.constructAppearingTextFromTime(text, typingTime, timePerLetter)
     
     handleResizableRectangle(mouseInput, &boundingBox)
 
-    drawTempDialog(appearingText, font, boundingBox)
+    drawTempDialog(makeAppearingTextArrayFromLines(lines, typingTime, timePerLetter), font, boundingBox)
   }
 }
