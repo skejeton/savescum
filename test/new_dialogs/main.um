@@ -186,7 +186,16 @@ fn makeAppearingTextArrayFromLines(lines: []str, time: real, timePerLetter: real
   return appearingTexts
 }
 
+fn booleanColor(boolean: bool): uint32 {
+  if boolean {
+    return 0x00FF00FF;
+  }
+  return 0xFF0000FF;
+}
+
 fn main() {
+  autoplay := false
+
   d_test.isUnitTest(false)
   window.setup("New dialogs", 800, 600)
 
@@ -202,14 +211,21 @@ fn main() {
 
   for window.cycle(screen) {
     mouseInput = mouseInput.updated()
+    if input.isJustPressed(' ') {
+      autoplay = !autoplay
+    }
+    if autoplay {
+      typingTime += th.delta/1000.0
+    }
     controlTypingTime(&typingTime)
   
     // Transform lines into appearing texts
     lines := wrapText(font, sampleText, boundingBox.w)
-
     
+
     handleResizableRectangle(mouseInput, &boundingBox)
 
     drawTempDialog(makeAppearingTextArrayFromLines(lines, typingTime, timePerLetter), font, boundingBox)
+    canvas.drawRect(booleanColor(autoplay), rect.mk(0, 0, 10, 10))
   }
 }
