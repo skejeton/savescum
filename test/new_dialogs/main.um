@@ -38,6 +38,7 @@ import (
   "strings.um"
   "load_poems.um"
   "draw_dialog.um"
+  "sequence.um"
   "../../src/d_test.um"
   "../../src/d_typer.um"
   "../../src/d_util.um"
@@ -170,18 +171,12 @@ fn controlTypingTime(typingTime: ^real) {
   }      
 }
 
-fn makeAppearingTextArrayFromLines(lines: []str, time: real, timePerLetter: real): []draw_dialog.AppearingText {
+fn makeAppearingTextArrayFromLinesAndPlaybacks(lines: []str, playbacks: []sequence.ItemPlayback): []draw_dialog.AppearingText {
   appearingTexts := []draw_dialog.AppearingText{}
-  offset := 0
-  
-  for i in lines {
-    timeShift := offset*timePerLetter
-    if time - timeShift < 0 {
-      timeShift = time
-    }
-    appearingTexts = append(appearingTexts, draw_dialog.constructAppearingTextFromTime(lines[i], time-timeShift, timePerLetter))
-    offset += len(lines[i])
-  } 
+
+  for i, pb in playbacks {
+    appearingTexts = append(appearingTexts, draw_dialog.constructAppearingTextFromUnit(lines[pb.id], pb.unit))
+  }
 
   return appearingTexts
 }
@@ -209,6 +204,7 @@ fn main() {
   typingTime := 0.0
   const timePerLetter = 0.1
 
+
   for window.cycle(screen) {
     mouseInput = mouseInput.updated()
     if input.isJustPressed(' ') {
@@ -218,14 +214,18 @@ fn main() {
       typingTime += th.delta/1000.0
     }
     controlTypingTime(&typingTime)
-  
+
     // Transform lines into appearing texts
     lines := wrapText(font, sampleText, boundingBox.w)
-    
+
+    seq := sequence.Sequence{}
+    for i in lines {
+      seq.pushNext((i+1)*(i+1))
+    }
 
     handleResizableRectangle(mouseInput, &boundingBox)
 
-    drawTempDialog(makeAppearingTextArrayFromLines(lines, typingTime, timePerLetter), font, boundingBox)
+    drawTempDialog(makeAppearingTextArrayFromLinesAndPlaybacks(lines, seq.playbacksAt(typingTime)), font, boundingBox)
     canvas.drawRect(booleanColor(autoplay), rect.mk(0, 0, 10, 10))
   }
 }

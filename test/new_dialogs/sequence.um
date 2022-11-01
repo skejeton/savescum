@@ -1,0 +1,46 @@
+type Item* = struct {
+  startTime: real
+  endTime: real
+}
+
+type Sequence* = struct {
+  items: []Item 
+}
+
+type ItemPlayback* = struct {
+  id: uint
+  unit: real 
+}
+
+// TODO(skejeton): If the length is 0 then we'll get a division error,
+//                 in most cases probably though we'd like to just return unit 1
+//                 after we reach their start.
+fn (s: ^Sequence) pushNext*(length: real) {
+  lastEndTime := 0.0
+  if len(s.items) > 0 {
+    lastEndTime = s.items[len(s.items)-1].endTime
+  }
+
+  s.items = append(s.items, Item{lastEndTime, lastEndTime+length})
+}
+
+// \returns list of item playbacks without ones we haven't reached yet
+fn (s: ^Sequence) playbacksAt*(seconds: real): []ItemPlayback {
+  playbacks := []ItemPlayback{}
+
+  for i, item in s.items {
+    unit := (seconds-item.startTime)/(item.endTime-item.startTime)
+
+    // only include items we've reached
+    if unit >= 0 {
+      // clamp if we have long surpassed
+      if unit > 1 {
+        unit = 1
+      }
+      
+      playbacks = append(playbacks, ItemPlayback{i, unit}) 
+    }
+  }
+
+  return playbacks
+}

@@ -13,12 +13,8 @@ type AppearingText* = struct {
   t: real
 }
 
-fn constructAppearingTextFromTime*(text: str, time, timePerLetter: real): AppearingText {
-  if time < 0 {
-    error("bad time")
-  }
-  
-  position := time/timePerLetter
+fn constructAppearingTextFromUnit*(text: str, trustedUnit: real): AppearingText {
+  position := len(text)*trustedUnit
   at := trunc(position)
   
   // NOTE(skejeton): Check if there's anything more to type
