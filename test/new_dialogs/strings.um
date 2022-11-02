@@ -30,3 +30,16 @@ fn splitBy*(text: str, by: char): []str {
   return items
 }
 
+fn splitByWords*(text: str): []str {
+  items := []str{}
+  last := 0
+  for i, c in text {
+    if c == '\n' || c == ' ' || c == '\t' {
+      items = append(items, slice(text, last, i))
+      last = i+1 // Skip the character by adding one.
+    }
+  }
+  items = append(items, slice(text, last))
+  return items
+}
+

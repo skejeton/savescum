@@ -1,18 +1,3 @@
-// TODO(skejeton): 
-//  Currently typer operates on the original text,
-//  but that's an issue, because the words will wrap as they are typed,
-//  it really impairs readability of the dialogs.
-//  
-//  How I can solve this is by putting the entire word width into the word wrapper routine.
-//  I can also try operating on the transformed text, but that comes with a problem of "disappearing characters",
-//  for example if I make the boundary so narrow, there's going to be more newline characters, and the typer will 
-//  return to a few characters back because there's more characters in the new string added. One way to avoid this
-//  is not counting newlines as characters, but that would require a sequential typer, which may be a price worth paying
-//  considering the typer in d_typer is also sequential by nature, it has commands that can't be executed out of order,
-//  or repeatedly. But when the boundary changes, the text also changes, I'll probably have to re-do the typer somehow again.
-//  
-//  Another option is to have a word wrapping routine specifically designed for this purpose, that works around the original
-//  word wrapping routine by adding the rest of the word when wrapping, but removing the untyped letters when rendering.
 //
 // TODO(skejeton):
 //  The way text is currently typed is really boring and has no expression at all.
@@ -37,6 +22,7 @@ import (
   "input.um"
   "strings.um"
   "load_poems.um"
+  m_layout = "layout.um"
   "draw_dialog.um"
   "sequence.um"
   "../../src/d_test.um"
@@ -48,79 +34,11 @@ import (
   th_color = "color.um"
 )
 
-type Wrapping = struct {
-  position: real
-  boundary: real
-  lastSize: real // FIXME: lastSize is kind of meh way to solve ressetting previous elements to new line
-}
-
-fn (w: ^Wrapping) wrap(): bool {
-  if w.position > w.boundary {
-    w.position = w.lastSize
-    return true
-  }
-
-  return false
-}
-
-fn (w: ^Wrapping) push(size: real) {
-  w.position += size
-  w.lastSize = size
-}
-
-fn pushText(w: ^Wrapping, font: th_font.Font, text: str) {
-  w.push(font.measure(text).x)
-}
-
-fn wrapTextLine(font: th_font.Font, text: str, boundary: real): []str {
-  words := strings.splitBy(text, ' ')
-  lines := []str{}
-  wrapper := Wrapping{position: 0, boundary: boundary}
-  line := ""
-
-  for i, word in words {
-    pushText(&wrapper, font, word)
-    if i != 0 && wrapper.wrap() {
-      lines = append(lines, line)
-      line = ""
-    }
-    pushText(&wrapper, font, " ")
-    line += word+" "
-  }
-  // NOTE(skejeton): Remove last space
-  lines = append(lines, slice(line, 0, len(line)-1))
-
-  return lines
-}
-
-fn wrapText(font: th_font.Font, text: str, boundary: real): []str {
-  lines := strings.splitBy(text, '\n')
-  resultLines := []str{}
-
-  for i, line in lines {
-    resultLines = append(resultLines, wrapTextLine(font, line, boundary))
-  }
-  return resultLines
-}
-
 fn blockCursorFromVisualTextCursor(cursor: draw_dialog.VisualTextCursor, font: th_font.Font): rect.Rect {
   return rect.Rect{cursor.position.x, cursor.position.y, font.measure(" ").x, cursor.height}
 }
 
 //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-
-fn drawTempDialogBackdrop(boundingBox: rect.Rect) {
-  canvas.drawRect(th.black, d_util.rectShrink(boundingBox, -5))
-  d_util.drawRectLines(th.white, d_util.rectShrink(boundingBox, -4), 1)
-  canvas.drawRect(0xFF8888FF, d_util.rectShrink(boundingBox, -3))
-}
-
-fn drawTempDialog(lines: []draw_dialog.AppearingText, font: th_font.Font, boundingBox: rect.Rect) {
-  drawTempDialogBackdrop(boundingBox)
-  for i in lines {
-    draw_dialog.drawAppearingText(&lines[i], font, boundingBox.getPos().add(th.Vf2{0, font.measure(" ").y*i}), th.black)
-  }
-}
 
 fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, rectangle: ^rect.Rect) {
   motion := mouseInput.delta
@@ -171,11 +89,11 @@ fn controlTypingTime(typingTime: ^real) {
   }      
 }
 
-fn makeAppearingTextArrayFromLinesAndPlaybacks(lines: []str, playbacks: []sequence.ItemPlayback): []draw_dialog.AppearingText {
+fn makeAppearingTextArrayFromWordsAndPlaybacks(words: []str, playbacks: []sequence.ItemPlayback): []draw_dialog.AppearingText {
   appearingTexts := []draw_dialog.AppearingText{}
 
   for i, pb in playbacks {
-    appearingTexts = append(appearingTexts, draw_dialog.constructAppearingTextFromUnit(lines[pb.id], pb.unit))
+    appearingTexts = append(appearingTexts, draw_dialog.constructAppearingTextFromUnit(words[pb.id], pb.unit*pb.unit))
   }
 
   return appearingTexts
@@ -186,6 +104,30 @@ fn booleanColor(boolean: bool): uint32 {
     return 0x00FF00FF;
   }
   return 0xFF0000FF;
+}
+
+fn drawTempDialogBackdrop(boundingBox: rect.Rect) {
+  canvas.drawRect(th.black, d_util.rectShrink(boundingBox, -5))
+  d_util.drawRectLines(th.white, d_util.rectShrink(boundingBox, -4), 1)
+  canvas.drawRect(0xFF8888FF, d_util.rectShrink(boundingBox, -3))
+}
+
+fn drawTempDialog(words: []draw_dialog.AppearingText, font: th_font.Font, boundingBox: rect.Rect) {
+  drawTempDialogBackdrop(boundingBox)
+  layout := m_layout.makeWrappingLayoutFromBoundary(boundingBox.w)
+
+  for i in words {
+    size := font.measure(words[i].orig)
+    pos := layout.push(size).add(boundingBox.getPos())
+
+    colour := th.black
+    if i % 2 == 0 {
+      colour = th.red
+    }
+
+    canvas.drawRect(0x33, rect.mk(pos.x, pos.y, size.x, size.y));
+    draw_dialog.drawAppearingText(&words[i], font, pos, colour)
+  }
 }
 
 fn main() {
@@ -216,16 +158,17 @@ fn main() {
     controlTypingTime(&typingTime)
 
     // Transform lines into appearing texts
-    lines := wrapText(font, sampleText, boundingBox.w)
+    words := strings.intersperse(strings.splitByWords(sampleText), ' ')
+
 
     seq := sequence.Sequence{}
-    for i in lines {
-      seq.pushNext((i+1)*(i+1))
+    for i in words {
+      seq.pushNext((i%4+1)/4.0)
     }
 
     handleResizableRectangle(mouseInput, &boundingBox)
 
-    drawTempDialog(makeAppearingTextArrayFromLinesAndPlaybacks(lines, seq.playbacksAt(typingTime)), font, boundingBox)
+    drawTempDialog(makeAppearingTextArrayFromWordsAndPlaybacks(words, seq.playbacksAt(typingTime)), font, boundingBox)
     canvas.drawRect(booleanColor(autoplay), rect.mk(0, 0, 10, 10))
   }
 }

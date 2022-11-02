@@ -7,6 +7,9 @@ import (
 )
 
 type AppearingText* = struct {
+  // shame {
+  orig: str
+  // }
   text: str
   // NOTE(skejeton): Making "next" a string is gonna be useful for unicode later
   next: str
@@ -20,12 +23,14 @@ fn constructAppearingTextFromUnit*(text: str, trustedUnit: real): AppearingText 
   // NOTE(skejeton): Check if there's anything more to type
   if at >= len(text) {
     return AppearingText{
+      orig: text,
       text: text,
       next: '\0',
       t:    0}
   }
 
   return AppearingText{
+    orig: text,
     text: slice(text, 0, at),
     next: text[at]+"",
     t:    position-real(at)}
@@ -55,3 +60,14 @@ fn drawAppearingText*(subject: ^AppearingText, font: th_font.Font, at: th.Vf2, c
   appearingLetterPosition := visualTextCursorFromEnd(font, subject.text).position
   font.draw(subject.next, at.add(appearingLetterPosition), th_color.alpha(color, subject.t), 2-subject.t)
 }
+
+fn measureAppearingText*(subject: ^AppearingText, font: th_font.Font): th.Vf2 {
+  size := font.measure(subject.text)
+  
+  // NOTE(skejeton): Kind of a hack, but we don't really want spaces to go into the size eh?
+  if subject.next != " " {
+    size.x += font.measure(subject.next).x*(2-subject.t)
+  }
+  return size
+}
+

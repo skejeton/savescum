@@ -1,0 +1,30 @@
+import (
+  "th.um"
+)
+
+type WrappingLayout* = struct {
+  boundary: real
+  position: th.Vf2
+  lineHeight: real
+}
+
+fn makeWrappingLayoutFromBoundary*(boundary: real): WrappingLayout {
+  return WrappingLayout{boundary: boundary}
+}
+
+fn (l: ^WrappingLayout) push*(size: th.Vf2): th.Vf2 {
+  if l.lineHeight < size.y {
+    l.lineHeight = size.y
+  }
+
+  if l.position.x == 0 || size.x + l.position.x <= l.boundary {
+    l.position.x += size.x
+  } else {
+    l.position.x = size.x
+    l.position.y += l.lineHeight
+    l.lineHeight = size.y
+  }
+  
+  return th.Vf2{l.position.x - size.x, l.position.y}
+}
+
