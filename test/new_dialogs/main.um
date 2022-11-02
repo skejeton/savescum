@@ -89,11 +89,18 @@ fn controlTypingTime(typingTime: ^real) {
   }      
 }
 
-fn makeAppearingTextArrayFromWordsAndPlaybacks(words: []str, playbacks: []sequence.ItemPlayback): []draw_dialog.AppearingText {
-  appearingTexts := []draw_dialog.AppearingText{}
+type PushObj = interface{}
+type NewLine = struct{}
+
+fn makeAppearingTextArrayFromWordsAndPlaybacks(words: []str, playbacks: []sequence.ItemPlayback): []PushObj {
+  appearingTexts := []PushObj{}
 
   for i, pb in playbacks {
-    appearingTexts = append(appearingTexts, draw_dialog.constructAppearingTextFromUnit(words[pb.id], pb.unit*pb.unit))
+    if words[i] == "\n" {
+      appearingTexts = append(appearingTexts, NewLine{})
+    } else {
+      appearingTexts = append(appearingTexts, draw_dialog.constructAppearingTextFromUnit(words[i], pb.unit*pb.unit))
+    }
   }
 
   return appearingTexts
@@ -112,22 +119,41 @@ fn drawTempDialogBackdrop(boundingBox: rect.Rect) {
   canvas.drawRect(0xFF8888FF, d_util.rectShrink(boundingBox, -3))
 }
 
-fn drawTempDialog(words: []draw_dialog.AppearingText, font: th_font.Font, boundingBox: rect.Rect) {
+
+fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect) {
   drawTempDialogBackdrop(boundingBox)
   layout := m_layout.makeWrappingLayoutFromBoundary(boundingBox.w)
 
   for i in words {
-    size := font.measure(words[i].orig)
-    pos := layout.push(size).add(boundingBox.getPos())
+    if nl := ^NewLine(words[i]); nl != null {
+      layout.wrapAtMin(font.measure(" ").y)
+    } else if word := ^draw_dialog.AppearingText(words[i]); word != null {
+      size := font.measure(word.orig)
+      pos := layout.push(size).add(boundingBox.getPos())
 
-    colour := th.black
-    if i % 2 == 0 {
-      colour = th.red
+      colour := th.black
+      if i % 2 == 0 {
+        colour = th.red
+      }
+
+      canvas.drawRect(0x33, rect.mk(pos.x, pos.y, size.x, size.y));
+      draw_dialog.drawAppearingText(word, font, pos, colour)
     }
-
-    canvas.drawRect(0x33, rect.mk(pos.x, pos.y, size.x, size.y));
-    draw_dialog.drawAppearingText(&words[i], font, pos, colour)
   }
+}
+
+fn separateNewlines(words: []str): []str {
+  result := []str{}
+  for i, word in words {
+    lines := strings.splitBy(words[i], '\n')
+    for i, line in lines {
+      if i != 0 {
+        result = append(result, '\n')
+      }
+      result = append(result, line)
+    }
+  }
+  return result
 }
 
 fn main() {
@@ -138,7 +164,7 @@ fn main() {
 
   font := th_font.load(d_test.pfx()+"FuzzyBubbles-Bold.ttf", 24)
   screen := rect.mk(0, 0, 800, 600)
-  sampleText := loadPoemFromFile(d_test.pfx()+"poems.txt", 0)
+  sampleText := loadPoemFromFile(d_test.pfx()+"poems.txt", 1)
 
   boundingBox := rect.mk(0, 0, 400, 300)
   mouseInput := d_mouseinput.MouseState{}
@@ -158,7 +184,8 @@ fn main() {
     controlTypingTime(&typingTime)
 
     // Transform lines into appearing texts
-    words := strings.intersperse(strings.splitByWords(sampleText), ' ')
+    words := separateNewlines(strings.intersperse(strings.splitBy(sampleText, ' '), ' '))
+
 
 
     seq := sequence.Sequence{}

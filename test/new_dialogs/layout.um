@@ -28,3 +28,20 @@ fn (l: ^WrappingLayout) push*(size: th.Vf2): th.Vf2 {
   return th.Vf2{l.position.x - size.x, l.position.y}
 }
 
+fn (l: ^WrappingLayout) wrap*(): th.Vf2 {
+  l.position.x = 0
+  l.position.y += l.lineHeight
+  l.lineHeight = 0
+  return l.position
+}
+
+fn (l: ^WrappingLayout) wrapAtMin*(height: real): th.Vf2 {
+  l.position.x = 0
+  if l.lineHeight > height {
+    l.position.y += l.lineHeight
+  } else {
+    l.position.y += height
+  }
+  l.lineHeight = 0
+  return l.position
+}

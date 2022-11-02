@@ -1,3 +1,22 @@
+fn isSpace(ch: char): bool {
+  return ch == '\n' || ch == '\t' || ch == ' '
+}
+
+fn trim*(s: str): str {
+  start := 0
+  end := len(s)-1
+
+  for isSpace(s[start]) {
+    start++
+  }
+  
+  for end > start && isSpace(s[end]) {
+    end--
+  }
+
+  return slice(s, start, end)
+}
+
 fn join*(strl: []str): str {
   result := ""
   for i, s in strl {
@@ -29,17 +48,3 @@ fn splitBy*(text: str, by: char): []str {
   items = append(items, slice(text, last))
   return items
 }
-
-fn splitByWords*(text: str): []str {
-  items := []str{}
-  last := 0
-  for i, c in text {
-    if c == '\n' || c == ' ' || c == '\t' {
-      items = append(items, slice(text, last, i))
-      last = i+1 // Skip the character by adding one.
-    }
-  }
-  items = append(items, slice(text, last))
-  return items
-}
-

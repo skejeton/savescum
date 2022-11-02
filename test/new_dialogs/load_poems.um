@@ -8,7 +8,7 @@ fn loadPoems*(poemsSource: str): []str {
   poems := []str{}
 
   for _, unprocessedPoem in poemsUnprocessed {
-    poems = append(poems, std.trim(unprocessedPoem))
+    poems = append(poems, strings.trim(unprocessedPoem))
   }
 
   return poems
