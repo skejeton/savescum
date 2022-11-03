@@ -3,6 +3,9 @@ fn isSpace(ch: char): bool {
 }
 
 fn trim*(s: str): str {
+  if s == "" {
+    return ""
+  }
   start := 0
   end := len(s)-1
 
@@ -13,8 +16,8 @@ fn trim*(s: str): str {
   for end > start && isSpace(s[end]) {
     end--
   }
-
-  return slice(s, start, end)
+  
+  return slice(s, start, end+1)
 }
 
 fn join*(strl: []str): str {
@@ -47,4 +50,18 @@ fn splitBy*(text: str, by: char): []str {
   }
   items = append(items, slice(text, last))
   return items
+}
+
+fn separateChar*(words: []str, c: char): []str {
+  result := []str{}
+  for i, word in words {
+    lines := splitBy(words[i], c)
+    for i, line in lines {
+      if i != 0 {
+        result = append(result, c)
+      }
+      result = append(result, line)
+    }
+  }
+  return result
 }

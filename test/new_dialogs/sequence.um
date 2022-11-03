@@ -12,6 +12,16 @@ type ItemPlayback* = struct {
   unit: real 
 }
 
+fn sanitize*(unit: real): real {
+  if unit < 0 {
+    return 0
+  }
+  if unit > 1 {
+    return 1
+  }
+  return unit;
+}
+
 // TODO(skejeton): If the length is 0 then we'll get a division error,
 //                 in most cases probably though we'd like to just return unit 1
 //                 after we reach their start.
