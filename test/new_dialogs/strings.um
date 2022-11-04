@@ -55,7 +55,7 @@ fn splitBy*(text: str, by: char): []str {
 fn separateChar*(words: []str, c: char): []str {
   result := []str{}
   for i, word in words {
-    lines := splitBy(words[i], c)
+    lines := splitBy(word, c)
     for i, line in lines {
       if i != 0 {
         result = append(result, c)

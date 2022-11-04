@@ -20,23 +20,19 @@ import (
   "th.um"
   "canvas.um"
   "input.um"
-  "strings.um"
   "load_poems.um"
   "speech_typing.um"
   m_layout = "layout.um"
   "draw_dialog.um"
-  "sequence.um"
   "../../src/d_test.um"
-  "../../src/d_typer.um"
   "../../src/d_util.um"
   "../../src/d_mouseinput.um"
-  "../../src/d_fps.um"
   th_font = "font.um"
   th_color = "color.um"
 )
 
-fn blockCursorFromVisualTextCursor(cursor: draw_dialog.VisualTextCursor, font: th_font.Font): rect.Rect {
-  return rect.Rect{cursor.position.x, cursor.position.y, font.measure(" ").x, cursor.height}
+fn blockCursorSizeFromFont(font: th_font.Font): th.Vf2 {
+  return font.measure(" ")
 }
 
 //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
@@ -136,9 +132,17 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect) 
         colour = th.red
       }
 
-      canvas.drawRect(0x33, rect.mk(pos.x, pos.y, size.x, size.y));
       draw_dialog.drawAppearingText(word, font, pos, colour)
     }
+  }
+
+  {
+    cursorSize := blockCursorSizeFromFont(font)
+    cursorPos := layout.push(cursorSize).add(boundingBox.getPos())
+    pulse := sin(th.time/300.0)
+    rectangle := d_util.rectShrink(rect.mk(cursorPos.x, cursorPos.y, cursorSize.x, cursorSize.y), pulse*2)
+
+    canvas.drawRect(th_color.alpha(th.white, (pulse/2.0+1.0)/2.0+0.5), rectangle)
   }
 }
 
@@ -158,8 +162,6 @@ fn main() {
   mouseInput := d_mouseinput.MouseState{}
 
   typingTime := 0.0
-  const timePerLetter = 0.1
-
 
   for window.cycle(screen) {
     mouseInput = mouseInput.updated()
