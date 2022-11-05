@@ -124,8 +124,9 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect) 
     if nl := ^NewLine(words[i]); nl != null {
       layout.wrapAtMin(font.measure(" ").y)
     } else if word := ^draw_dialog.AppearingText(words[i]); word != null {
-      size := font.measure(word.orig)
-      pos := layout.push(size).add(boundingBox.getPos())
+      size := draw_dialog.measureAppearingText(word, font)
+      full := font.measure(word.orig).x
+      pos := layout.pushPartial(size, full).add(boundingBox.getPos())
 
       colour := th.black
       if i % 2 == 0 {

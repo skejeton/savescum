@@ -45,3 +45,43 @@ fn (l: ^WrappingLayout) wrapAtMin*(height: real): th.Vf2 {
   l.lineHeight = 0
   return l.position
 }
+
+// this function wraps around if the `full` width exceeds the bounds or `size.x`
+// but the size pushed is always `size`.
+// this is convenient when you have word wrapping while typing, imagine this:
+// |^^^^^^^^^^^^^^
+// | and then th#|
+// |             |
+// 
+// now where will the next 2 letters of the word go? it can't be like this:
+// |^^^^^^^^^^^^^^
+// | and then they#
+// |             |
+//
+// we wrap around the word instad:
+// |^^^^^^^^^^^^^^
+// | and then    |
+// | they#       |
+//
+// the problem is, the words will wrap around during typing, not so nice, we want
+// to ideally be able to read the word without it moving around.
+//
+// so if we preemptively measure the word's size and push it using push():
+// |^^^^^^^^^^^^^^
+// | and then    |
+// | th  #       |
+//
+// ok the word starts typing at the correct spot but what's up with the cursor?
+// the reason is that the size we push becomes the size of the word not just
+// the size we are typing! the only thing the full size was needed for is wrapping,
+// it's not the actual size of the word.
+//
+// that's where partialPush() is needed, in essence, `full` is just a width to
+// wrap by, and size is the actual width we are going to push
+// 
+fn (l: ^WrappingLayout) pushPartial*(size: th.Vf2, full: real): th.Vf2 {
+  if l.position.x != 0 && size.x + l.position.x > l.boundary {
+    l.wrapAtMin(size.y)
+  }
+  return l.push(size)
+}
