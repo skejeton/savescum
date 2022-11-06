@@ -116,8 +116,9 @@ fn drawTempDialogBackdrop(boundingBox: rect.Rect) {
   canvas.drawRect(0xFF8888FF, d_util.rectShrink(boundingBox, -3))
 }
 
-fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect) {
+fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, scrollY: real): real {
   drawTempDialogBackdrop(boundingBox)
+  window.beginScissorRect(boundingBox)
   layout := m_layout.makeWrappingLayoutFromBoundary(boundingBox.w)
 
   for i in words {
@@ -133,18 +134,24 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect) 
         colour = th.red
       }
 
-      draw_dialog.drawAppearingText(word, font, pos, colour)
+      draw_dialog.drawAppearingText(word, font, pos.add(th.Vf2{0, -scrollY}), colour)
     }
   }
 
   {
     cursorSize := blockCursorSizeFromFont(font)
-    cursorPos := layout.push(cursorSize).add(boundingBox.getPos())
+    cursorPos := layout.push(cursorSize).add(boundingBox.getPos()).add(th.Vf2{0, -scrollY})
     pulse := sin(th.time/300.0)
     rectangle := d_util.rectShrink(rect.mk(cursorPos.x, cursorPos.y, cursorSize.x, cursorSize.y), pulse*2)
 
     canvas.drawRect(th_color.alpha(th.white, (pulse/2.0+1.0)/2.0+0.5), rectangle)
   }
+  window.endScissor()
+  scrollY = layout.position.y+layout.lineHeight-boundingBox.h
+  if scrollY < 0 {
+    return 0
+  }
+  return scrollY 
 }
 
 
@@ -163,6 +170,7 @@ fn main() {
   mouseInput := d_mouseinput.MouseState{}
 
   typingTime := 0.0
+  scrollY := 0.0
 
   for window.cycle(screen) {
     mouseInput = mouseInput.updated()
@@ -178,7 +186,7 @@ fn main() {
     nodes := speech_typing.speechNodesFromText(sampleText, typingTime) 
     handleResizableRectangle(mouseInput, &boundingBox)
 
-    drawTempDialog(makeObjectArrayFromSpeechNodes(nodes), font, boundingBox)
+    scrollY += (drawTempDialog(makeObjectArrayFromSpeechNodes(nodes), font, boundingBox, scrollY)-scrollY)/2
     canvas.drawRect(booleanColor(autoplay), rect.mk(0, 0, 10, 10))
   }
 }

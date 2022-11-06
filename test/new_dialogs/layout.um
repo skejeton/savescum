@@ -80,7 +80,7 @@ fn (l: ^WrappingLayout) wrapAtMin*(height: real): th.Vf2 {
 // wrap by, and size is the actual width we are going to push
 // 
 fn (l: ^WrappingLayout) pushPartial*(size: th.Vf2, full: real): th.Vf2 {
-  if l.position.x != 0 && size.x + l.position.x > l.boundary {
+  if l.position.x != 0 && full + l.position.x > l.boundary {
     l.wrapAtMin(size.y)
   }
   return l.push(size)
