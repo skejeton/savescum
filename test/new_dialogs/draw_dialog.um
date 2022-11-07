@@ -58,7 +58,7 @@ fn drawAppearingText*(subject: ^AppearingText, font: th_font.Font, at: th.Vf2, c
   
   // Draw appearing letter
   appearingLetterPosition := visualTextCursorFromEnd(font, subject.text).position
-  font.draw(subject.next, at.add(appearingLetterPosition), th_color.alpha(color, subject.t), 2-subject.t)
+  font.draw(subject.next, at.add(appearingLetterPosition), th_color.alpha(color, subject.t), subject.t)
 }
 
 fn measureAppearingText*(subject: ^AppearingText, font: th_font.Font): th.Vf2 {
@@ -66,7 +66,7 @@ fn measureAppearingText*(subject: ^AppearingText, font: th_font.Font): th.Vf2 {
   
   // NOTE(skejeton): Kind of a hack, but we don't really want spaces to go into the size eh?
   if subject.next != " " {
-    size.x += font.measure(subject.next).x*(2-subject.t)
+    size.x += font.measure(subject.next).x*subject.t
   }
   return size
 }

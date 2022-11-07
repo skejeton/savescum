@@ -22,6 +22,8 @@ import (
   "input.um"
   "load_poems.um"
   "speech_typing.um"
+  "construct.um"
+  "strings.um"
   m_layout = "layout.um"
   "draw_dialog.um"
   "../../src/d_test.um"
@@ -74,20 +76,9 @@ fn loadPoemFromFile(file: str, poemId: int): str {
   return poemNoFile
 }
 
-fn controlTypingTime(typingTime: ^real) {
-  if input.isPressed(input.key_left) {
-    typingTime^ -= th.delta/1000.0
-  }
-  if input.isPressed(input.key_right) {
-    typingTime^ += th.delta/1000.0
-  }  
-  if typingTime^ < 0 {
-    typingTime^ = 0
-  }      
-}
-
 type PushObj = interface{}
 type NewLine = struct{}
+type SwitchColor = struct{color: uint32}
 
 fn makeObjectArrayFromSpeechNodes(nodes: []speech_typing.SpeechNode): []PushObj {
   appearingTexts := []PushObj{}
@@ -120,19 +111,17 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
   drawTempDialogBackdrop(boundingBox)
   window.beginScissorRect(boundingBox)
   layout := m_layout.makeWrappingLayoutFromBoundary(boundingBox.w)
+  colour := th.black
   
   for i in words {
-    if nl := ^NewLine(words[i]); nl != null {
+    if sc := ^SwitchColor(words[i]); sc != null {
+      colour = sc.color
+    } else if nl := ^NewLine(words[i]); nl != null {
       layout.wrapAtMin(font.measure(" ").y)
     } else if word := ^draw_dialog.AppearingText(words[i]); word != null {
       size := draw_dialog.measureAppearingText(word, font)
       full := font.measure(word.orig).x
       pos := layout.pushPartial(size, full).add(boundingBox.getPos())
-
-      colour := th.black
-      if i % 2 == 0 {
-        colour = th.red
-      }
 
       draw_dialog.drawAppearingText(word, font, pos.add(th.Vf2{0, -scrollY}), colour)
     }
@@ -154,7 +143,57 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
   return scrollY 
 }
 
+fn controlTypingTime(typingTime: ^real) {
+  if input.isPressed(input.key_left) || input.isPressed(input.key_backspace) {
+    typingTime^ -= th.delta/1000.0
+  }
+  if input.isPressed(input.key_right) {
+    typingTime^ += th.delta/1000.0
+  }  
+  if typingTime^ < 0 {
+    typingTime^ = 0
+  }      
+}
 
+type TransformedText = struct {
+  objects: []PushObj
+  seconds: real
+}
+
+fn transformTextNodesIntoObjectArray(textNodes: []construct.TextNode, typingTimeSeconds: real): TransformedText {
+  objects := []PushObj{}
+  offsetSeconds := 0.0
+
+  // TODO(skejeton): Ideally I shouldn't manually calculate offsets here as this should be done automatically
+  //                 by the sequencer, for that I'll need to delay the speech typing pass or make it iterative (probably better?).
+  //                 OTOH speech pass can be very context sensetive, so as much text as possible is desired.
+  //                 I think I can request the speech in chunks maybe? The only real problem here is inserting
+  //                 speech nodes in between SwitchColor calls. Maybe saving lengths at the end of each spoken text iteration?
+  //                 idk seems like a hack to me. Ideally there shouldn't be speech nodes and spokenText should just manage
+  //                 text and return us the index at which we are typing as well as the unit value for the next letter.
+  //                 that's much simplier to analyze but I don't know the implications yet.
+  for i, node in textNodes {
+    spokenText := speech_typing.makeSpokenText(node.text, typingTimeSeconds - offsetSeconds)
+    offsetSeconds += spokenText.seconds
+
+    objects = append(objects, SwitchColor{node.color})
+    objects = append(objects, makeObjectArrayFromSpeechNodes(spokenText.nodes))
+  }  
+
+  return TransformedText{objects, offsetSeconds}
+}
+
+fn rainbowInTextNodes(text: str): []construct.TextNode {
+  // ngl tophat's deafult green is too hard to see
+  colorCycle := []uint32{th.red, 0x55FF55FF, th.blue, th.yellow}
+  nodes := []construct.TextNode{}
+  lines := strings.intersperse(strings.splitBy(text, ' '), ' ')
+  for i, line in lines {
+    nodes = append(nodes, construct.TextNode{color: colorCycle[i%len(colorCycle)], text: line})
+  }
+
+  return nodes
+}
 
 fn main() {
   autoplay := false
@@ -166,12 +205,14 @@ fn main() {
   screen := rect.mk(0, 0, 800, 600)
   sampleText := loadPoemFromFile(d_test.pfx()+"poems.txt", 0)
 
-  boundingBox := rect.mk(0, 0, 400, 300)
+  boundingBox := rect.mk(30, 30, 400, 300)
   mouseInput := d_mouseinput.MouseState{}
 
   typingTime := 0.0
   scrollY := 0.0
-  
+
+  lines := rainbowInTextNodes(sampleText)
+
   for window.cycle(screen) {
     mouseInput = mouseInput.updated()
     if input.isJustPressed(' ') {
@@ -186,18 +227,17 @@ fn main() {
       typingTime += th.delta/1000.0*multiplier
     }
     controlTypingTime(&typingTime)
-
-    // Transform lines into appearing texts
-    spokenText := speech_typing.makeSpokenText(sampleText, typingTime) 
+  
+    transformedText := transformTextNodesIntoObjectArray(lines, typingTime)
     
-    if typingTime > spokenText.seconds {
+    if typingTime > transformedText.seconds {
       autoplay = false
-      typingTime = spokenText.seconds
+      typingTime = transformedText.seconds
     }
 
     handleResizableRectangle(mouseInput, &boundingBox)
 
-    scrollY += (drawTempDialog(makeObjectArrayFromSpeechNodes(spokenText.nodes), font, boundingBox, scrollY)-scrollY)/2
+    scrollY += (drawTempDialog(transformedText.objects, font, boundingBox, scrollY)-scrollY)/2
     canvas.drawRect(booleanColor(autoplay), rect.mk(0, 0, 10, 10))
   }
 }
