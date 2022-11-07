@@ -120,7 +120,7 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
   drawTempDialogBackdrop(boundingBox)
   window.beginScissorRect(boundingBox)
   layout := m_layout.makeWrappingLayoutFromBoundary(boundingBox.w)
-
+  
   for i in words {
     if nl := ^NewLine(words[i]); nl != null {
       layout.wrapAtMin(font.measure(" ").y)
@@ -171,22 +171,33 @@ fn main() {
 
   typingTime := 0.0
   scrollY := 0.0
-
+  
   for window.cycle(screen) {
     mouseInput = mouseInput.updated()
     if input.isJustPressed(' ') {
       autoplay = !autoplay
     }
     if autoplay {
-      typingTime += th.delta/1000.0
+      multiplier := 1.0
+      if input.isPressed(input.key_shift) {
+        multiplier = 2.0
+      }
+
+      typingTime += th.delta/1000.0*multiplier
     }
     controlTypingTime(&typingTime)
 
     // Transform lines into appearing texts
-    nodes := speech_typing.speechNodesFromText(sampleText, typingTime) 
+    spokenText := speech_typing.makeSpokenText(sampleText, typingTime) 
+    
+    if typingTime > spokenText.seconds {
+      autoplay = false
+      typingTime = spokenText.seconds
+    }
+
     handleResizableRectangle(mouseInput, &boundingBox)
 
-    scrollY += (drawTempDialog(makeObjectArrayFromSpeechNodes(nodes), font, boundingBox, scrollY)-scrollY)/2
+    scrollY += (drawTempDialog(makeObjectArrayFromSpeechNodes(spokenText.nodes), font, boundingBox, scrollY)-scrollY)/2
     canvas.drawRect(booleanColor(autoplay), rect.mk(0, 0, 10, 10))
   }
 }
