@@ -57,12 +57,11 @@ fn (s: ^Sequence) playbacksAt*(seconds: real): []ItemPlayback {
 
 /// @returns fast total length in seconds, this assumes the sequence is sequential[0] 
 fn fastTotalLength*(s: ^Sequence): real {
-  lastEndTime := 0.0
   if len(s.items) > 0 {
-    lastEndTime = s.items[len(s.items)-1].endTime
+    return s.items[len(s.items)-1].endTime
   }
 
-  return lastEndTime
+  return 0
 }
 
 /// @returns true total length in seconds
