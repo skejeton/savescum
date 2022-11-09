@@ -127,6 +127,7 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
     }
   }
 
+  window.endScissor()
   {
     cursorSize := blockCursorSizeFromFont(font)
     cursorPos := layout.push(cursorSize).add(boundingBox.getPos()).add(th.Vf2{0, -scrollY})
@@ -135,7 +136,6 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
 
     canvas.drawRect(th_color.alpha(th.white, (pulse/2.0+1.0)/2.0+0.5), rectangle)
   }
-  window.endScissor()
   scrollY = layout.position.y+layout.lineHeight-boundingBox.h
   if scrollY < 0 {
     return 0
