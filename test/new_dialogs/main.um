@@ -214,6 +214,8 @@ fn main() {
   lines := rainbowInTextNodes(sampleText)
 
   for window.cycle(screen) {
+    screen.w = window.w
+    screen.h = window.h
     mouseInput = mouseInput.updated()
     if input.isJustPressed(' ') {
       autoplay = !autoplay
