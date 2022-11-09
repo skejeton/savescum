@@ -39,19 +39,42 @@ fn blockCursorSizeFromFont(font: th_font.Font): th.Vf2 {
 
 //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
 
-fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, rectangle: ^rect.Rect) {
+type ContactPoint = struct {
+  at: th.Vf2
+  size: th.Vf2
+  isContact: bool
+}
+
+fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, contact: ^ContactPoint, rectangle: ^rect.Rect) {
   motion := mouseInput.delta
 
-  if d_util.rectVsPoint(rectangle^, mouseInput.lastPos) {
+  if d_util.rectVsPoint(rectangle^, mouseInput.lastPos) && !contact.isContact {
+    contact.size = rectangle.getDims()
+    contact.isContact = true;
+    contact.at = mouseInput.lastPos
+  }
+
+  if contact.isContact {
     if mouseInput.lmb.isDown {
       rectangle.x += motion.x
       rectangle.y += motion.y
-    }
-    if mouseInput.rmb.isDown {
-      rectangle.w += motion.x
-      rectangle.h += motion.y
+    } else if mouseInput.rmb.isDown {
+      newSize := mouseInput.lastPos.sub(contact.at).add(contact.size)
+      rectangle.w = newSize.x
+      rectangle.h = newSize.y
+    } else {
+      // no key pressed, means no contact anymore
+      contact.isContact = false;
     }
   }
+
+  if rectangle.w < 10 {
+    rectangle.w = 10
+  }
+  
+  if rectangle.h < 10 {
+    rectangle.h = 10
+  } 
 }
 
 const poemNoFile = 
@@ -205,12 +228,13 @@ fn main() {
   screen := rect.mk(0, 0, 800, 600)
   sampleText := loadPoemFromFile(d_test.pfx()+"poems.txt", 0)
 
+  boundingBoxContactPoint := ContactPoint{}
   boundingBox := rect.mk(30, 30, 400, 300)
   mouseInput := d_mouseinput.MouseState{}
 
   typingTime := 0.0
   scrollY := 0.0
-
+  
   lines := rainbowInTextNodes(sampleText)
 
   for window.cycle(screen) {
@@ -237,7 +261,7 @@ fn main() {
       typingTime = transformedText.seconds
     }
 
-    handleResizableRectangle(mouseInput, &boundingBox)
+    handleResizableRectangle(mouseInput, &boundingBoxContactPoint, &boundingBox)
 
     scrollY += (drawTempDialog(transformedText.objects, font, boundingBox, scrollY)-scrollY)/2
     canvas.drawRect(booleanColor(autoplay), rect.mk(0, 0, 10, 10))
