@@ -186,6 +186,7 @@ type TransformedText = struct {
 fn transformTextNodesIntoObjectArray(textNodes: []construct.TextNode, typingTimeSeconds: real): TransformedText {
   objects := []PushObj{}
   offsetSeconds := 0.0
+  speed := 1.0
 
   // TODO(skejeton): Ideally I shouldn't manually calculate offsets here as this should be done automatically
   //                 by the sequencer, for that I'll need to delay the speech typing pass or make it iterative (probably better?).
@@ -196,9 +197,10 @@ fn transformTextNodesIntoObjectArray(textNodes: []construct.TextNode, typingTime
   //                 text and return us the index at which we are typing as well as the unit value for the next letter.
   //                 that's much simplier to analyze but I don't know the implications yet.
   for i, node in textNodes {
-    spokenText := speech_typing.makeSpokenText(node.text, typingTimeSeconds - offsetSeconds)
+    spokenText := speech_typing.makeSpokenText(node.text, typingTimeSeconds - offsetSeconds, speed)
     offsetSeconds += spokenText.seconds
 
+    speed = node.speed
     objects = append(objects, SwitchColor{node.color})
     objects = append(objects, makeObjectArrayFromSpeechNodes(spokenText.nodes))
   }  
@@ -212,7 +214,7 @@ fn rainbowInTextNodes(text: str): []construct.TextNode {
   nodes := []construct.TextNode{}
   lines := strings.intersperse(strings.splitBy(text, ' '), ' ')
   for i, line in lines {
-    nodes = append(nodes, construct.TextNode{color: colorCycle[i%len(colorCycle)], text: line})
+    nodes = append(nodes, construct.TextNode{color: colorCycle[i%len(colorCycle)], text: line, speed: real(i/3.0+1)})
   }
 
   return nodes

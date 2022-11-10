@@ -1908,11 +1908,12 @@ fn editorMain*() {
     d_problem_screen.showResourceLoadingError(&rl)
   }
 
-  d_fps.limit(60)
+
 
 
   // cycle
   for window.cycle(d_global.screen) {
+    d_fps.limit(60)
     d_fps.update()
 
     // NOTE(skejeton): Clamping delta to 50 gives generally consistent physics and reduces jitter.

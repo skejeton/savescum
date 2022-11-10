@@ -1,4 +1,5 @@
 type TextNode* = struct {
   color: uint32
   text: str
+  speed: real
 }
