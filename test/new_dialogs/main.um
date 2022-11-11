@@ -254,6 +254,10 @@ fn main() {
 
       typingTime += th.delta/1000.0*multiplier
     }
+    if input.isJustPressed(input.key_escape) {
+      autoplay = false;
+      typingTime = 0
+    }
     controlTypingTime(&typingTime)
   
     transformedText := transformTextNodesIntoObjectArray(lines, typingTime)
