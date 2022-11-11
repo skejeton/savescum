@@ -220,8 +220,29 @@ fn rainbowInTextNodes(text: str): []construct.TextNode {
   return nodes
 }
 
+fn booleanProperty(at: th.Vf2, name: str, isset: ^bool) {
+  rectangle := rect.Rect{at.x, at.y, 10, 10}
+
+  color := th.red
+  if isset^ {
+    color = th.green
+  }
+
+  canvas.drawRect(color, rectangle)
+
+  if d_util.isMouseInRect(rectangle) {
+    if input.isJustPressed(input.mouse1) {
+      isset^ = !isset^
+    }
+    textSize := canvas.textSize(name, 2)
+    canvas.drawRect(th.black, rect.mk(at.x, at.y+20, textSize.x, textSize.y))
+    canvas.drawText(name, at.add(th.Vf2{0, 20}), th.white, 2)
+  }
+}
+
 fn main() {
   autoplay := false
+  slow5x := false
 
   d_test.isUnitTest(false)
   window.setup("New dialogs", 800, 600)
@@ -240,6 +261,7 @@ fn main() {
   lines := rainbowInTextNodes(sampleText)
 
   for window.cycle(screen) {
+    tt := typingTime
     screen.w = window.w
     screen.h = window.h
     mouseInput = mouseInput.updated()
@@ -254,13 +276,17 @@ fn main() {
 
       typingTime += th.delta/1000.0*multiplier
     }
+    controlTypingTime(&typingTime)
+  
+    dt := typingTime-tt
+    if slow5x {
+      typingTime -= dt*(4.0/5.0)
+    }
     if input.isJustPressed(input.key_escape) {
       autoplay = false;
       typingTime = 0
     }
-    controlTypingTime(&typingTime)
-  
-    transformedText := transformTextNodesIntoObjectArray(lines, typingTime)
+    transformedText := transformTextNodesIntoObjectArray(lines, tt)
     
     if typingTime > transformedText.seconds {
       autoplay = false
@@ -270,6 +296,8 @@ fn main() {
     handleResizableRectangle(mouseInput, &boundingBoxContactPoint, &boundingBox)
 
     scrollY += (drawTempDialog(transformedText.objects, font, boundingBox, scrollY)-scrollY)/2
-    canvas.drawRect(booleanColor(autoplay), rect.mk(0, 0, 10, 10))
+    
+    booleanProperty(th.Vf2{0, 0}, "autoplay (space)", &autoplay)
+    booleanProperty(th.Vf2{10, 0}, "5x slower", &slow5x)
   }
 }
