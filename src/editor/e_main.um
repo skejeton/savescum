@@ -1540,14 +1540,24 @@ fn putPortalEditor(editor: ^Editor) {
   }
 }
 
+fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources
+
+fn showErrorScreenIfResourcesFailedToLoad(rl: ^d_resources.ResourceLoader) {
+  if d_resources.hasErrors(rl) {
+    d_problem_screen.showResourceLoadingError(rl)
+  }
+}
+
 fn editorPutUi(editor: ^Editor) {
   // Clear the input sink.
   editor.inputSink = InputSink{}
 
-  if (input.isPressed(input.key_ctrl) && input.isJustPressed(input.key_escape)) {
-    input.clear(input.key_escape)
-    editor.isDebugOverlayShown = !editor.isDebugOverlayShown
-  }
+  if input.isPressed(input.key_ctrl) {
+    if input.isJustPressed(input.key_escape) {
+      input.clear(input.key_escape)
+      editor.isDebugOverlayShown = !editor.isDebugOverlayShown
+    }
+  } 
 
   if (input.isJustPressed(input.key_escape)) {
     deselectEntity(&editor.entities)
@@ -1903,13 +1913,7 @@ fn editorMain*() {
 
   editor := editorInit(loadEditorResources(&rl))
   loadPortal(&editor, "genesis")
-
-  if d_resources.hasErrors(&rl) {
-    d_problem_screen.showResourceLoadingError(&rl)
-  }
-
-
-
+  showErrorScreenIfResourcesFailedToLoad(&rl)
 
   // cycle
   for window.cycle(d_global.screen) {
