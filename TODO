@@ -1,9 +1,6 @@
-// Last id: 17
+# Last id: 17
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
-
-4. Add getPropertyLazy to lazily evaluate the default parameter, because
-  sometimes initialization may be expensive and we don't want to execute it every time.
 
 5. The text editor currently is very janky as it requires you to hover over it to enter anything,
   I should somehow facilitate "focused" elements in the editor. #7
