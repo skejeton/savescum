@@ -15,6 +15,7 @@
 
 
 import (
+  "std.um"
   "window.um"
   "rect.um"
   "th.um"
@@ -100,6 +101,7 @@ fn loadPoemFromFile(file: str, poemId: int): str {
 }
 
 type PushObj = interface{}
+type ForeignObject = struct{size: th.Vf2}
 type NewLine = struct{}
 type SwitchColor = struct{color: uint32}
 
@@ -115,13 +117,6 @@ fn makeObjectArrayFromSpeechNodes(nodes: []speech_typing.SpeechNode): []PushObj 
   }
 
   return appearingTexts
-}
-
-fn booleanColor(boolean: bool): uint32 {
-  if boolean {
-    return 0x00FF00FF;
-  }
-  return 0xFF0000FF;
 }
 
 fn drawTempDialogBackdrop(boundingBox: rect.Rect) {
@@ -147,6 +142,9 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
       pos := layout.pushPartial(size, full).add(boundingBox.getPos())
 
       draw_dialog.drawAppearingText(word, font, pos.add(th.Vf2{0, -scrollY}), colour)
+    } else if obj := ^ForeignObject(words[i]); obj != null {
+      pos := layout.push(obj.size)
+      canvas.drawRect(colour, rect.mk(pos.x, pos.y, obj.size.x, obj.size.y)) 
     }
   }
 
@@ -187,7 +185,6 @@ fn transformTextNodesIntoObjectArray(textNodes: []construct.TextNode, typingTime
   objects := []PushObj{}
   offsetSeconds := 0.0
   speed := 1.0
-
   // TODO(skejeton): Ideally I shouldn't manually calculate offsets here as this should be done automatically
   //                 by the sequencer, for that I'll need to delay the speech typing pass or make it iterative (probably better?).
   //                 OTOH speech pass can be very context sensetive, so as much text as possible is desired.
@@ -201,6 +198,7 @@ fn transformTextNodesIntoObjectArray(textNodes: []construct.TextNode, typingTime
     offsetSeconds += spokenText.seconds
 
     speed = node.speed
+    objects = append(objects, ForeignObject{size: th.Vf2{std.rand()%15, std.rand()%15}})
     objects = append(objects, SwitchColor{node.color})
     objects = append(objects, makeObjectArrayFromSpeechNodes(spokenText.nodes))
   }  
