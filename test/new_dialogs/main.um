@@ -12,7 +12,8 @@
 //  An idea of a typing style I have rn is when words are typed fast, then spaces wait for a bit, then commas wait for a bit longer,
 //  and dots wait for even longer, in theory that could even work in other alphabetic languages like Russian, Ukrainian, Spanish, Portuguese, German etc
 //     
-
+// TODO(skejeton):
+//  Allow foreign objects on screen, start with rectangles for example
 
 import (
   "std.um"
