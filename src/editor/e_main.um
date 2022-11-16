@@ -269,9 +269,7 @@ fn (wm: ^WindowManager) putWindowOnFront(name: str) {
 }
 
 fn (wm: ^WindowManager) setWindowVisible(name: str, to: bool) {
-  if validkey(wm.windows, name) {
-    wm.windowVisibility[name] = to
-  } 
+  wm.windowVisibility[name] = to
 }
 
 fn (e: ^Editor) maybeAcquireToolNode(name: str): ^ToolNode {
@@ -1340,6 +1338,7 @@ fn putEntityList(editor: ^Editor) {
               entryRemoveIndex = i
             case entityListActionEdit:
               selectEntity(&editor.entities, i)
+              editor.wm.setWindowVisible("Entity Editor", true)
           }
           entryRect.y += 30
         }
