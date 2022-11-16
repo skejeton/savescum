@@ -52,7 +52,6 @@ type (
 
   Window = struct {
     lastFrameTouched: int
-    isVisible: bool
     rect: rect.Rect
     layer: int
   }
@@ -61,6 +60,7 @@ type (
     topmostWindowLayer: int
     frameNumber: int
     windowCount: int
+    windowVisibility: map[str]bool
     windows: map[str]Window
   }
 
@@ -238,7 +238,7 @@ fn initWindowManager(): WindowManager {
 }
 
 fn (wm: ^WindowManager) isWindowVisible(name: str): bool {
-  return validkey(wm.windows, name) && wm.windows[name].lastFrameTouched == wm.frameNumber && wm.windows[name].isVisible
+  return validkey(wm.windows, name) && wm.windows[name].lastFrameTouched == wm.frameNumber && wm.windowVisibility[name]
 }
 
 fn (wm: ^WindowManager) getWindowRect(name: str, fallback: rect.Rect): ^rect.Rect {
@@ -249,7 +249,7 @@ fn (wm: ^WindowManager) getWindowRect(name: str, fallback: rect.Rect): ^rect.Rec
 
   // Create window.
   wm.windowCount += 1
-  wm.windows[name] = Window{isVisible: true, layer: wm.topmostWindowLayer, rect: fallback, lastFrameTouched: wm.frameNumber}
+  wm.windows[name] = Window{layer: wm.topmostWindowLayer, rect: fallback, lastFrameTouched: wm.frameNumber}
   wm.topmostWindowLayer++
   return &wm.windows[name].rect
 }
@@ -270,7 +270,7 @@ fn (wm: ^WindowManager) putWindowOnFront(name: str) {
 
 fn (wm: ^WindowManager) setWindowVisible(name: str, to: bool) {
   if validkey(wm.windows, name) {
-    wm.windows[name].isVisible = to
+    wm.windowVisibility[name] = to
   } 
 }
 
