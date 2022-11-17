@@ -1,4 +1,4 @@
-# Last id: 17
+# Last id: 18
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -26,3 +26,11 @@
   I just removed d_colors.um and I intend to make a theme structure instead, could look sweet <3
 
 17. Port the debug view I had from the old UI. It was really handy.
+
+18. Zoom in editor.
+
+19. Ability to move layers
+
+20. Do something with mixing up layers constantly
+
+21. Investigate random overflow bugs :/
