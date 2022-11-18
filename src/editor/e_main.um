@@ -962,6 +962,18 @@ fn putToolbarWindowIconButton(editor: ^Editor, windowName: str, buttonRectangle:
   }
 }
 
+fn getEntitySelectedIndex(entities: ^EditorEntities): int {
+  return entities.entitySelected
+}
+
+fn getEntitySelected(entities: ^EditorEntities): ^d_worlddata.EntityDesc {
+  if entities.entitySelected < 0 {
+    return null
+  }
+
+  return &entities.list[entities.entitySelected]
+}
+
 // Puts window toolbar on the bottom of the screen
 fn editorPutToolbar(editor: ^Editor) {
   const (
@@ -985,11 +997,13 @@ fn editorPutToolbar(editor: ^Editor) {
     }
 
     if !editor.isPlaying {
+      putToolbarWindowIconButton(editor, "Portal", &buttonRectangle, 2, 2)
       putToolbarWindowIconButton(editor, "Tile Picker", &buttonRectangle, 0, 1)
       putToolbarWindowIconButton(editor, "Player Placer", &buttonRectangle, 3, 1)
       putToolbarWindowIconButton(editor, "Entity List", &buttonRectangle, 0, 2)
-      putToolbarWindowIconButton(editor, "Entity Editor", &buttonRectangle, 1, 2)
-      putToolbarWindowIconButton(editor, "Portal", &buttonRectangle, 2, 2)
+      if getEntitySelected(&editor.entities) != null {
+        putToolbarWindowIconButton(editor, "Entity Editor", &buttonRectangle, 1, 2)
+      }
 
       // Draw Save/Load
       {
@@ -1116,16 +1130,20 @@ type WorldEditCmd = struct {
 }
 
 fn (d: ^WorldEditCmd) draw(props: e_drawcmd.DrawProperties) {
+  const getcolor = fn (bit: bool): uint32 {
+    if bit {
+      return 0xFFFFFFFF
+    }
+    return 0xFFFFFF33
+  }
+
   d_background.draw(d.rect)
-  if (d.showLayers & 1 > 0) {
-    d.world.drawLayer(d.offset, -1)
-  }
-  if (d.showLayers & 2 > 0) {
-    d.world.drawLayer(d.offset, 0)
-  }
-  if (d.showLayers & 4 > 0) {
-    d.world.drawLayer(d.offset, 1)
-  }
+  colors := []uint32{getcolor(d.showLayers&1>0), getcolor(d.showLayers&2>0), getcolor(d.showLayers&4>0)}
+
+
+  d.world.drawLayer(d.offset, -1, 1, colors[0])
+  d.world.drawLayer(d.offset, 0, 1, colors[1])
+  d.world.drawLayer(d.offset, 1, 1, colors[2])
 
   d.toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
   pos := d.world.playerSpawnPos.mulf(32).add(d.offset)
@@ -1355,18 +1373,6 @@ fn putEntityList(editor: ^Editor) {
   if entryRemoveIndex != -1 {
     removeEntity(&editor.entities, entryRemoveIndex)
   }
-}
-
-fn getEntitySelectedIndex(entities: ^EditorEntities): int {
-  return entities.entitySelected
-}
-
-fn getEntitySelected(entities: ^EditorEntities): ^d_worlddata.EntityDesc {
-  if entities.entitySelected < 0 {
-    return null
-  }
-
-  return &entities.list[entities.entitySelected]
 }
 
 fn putEntityEditor(editor: ^Editor) {
@@ -1660,11 +1666,11 @@ fn editorPutUi(editor: ^Editor) {
   editorPutToolbar(editor)
 
   if !editor.isPlaying {
+    putPortalEditor(editor)
     putTilePicker(editor)
     putPlayerPlacer(editor)
     putEntityList(editor)
     putEntityEditor(editor)
-    putPortalEditor(editor)
   }
 
   if editor.isRelocatingPlayer {

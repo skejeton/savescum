@@ -32,5 +32,6 @@
 19. Ability to move layers
 
 20. Do something with mixing up layers constantly
+  I implemented onion skin for when we only enable one layer, maybe that can help
 
 21. Investigate random overflow bugs :/

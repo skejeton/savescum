@@ -108,7 +108,7 @@ fn getTileSizeInPixels(world: ^World): th.Vf2 {
   return th.Vf2{world.tileset.tileSizeX, world.tileset.tileSizeY}
 }
 
-fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0) {
+fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0, tint: uint32 = 0xFFFFFFFF) {
   offset = offset.mulf(scale)
   tileSize := getTileSizeInPixels(world).mulf(scale)
   chunkSize := tileSize.mul(th.Vf2{chunkW, chunkH})
@@ -143,13 +143,13 @@ fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0) {
           world.tileset.selectTilePos(tile)
           tileSel = tile
         }
-        world.tileset.image.draw(th.Transform{p: th.Vf2{cx*tileSize.x+offset.x, cy*tileSize.y+offset.y}, s: imgScale})
+        world.tileset.image.draw(th.Transform{p: th.Vf2{cx*tileSize.x+offset.x, cy*tileSize.y+offset.y}, s: imgScale}, tint)
       }
     }
   }
 }
 
-fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0) {
+fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0, tint: uint32 = 0xFFFFFFFF) {
   layerId++
   if layerId < 0 || layerId > 2 {
     return
@@ -159,7 +159,7 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0) {
 
   for pos in layer {
     rpos := th.Vf2{pos.x, pos.y}
-    drawChunk(world, &layer[pos], rpos.mul(th.Vf2{chunkW, chunkH}).mul(getTileSizeInPixels(world)).add(pan), scale)
+    drawChunk(world, &layer[pos], rpos.mul(th.Vf2{chunkW, chunkH}).mul(getTileSizeInPixels(world)).add(pan), scale, tint)
   }
 }
 
