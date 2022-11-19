@@ -1,0 +1,107 @@
+type (
+
+	FileLoc* = struct {
+
+		line: int
+
+		column: int
+
+		offset: int
+
+	}
+
+	
+
+	Error* = struct {
+
+		location: FileLoc
+
+		code: int
+
+	}	
+
+
+
+	TomlResult* = struct {
+
+		errors: []Error
+
+		data: map[str]interface{}
+
+	}
+
+)
+
+
+
+const (
+
+	errUnknown* = 0
+
+	errUnclosedString* = 1
+
+	errUnexpectedToken* = 2
+
+	errUnexpectedCharacter* = 3
+
+	errExpectedKey* = 4
+
+	errFieldReassigned* = 5
+
+	errExpectedNewLine* = 6
+
+	errExpectedDigit* = 7
+
+	errCount* = 8
+
+)
+
+
+
+fn formatError*(error: ^Error, source: str): str {
+
+	const errCodeStr = [errCount]str{
+
+		"Unknown error",
+
+		"Unclosed string",
+
+		"Unexpected token",
+
+		"Unexpected character",
+
+		"Invalid token for key",
+
+		"Field reassigned", 
+
+		"Expected new line",
+
+		"Expected digit"}
+
+
+
+	return sprintf("error(%d:%d): %s", error.location.line+1, error.location.column+1, errCodeStr[error.code])	
+
+}
+
+
+
+fn parse*(source: str): TomlResult {
+
+	return TomlResult{errors: []Error{}, data: map[str]interface{}{}}
+
+}
+
+
+
+fn (r: ^TomlResult) getError*(): ^Error {
+
+	if len(r.errors) > 0 {
+
+		return &r.errors[0]
+
+	}
+
+	return null
+
+}

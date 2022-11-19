@@ -20,7 +20,7 @@ fn restart() {
 }
 
 fn cycle(): bool {
-  return window.cycle(rect.mk(0, 0, window.w, window.h))
+  return window.cycle()
 }
 
 fn charToUpper(c: char): char {

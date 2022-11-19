@@ -1933,7 +1933,7 @@ fn editorMain*() {
   showErrorScreenIfResourcesFailedToLoad(&rl)
 
   // cycle
-  for window.cycle(d_global.screen) {
+  for window.cycle() {
     d_fps.limit(60)
     d_fps.update()
 
@@ -1944,6 +1944,7 @@ fn editorMain*() {
     }
     
     d_global.screen = rect.mk(0, 0, window.w, window.h)
+		window.setViewport(d_global.screen.getDims())
 
     editorPutUi(&editor)
 

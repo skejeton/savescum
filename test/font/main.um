@@ -12,7 +12,7 @@ fn main() {
   screen := rect.mk(0, 0, 640, 480)
   font := th_font.load("data/font/monospace.ttf", 16, th_font.filterNearest)
 
-  for window.cycle(screen) {
+  for window.cycle() {
     txt := "古池や蛙飛び込む水の音\nふるいけやかわずとびこむみずのおと\nold pond\nfrog leaps in\nwater's sound\n\n初しぐれ猿も小蓑をほしげ也\nはつしぐれさるもこみのをほしげなり\nthe first cold shower\neven the monkey seems to want\na little coat of straw"
     size := font.measure(txt)
     canvas.drawRect(th.black, rect.Rect{0, 0, size.x, size.y})
