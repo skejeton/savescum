@@ -1934,6 +1934,11 @@ fn editorMain*() {
 
   // cycle
   for window.cycle(d_global.screen) {
+    // NOTE: probably minimized
+    if window.w == 0 || window.h == 0 {
+      continue
+    }
+
     d_fps.limit(60)
     d_fps.update()
 
