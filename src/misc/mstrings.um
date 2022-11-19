@@ -1,0 +1,50 @@
+import (
+  "utf8.um"
+)
+
+fn splitBy*(text: str, by: char): []str {
+  items := []str{}
+  last := 0
+  for i, c in text {
+    if c == by {
+      items = append(items, slice(text, last, i))
+      last = i+1 // Skip the character by adding one.
+    }
+  }
+  items = append(items, slice(text, last))
+  return items
+}
+
+fn uniSliceFrom*(text: str, start: uint): str {
+  startPos := 0
+  for i := 0; i < start; i++ {
+    rune := utf8.getNextRune(text, startPos)
+    startPos += rune.size()
+  }
+
+  return slice(text, startPos)
+}
+
+fn uniSlice*(text: str, start, size: uint): str {
+  startPos := 0
+  for i := 0; i < start; i++ {
+    rune := utf8.getNextRune(text, startPos)
+    startPos += rune.size()
+  }
+
+  endPos := startPos
+  for i := 0; i < size; i++ {
+    rune := utf8.getNextRune(text, endPos)
+    endPos += rune.size()
+  }
+
+  return slice(text, startPos, endPos)
+}
+
+fn uniRemove*(text: str, start, size: uint): str {
+  return uniSlice(text, 0, start)+uniSliceFrom(text, start+size)
+}
+
+fn uniInsert*(text: str, at: uint, other: str): str {
+  return uniSlice(text, 0, at)+other+uniSliceFrom(text, at)
+}  

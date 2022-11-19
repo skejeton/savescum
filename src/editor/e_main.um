@@ -11,7 +11,9 @@ import (
   "../d_tileset.um"; "../d_util.um"; "../d_mouseinput.um";
   "../d_game.um"; "../d_script.um";
 
-  th_font = "font.um"; th_color = "color.um"; 
+  th_font = "font.um"; th_color = "color.um";
+  "../misc/mdatatree.um"; "../misc/mcommoncfg.um"
+  "../misc/mstrings.um"; 
 
   "window.um"; "rect.um"; "th.um"; "image.um"; "canvas.um"; "input.um"
 
@@ -780,7 +782,7 @@ fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect.Rect, draw
   editor.ctx.beginScissorRect(r)
 
   firstLine := getFirstLineOfBuffer(&edit.buffer)
-  precursor := e_buffer.unicodeTextSlice(firstLine, 0, edit.cursor.column)
+  precursor := mstrings.uniSlice(firstLine, 0, edit.cursor.column)
   precursorMeasured := editor.resources.mainFont.measure(precursor)
   cursorRect := rect.mk(precursorMeasured.x, 0, 1, precursorMeasured.y)
  
@@ -1745,178 +1747,6 @@ fn editorInit(resources: EditorResources): Editor {
     tools: rootNode}
 }
 
-type PushText = struct {
-  font: th_font.Font
-  initPos: th.Vf2
-  pos: th.Vf2
-  indents: int
-  lineHeight: real
-}
-
-fn mkPushText(font: th_font.Font, pos: th.Vf2): PushText {
-  return PushText{font, pos, pos, 0, font.measure(" ").y}
-}
-
-fn (pushy: ^PushText) push(txt: str, color: uint32 = 0xFFFFFFFF): rect.Rect {
-  pushy.font.draw(txt, pushy.pos, color)
-  size := pushy.font.measure(txt)
-  if size.y > pushy.lineHeight {
-    pushy.lineHeight = size.y
-  }
-
-  if len(e_buffer.textSplitBy(txt, '\n')) > 1 {
-    canvas.drawRect(color&0xFFFFFF7F, rect.mk(pushy.pos.x-1, pushy.pos.y, 1, size.y))
-  }
-
-  pushy.pos.x += size.x
-  return rect.mk(pushy.pos.x-size.x, pushy.pos.y, size.x, size.y)
-}
-
-
-fn (pushy: ^PushText) shouldWrap(): bool {
-  return pushy.pos.x - pushy.initPos.x > 200
-}
-
-fn (pushy: ^PushText) newLine() {
-  pushy.pos.y += pushy.lineHeight
-  pushy.lineHeight = pushy.font.measure(" ").y
-  pushy.pos.x = pushy.indents*30+pushy.initPos.x
-}
-
-fn (pushy: ^PushText) indent(by: int) {
-  pushy.indents += by
-}
-
-fn valueTypeName(value: interface{}): str {
-  if ^[]interface{}(value) != null {
-    return "array"
-  } 
-  if ^map[str]interface{}(value) != null {
-    return "map"
-  }
-  if ^int(value) != null {
-    return "int"
-  }
-  if ^str(value) != null {
-    return "str"
-  }
-  if ^real(value) != null {
-    return "real"
-  }
-  if ^bool(value) != null {
-    return "bool"
-  }
-  return ""
-}
-
-fn representString(s: str): str {
-  result := ""
-  split := e_buffer.textSplitBy(s, '\n')
-  for i, item in split {
-    result += item
-    if i != len(split)-1 {
-      result += '\n'
-    }
-  }
-
-  if len(split) == 1 {
-    return "\""+result+"\""
-  }
-
-  return "\"\"\""+result+"\"\"\""
-}
-
-fn drawEnv(pushy: ^PushText, hover: ^str, env: interface{}) {
-  if arrValue := ^[]interface{}(env); arrValue != null {
-    pushy.push(sprintf("["))
-    pushy.indent(1)
-    pushy.newLine()
-
-    for i in arrValue {
-      drawEnv(pushy, hover, arrValue[i])
-      if i != len(arrValue^)-1 {
-        pushy.push(", ")
-        if pushy.shouldWrap() {
-          pushy.newLine()
-        }
-      }
-    }
-
-    pushy.indent(-1)
-    pushy.newLine()
-    pushy.push("]")
-  } else if mapValue := ^map[str]interface{}(env); mapValue != null {
-    pushy.push(sprintf("{"))
-    pushy.indent(1)
-    pushy.newLine()
-
-    i := 0
-    keyCount := len(keys(mapValue^))
-    for k in mapValue {
-      if d_util.isMouseInRect(pushy.push(k, 0xFF007FFF)) {
-        hover ^= valueTypeName(mapValue[k])
-      }
-      pushy.push(sprintf(" = "))
-      drawEnv(pushy, hover, mapValue[k])
-      if i != keyCount-1 {
-        pushy.push(", ")
-        pushy.newLine()
-      }
-      i++
-    }
-
-    pushy.indent(-1)
-    pushy.newLine()
-    pushy.push("}")
-  } else if boolValue := ^bool(env); boolValue != null {
-    represented := repr(env)
-
-    color := 0xFF0040FF
-    if boolValue^ {
-      color = 0x00FF40FF
-    }
-
-    if d_util.isMouseInRect(pushy.push(slice(represented, 0, len(represented)-1), color)) {
-      hover ^= valueTypeName(env)
-    }
-  } else if strValue := ^str(env); strValue != null {
-
-    if d_util.isMouseInRect(pushy.push(representString(strValue^), 0x007FFFFF)) {
-      hover ^= valueTypeName(env)
-    }
-  } else {
-    represented := repr(env)
-
-    if d_util.isMouseInRect(pushy.push(slice(represented, 0, len(represented)-1), 0xFFFF00FF)) {
-      hover ^= valueTypeName(env)
-    }
-  }
-}
-
-fn getFps*(): int {
-  fps := 0
-  
-  // FIXME: Currently toml only supports strings so I have to call atoi
-  if fpsProp := ^int(d_config.getProperty("fps")); fpsProp != null {
-    fps = fpsProp^
-  }
-
-  if fps <= 0 {
-    return 60
-  }
-  
-  return fps;
-}
-
-fn drawTooltip(font: th_font.Font, pos: th.Vf2, tooltip: str) {
-  size := font.measure(tooltip)
-  r := rect.mk(pos.x, pos.y, size.x, size.y)
-
-  canvas.drawRect(th.white, d_util.rectShrink(r, -1))
-  canvas.drawRect(th.black, d_util.rectShrink(r, 0))
-  font.draw(tooltip, pos, th.white)
-}
-
 fn editorMain*() {
   std.srand(std.time())
 
@@ -1958,9 +1788,9 @@ fn editorMain*() {
     if d_config.checkFlag(d_config.flagDebugOverlays) {
       canvas.drawRect(th.black, rect.mk(50, 50, 500, 500))
       hover := ""
-      drawEnv(&mkPushText(editor.resources.mainFont, th.Vf2{50, 50}), &hover, d_config.getTree())
+      mdatatree.drawEnv(&mdatatree.mkPushText(editor.resources.mainFont, th.Vf2{50, 50}), &hover, d_config.getTree())
       if hover != "" {
-        drawTooltip(editor.resources.mainFont, editor.mouseState.pos.addf(10), hover)
+        mdatatree.drawTooltip(editor.resources.mainFont, editor.mouseState.pos.addf(10), hover)
       }
     }
   }
