@@ -19,7 +19,7 @@ fn getPersonas*(): []Prs {
 
   defbox := d_resources.loadImage(&rl, d_test.pfx()+"defbox.png")
   faces := d_resources.loadImage(&rl, d_test.pfx()+"faces.png")
-  fontmono := d_resources.loadFont(&rl, "data/font/monospace.ttf", 16, 1)
+  fontmono := d_resources.loadFont(&rl, "data/font/monospace.otf", 16, 1)
 
   if d_resources.hasErrors(&rl) {
     d_problem_screen.showResourceLoadingError(&rl)

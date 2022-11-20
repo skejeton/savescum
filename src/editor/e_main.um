@@ -1719,7 +1719,7 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
     bevelImage: d_resources.loadImage(rl, "data/img/ui_bevelbutton.png"),
     tilesetImage: d_resources.loadImage(rl, "data/img/ts_sky.png"),
     toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png"),
-    mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 0)}
+    mainFont: d_resources.loadFont(rl, "data/font/monospace.otf", 16, 0)}
  
   editorResources.tilesetImage.setfilter(0)
 
