@@ -11,11 +11,7 @@ type Cursor* = struct {
   line, column: int
 }
 
-/*
-// BufferSplitLine()
-//
-// Splits line at the cursor. Equivalent to inserting a newline.
-*/
+// Splits line at the cursor, equivalent to inserting a newline.
 fn splitLine*(buffer: ^Buffer, cursor: ^Cursor) {
   firstHalf, secondHalf := mstrings.uniSlice(buffer.lines[cursor.line], 0, cursor.column), mstrings.uniSliceFrom(buffer.lines[cursor.line], cursor.column)
 
@@ -30,12 +26,9 @@ fn splitLine*(buffer: ^Buffer, cursor: ^Cursor) {
   cursor.line += 1
 }
 
-/*
-// BufferErase()
-//
-// Erases character under cursor. If cursor is at the start of the line,
-//  it will join the previous line, and line it's currently on.
-*/
+
+// Erases character under cursor.
+// Joins the two lines if at the start of a line.
 fn erase*(buffer: ^Buffer, cursor: ^Cursor) {
   cursor.column -= 1
   if cursor.column < 0 {
@@ -55,11 +48,7 @@ fn erase*(buffer: ^Buffer, cursor: ^Cursor) {
   }
 }
 
-/*
-// BufferInsert()
-//
 // Inserts provided text into buffer. 
-*/
 fn insertAt*(buffer: ^Buffer, cursor: ^Cursor, text: str) {
   linesToInsert := mstrings.splitBy(text, '\n')
   for index, line in linesToInsert {
@@ -72,11 +61,7 @@ fn insertAt*(buffer: ^Buffer, cursor: ^Cursor, text: str) {
   }
 }
 
-/*
-// BufferSanitizeCursor()
-//
 // Sanitizes the `cursor` so it doesn't go outside bounds of `buffer`.
-*/
 fn sanitizeCursor*(buffer: ^Buffer, cursor: Cursor): Cursor {
   if cursor.line < 0 {
     cursor.line = 0
@@ -97,12 +82,8 @@ fn sanitizeCursor*(buffer: ^Buffer, cursor: Cursor): Cursor {
   return cursor
 }
 
-/*
-// BufferMoveCursor()
-//
 // Moves cursor within buffer by dx columns, dy rows.
-//  rows grow downwards.
-*/
+// Rows grow downwards.
 fn moveCursor*(buffer: ^Buffer, cursor: Cursor, dx, dy: int): Cursor {
   cursor.line += dy
 
