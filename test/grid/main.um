@@ -1,8 +1,13 @@
 import (
-  "../../src/d_test.um"; 
-  "../../src/d_rerp.um"; 
-  "../../src/editor/mgrid.um"; 
-  "window.um"; "rect.um"; "th.um"; "canvas.um"; "input.um"
+  "../../src/d_test.um"
+  "../../src/d_rerp.um" 
+  "../../src/editor/mgrid.um"
+  "image.um"
+  "window.um"
+  "rect.um"
+  "th.um"
+  "canvas.um"
+  "input.um"
 )
 
 fn main() {
@@ -15,6 +20,8 @@ fn main() {
 
   lastMousePos := input.getMousePos()
   targetScale := grid.s
+  tileset := image.load("data/img/ts_sky.png")
+  tileset.setfilter(0)
 
   for window.cycle(screen) {
   	if input.isPressed(input.mouse_up) {
@@ -33,12 +40,14 @@ fn main() {
 
   	mp := grid.toGrid(input.getMousePos())
   	p1, p2 := grid.toScreen(mp.floor()), grid.toScreen(mp.ceil())
-  	printf(repr(mp)+"\n")
 
   	canvas.drawRect(th.black, screen)
-  	canvas.drawRect(th.red, rect.mk(p1.x, p1.y, p2.x-p1.x, p2.y-p1.y))
+
+    tileset.draw(th.Transform{p: grid.toScreen(th.Vf2{0, 0}), s: grid.s.divf(64)})
+
   	guide := mgrid.mkRenderGuideFromBoundingBox(grid)
   	mgrid.drawRenderGuide(guide, th.white&0xFFFFFF55, 1)
+    canvas.drawRect(th.red&0xFFFFFF55, rect.mk(p1.x, p1.y, p2.x-p1.x, p2.y-p1.y))
 
     if grid.s.x >= 64 {
     	for v := 0; v < guide.nv; v++ {

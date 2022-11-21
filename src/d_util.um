@@ -64,6 +64,7 @@ fn imageCropRect*(img: image.Image, rec: rect.Rect) {
   img.crop(th.Vf2{rec.x/size.x, rec.y/size.y}, th.Vf2{(rec.x + rec.w)/size.x, (rec.y + rec.h)/size.y})
 }
 
+
 //
 // Returns lowest number among a, b
 //
