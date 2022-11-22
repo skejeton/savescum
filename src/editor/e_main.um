@@ -117,8 +117,8 @@ type (
     resources: EditorResources
 
     // Editors
-    tileGrid: EditorGrid
     tilemapGrid: EditorGrid
+    tilesetGrid: EditorGrid
     tilemapLayer: int
     tilemapShowAllLayers: bool
     tileSelected: th.Vf2
@@ -248,7 +248,7 @@ fn (wm: ^WindowManager) getWindowRect(name: str, fallback: rect.Rect): ^rect.Rec
     wm.windows[name].lastFrameTouched = wm.frameNumber
     return &wm.windows[name].rect
   }
-
+  
   // Create window.
   wm.windowCount += 1
   wm.windows[name] = Window{layer: wm.topmostWindowLayer, rect: fallback, lastFrameTouched: wm.frameNumber}
@@ -1231,9 +1231,9 @@ fn putTilePicker(editor: ^Editor) {
       editor.ctx.drawRect(th.black, contentRect)
       editor.ctx.moveLayer(1)
       {
-        selectedTile = editor.tilemapGrid.put(editor, contentRect)
+        selectedTile = editor.tilesetGrid.put(editor, contentRect)
 
-        selectedTilePos := editor.tilemapGrid.mapPos(editor.tileSelected.mulf(32))
+        selectedTilePos := editor.tilesetGrid.mapPos(editor.tileSelected.mulf(32))
         
         editor.ctx.beginScissorRect(contentRect)
         editor.ctx.drawRect(th_color.alpha(th.green, 0.3), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32))
@@ -1243,7 +1243,7 @@ fn putTilePicker(editor: ^Editor) {
       editor.ctx.beginScissorRect(contentRect)
 
       editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
-      editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{0.5, 0.5}, p: editor.tilemapGrid.mapPos(th.Vf2{0, 0})})
+      editor.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{0.5, 0.5}, p: editor.tilesetGrid.mapPos(th.Vf2{0, 0})})
       editor.ctx.endScissor()
     }
     events := editor.endTool()
@@ -1323,7 +1323,7 @@ fn isEntitySelected(entities: ^EditorEntities, index: int): bool {
 }
 
 fn initEntityAtCenter(editor: ^Editor, ent: d_worlddata.EntityDesc): d_worlddata.EntityDesc {
-  ent.rect = rect.Rect{-editor.tileGrid.panning.x-16, -editor.tileGrid.panning.y-16, 32, 32}
+  ent.rect = rect.Rect{-editor.tilemapGrid.panning.x-16, -editor.tilemapGrid.panning.y-16, 32, 32}
   return ent
 }
 
@@ -1487,7 +1487,7 @@ fn putWorldEntities(editor: ^Editor) {
   for i in editor.entities.list {
     ent := &editor.entities.list[i]
 
-    entVisRect := d_util.rectMove(ent.rect, editor.tileGrid.mapPos(th.Vf2{0, 0}))
+    entVisRect := d_util.rectMove(ent.rect, editor.tilemapGrid.mapPos(th.Vf2{0, 0}))
 
     // FIXME: Initializing tag set every time we render an entity is not efficent at all.
     tags := d_game.initTagSetFromString(ent.tags)
@@ -1536,7 +1536,7 @@ fn loadPortal(editor: ^Editor, portal: str) {
   editor.currentPortal = portal
   editor.potentialPortal = portal
   editorLoadWorld(editor, portal)
-  editor.tileGrid.panning = editor.world.playerSpawnPos.mulf(-32)
+  editor.tilemapGrid.panning = editor.world.playerSpawnPos.mulf(-32)
 }
 
 fn putPortalEditor(editor: ^Editor) {
@@ -1602,7 +1602,7 @@ fn editorPutUi(editor: ^Editor) {
   } else {
     tool := editor.beginTool("TileEditor", rect.mk(0, 0, d_global.screen.w, d_global.screen.h-34))
 
-    selectedTile := editor.tileGrid.put(editor, tool.rect)
+    selectedTile := editor.tilemapGrid.put(editor, tool.rect)
 
     putWorldEntities(editor)
 
@@ -1643,7 +1643,7 @@ fn editorPutUi(editor: ^Editor) {
     }
 
     editor.ctx.moveLayer(-1)
-    editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tileGrid.mapPos(th.Vf2{0, 0}), &editor.world})
+    editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tilemapGrid.mapPos(th.Vf2{0, 0}), &editor.world})
     editor.ctx.moveLayer(1)
 
     events := editor.endTool()
@@ -1735,8 +1735,8 @@ fn editorInit(resources: EditorResources): Editor {
 
   return Editor{
     ctx: e_drawcmd.init(),
-    tileGrid: EditorGrid{scaling: 1.0},
     tilemapGrid: EditorGrid{scaling: 1.0},
+    tilesetGrid: EditorGrid{scaling: 1.0},
     tilemapShowAllLayers: true,
     isIgnoringGuides: true,
     tileset: tileset,
