@@ -108,8 +108,8 @@ fn getTileSizeInPixels(world: ^World): th.Vf2 {
   return th.Vf2{world.tileset.tileSizeX, world.tileset.tileSizeY}
 }
 
-fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, scale: real = 1.0, tint: uint32 = 0xFFFFFFFF) {
-  offset = offset.mulf(scale)
+fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, pan: th.Vf2, scale: real = 1.0, tint: uint32 = 0xFFFFFFFF) {
+  offset = offset.mulf(scale).add(pan)
   tileSize := getTileSizeInPixels(world).mulf(scale)
   chunkSize := tileSize.mul(th.Vf2{chunkW, chunkH})
   chunkRect := rect.mk(offset.x, offset.y, chunkSize.x, chunkSize.y)
@@ -159,7 +159,7 @@ fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0, tint
 
   for pos in layer {
     rpos := th.Vf2{pos.x, pos.y}
-    drawChunk(world, &layer[pos], rpos.mul(th.Vf2{chunkW, chunkH}).mul(getTileSizeInPixels(world)).add(pan), scale, tint)
+    drawChunk(world, &layer[pos], rpos.mul(th.Vf2{chunkW, chunkH}).mul(getTileSizeInPixels(world)), pan, scale, tint)
   }
 }
 
