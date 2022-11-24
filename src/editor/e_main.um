@@ -656,7 +656,7 @@ fn uiEndWindow(editor: ^Editor) {
 }
 
 fn makeGrid(ge: ^EditorGrid): mgrid.Grid {
-  return mgrid.Grid{p: ge.panning.add(ge.rect.getDims().divf(2).divf(ge.scaling)).divf(32.0), s: th.Vf2{ge.scaling*32, ge.scaling*32}, bb: ge.rect}
+  return mgrid.Grid{p: ge.panning.divf(32.0), s: th.Vf2{ge.scaling*32, ge.scaling*32}, bb: ge.rect}
 }
 
 fn (ge: ^EditorGrid) mapPos(pos: th.Vf2): th.Vf2 {
@@ -671,6 +671,11 @@ type DrawGridRenderGuideCommand = struct {
 
 fn (cmd: ^DrawGridRenderGuideCommand) draw(_: e_drawcmd.DrawProperties) {
   mgrid.drawRenderGuide(cmd.guide, cmd.color, cmd.thickness)
+}
+
+
+fn (ge: ^EditorGrid) zoomInto(newScale: real, point: th.Vf2) {
+  ge.scaling = newScale
 }
 
 // Puts editor grid spanning the entire screen
@@ -1141,9 +1146,9 @@ fn (d: ^WorldEditCmd) draw(props: e_drawcmd.DrawProperties) {
 
   offset := d.grid.mapPos(th.Vf2{0, 0})
 
-  d.world.drawLayer(offset, -1, 2, colors[0])
-  d.world.drawLayer(offset, 0, 2, colors[1])
-  d.world.drawLayer(offset, 1, 2, colors[2])
+  d.world.drawLayer(offset, -1, d.grid.scaling, colors[0])
+  d.world.drawLayer(offset, 0, d.grid.scaling, colors[1])
+  d.world.drawLayer(offset, 1, d.grid.scaling, colors[2])
 
   d.toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
   pos := d.grid.mapPos(d.world.playerSpawnPos)
@@ -1647,6 +1652,11 @@ fn editorPutUi(editor: ^Editor) {
 
 
     events := editor.endTool()
+    
+    scroll := events.queryScroll()
+    if scroll != 0 {
+      editor.tilemapGrid.zoomInto(editor.tilemapGrid.scaling+scroll/10.0, events.mouseState.pos)
+    }
 
     if editor.isRelocatingPlayer {
       if (events.queryMouse(0, d_mouseinput.down)) {
@@ -1735,7 +1745,7 @@ fn editorInit(resources: EditorResources): Editor {
 
   return Editor{
     ctx: e_drawcmd.init(),
-    tilemapGrid: EditorGrid{scaling: 2.0},
+    tilemapGrid: EditorGrid{scaling: 1.0},
     tilesetGrid: EditorGrid{scaling: 1.0},
     tilemapShowAllLayers: false,
     isIgnoringGuides: true,
