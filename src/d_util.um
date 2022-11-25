@@ -219,6 +219,16 @@ fn abs*(a: real): real {
   return a
 }
 
+fn clamp*(a, b, c: real): real {
+  if a < b {
+    return b
+  }
+  if a > c {
+    return c
+  }
+  return a
+}
+
 fn rectDiff*(a, b: rect.Rect): rect.Rect {
   x := max(a.x, b.x);
   y := max(a.y, b.y);

@@ -659,6 +659,10 @@ fn makeGrid(ge: ^EditorGrid): mgrid.Grid {
   return mgrid.Grid{p: ge.panning.divf(32.0), s: th.Vf2{ge.scaling*32, ge.scaling*32}, bb: ge.rect}
 }
 
+fn (ge: ^EditorGrid) mapGrid(pos: th.Vf2): th.Vf2 {
+  return makeGrid(ge).toGrid(pos).mulf(32)
+}
+
 fn (ge: ^EditorGrid) mapPos(pos: th.Vf2): th.Vf2 {
   return makeGrid(ge).toScreen(pos)
 }
@@ -673,9 +677,12 @@ fn (cmd: ^DrawGridRenderGuideCommand) draw(_: e_drawcmd.DrawProperties) {
   mgrid.drawRenderGuide(cmd.guide, cmd.color, cmd.thickness)
 }
 
-
 fn (ge: ^EditorGrid) zoomInto(newScale: real, point: th.Vf2) {
+  start := ge.mapGrid(point)
   ge.scaling = newScale
+  end := ge.mapGrid(point)
+
+  ge.panning = ge.panning.add(end.sub(start))
 }
 
 // Puts editor grid spanning the entire screen
@@ -1570,6 +1577,13 @@ fn showErrorScreenIfResourcesFailedToLoad(rl: ^d_resources.ResourceLoader) {
   }
 }
 
+
+fn updateZoom(init: real, plus: real): real {
+  zoom := init+(init*plus)
+
+  return d_util.clamp(zoom, 0.5, 10)
+}
+
 fn editorPutUi(editor: ^Editor) {
   // Clear the input sink.
   editor.inputSink = InputSink{}
@@ -1618,6 +1632,11 @@ fn editorPutUi(editor: ^Editor) {
 
 
 
+      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "1:1", editor.tilemapLayer == -1).isReleased) {
+        editor.tilemapGrid.zoomInto(1.0, d_util.rectCenter(editor.tilemapGrid.rect))
+      }
+      position.x -= elementSize
+
       if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "BG", editor.tilemapLayer == -1).isReleased) {
         editor.tilemapLayer = -1
       }
@@ -1655,7 +1674,7 @@ fn editorPutUi(editor: ^Editor) {
     
     scroll := events.queryScroll()
     if scroll != 0 {
-      editor.tilemapGrid.zoomInto(editor.tilemapGrid.scaling+scroll/10.0, events.mouseState.pos)
+      editor.tilemapGrid.zoomInto(updateZoom(editor.tilemapGrid.scaling, scroll/10.0), events.mouseState.pos)
     }
 
     if editor.isRelocatingPlayer {
