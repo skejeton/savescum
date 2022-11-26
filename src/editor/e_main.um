@@ -1159,7 +1159,8 @@ fn (d: ^WorldEditCmd) draw(props: e_drawcmd.DrawProperties) {
 
   d.toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
   pos := d.grid.mapPos(d.world.playerSpawnPos)
-  d.toolbarIcons.draw(d_util.posTrans(pos.x, pos.y))
+  scale := d.grid.scaling
+  d.toolbarIcons.draw(th.Transform{p: th.Vf2{pos.x, pos.y}, s: th.Vf2{scale, scale}})
 }
 
 fn getShownLayersBitmap(layerSelected: int, showAllLayers: bool): uint {
@@ -1489,15 +1490,19 @@ fn drawTaggedEntityRect(editor: ^Editor, entity: ^d_worlddata.EntityDesc, r: rec
   }
 
   if tags.isSet("Comment") {
-    editor.ctx.drawText(editor.resources.mainFont, entity.name, th.Vf2{r.x, r.y}, th.white)
+    editor.ctx.drawText(editor.resources.mainFont, entity.name, th.Vf2{r.x, r.y}, th.white, editor.tilemapGrid.scaling)
   }
+}
+
+fn scaleRect(r: rect.Rect, by: real): rect.Rect {
+  return rect.mk(r.x*by, r.y*by, r.w*by, r.h*by)
 }
 
 fn putWorldEntities(editor: ^Editor) {
   for i in editor.entities.list {
     ent := &editor.entities.list[i]
 
-    entVisRect := d_util.rectMove(ent.rect, editor.tilemapGrid.mapPos(th.Vf2{0, 0}))
+    entVisRect := d_util.rectMove(scaleRect(ent.rect, editor.tilemapGrid.scaling), editor.tilemapGrid.mapPos(th.Vf2{0, 0}))
 
     // FIXME: Initializing tag set every time we render an entity is not efficent at all.
     tags := d_game.initTagSetFromString(ent.tags)
@@ -1515,7 +1520,7 @@ fn putWorldEntities(editor: ^Editor) {
       if isEntitySelected(&editor.entities, i) {
         editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
 
-        ent.rect = applyRectResizeCommand(putRectGrips(editor, entVisRect), ent.rect, editor.mouseState.delta)
+        ent.rect = applyRectResizeCommand(putRectGrips(editor, entVisRect), ent.rect, editor.mouseState.delta.divf(editor.tilemapGrid.scaling))
 
         if ent.rect.w < 10 {
           ent.rect.w = 10
@@ -1621,7 +1626,7 @@ fn editorPutUi(editor: ^Editor) {
 
     selectedTile := editor.tilemapGrid.put(editor, tool.rect)
 
-    //putWorldEntities(editor)
+    putWorldEntities(editor)
 
     // Draw ToggleAll/FG/MG/BG buttons.
     {
@@ -1629,8 +1634,6 @@ fn editorPutUi(editor: ^Editor) {
       const elementSize = 30
 
       position := tool.rect.getEnd().subf(padding).subf(elementSize)
-
-
 
       if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "1:1", editor.tilemapLayer == -1).isReleased) {
         editor.tilemapGrid.zoomInto(1.0, d_util.rectCenter(editor.tilemapGrid.rect))
@@ -1751,6 +1754,7 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
     mainFont: d_resources.loadFont(rl, "data/font/monospace.otf", 16, 0)}
  
   editorResources.tilesetImage.setfilter(0)
+  editorResources.toolbarIcons.setfilter(0)
 
   return editorResources
 }
