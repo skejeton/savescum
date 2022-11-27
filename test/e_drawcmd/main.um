@@ -25,7 +25,7 @@ fn main() {
 
   window.setup("Hello", 640, 480)
   ctx := e_drawcmd.init()
-  font1 := font.load("data/font/monospace.ttf", 16, 1)
+  font1 := font.load("data/font/monospace.otf", 16, 1)
   font2 := font.load("data/font/sans.ttf", 16)
   image1 := image.load("data/img/test.png")
   image2 := image.load("data/img/test.png")

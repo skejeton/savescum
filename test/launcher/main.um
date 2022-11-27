@@ -7,7 +7,7 @@ fn main() {
   
   if !oklf || lf != "I'm a local file!\n" {
     error("Invalid local file")
-  } 
+  }
   
   if !okgf || gf != "I'm a global file!\n" {
     error("Invalid global file")

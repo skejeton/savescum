@@ -1,5 +1,5 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "image.um"
-  "editor/e_buffer.um";
+  "misc/mstrings.um";
   "d_rerp.um"; "d_background.um"; "d_resources.um"; "d_config.um"
   "d_util.um"; "d_world.um"; "d_dialogs.um"; "d_global.um"; "d_worlddata.um")
 
@@ -50,7 +50,7 @@ fn (t: ^TagSet) isSet*(tag: str): bool {
 
 fn initTagSetFromString*(s: str): TagSet {
   tagSet := TagSet{map[str]bool{}}
-  tags := e_buffer.textSplitBy(s, ';')
+  tags := mstrings.splitBy(s, ';')
   for i, tag in tags {
     tagSet.set(tag)
   }
@@ -453,7 +453,7 @@ fn init*(rl: ^d_resources.ResourceLoader) {
   d_game.dialogs.register("receptionist", 
     d_resources.loadImage(rl, "data/img/dialog_frames.png"), 0, 
     d_resources.loadImage(rl, "data/img/dlg_receptionist.png"), 0,
-    d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 0), 0xFFFFFFFF, 0.1, []str{"smirk"})
+    d_resources.loadFont(rl, "data/font/monospace.otf", 16, 0), 0xFFFFFFFF, 0.1, []str{"smirk"})
 }
 
 fn updateEntities() {
@@ -645,10 +645,10 @@ fn draw*() {
   d_background.draw(bgCam)
 
   // RENDER WORLD //
-  world.drawLayer(camera.mulf(-1), -1, cameraScale)
-  world.drawLayer(camera.mulf(-1), 0, cameraScale)
+  world.drawLayer(camera.mulf(-cameraScale), -1, cameraScale)
+  world.drawLayer(camera.mulf(-cameraScale), 0, cameraScale)
   drawEntities()
-  world.drawLayer(camera.mulf(-1), 1, cameraScale)
+  world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
   drawSavePos()
 
   // RENDER DIALOG //

@@ -1,0 +1,63 @@
+import (
+  "../../src/d_test.um"
+  "../../src/d_rerp.um" 
+  "../../src/editor/mgrid.um"
+  "image.um"
+  "window.um"
+  "rect.um"
+  "th.um"
+  "canvas.um"
+  "input.um"
+)
+
+fn main() {
+  d_test.isUnitTest(false)
+
+  window.setup("title", 640, 480)
+  screen := rect.mk(0, 0, 640, 480)
+
+  grid := mgrid.Grid{rect.mk(20, 20, 600, 440), th.Vf2{0.5, 0.5}, th.Vf2{64, 64}}
+
+  lastMousePos := input.getMousePos()
+  targetScale := grid.s
+  tileset := image.load("data/img/ts_sky.png")
+  tileset.setfilter(0)
+
+  for window.cycle(screen) {
+  	if input.isPressed(input.mouse_up) {
+  		targetScale = grid.s.mulf(1.5)
+  	}
+  	if input.isPressed(input.mouse_down) {
+  		targetScale = grid.s.mulf(1/1.5)
+  	}
+
+		mgrid.gridZoomInto(&grid, d_rerp.iVf2(grid.s, targetScale, 0.2), input.getMousePos())
+
+  	if input.isPressed(input.mouse2) {
+  		mouseDelta := input.getMousePos().sub(lastMousePos)
+  		grid.p = grid.p.add(mouseDelta.div(grid.s))
+  	}
+
+  	mp := grid.toGrid(input.getMousePos())
+  	p1, p2 := grid.toScreen(mp.floor()), grid.toScreen(mp.ceil())
+
+  	canvas.drawRect(th.black, screen)
+
+    tileset.draw(th.Transform{p: grid.toScreen(th.Vf2{0, 0}), s: grid.s.divf(64)})
+
+  	guide := mgrid.mkRenderGuideFromBoundingBox(grid)
+  	mgrid.drawRenderGuide(guide, th.white&0xFFFFFF55, 1)
+    canvas.drawRect(th.red&0xFFFFFF55, rect.mk(p1.x, p1.y, p2.x-p1.x, p2.y-p1.y))
+
+    if grid.s.x >= 64 {
+    	for v := 0; v < guide.nv; v++ {
+	    	for h := 0; h < guide.nh; h++ {
+	    		pos := th.Vf2{v, h}.sub(grid.p.floor())
+	    		canvas.drawText(sprintf("(%d, %d)", trunc(pos.x), trunc(pos.y)), grid.toScreen(pos), th.white, 1.0)
+	    	}
+    	}
+  	}	
+
+  	lastMousePos = input.getMousePos()
+  }
+}
