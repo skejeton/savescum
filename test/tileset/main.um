@@ -11,7 +11,7 @@ fn main() {
   tileset := d_tileset.fromImage(image.load(d_test.pfx()+"medium.png"), 32, 32, 1)
   ts := []T{T{0, 0}, T{2, 2}, T{1, 0}, T{5, 5}, T{0, 4}}
   
-  for window.cycle(screen) {
+  for window.cycle() {
     for _, t in ts {
       tileset.selectTile(t.x, t.y)
       tileset.image.draw(d_util.posTrans(t.x*32, t.y*32))

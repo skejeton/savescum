@@ -258,7 +258,7 @@ fn main() {
   
   lines := rainbowInTextNodes(sampleText)
 
-  for window.cycle(screen) {
+  for window.cycle() {
     tt := typingTime
     screen.w = window.w
     screen.h = window.h

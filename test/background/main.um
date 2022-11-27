@@ -22,7 +22,7 @@ fn main() {
   offset := th.Vf2{0, 0}
   oldMousePos := input.getMousePos()
 
-  for window.cycle(screen) {
+  for window.cycle() {
     if input.isPressed(input.mouse2) {
       offset = offset.add(input.getMousePos().sub(oldMousePos))
     }

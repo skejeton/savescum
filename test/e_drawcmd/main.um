@@ -39,7 +39,7 @@ fn main() {
     colors[i][1] = th_color.hsv(i/7.0, 1.0, 0.5)
   }
 
-  for window.cycle(rect.mk(0, 0, 640, 480)) {
+  for window.cycle() {
     std.srand(th.time/200)
     for k := 0; k < 7; k++ {
       for j := 0; j < 7; j++ {
