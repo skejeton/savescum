@@ -15,7 +15,7 @@ fn avgFps() {
 }
 
 fn limit*(to: int) {
-  window.fpsLimit = to
+  window.setTargetFps(to)
 }
 
 fn update*() {
