@@ -23,7 +23,9 @@ fn main() {
   tileset := image.load("data/img/ts_sky.png")
   tileset.setfilter(0)
 
-  for window.cycle(screen) {
+  for window.cycle() {
+    window.setViewport(screen.getDims())
+
   	if input.isPressed(input.mouse_up) {
   		targetScale = grid.s.mulf(1.5)
   	}
