@@ -1536,8 +1536,8 @@ fn putWorldEntities(editor: ^Editor) {
         selectEntity(&editor.entities, i)
       }
       if events.queryMouse(0, d_mouseinput.down) {
-        ent.rect.x += events.mouseState.delta.x
-        ent.rect.y += events.mouseState.delta.y
+        ent.rect.x += events.mouseState.delta.x/editor.tilemapGrid.scaling
+        ent.rect.y += events.mouseState.delta.y/editor.tilemapGrid.scaling
       }
     }
   }
