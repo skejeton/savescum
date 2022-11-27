@@ -6,6 +6,7 @@ import (
   "e_buffer.um" 
   "mgrid.um"
 
+  "../mshortcuts.um"
   "../d_config.um" 
   "../d_hashname.um"
   "../d_fps.um"
@@ -656,7 +657,7 @@ fn uiEndWindow(editor: ^Editor) {
 }
 
 fn makeGrid(ge: ^EditorGrid): mgrid.Grid {
-  return mgrid.Grid{p: ge.panning.divf(32.0), s: th.Vf2{ge.scaling*32, ge.scaling*32}, bb: ge.rect}
+  return mgrid.Grid{p: ge.panning.add(ge.rect.getDims().divf(2*ge.scaling)).divf(32.0), s: th.Vf2{ge.scaling*32, ge.scaling*32}, bb: ge.rect}
 }
 
 fn (ge: ^EditorGrid) mapGrid(pos: th.Vf2): th.Vf2 {
@@ -1796,6 +1797,7 @@ fn editorMain*() {
   showErrorScreenIfResourcesFailedToLoad(&rl)
 
   for window.cycle() {
+    mshortcuts.fullscreen()
     // NOTE: probably minimized
     if window.w == 0 || window.h == 0 {
       continue
