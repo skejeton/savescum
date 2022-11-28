@@ -5,6 +5,8 @@ import (
   "e_drawcmd.um"
   "e_buffer.um" 
   "mgrid.um"
+  "mgui.um"
+  "mdebug.um"
 
   "../mshortcuts.um"
   "../d_config.um" 
@@ -52,16 +54,6 @@ type (
     rect: rect.Rect
     scaling: real
     panning: th.Vf2
-  }
-
-  ToolNode = struct {
-    children: map[str]^ToolNode
-    parent: ^ToolNode
-    userdata: interface{}
-    // If set to -1, the node is frozen and not pruned therefore.
-    lastFrameTouched: int
-    layer: int
-    rect: rect.Rect
   }
 
   ButtonState = struct {
@@ -161,11 +153,11 @@ type (
     mouseState: d_mouseinput.MouseState
 
     // Census
-    tools: ^ToolNode
-    currentTool: ^ToolNode
-    maybeActiveTool: ^ToolNode
-    activeTool: ^ToolNode
-    hoveredTool: ^ToolNode
+    tools: ^mgui.ToolNode
+    currentTool: ^mgui.ToolNode
+    maybeActiveTool: ^mgui.ToolNode
+    activeTool: ^mgui.ToolNode
+    hoveredTool: ^mgui.ToolNode
   }
 )
 
@@ -293,7 +285,7 @@ fn (wm: ^WindowManager) setWindowVisible(name: str, to: bool) {
   wm.windowVisibility[name] = to
 }
 
-fn (e: ^Editor) maybeAcquireToolNode(name: str): ^ToolNode {
+fn (e: ^Editor) maybeAcquireToolNode(name: str): ^mgui.ToolNode {
   if e.currentTool == null {
     e.currentTool = e.tools
   }
@@ -305,12 +297,12 @@ fn (e: ^Editor) maybeAcquireToolNode(name: str): ^ToolNode {
   return e.currentTool.children[name]
 }
 
-fn (e: ^Editor) acquireToolNode(name: str): ^ToolNode {
+fn (e: ^Editor) acquireToolNode(name: str): ^mgui.ToolNode {
   node := e.maybeAcquireToolNode(name)
 
   if node == null {
-    tool := new(ToolNode)
-    tool ^= ToolNode{children: map[str]^ToolNode{}, parent: e.currentTool}
+    tool := new(mgui.ToolNode)
+    tool ^= mgui.ToolNode{children: map[str]^mgui.ToolNode{}, parent: e.currentTool}
     node = tool
     e.currentTool.children[name] = node    
   }
@@ -319,7 +311,7 @@ fn (e: ^Editor) acquireToolNode(name: str): ^ToolNode {
 }
 
 // Prunes all tools untouched last frame
-fn (e: ^Editor) pruneToolsRecursive(node: ^ToolNode) {
+fn (e: ^Editor) pruneToolsRecursive(node: ^mgui.ToolNode) {
   if node.lastFrameTouched == -1 {
     // Nodes with last frame -1 are not candidates to pruning (just a hardcoded value).
     // Here we automatically unfreeze the node because you need to freeze it every time.
@@ -346,7 +338,7 @@ fn (e: ^Editor) freezeTool(name: str) {
   }
 }
 
-fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): ^ToolNode {
+fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): ^mgui.ToolNode {
   node := e.acquireToolNode(name)
   node.lastFrameTouched = e.frameNumber
   node.rect = toolRect
@@ -369,7 +361,7 @@ fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): ^ToolNode {
   return e.currentTool
 }
 
-fn (e: ^Editor) getToolState(tool: ^ToolNode): ToolState {
+fn (e: ^Editor) getToolState(tool: ^mgui.ToolNode): ToolState {
   return ToolState{
     active: tool == e.activeTool,
     hovered: tool == e.hoveredTool}
@@ -383,7 +375,7 @@ fn (e: ^Editor) isCurrentToolActive(): bool {
   return e.getCurrentToolState().active
 }
 
-fn areToolsRelated(parent, child: ^ToolNode): bool {
+fn areToolsRelated(parent, child: ^mgui.ToolNode): bool {
   for child != null && child != parent {
     child = child.parent
   }
@@ -1039,96 +1031,6 @@ fn editorPutToolbar(editor: ^Editor) {
   editor.endTool()
 }
 
-type ToolDebugFrame = struct {
-  title: str
-  color: uint32
-  showTitle: bool
-  background: bool
-  rect: rect.Rect
-}
-
-fn makeToolDebugFrameFromTool(editor: ^Editor, name: str, tool: ^ToolNode): ToolDebugFrame {
-  toolState := editor.getToolState(tool)
-
-  color := th.red
-  background := false
-  showTitle := false
-
-  if toolState.active {
-    background = true
-  }
-
-  if toolState.hovered || toolState.active {
-    showTitle = true
-    color = 0x00   
-
-    color |= int(toolState.hovered) * th.blue
-    color |= int(toolState.active) * th.green
-  }
-
-  return ToolDebugFrame{title: name, color: color, showTitle: showTitle, rect: tool.rect, background: background}
-}
-
-type RealColor = struct {
-  r, g, b, a: real
-}
-
-/**
- * \brief Converts uint32 color to normalized RGBA.
- */
-fn decomposeColor(color: uint32): RealColor {
-  return RealColor{((color >> 24) & 0xFF) / 255.0, ((color >> 16) & 0xFF) / 255.0, ((color >> 8) & 0xFF) / 255.0, ((color >> 0) & 0xFF) / 255.0}
-}
-
-/**
- * \brief Returns true if the foreground will look good white,
- *        or black. Heuristic for things like text on a background.
- */
-fn isWhiteForeground(color: uint32): bool {
-  realColor := decomposeColor(color)
-  sum := realColor.r * 0.7 + realColor.g * 1.5 + realColor.b * 0.8
-  return sum >= 1.5
-}
-
-fn drawToolDebugFrame(ctx: ^e_drawcmd.DrawContext, frame: ToolDebugFrame, font: th_font.Font) {
-  textColor := th.white
-  if isWhiteForeground(frame.color) {
-    textColor = th.black
-  }
-
-  if frame.showTitle {
-    // Draw the title.
-    planeSize := font.measure(frame.title)
-    r := rect.mk(frame.rect.x, frame.rect.y-planeSize.y, planeSize.x, planeSize.y)
-    r = d_util.rectKeepInBounds(r, rect.mk(0, 0, d_global.screen.w, d_global.screen.h))
-
-    if frame.background {
-      ctx.drawRect(textColor, d_util.rectShrink(r, -1))
-    }
-    ctx.drawRect(frame.color, r)
-    ctx.drawText(font, frame.title, r.getPos(), textColor)
-  }
-  if frame.background {
-    ctx.drawRectLines(textColor, frame.rect, 3)
-  }
-  ctx.drawRectLines(frame.color, frame.rect)
-}
-
-fn putEditorDebugToolFramesRecursive(editor: ^Editor, tool: ^ToolNode, prefix: str = "") {
-  font := editor.resources.mainFont
-
-  for toolName, toolChild in tool.children {
-    editor.ctx.setLayer(toolChild.layer)
-
-    drawToolDebugFrame(&editor.ctx, makeToolDebugFrameFromTool(editor, toolName, toolChild), font)
-    putEditorDebugToolFramesRecursive(editor, toolChild, toolName+"::")
-  }
-}
-
-fn putEditorDebugToolFrames(editor: ^Editor) {
-  putEditorDebugToolFramesRecursive(editor, editor.tools)
-}
-
 fn isAnyButtonHeld(mouseState: ^d_mouseinput.MouseState): bool {
   return mouseState.lmb.isDown || mouseState.mmb.isDown || mouseState.rmb.isDown
 } 
@@ -1594,7 +1496,7 @@ fn editorPutUi(editor: ^Editor) {
   // Clear the input sink.
   editor.inputSink = InputSink{}
 
-  if input.isPressed(input.key_ctrl) {
+  if input.isPressed(input.key_shift) {
     if input.isJustPressed(input.key_escape) {
       input.clear(input.key_escape)
       editor.isDebugOverlayShown = !editor.isDebugOverlayShown
@@ -1717,7 +1619,9 @@ fn editorPutUi(editor: ^Editor) {
  
   // put debug overlays
   if (editor.isDebugOverlayShown) {
-    putEditorDebugToolFrames(editor)
+    mdebug.putDebugFrames(mdebug.ToolContext{editor.tools, editor.currentTool,
+      editor.maybeActiveTool, editor.activeTool, editor.hoveredTool},
+      editor.resources.mainFont, &editor.ctx)
   }
 
   // flush render context
@@ -1735,7 +1639,7 @@ fn editorPutUi(editor: ^Editor) {
 // Disconnects all nodes in the editor from their parents.
 // Due to how the Umka GC currently works, it's not able to collect
 //   circular references, so I must do it myself.
-fn editorDisconnectAllNodes(editor: ^Editor, node: ^ToolNode) {
+fn editorDisconnectAllNodes(editor: ^Editor, node: ^mgui.ToolNode) {
   if node == null {
     node = editor.tools
   }
@@ -1761,8 +1665,8 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
 }
 
 fn editorInit(resources: EditorResources): Editor {
-  rootNode := new(ToolNode)
-  rootNode ^= ToolNode{children: map[str]^ToolNode{}}
+  rootNode := new(mgui.ToolNode)
+  rootNode ^= mgui.ToolNode{children: map[str]^mgui.ToolNode{}}
 
   tileset := d_tileset.fromImage(resources.tilesetImage, 32, 32, 0.5)
   world := d_world.fromTileset(tileset)
@@ -1813,7 +1717,7 @@ fn editorMain*() {
     }
     
     d_global.screen = rect.mk(0, 0, window.w, window.h)
-		window.setViewport(d_global.screen.getDims())
+    window.setViewport(d_global.screen.getDims())
 
     editorPutUi(&editor)
 
