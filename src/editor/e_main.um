@@ -8,6 +8,7 @@ import (
   "mgui.um"
   "mdebug.um"
 
+  "../console/mconsole.um"
   "../mshortcuts.um"
   "../d_config.um" 
   "../d_hashname.um"
@@ -196,7 +197,7 @@ fn sinkAcquireMaskEvent(sink, acquire: ^InputSink, mask: InputSink, event: int):
 
   // This event was already sunk. Can't sink it again.
   if sink.sunk[event] {
-    return false 
+    return false
   }
 
   // Sink and acquire the event.
@@ -1700,9 +1701,23 @@ fn editorMain*() {
   loadPortal(&editor, "genesis")
   showErrorScreenIfResourcesFailedToLoad(&rl)
 
+  console := mconsole.Console{}
+  console.write("Welcome to the console!")
+  console.write("To use the console, use the .write method.")
+  console.write("You can render the console using mconsole.render")
+  console.write("The console uses blocks that can be\nMultiline!")
+  console.write("               __")
+  console.write("              / _)")
+  console.write("     _/\\/\\/\\_/ /")
+  console.write("   _|         /")
+  console.write(" _|  (  | (  |")
+  console.write("/__.-'|_|--|_|")
+  console.write("[ _ _]")
+  console.write("[ ----]")
+
   for window.cycle() {
     mshortcuts.fullscreen()
-    // NOTE: probably minimized
+    // NOTE(skejeton): probably minimized
     if window.w == 0 || window.h == 0 {
       continue
     }
@@ -1732,6 +1747,8 @@ fn editorMain*() {
         mdatatree.drawTooltip(editor.resources.mainFont, editor.mouseState.pos.addf(10), hover)
       }
     }
+
+    mconsole.render(&console, editor.resources.mainFont, d_global.screen)
   }
 
   editorDisconnectAllNodes(&editor, null)

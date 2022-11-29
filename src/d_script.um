@@ -11,7 +11,8 @@ var (
 )
 
 fn init*() {
-  //d_game.dialogs.say("receptionist", "", "La-la-la. More than 100 years and I still do the same job.", th.Vf2{32*2, 32*-14})
+  // TODO(skejeton): Properly initialize the scene index for correct update handler.
+  //                 this can be done with checking against scene name. But right now I'm not storing that in the game.
   t = 0
   switch d_game.sceneId {
   case 0:
@@ -34,10 +35,11 @@ fn update*() {
       t += 0.001
     }
   case 1:
-    
     if d_game.chara.onGround && !dialogActivated {
-      d_game.dialogs.say("receptionist", "", "Ohh hey... #{emote:smirk}#{sp:0.05}Another one bites the dust?", th.Vf2{32*14, 32*19})
-      dialogActivated = true
+      if ent := d_game.findEntity("EntReceptionist"); ent != null {
+        d_game.dialogs.say("receptionist", "", "Ohh hey... #{emote:smirk}#{sp:0.05}Another one bites the dust?", ent.rect.getPos())
+        dialogActivated = true
+      }
     }
   }
 }
