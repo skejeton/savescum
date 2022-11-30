@@ -1,0 +1,32 @@
+import (
+	"console/mconsole.um"
+	"d_global.um"
+	"input.um"
+	th_font = "font.um"
+)
+
+var (
+	console: mconsole.Console
+	consolevis*: bool
+)
+
+
+fn initConsole*() {
+  console = mconsole.Console{}
+}
+
+fn logt*(text: str) {
+  console.write(text)
+}
+
+// don't use it unless you want to render the console in a special way or something.
+fn getConsole*(): ^mconsole.Console {
+  return &console
+}
+
+// draws fullscreen console.
+fn drawConsole*(font: th_font.Font) {
+	if consolevis {
+		mconsole.render(&console, font, d_global.screen) 
+	}
+}
