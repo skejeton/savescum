@@ -1,107 +1,649 @@
+/**
+ * TOML parser and deserializer. Can be used outside of tophat.
+ * 
+ * NUL (\0) is the EOF character.
+ *
+ * It CAN'T handle dates and times yet.
+ *
+ * Identifier tokens and strings tokens are the same
+ * 
+ * Identifier tokens are not handled in nextToken/nextTokenKind because
+ * TOML allows identifiers to start with numbers, so you'll have to know when you wanna retrieve it explicitly.
+ */
+
 type (
+	Accessor = []str
 
 	FileLoc* = struct {
-
 		line: int
-
 		column: int
-
 		offset: int
-
 	}
-
 	
-
 	Error* = struct {
-
 		location: FileLoc
-
 		code: int
-
 	}	
 
+	Parser = struct {
+		location: FileLoc
+		sourceLen: uint
+		source: str
 
-
-	TomlResult* = struct {
+		arrays: map[str]interface{}
+		section: map[str]interface{}
 
 		errors: []Error
-
 		data: map[str]interface{}
-
 	}
 
+	Token = struct {
+		kind: int
+		value: str
+		location: FileLoc
+	}
+
+	TomlResult* = struct {
+		errors: []Error
+		data: map[str]interface{}
+	}
 )
 
 
+
+fn errorAtToken(token: Token, code: int): Error {
+	return Error{location: token.location, code: code}
+}
+
+fn errorAtParser(parser: ^Parser, code: int): Error {
+	return Error{location: parser.location, code: code}
+}
+
+fn errorAtLocation(location: FileLoc, code: int): Error {
+	return Error{location: location, code: code}
+}
 
 const (
+	tokInvalid = 0
+	tokEof = 1
+	tokSemi = 2
+	tokAssign = 3
+	tokString = 4
+	tokDot = 5
+	tokLBrack = 6 // [
+	tokRBrack = 7 // ]
+	tokListOpen = 8 // [[ 
+	tokListClose = 9 // ]]
+	tokMapOpen = 10
+	tokMapClose = 11
+	tokDelim = 12
 
 	errUnknown* = 0
-
 	errUnclosedString* = 1
-
 	errUnexpectedToken* = 2
-
 	errUnexpectedCharacter* = 3
-
 	errExpectedKey* = 4
-
 	errFieldReassigned* = 5
-
 	errExpectedNewLine* = 6
-
 	errExpectedDigit* = 7
-
 	errCount* = 8
-
 )
 
+fn updateAccessor(accessor: Accessor, tree: map[str]interface{}, value: interface{}): bool {
+	for i, key in accessor {
+		if i == len(accessor)-1 {
+			tree[key] = value
+		} else {
+			if !validkey(tree, key) {
+				tree[key] = map[str]interface{}{}
+				tree = map[str]interface{}(tree[key])
+			} else if leaf := ^map[str]interface{}(tree[key]); leaf != null {
+				tree = leaf^
+			} else {
+				return false
+			}
+		}
+	}
 
-
-fn formatError*(error: ^Error, source: str): str {
-
-	const errCodeStr = [errCount]str{
-
-		"Unknown error",
-
-		"Unclosed string",
-
-		"Unexpected token",
-
-		"Unexpected character",
-
-		"Invalid token for key",
-
-		"Field reassigned", 
-
-		"Expected new line",
-
-		"Expected digit"}
-
-
-
-	return sprintf("error(%d:%d): %s", error.location.line+1, error.location.column+1, errCodeStr[error.code])	
-
+	return true
 }
 
+fn setAccessor(accessor: Accessor, tree: map[str]interface{}, value: interface{}): bool {
+	printf("%s\n", repr(tree))
+	for i, key in accessor {
+		if i == len(accessor)-1 {
+			if !validkey(tree, key) {
+				tree[key] = value
+			} else {
+				return false
+			}
+		} else {
+			if !validkey(tree, key) {
+				tree[key] = map[str]interface{}{}
+				tree = map[str]interface{}(tree[key])
+			} else if leaf := ^map[str]interface{}(tree[key]); leaf != null {
+				tree = leaf^
+			} else {
+				return false
+			}
+		}
+	}
 
-
-fn parse*(source: str): TomlResult {
-
-	return TomlResult{errors: []Error{}, data: map[str]interface{}{}}
-
+	return true
 }
 
-
-
-fn (r: ^TomlResult) getError*(): ^Error {
-
-	if len(r.errors) > 0 {
-
-		return &r.errors[0]
-
+fn getAccessor(accessor: Accessor, tree: map[str]interface{}): interface{} {
+	for i, key in accessor {
+		if i == len(accessor)-1 {
+			if validkey(tree, key) {
+				return tree[key]
+			} else {
+				return null
+			}
+		} else {
+			if leaf := ^map[str]interface{}(tree[key]); leaf != null {
+				tree = leaf^
+			} else {
+				return null
+			}
+		}
 	}
 
 	return null
+}
 
+fn formatError*(error: ^Error, source: str): str {
+	const errCodeStr = [errCount]str{
+		"Unknown error",
+		"Unclosed string",
+		"Unexpected token",
+		"Unexpected character",
+		"Invalid token for key",
+		"Field reassigned", 
+		"Expected new line",
+		"Expected digit"}
+
+	return sprintf("error(%d:%d): %s", error.location.line+1, error.location.column+1, errCodeStr[error.code])	
+}
+
+fn isDecimal(c: char): bool {
+	return (c >= '0' && c <= '9')
+}
+
+// [ \t\r\n]
+fn isSkip(c: char): bool {
+	return c == ' ' || c == '\t' || c == '\r'
+}
+
+// [A-Za-z0-9_-]
+fn isIdent(c: char): bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || (c == '_') || (c == '-')
+}
+
+fn isNumStart(c: char): bool {
+	return (c == '.') || (c == '+') || (c == '-') || (c >= '0' && c <= '9')
+}
+
+fn (p: ^Parser) emitError(error: Error) {
+	p.errors = append(p.errors, error)
+}
+
+fn (p: ^Parser) next(n: int = 1) {
+	if n > 0 {
+		if p.location.offset < p.sourceLen {
+			if p.source[p.location.offset] == '\n' {
+				p.location.line += 1
+				p.location.column = 0
+			} else {
+				p.location.column += 1
+			}
+			p.location.offset += 1
+		}
+
+		p.next(n-1)
+	} 
+}
+
+fn (p: ^Parser) get(): char {
+	if p.location.offset >= p.sourceLen {
+		return '\0'
+	}
+	return p.source[p.location.offset]
+}
+
+fn safeSizedSlice(string: str, at: uint, size: uint): str {
+	length := len(string)
+
+	// Clamp the length if out of bounds
+	if at+size > length {
+		size = length-at
+	}
+
+	return slice(string, at, size+at)
+}
+
+fn (p: ^Parser) startsWith(against: str): bool {
+	return safeSizedSlice(p.source, p.location.offset, len(against)) == against
+}
+
+fn (p: ^Parser) skipSpaces(): bool {
+	foundSome := isSkip(p.get())
+
+	for isSkip(p.get()) {
+		p.next()
+	}
+
+	return foundSome
+}
+
+fn (p: ^Parser) skipComments(): bool {
+	if p.get() == '#' {
+		for p.get() != '\0' && p.get() != '\n' {
+			p.next()
+		}
+		return true
+	}
+	return false
+}
+
+fn (p: ^Parser) skipBlank() {
+	for p.skipSpaces() || p.skipComments() {}
+}
+
+
+fn (p: ^Parser) expectTokenKind(kind, toBeKind: int) {
+	if kind != toBeKind {
+		p.emitError(errorAtParser(p, errUnexpectedToken))
+	}
+}
+
+fn (p: ^Parser) expectToken(token: Token, toBeKind: int) {
+	if token.kind != toBeKind {
+		p.emitError(errorAtToken(token, errUnexpectedToken))
+	}
+}
+
+fn (p: ^Parser) nextIdent(): str {
+
+	if !isIdent(p.get()) {
+		return ""
+	}
+
+	value := ""
+	for isIdent(p.get()) {
+		value += p.get()
+		p.next()
+	}
+
+	return value
+}
+
+fn handleEscapeChar(c: char): char {
+	switch c {
+		case 'n':	return '\n'
+		case 't':	return '\t'
+	}
+	return c
+}
+
+fn (p: ^Parser) nextTokenString(): (int, str) {
+	result := ""
+	location := p.location
+
+	if p.get() == '"' {
+		p.next() // Skip quote
+		for p.get() != '\0' && p.get() != '\n' && p.get() != '"' {
+			if p.get() == '\\' {
+				p.next()
+				result += handleEscapeChar(p.get())
+				p.next()
+				continue;
+			}
+
+			result += p.get()
+			p.next()
+		}
+
+		// Unfinished string
+		if p.get() == '\0' || p.get() == '\n' {
+			p.emitError(errorAtLocation(location, errUnclosedString))
+			return tokInvalid, result
+		}
+
+		p.next() // Skip quote
+
+	} else {
+		return tokInvalid, result
+	}
+
+	return tokString, result
+}
+
+fn (p: ^Parser) nextTokenKind(): int {
+	switch (p.get()) {
+		case '"':
+			kind, value := p.nextTokenString()
+			return kind
+		case '=': 
+			p.next() // skip '='
+			return tokAssign
+		case '.': 
+			p.next() // skip '.'
+			return tokDot
+		case '[': 
+			p.next() // skip '['
+			if p.get() == '[' {
+				p.next() // skip '['
+				return tokListOpen
+			}
+			return tokLBrack
+		case ']': 
+			p.next() // skip ']'
+			if p.get() == ']' {
+				p.next() // skip ']'
+				return tokListClose
+			}
+			return tokRBrack
+		case '{': 
+			p.next() // skip '{'
+			return tokMapOpen
+		case '}': 
+			p.next() // skip '}'
+			return tokMapClose
+		case ',': 
+			p.next() // skip '}'
+			return tokDelim
+		case '\n': 
+			p.next() // skip '\n'
+			return tokSemi
+		case '\0': 
+			return tokEof
+		default:
+			// HACK eh? Toml has a semi context dependent thing where you need to know when to pull a key and when to pull 
+			//	  			a number, because both numbers and keys can start with digits (and dash)...
+			//					I'll better figure it out. 
+			if !isIdent(p.get()) && !isNumStart(p.get()) {
+				p.emitError(errorAtParser(p, errUnexpectedCharacter))
+			}
+			return tokInvalid
+	}
+	return tokInvalid
+}
+
+fn (p: ^Parser) nextKeyIdent(): str {
+	p.skipBlank()
+
+	location := p.location
+	kind := tokInvalid
+
+	// TODO: Maybe have a different nextIdent function which returns ok/fail instead of a string
+	result := p.nextIdent()
+	if result != "" {
+		kind = tokString
+	} else {
+		kind, result = p.nextTokenString()
+	}
+
+	if kind != tokString {
+		p.emitError(errorAtLocation(location, errExpectedKey))
+	}
+
+	return result
+}
+
+fn (p: ^Parser) nextToken(): Token {
+	p.skipBlank()
+
+	location := p.location
+	start := p.location.offset
+
+	tt := p.nextTokenKind()
+
+	end  := p.location.offset
+
+	return Token{kind: tt, value: slice(p.source, start, end), location: location}
+}
+
+fn (p: ^Parser) peekToken(): Token {
+	tempLoc := p.location
+
+	token := p.nextToken()
+
+	p.location = tempLoc
+
+	return token
+}
+fn (p: ^Parser) parseAccessor(): Accessor {
+	accessor := Accessor{p.nextKeyIdent()}
+
+	for p.peekToken().kind == tokDot {
+		p.nextToken() // Skip dot
+		accessor = append(accessor, p.nextKeyIdent())
+	}
+
+	return accessor
+}
+
+fn (p: ^Parser) setAccessor(location: FileLoc, accessor: Accessor, tree: map[str]interface{}, value: interface{}) {
+	if !setAccessor(accessor, tree, value) {
+		p.emitError(errorAtLocation(location, errFieldReassigned))
+	}
+}
+
+fn (p: ^Parser) updateAccessor(location: FileLoc, accessor: Accessor, tree: map[str]interface{}, value: interface{}) {
+	if !updateAccessor(accessor, tree, value) {
+		p.emitError(errorAtLocation(location, errFieldReassigned))
+	}
+}
+
+fn (p: ^Parser) parseDigitSeq(): (int, int) {
+	number := 0
+	divisor := 1
+
+	if !isDecimal(p.get()) {
+		p.emitError(errorAtParser(p, errExpectedDigit))
+		return 0, 1
+	}
+
+	for isDecimal(p.get()) {
+		number = number*10 + (int(p.get())-int('0'))
+		divisor *= 10
+		p.next()
+
+		if p.get() == '_' {
+			p.next()
+			if !isDecimal(p.get()) {
+				p.emitError(errorAtParser(p, errExpectedDigit))
+				return number, divisor
+			}
+		}
+	}
+
+	return number, divisor
+}
+
+fn (p: ^Parser) parseNumber(): interface{} {
+	sign := 1
+
+	if p.get() == '-' {
+		p.next()
+		sign = -1
+	} else if p.get() == '+' {
+		p.next()
+		sign = 1
+	}
+
+	numberInt, _ := p.parseDigitSeq()
+	
+	if p.get() == '.' {
+		p.next()
+		numberFloat, divisor := p.parseDigitSeq()
+		return (real(numberFloat)/divisor+numberInt)*sign
+	}
+
+	return numberInt*sign
+}
+
+fn (p: ^Parser) isntToken(kind: int): bool {
+	tok := p.peekToken()
+	return tok.kind != kind && tok.kind != tokEof
+}
+
+type NeedSkip = struct{}
+
+fn (p: ^Parser) parseKeyValue(into: map[str]interface{})
+fn (p: ^Parser) parseMap(): map[str]interface{} {
+	result := map[str]interface{}{}
+
+	p.expectToken(p.nextToken(), tokMapOpen)
+	for p.isntToken(tokMapClose) {
+		p.parseKeyValue(result)
+
+		if p.isntToken(tokMapClose) {
+			p.expectToken(p.nextToken(), tokDelim)
+		}
+	}
+
+	p.expectToken(p.nextToken(), tokMapClose)
+	return result
+}
+
+fn (p: ^Parser) parseValue(): interface{}
+fn (p: ^Parser) parseArray(): []interface{} {
+	result := []interface{}{}
+
+	p.expectToken(p.nextToken(), tokLBrack)
+	for p.isntToken(tokRBrack) {
+		// FIXME: Could there be a better way to do this? Sigh..
+		for p.peekToken().kind == tokSemi {
+			p.nextToken()
+		}
+
+		result = append(result, p.parseValue())
+
+		for p.peekToken().kind == tokSemi {
+			p.nextToken()
+		}
+
+		if p.isntToken(tokRBrack) {
+			p.expectToken(p.nextToken(), tokDelim)
+		}
+	}
+
+	p.expectToken(p.nextToken(), tokRBrack)
+	return result
+}
+
+fn (p: ^Parser) parseValue(): interface{} {
+	p.skipBlank()
+
+	if p.peekToken().kind == tokLBrack {
+		return p.parseArray()
+	} else if p.peekToken().kind == tokMapOpen {
+		return p.parseMap()
+	} else if p.get() == '"' {
+		kind, string := p.nextTokenString()
+
+		// TODO: expectTokenKind will point where the parser's at rather than the start of the invalid token
+		p.expectTokenKind(kind, tokString)
+		return string
+	} else if isNumStart(p.get()) {
+		return p.parseNumber()
+	} else if ident := p.nextIdent(); ident == "true" || ident == "false" {
+		return ident == "true"
+	} else {
+		p.emitError(errorAtParser(p, errUnexpectedCharacter))
+	}
+
+	return null
+}
+
+fn (p: ^Parser) parseKeyValue(into: map[str]interface{}) {
+	location := p.location
+	accessor := p.parseAccessor()
+
+	p.expectToken(p.nextToken(), tokAssign)
+
+	value := p.parseValue()
+
+	printf("Set `%s` = `%s`\n", repr(accessor), repr(value))
+	
+	p.setAccessor(location, accessor, into, value)
+}
+
+fn (p: ^Parser) parseSection() {
+	p.expectToken(p.nextToken(), tokLBrack)
+
+	location := p.location
+	p.section = map[str]interface{}{}
+	p.setAccessor(location, p.parseAccessor(), p.data, p.section)
+	p.expectToken(p.nextToken(), tokRBrack)
+}
+
+fn (p: ^Parser) parseSectionArray() {
+	p.expectToken(p.nextToken(), tokListOpen)
+	location := p.location
+	accessor := p.parseAccessor()
+
+	p.section = map[str]interface{}{}
+
+	printf("%s\n", repr(getAccessor(accessor, p.arrays)))
+	if arr := ^[]interface{}(getAccessor(accessor, p.arrays)); arr != null {
+		arr ^= append(arr^, p.section)
+		p.updateAccessor(location, accessor, p.data, arr^)
+	} else {
+		array := new([]interface{})
+		array ^= []interface{}{p.section}
+
+		if !setAccessor(accessor, p.arrays, array) {
+			p.emitError(errorAtLocation(location, errFieldReassigned))
+		}
+
+		p.setAccessor(location, accessor, p.data, array^)
+	}
+
+	p.expectToken(p.nextToken(), tokListClose)
+}
+
+fn (p: ^Parser) expectSemi() {
+	token := p.nextToken()
+	if !(token.kind == tokSemi || token.kind == tokEof) {
+		p.emitError(errorAtToken(token, errExpectedNewLine))
+	}
+}
+
+fn (p: ^Parser) parseToplevel() {
+	switch p.peekToken().kind {
+		// NOTE: Skip until the end of source, since peek doesn't move to the end of file while we skip spaces
+		case tokEof: p.nextToken() 
+		case tokSemi: p.nextToken()
+
+		case tokListOpen: 
+			p.parseSectionArray()
+			p.expectSemi()
+		case tokLBrack: 
+			p.parseSection()
+			p.expectSemi()
+		default:
+			p.parseKeyValue(p.section) 
+			p.expectSemi()
+	}
+}
+
+fn parse*(source: str): TomlResult {
+	p := Parser{source: source, sourceLen: len(source), errors: []Error{}, arrays: map[str]interface{}{}, data: map[str]interface{}{}}
+	p.section = p.data
+
+	for len(p.errors) == 0 && p.peekToken().kind != tokEof {
+		p.parseToplevel()
+	}
+
+	return TomlResult{p.errors, p.data}
+}
+
+fn (r: ^TomlResult) getError*(): ^Error {
+	if len(r.errors) > 0 {
+		return &r.errors[0]
+	}
+	return null
 }

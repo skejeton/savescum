@@ -186,18 +186,14 @@ fn sinkAcquireMaskEvent(sink, acquire: ^InputSink, mask: InputSink, event: int):
   }
  
   // This event is masked so we can't process it.
-  if mask.sunk[event] {
+  // Or this event was already sunk. Can't sink it again.
+  if mask.sunk[event] || sink.sunk[event] {
     return false
   }
 
   // This event was acquired, so it's successful.
   if acquire.sunk[event] {
     return true
-  }
-
-  // This event was already sunk. Can't sink it again.
-  if sink.sunk[event] {
-    return false
   }
 
   // Sink and acquire the event.
@@ -446,28 +442,6 @@ fn drawBevelRect(editor: ^Editor, r: rect.Rect, pushed: bool = false, color: uin
   } else {
     editor.ctx.drawNinepatch(editor.resources.bevelImage, bevelOuterRect, bevelInnerRect, r, color)
   }
-}
-
-// Vf2 granulate(
-//   Vector to granulate
-//   The granulation sizes
-// )
-// 
-// Granulation is making number A a multiple of B by rounding.
-// This boy does same thing but for vectors, so `th.Vf2{Granulate(A.x, B.x), Granulate(A.y, B.y)}`.
-fn vf2Granulate(a, b: th.Vf2): th.Vf2 {
-  return a.div(b).floor().mul(b)
-}
-
-// Vf2 int modulo(
-//   Divident
-//   Divisor
-// )
-// 
-// Performs an integer (!!!) modulo operator on scalars of vector a wrt b
-// All floating point is lost.
-fn vf2IntMod(a, b: th.Vf2): th.Vf2 {
-  return th.Vf2{trunc(a.x)%trunc(b.x), trunc(a.y)%trunc(b.y)}
 }
 
 fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
@@ -731,28 +705,13 @@ fn putSimpleButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = fals
   return bs
 }
 
-fn clamp(a, x, b: real): real {
-  if x < a {
-    x = a
-  }
-  if x > b {
-    x = b
-  }
-  return x
-}
-
-fn isprint(c: uint32): bool {
-  // Check if not first 32 reserved ASCII chars and not DEL
-  return c >= 32 && c != 127
-}
-
 fn insertInputTextIntoOneLineBuffer(buffer: ^e_buffer.Buffer, cursor: ^e_buffer.Cursor, text: str) {
   runes := utf8.decode(text)
 
   for index, rune in runes {
     
     // Ignore non printable characters.
-    if isprint(uint32(rune)) {
+    if d_util.isprint(uint32(rune)) {
       e_buffer.insertAt(buffer, cursor, rune.encode())
     }
   }
@@ -855,8 +814,8 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (
   editor.beginTool("ScrollArea", areaRect)
 
   scroll := ^real(editor.getProperty("ScrollAreaScroll", 0.0))
-  overflow := clamp(contentSize.y-areaRect.h, 0, contentSize.y)
-  scrollValue := clamp(scroll^, 0, overflow)
+  overflow := d_util.clamp(contentSize.y-areaRect.h, 0, contentSize.y)
+  scrollValue := d_util.clamp(scroll^, 0, overflow)
   yScrollOverflowFactor := 0.0
   if areaRect.h != 0 {
     yScrollOverflowFactor = contentSize.y/areaRect.h
@@ -892,7 +851,7 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (
 
   if !doNotTruncateScroll {
     // Clamp the scroll to the valid scroll range.
-    scroll^ = clamp(scroll^, 0, overflow)
+    scroll^ = d_util.clamp(scroll^, 0, overflow)
   }
 
   areaRect.w -= handleSize
@@ -1408,7 +1367,7 @@ fn putWorldEntities(editor: ^Editor) {
   for i in editor.entities.list {
     ent := &editor.entities.list[i]
 
-    entVisRect := d_util.rectMove(scaleRect(ent.rect, editor.tilemapGrid.scaling), editor.tilemapGrid.mapPos(th.Vf2{0, 0}))
+    entVisRect := d_util.rectMove(d_util.rectScale(ent.rect, editor.tilemapGrid.scaling), editor.tilemapGrid.mapPos(th.Vf2{0, 0}))
 
     // FIXME: Initializing tag set every time we render an entity is not efficent at all.
     tags := d_game.initTagSetFromString(ent.tags)
@@ -1749,15 +1708,6 @@ fn editorMain*() {
 
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
-
-    if d_config.checkFlag(d_config.flagDebugOverlays) {
-      canvas.drawRect(th.black, rect.mk(50, 50, 500, 500))
-      hover := ""
-      mdatatree.drawEnv(&mdatatree.mkPushText(editor.resources.mainFont, th.Vf2{50, 50}), &hover, d_config.getTree())
-      if hover != "" {
-        mdatatree.drawTooltip(editor.resources.mainFont, editor.mouseState.pos.addf(10), hover)
-      }
-    }
 
     mdbg.drawConsole(editor.resources.mainFont)
   }

@@ -198,6 +198,10 @@ fn rectCutRight*(r: rect.Rect, by: real): rect.Rect {
   return result
 }
 
+fn rectScale*(r: rect.Rect, by: real): rect.Rect {
+  return rect.mk(r.x*by, r.y*by, r.w*by, r.h*by)
+}
+
 fn min*(a, b: real): real {
   if a < b {
     return a
@@ -227,6 +231,11 @@ fn clamp*(a, b, c: real): real {
     return c
   }
   return a
+}
+
+fn isprint*(c: uint32): bool {
+  // Check if not first 32 reserved ASCII chars and not DEL
+  return c >= 32 && c != 127
 }
 
 fn rectDiff*(a, b: rect.Rect): rect.Rect {

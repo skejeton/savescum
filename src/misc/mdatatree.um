@@ -90,14 +90,14 @@ fn representString*(s: str): str {
   return "\"\"\""+result+"\"\"\""
 }
 
-fn drawEnv*(pushy: ^PushText, hover: ^str, env: interface{}) {
+fn drawTree*(pushy: ^PushText, hover: ^str, env: interface{}) {
   if arrValue := ^[]interface{}(env); arrValue != null {
     pushy.push(sprintf("["))
     pushy.indent(1)
     pushy.newLine()
 
     for i in arrValue {
-      drawEnv(pushy, hover, arrValue[i])
+      drawTree(pushy, hover, arrValue[i])
       if i != len(arrValue^)-1 {
         pushy.push(", ")
         if pushy.shouldWrap() {
@@ -121,7 +121,7 @@ fn drawEnv*(pushy: ^PushText, hover: ^str, env: interface{}) {
         hover ^= valueTypeName(mapValue[k])
       }
       pushy.push(sprintf(" = "))
-      drawEnv(pushy, hover, mapValue[k])
+      drawTree(pushy, hover, mapValue[k])
       if i != keyCount-1 {
         pushy.push(", ")
         pushy.newLine()
