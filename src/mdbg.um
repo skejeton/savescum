@@ -7,6 +7,7 @@ import (
 
 var (
 	console: mconsole.Console
+	visualConsole: mconsole.VisualConsole
 	consolevis*: bool
 )
 
@@ -19,14 +20,19 @@ fn logt*(text: str) {
   console.write(text)
 }
 
-// don't use it unless you want to render the console in a special way or something.
+// don't use it unless you want to render the console in a special 
+// way or something.
 fn getConsole*(): ^mconsole.Console {
   return &console
+}
+
+fn scrollConsole*(by: real) {
+	visualConsole.scrollBy(by*20)
 }
 
 // draws fullscreen console.
 fn drawConsole*(font: th_font.Font) {
 	if consolevis {
-		mconsole.render(&console, font, d_global.screen) 
+		mconsole.render(&console, &visualConsole, font, d_global.screen) 
 	}
 }

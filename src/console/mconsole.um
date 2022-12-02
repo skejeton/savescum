@@ -7,6 +7,7 @@ import (
 	"rect.um"
 	"th.um"
 	"canvas.um"
+	"../d_rerp.um"
 	th_color = "color.um"
 	th_font = "font.um"
 )
@@ -19,6 +20,27 @@ fn (con: ^Console) write*(block: str) {
 	con.blocks = append(con.blocks, block)
 }
 
+type Scrolley* = struct {
+	contentsz: real
+	clientsz: real
+	scroll: real
+}
+
+fn (s: ^Scrolley) scrollTo(scroll: real) {
+	if scroll > (s.contentsz-s.clientsz) {
+		scroll = (s.contentsz-s.clientsz)
+	}
+	if scroll < 0 {
+		scroll = 0
+	}
+	s.scroll = scroll
+}
+
+type VisualConsole* = struct {
+	// interpolated
+	visualScroll: real
+	scrolley: Scrolley
+}
 
 type RenderPass = struct {
 	rect: rect.Rect
@@ -34,29 +56,39 @@ fn blockRect*(pass: ^RenderPass, block: str): rect.Rect {
 }
 
 // renders a single block and moves upwards
-fn renderBlock*(pass: ^RenderPass, block: str, color: uint32) {
+fn renderBlock*(pass: ^RenderPass, vc: ^VisualConsole, block: str, color: uint32) {
 	height := pass.font.measure(block).y
 	pass.pos.y -= height
 
-	pass.font.draw(block, pass.pos, color)
+	pass.font.draw(block, pass.pos.add(th.Vf2{0, vc.visualScroll}), color)
+}
+
+fn (vc: ^VisualConsole) scrollBy*(delta: real) {
+	vc.scrolley.scrollTo(vc.scrolley.scroll+delta)
 }
 
 // NOTE: this function does not clip
-fn render*(con: ^Console, font: th_font.Font, r: rect.Rect) {
-	end := th.Vf2{r.x, r.y+r.h}
-	pass := RenderPass{r, end, font}
-	fade := 0.9
-	alpha := 1.0
+fn render*(con: ^Console, vc: ^VisualConsole, font: th_font.Font, r: rect.Rect) { 
+	pass := RenderPass{r, th.Vf2{r.x, r.y+r.h}, font}
+	startY := pass.pos.y
 
 	canvas.drawRect(th_color.alpha(th.black, 0.95), r)
 
 	for i in con.blocks {
 		block := con.blocks[len(con.blocks)-i-1]
+
+		alpha := (pass.pos.y+vc.visualScroll)/r.h+0.4
+		if alpha > 1.0 { alpha = 1.0; }
 		if i % 2 == 0 {
 			canvas.drawRect(th_color.alpha(th.white, alpha*0.05), blockRect(&pass, block))	
 		}
 
-		renderBlock(&pass, block, th_color.alpha(th.white, alpha))
-		alpha *= fade
+		renderBlock(&pass, vc, block, th_color.alpha(th.white, alpha))
 	}
+
+	vc.scrolley.clientsz = r.h
+	vc.scrolley.contentsz = startY-pass.pos.y
+
+	// TODO: use delta    
+	vc.visualScroll = d_rerp.iReal(vc.visualScroll, vc.scrolley.scroll, 0.2)
 }

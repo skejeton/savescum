@@ -186,14 +186,18 @@ fn sinkAcquireMaskEvent(sink, acquire: ^InputSink, mask: InputSink, event: int):
   }
  
   // This event is masked so we can't process it.
-  // Or this event was already sunk. Can't sink it again.
-  if mask.sunk[event] || sink.sunk[event] {
+  if mask.sunk[event] {
     return false
   }
 
   // This event was acquired, so it's successful.
   if acquire.sunk[event] {
     return true
+  }
+
+  // This event was already sunk. Can't sink it again.
+  if sink.sunk[event] {
+    return false
   }
 
   // Sink and acquire the event.
@@ -1581,7 +1585,10 @@ fn editorPutUi(editor: ^Editor) {
 
   if mdbg.consolevis {
     editor.ctx.moveLayer(100000000)
-    editor.beginTool("Con", d_global.screen)
+    tool := editor.beginTool("Con", d_global.screen)
+    if editor.hoveredTool == tool {
+      mdbg.scrollConsole(editor.mouseState.wheelY)
+    }
     editor.endTool()
     editor.ctx.moveLayer(-100000000)
   }
@@ -1685,6 +1692,10 @@ fn editorMain*() {
   for window.cycle() {
     mshortcuts.console()
     mshortcuts.fullscreen()
+
+    if input.isPressed('1') {
+      mdbg.logt("Console log!")
+    }
 
     // NOTE(skejeton): probably minimized
     if window.w == 0 || window.h == 0 {
