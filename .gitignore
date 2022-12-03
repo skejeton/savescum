@@ -22,3 +22,6 @@ trace.json
 
 # Windows stuff
 .vs
+
+# User data
+user

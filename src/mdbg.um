@@ -27,7 +27,7 @@ fn getConsole*(): ^mconsole.Console {
 }
 
 fn scrollConsole*(by: real) {
-	visualConsole.scrollBy(by*20)
+	visualConsole.scrollBy(1)
 }
 
 // draws fullscreen console.

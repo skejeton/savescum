@@ -1,0 +1,42 @@
+import (
+  "th.um"
+  "std.um"
+  "rect.um"
+)
+
+fn saveRect*(r: rect.Rect): []str {
+  return []str{std.ftoa(r.x, 2), std.ftoa(r.y, 2),
+               std.ftoa(r.w, 2), std.ftoa(r.h, 2)}
+}
+
+fn loadRect*(s: []str): rect.Rect {
+  return rect.Rect{std.atof(s[0]), std.atof(s[1]),
+                   std.atof(s[2]), std.atof(s[3])}
+}
+
+fn saveVf2*(v: th.Vf2): []str {
+  return []str{std.ftoa(v.x, 2), std.ftoa(v.y, 2)}
+}
+
+fn loadVf2*(s: []str): th.Vf2 {
+  return th.Vf2{std.atof(s[0]), std.atof(s[1])}
+}
+
+fn saveReal*(f: real): []str {
+  return []str{std.ftoa(f, 2)}
+}
+
+fn loadReal*(s: []str): real {
+  return std.atof(s[0])
+}
+
+const sign = [2]str{"-", "+"}
+
+fn saveBool*(f: bool): []str {
+  return []str{sign[int(f)]}
+}
+
+fn loadBool*(s: []str): bool {
+  return s[0] != sign[0]
+}
+

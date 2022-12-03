@@ -1,5 +1,6 @@
 import (
   "d_world.um"
+  "mcsvutil.um"
   "rect.um"
   "std.um"
   "csv.um"
@@ -24,12 +25,8 @@ const (
   lastVersion* = "000"
 )
 
-fn saveRect(r: rect.Rect): []str {
-  return []str{std.ftoa(r.x, 2), std.ftoa(r.y, 2), std.ftoa(r.w, 2), std.ftoa(r.h, 2)}
-}
-
 fn saveEntityDesc(ent: EntityDesc): []str {
-  return append([]str{ent.id, ent.name, ent.tags}, saveRect(ent.rect))
+  return append([]str{ent.id, ent.name, ent.tags}, mcsvutil.saveRect(ent.rect))
 } 
 
 fn save*(wd: WorldData): str {
@@ -70,12 +67,8 @@ fn save*(wd: WorldData): str {
   return csv.encode(data)
 }
 
-fn loadRect(s: []str): rect.Rect {
-  return rect.mk(std.atof(s[0]), std.atof(s[1]), std.atof(s[2]), std.atof(s[3]))
-}
-
 fn loadEntityDesc(s: []str): EntityDesc {
-  return EntityDesc{id: s[0], name: s[1], tags: s[2], rect: loadRect(slice(s, 3, 7))}
+  return EntityDesc{id: s[0], name: s[1], tags: s[2], rect: mcsvutil.loadRect(slice(s, 3, 7))}
 }
 
 fn load*(world: d_world.World, data: str): WorldData {

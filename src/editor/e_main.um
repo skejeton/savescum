@@ -7,6 +7,7 @@ import (
   "mgrid.um"
   "mgui.um"
   "mdebug.um"
+  "msession.um"
 
   "../mdbg.um"
   "../mshortcuts.um"
@@ -1661,6 +1662,32 @@ fn editorInit(resources: EditorResources): Editor {
     tools: rootNode}
 }
 
+fn editorSaveSession(editor: ^Editor): msession.Session {
+  session := msession.Session{}
+  session.pan = editor.tilemapGrid.panning
+  session.scale = editor.tilemapGrid.scaling
+  session.portal = editor.currentPortal
+
+  for name, win in editor.wm.windows {
+    isVisible := editor.wm.windowVisibility[name]
+
+    session.windows = append(session.windows, msession.Window{name, isVisible, win.rect})
+  }
+
+  return session
+}
+
+fn editorLoadSession(editor: ^Editor, session: msession.Session) {
+  loadPortal(editor, session.portal)
+  editor.tilemapGrid.panning = session.pan
+  editor.tilemapGrid.scaling = session.scale
+
+  for i, win in session.windows {
+    editor.wm.setWindowVisible(win.name, win.visible)
+    editor.wm.getWindowRect(win.name, win.rect)
+  }
+}
+
 fn editorMain*() {
   std.srand(std.time())
 
@@ -1671,10 +1698,16 @@ fn editorMain*() {
   rl := d_resources.initResourceLoader()
   d_background.init(&rl)
   d_game.init(&rl)
-
-  editor := editorInit(loadEditorResources(&rl))
-  loadPortal(&editor, "genesis")
+  editorResources := loadEditorResources(&rl)
   showErrorScreenIfResourcesFailedToLoad(&rl)
+
+  editor := editorInit(editorResources)
+
+  if ok, sessionFile := d_util.readFileStr("user/session.csv"); ok {
+    editorLoadSession(&editor, msession.load(sessionFile))
+  } else {
+    loadPortal(&editor, "genesis")
+  }
 
   mdbg.initConsole()
 
@@ -1723,5 +1756,6 @@ fn editorMain*() {
     mdbg.drawConsole(editor.resources.mainFont)
   }
 
+  d_util.writeFileStr("user/session.csv", msession.save(editorSaveSession(&editor)))
   editorDisconnectAllNodes(&editor, null)
 }

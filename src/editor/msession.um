@@ -1,0 +1,62 @@
+// Editor sessions
+
+import (
+  "th.um"
+  "rect.um"
+  "csv.um"
+
+  ut = "../mcsvutil.um"
+)
+
+type Window* = struct {
+  name: str
+  visible: bool
+  rect: rect.Rect
+}
+
+type Session* = struct {
+  pan: th.Vf2
+  scale: real
+  portal: str
+  windows: []Window
+}
+
+fn save*(session: Session): str {
+  result := [][]str{}
+  result = append(result, ut.saveVf2(session.pan))
+  result = append(result, ut.saveReal(session.scale))
+  result = append(result, []str{session.portal})
+  result = append(result, ut.saveReal(len(session.windows)))
+
+  for i, window in session.windows {
+    result = append(result, []str{window.name})
+    result = append(result, ut.saveBool(window.visible))
+    result = append(result, ut.saveRect(window.rect))
+  }
+
+  return csv.encode(result)
+}
+
+fn load*(sourceStr: str): Session {
+  source := csv.parse(sourceStr)
+  session := Session{}
+  session.pan = ut.loadVf2(source[0])
+  session.scale = ut.loadReal(source[1])
+  session.portal = source[2][0]
+
+  count := trunc(ut.loadReal(source[3]))
+
+  for i := 0; i < count; i++ {
+    window := Window{}
+
+    window.name = source[4+i*3][0]
+    window.visible = ut.loadBool(source[5+i*3])
+    window.rect = ut.loadRect(source[6+i*3])
+
+    session.windows = append(session.windows, window)
+  }
+
+  return session
+}
+
+
