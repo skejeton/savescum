@@ -139,7 +139,7 @@ type (
     world: d_world.World
     isPlaying: bool
     isRelocatingPlayer: bool
-    isIgnoringGuides: bool
+    entityBypass: bool
     entities: EditorEntities
     potentialPortal: str // the portal which is in the text box
     currentPortal: str
@@ -886,6 +886,7 @@ fn createEditorEntities(): EditorEntities {
 }
 
 fn editorLoadWorld(editor: ^Editor, portal: str): bool {
+  mdbg.logt("ed: loading world")
   if ok, data := d_util.readFileStr(portalToPath(portal)); ok {
     worldData := d_worlddata.load(editor.world, data)
 
@@ -902,6 +903,7 @@ fn editorLoadWorld(editor: ^Editor, portal: str): bool {
 }
 
 fn editorSaveWorld(editor: ^Editor) {
+  mdbg.logt("ed: saving world")
   d_util.writeFileStr(portalToPath(editor.currentPortal), d_worlddata.save(d_worlddata.WorldData{editor.world, editor.entities.list}))
 }
 
@@ -981,13 +983,11 @@ fn editorPutToolbar(editor: ^Editor) {
         
         position.x -= 80
         if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Save").isReleased) {
-          mdbg.logt("ed: saving world")
           editorSaveWorld(editor)
         }
 
         position.x -= 80
         if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Load").isReleased) {
-          mdbg.logt("ed: loading world")
           editorLoadWorld(editor, editor.currentPortal)
         }
 
@@ -1376,7 +1376,7 @@ fn putWorldEntities(editor: ^Editor) {
 
     // FIXME: Initializing tag set every time we render an entity is not efficent at all.
     tags := d_game.initTagSetFromString(ent.tags)
-    ignore := tags.isSet("Guide") && editor.isIgnoringGuides && !isEntitySelected(&editor.entities, i);
+    ignore := tags.isSet("Guide") && editor.entityBypass && !isEntitySelected(&editor.entities, i);
 
     drawTaggedEntityRect(editor, ent, entVisRect, &tags)
 
@@ -1463,6 +1463,12 @@ fn editorPutUi(editor: ^Editor) {
   // Clear the input sink.
   editor.inputSink = InputSink{}
 
+  if input.isPressed(input.key_ctrl) {
+    if input.isJustPressed('s') {
+      editorSaveWorld(editor)
+    }
+  }
+
   if input.isPressed(input.key_shift) {
     if input.isJustPressed(input.key_escape) {
       input.clear(input.key_escape)
@@ -1505,7 +1511,7 @@ fn editorPutUi(editor: ^Editor) {
 
       position := tool.rect.getEnd().subf(padding).subf(elementSize)
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "1:1", editor.tilemapLayer == -1).isReleased) {
+      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "1:1").isReleased) {
         editor.tilemapGrid.zoomInto(1.0, d_util.rectCenter(editor.tilemapGrid.rect))
       }
       position.x -= elementSize
@@ -1532,8 +1538,8 @@ fn editorPutUi(editor: ^Editor) {
       drawLayerIcon(&editor.ctx, position.add(th.Vf2{1, 5}), editor.tilemapLayer, editor.tilemapShowAllLayers)
       position.x -= elementSize
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "✋", editor.isIgnoringGuides).isReleased) {
-        editor.isIgnoringGuides = !editor.isIgnoringGuides;
+      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "✋", editor.entityBypass).isReleased) {
+        editor.entityBypass = !editor.entityBypass;
       }
     }
 
@@ -1653,7 +1659,7 @@ fn editorInit(resources: EditorResources): Editor {
     tilemapGrid: EditorGrid{scaling: 1.0},
     tilesetGrid: EditorGrid{scaling: 1.0},
     tilemapShowAllLayers: false,
-    isIgnoringGuides: true,
+    entityBypass: true,
     tileset: tileset,
     world: world,
     resources: resources,
@@ -1667,6 +1673,9 @@ fn editorSaveSession(editor: ^Editor): msession.Session {
   session.pan = editor.tilemapGrid.panning
   session.scale = editor.tilemapGrid.scaling
   session.portal = editor.currentPortal
+  session.allLayers = editor.tilemapShowAllLayers
+  session.entityBypass = editor.entityBypass
+  session.layerSelected = editor.tilemapLayer
 
   for name, win in editor.wm.windows {
     isVisible := editor.wm.windowVisibility[name]
@@ -1681,6 +1690,9 @@ fn editorLoadSession(editor: ^Editor, session: msession.Session) {
   loadPortal(editor, session.portal)
   editor.tilemapGrid.panning = session.pan
   editor.tilemapGrid.scaling = session.scale
+  editor.tilemapShowAllLayers = session.allLayers
+  editor.entityBypass = session.entityBypass
+  editor.tilemapLayer = session.layerSelected
 
   for i, win in session.windows {
     editor.wm.setWindowVisible(win.name, win.visible)
@@ -1693,6 +1705,20 @@ fn editorMain*() {
 
   d_global.screen = rect.mk(0, 0, 800, 600)
   window.setup("Editor", trunc(d_global.screen.w), trunc(d_global.screen.h))
+
+
+  mdbg.initConsole()
+
+  mdbg.logt("Welcome to the console!")
+  mdbg.logt("To use the console, use the .write method.")
+  mdbg.logt("You can render the console using mconsole.render")
+  mdbg.logt("The console uses blocks that can be\nMultiline!")
+  mdbg.logt("              [ _ _]")
+  mdbg.logt("              [ ----]")
+  mdbg.logt("     _/\\/\\/\\_/ /")
+  mdbg.logt("   _|         /")
+  mdbg.logt(" _|  (  | (  |")
+  mdbg.logt("/__.-'|_|--|_|")
 
   // init data
   rl := d_resources.initResourceLoader()
@@ -1709,18 +1735,6 @@ fn editorMain*() {
     loadPortal(&editor, "genesis")
   }
 
-  mdbg.initConsole()
-
-  mdbg.logt("Welcome to the console!")
-  mdbg.logt("To use the console, use the .write method.")
-  mdbg.logt("You can render the console using mconsole.render")
-  mdbg.logt("The console uses blocks that can be\nMultiline!")
-  mdbg.logt("              [ _ _]")
-  mdbg.logt("              [ ----]")
-  mdbg.logt("     _/\\/\\/\\_/ /")
-  mdbg.logt("   _|         /")
-  mdbg.logt(" _|  (  | (  |")
-  mdbg.logt("/__.-'|_|--|_|")
 
   for window.cycle() {
     mshortcuts.console()

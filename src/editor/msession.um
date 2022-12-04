@@ -18,6 +18,9 @@ type Session* = struct {
   pan: th.Vf2
   scale: real
   portal: str
+  allLayers: bool
+  entityBypass: bool
+  layerSelected: int
   windows: []Window
 }
 
@@ -26,8 +29,11 @@ fn save*(session: Session): str {
   result = append(result, ut.saveVf2(session.pan))
   result = append(result, ut.saveReal(session.scale))
   result = append(result, []str{session.portal})
+  result = append(result, ut.saveBool(session.allLayers))
+  result = append(result, ut.saveBool(session.entityBypass))
+  result = append(result, ut.saveReal(session.layerSelected))
+  
   result = append(result, ut.saveReal(len(session.windows)))
-
   for i, window in session.windows {
     result = append(result, []str{window.name})
     result = append(result, ut.saveBool(window.visible))
@@ -43,15 +49,18 @@ fn load*(sourceStr: str): Session {
   session.pan = ut.loadVf2(source[0])
   session.scale = ut.loadReal(source[1])
   session.portal = source[2][0]
+  session.allLayers = ut.loadBool(source[3])
+  session.entityBypass = ut.loadBool(source[4])
+  session.layerSelected = trunc(ut.loadReal(source[5]))
 
-  count := trunc(ut.loadReal(source[3]))
+  count := trunc(ut.loadReal(source[6]))
 
   for i := 0; i < count; i++ {
     window := Window{}
 
-    window.name = source[4+i*3][0]
-    window.visible = ut.loadBool(source[5+i*3])
-    window.rect = ut.loadRect(source[6+i*3])
+    window.name = source[7+i*3][0]
+    window.visible = ut.loadBool(source[8+i*3])
+    window.rect = ut.loadRect(source[9+i*3])
 
     session.windows = append(session.windows, window)
   }

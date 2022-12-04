@@ -1,4 +1,4 @@
-# Last id: 18
+# Last id: 22
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -17,21 +17,22 @@
 11. Maybe savestates should be stackable instead.
 
 13. Fix input system ordering going from first sibling to last, it should be from last to first.
-
-14. Editor sessions.
-  Editor sessions will allow you to restore window positions, sizes, selected options, et al. after you load the editor again.
-  Lovely <3
+  - guaranteed one frame delay 
 
 15. Editor theming.
   I just removed d_colors.um and I intend to make a theme structure instead, could look sweet <3
 
 17. Port the debug view I had from the old UI. It was really handy.
-
-18. Zoom in editor.
+  - there's console
 
 19. Ability to move layers
+  - what?
 
 20. Do something with mixing up layers constantly
-  I implemented onion skin for when we only enable one layer, maybe that can help
+  - I implemented onion skin for when we only enable one layer, maybe that can help
 
 21. Investigate random overflow bugs :/
+  - no known bugs yet
+
+22. Session thing will crash if I load an invalid session file.
+  - no error checking
