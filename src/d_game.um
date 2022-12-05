@@ -24,7 +24,6 @@ type (
   Character* = struct {
     id: str
     tags: TagSet
-    originalRect: rect.Rect
     rect: rect.Rect
     vel: th.Vf2
     onGround: bool
@@ -32,11 +31,7 @@ type (
   }
 
   SaveState* = struct {
-    entities: []Character
-    sceneId: int
-    world: d_world.World
-    chara: Character
-    dialogs: d_dialogs.Dialogs
+    playerPos: th.Vf2
   }
 )
 
@@ -69,8 +64,8 @@ var (
   savePosAppearTimer: real
   savePos: th.Vf2
   power, newPower: real
-  saveSlot: SaveState
   levers: map[str]bool
+  saveState: SaveState
 
   lockInput*: bool
   guides: []rect.Rect
@@ -81,6 +76,7 @@ var (
   dialogs*: d_dialogs.Dialogs
   camera*: th.Vf2
   cameraScale*: real
+  holdingEnt: int // index
 )
 
 fn getCameraRect(): rect.Rect {
@@ -386,7 +382,7 @@ fn _drawRectTangents(r: rect.Rect) {
 }
 
 fn convertEntityDescToCharacter(ent: d_worlddata.EntityDesc): Character {
-  return Character{id: ent.id, tags: initTagSetFromString(ent.tags), originalRect: ent.rect, rect: ent.rect}
+  return Character{id: ent.id, tags: initTagSetFromString(ent.tags), rect: ent.rect}
 }
 
 fn findEntity*(id: str): ^Character {
@@ -399,23 +395,14 @@ fn findEntity*(id: str): ^Character {
   return null
 }
 
-fn loadState() {
-  entities = copy(saveSlot.entities)
-  sceneId = saveSlot.sceneId
-  world = saveSlot.world
-  chara = saveSlot.chara
-  dialogs = saveSlot.dialogs
+fn stateLoad() {
+  chara.rect.x = saveState.playerPos.x
+  chara.rect.y = saveState.playerPos.y
 }
 
-fn saveState() {
-  saveSlot = SaveState{
-    entities: copy(entities),
-    sceneId: sceneId,
-    world: world,
-    chara: chara,
-    dialogs: dialogs}
+fn stateSave() {
+  saveState = SaveState{chara.rect.getPos()}
 }
-
 
 fn start*(worldData: d_worlddata.WorldData) {
   lockInput = false
@@ -448,8 +435,9 @@ fn start*(worldData: d_worlddata.WorldData) {
 
   camera = getCameraProperties().pos
   cameraScale = getCameraProperties().scale
+  holdingEnt = -1
 
-  saveState()
+  stateSave()
 }
 
 fn init*(rl: ^d_resources.ResourceLoader) {
@@ -471,22 +459,25 @@ fn updateEntities() {
   entSolveCollision(&chara)
 
   for i := 0; i < len(entities); i++ {
-    // FIXME: Disabled this for now, but later should
-    //        make it accessible through flags/tags.
-    /*
-    entPhysics(&entities[i])
-    entSolveCollision(&entities[i])
-    */
-
     ent := &entities[i]
+    if i == holdingEnt {
+      continue
+    }
 
-    if ent.tags.isSet("Boulder") {
-      boulderTargetRect := d_util.rectMove(ent.originalRect, th.Vf2{0, -ent.originalRect.h*power})
+    if ent.tags.isSet("obj_box") {
+      boulderTargetRect := d_util.rectMove(ent.rect, th.Vf2{0, -ent.rect.h*power})
       ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/100.0)
 
       // Resolve player collision
       entShape := Shape{rect: ent.rect}
       entVsShape(&chara, entShape)
+      entPhysics(ent)
+      entSolveCollision(ent)
+
+      if input.isJustPressed(' ') && d_util.rectVsRect(d_util.rectShrink(ent.rect, -5), chara.rect) {
+        input.clear(' ')
+        holdingEnt = i
+      }
     }
 
     if ent.tags.isSet("Lever") {
@@ -504,7 +495,7 @@ fn updateEntities() {
 }
 
 const (
-  cropBoulder = rect.Rect{0, 0, 64, 128}
+  cropBox = rect.Rect{128, 64, 64, 64}
   cropLeverOn = rect.Rect{64, 64, 64, 64}
   cropLeverOff = rect.Rect{64, 0, 64, 64}
   cropDiskette = rect.Rect{128, 0, 64, 64}
@@ -518,8 +509,8 @@ fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0
   img.draw(th.Transform{p: pos, s: scale, r: rot, o: th.Vf2{dst.w/2, dst.h/2}})
 }
 
-fn drawEntity(ent: ^Character) {
-  destRect := d_util.rectShrink(cameraOffsetRect(ent.rect), -2*cameraScale)
+fn drawEntityCustomRect(ent: ^Character, r: rect.Rect) {
+  destRect := d_util.rectShrink(cameraOffsetRect(r), -2*cameraScale)
 
   if ent.tags.isSet("Lever") {
     if levers[ent.id] {
@@ -527,8 +518,8 @@ fn drawEntity(ent: ^Character) {
     } else {
       drawImageRect(imgObj, cropLeverOff, destRect)
     }
-  } else if ent.tags.isSet("Boulder") {
-    drawImageRect(imgObj, cropBoulder, destRect)
+  } else if ent.tags.isSet("obj_box") {
+    drawImageRect(imgObj, cropBox, destRect)
   } else {
     color := th.blue
     if ent.onGround {
@@ -541,6 +532,10 @@ fn drawEntity(ent: ^Character) {
 
     canvas.drawRect(color, cameraOffsetRect(ent.rect))
   }
+}
+
+fn drawEntity(ent: ^Character) {
+  drawEntityCustomRect(ent, ent.rect)
 }
 
 const (
@@ -568,7 +563,11 @@ fn drawChum(state: int) {
 }
 
 fn drawEntities() {
-  for i := 0; i < len(entities); i++ {
+  for i, entity in entities {
+    if i == holdingEnt {
+      continue
+    }
+
     drawEntity(&entities[i])
   }
 
@@ -592,6 +591,13 @@ fn drawEntities() {
       case 2: drawChum(chumStateJump)
     }
   }
+
+  if holdingEnt >= 0 {
+    entity := &entities[holdingEnt]
+    entity.rect.x = chara.rect.x+((chumDir*2)-1)*chara.rect.w
+    entity.rect.y = chara.rect.y-16
+    drawEntity(entity)
+  }
 }
 
 fn update*() {
@@ -609,7 +615,7 @@ fn update*() {
     
     // Load state
     if input.isJustPressed('a') {
-      loadState()
+      stateLoad()
     }
 
     // Save state
@@ -617,7 +623,12 @@ fn update*() {
       savePos.x = chara.rect.x
       savePos.y = chara.rect.y
       savePosAppearTimer = 0
-      saveState()
+      stateSave()
+    }
+
+    // unload ent
+    if input.isJustPressed(' ') && holdingEnt >= 0 {
+      holdingEnt = -1
     }
 
     savePosAppearTimer += th.delta/1000.0
