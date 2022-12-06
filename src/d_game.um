@@ -1,5 +1,5 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "image.um"
-  "misc/mstrings.um";
+  "misc/mstrings.um"; "mdbg.um";
   "d_rerp.um"; "d_background.um"; "d_resources.um"; "d_config.um"
   "d_util.um"; "d_world.um"; "d_dialogs.um"; "d_global.um"; "d_worlddata.um")
 
@@ -17,8 +17,13 @@ type (
     shape: int
   }
 
+  Tag* = struct {
+    isSet: bool
+    param: str
+  }
+
   TagSet* = struct {
-    tags: map[str]bool
+    tags: map[str]Tag
   }
 
   Character* = struct {
@@ -36,15 +41,23 @@ type (
 )
 
 fn (t: ^TagSet) set*(tag: str) {
-  t.tags[tag] = true
+  params := mstrings.splitBy(tag, ':')
+  if len(params) > 1 {
+    t.tags[params[0]].param = params[1]
+  }
+  t.tags[params[0]].isSet = true
+}
+
+fn (t: ^TagSet) param*(tag: str): str {
+  return t.tags[tag].param
 }
 
 fn (t: ^TagSet) isSet*(tag: str): bool {
-  return validkey(t.tags, tag) && t.tags[tag]
+  return validkey(t.tags, tag) && t.tags[tag].isSet
 } 
 
 fn initTagSetFromString*(s: str): TagSet {
-  tagSet := TagSet{map[str]bool{}}
+  tagSet := TagSet{map[str]Tag{}}
   tags := mstrings.splitBy(s, ';')
   for i, tag in tags {
     tagSet.set(tag)
@@ -463,6 +476,21 @@ fn updateEntities() {
     if i == holdingEnt {
       continue
     }
+    
+    if ent.tags.isSet("tele") {
+      if holdingEnt == -1 && input.isJustPressed(' ') && d_util.rectVsRect(d_util.rectShrink(ent.rect, -5), chara.rect) {
+        input.clear(' ')
+        dest := ent.tags.param("tele")
+        mdbg.logt(dest)
+        ent := findEntity(dest)
+        if ent != null {
+          chara.rect.x = ent.rect.x
+          chara.rect.y = ent.rect.y
+        } else {
+          mdbg.logt("Error: Destination entity doesn't exist")
+        }
+      }
+    }
 
     if ent.tags.isSet("obj_box") {
       boulderTargetRect := d_util.rectMove(ent.rect, th.Vf2{0, -ent.rect.h*power})
@@ -499,6 +527,7 @@ const (
   cropLeverOn = rect.Rect{64, 64, 64, 64}
   cropLeverOff = rect.Rect{64, 0, 64, 64}
   cropDiskette = rect.Rect{128, 0, 64, 64}
+  cropTele = rect.Rect{128+64, 0, 64, 64}
 )
 
 fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0) {
@@ -518,6 +547,8 @@ fn drawEntityCustomRect(ent: ^Character, r: rect.Rect) {
     } else {
       drawImageRect(imgObj, cropLeverOff, destRect)
     }
+  } else if ent.tags.isSet("tele") {
+    drawImageRect(imgObj, cropTele, destRect)
   } else if ent.tags.isSet("obj_box") {
     drawImageRect(imgObj, cropBox, destRect)
   } else {
@@ -594,7 +625,7 @@ fn drawEntities() {
 
   if holdingEnt >= 0 {
     entity := &entities[holdingEnt]
-    entity.rect.x = chara.rect.x+((chumDir*2)-1)*chara.rect.w
+    entity.rect.x = chara.rect.x+((chumDir*2)-1)*chara.rect.w*0.8
     entity.rect.y = chara.rect.y-16
     drawEntity(entity)
   }
