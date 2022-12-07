@@ -1732,7 +1732,7 @@ fn editorMain*() {
   if ok, sessionFile := d_util.readFileStr("user/session.csv"); ok {
     editorLoadSession(&editor, msession.load(sessionFile))
   } else {
-    loadPortal(&editor, "genesis")
+    loadPortal(&editor, "testbed_savepartial")
   }
 
 
