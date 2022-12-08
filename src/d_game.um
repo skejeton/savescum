@@ -79,6 +79,7 @@ var (
   power, newPower: real
   levers: map[str]bool
   saveState: SaveState
+  saved: bool
 
   lockInput*: bool
   guides: []rect.Rect
@@ -89,7 +90,7 @@ var (
   dialogs*: d_dialogs.Dialogs
   camera*: th.Vf2
   cameraScale*: real
-  holdingEnt: int // index
+  holdingEnt: ^Character
 )
 
 fn getCameraRect(): rect.Rect {
@@ -409,11 +410,14 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn stateLoad() {
-  chara.rect.x = saveState.playerPos.x
-  chara.rect.y = saveState.playerPos.y
+  if saved {
+    chara.rect.x = saveState.playerPos.x
+    chara.rect.y = saveState.playerPos.y
+  }
 }
 
 fn stateSave() {
+  saved = true
   saveState = SaveState{chara.rect.getPos()}
 }
 
@@ -448,7 +452,7 @@ fn start*(worldData: d_worlddata.WorldData) {
 
   camera = getCameraProperties().pos
   cameraScale = getCameraProperties().scale
-  holdingEnt = -1
+  holdingEnt = null
 
   stateSave()
 }
@@ -467,19 +471,58 @@ fn init*(rl: ^d_resources.ResourceLoader) {
     d_resources.loadFont(rl, "data/font/monospace.otf", 16, 0), 0xFFFFFFFF, 0.1, []str{"smirk"})
 }
 
+type EntityInteractPriority = struct {
+  entity: ^Character
+}
+
+fn (eip: ^EntityInteractPriority) try(entity: ^Character) {
+  if eip.entity == null {
+    eip.entity = entity
+  } else if !entity.tags.isSet("tele") { // NOTE: teleport takes least priority
+    eip.entity = entity
+  }
+}
+
 fn updateEntities() {
   entPhysics(&chara)
   entSolveCollision(&chara)
 
+  interaction := EntityInteractPriority{}
+
   for i := 0; i < len(entities); i++ {
     ent := &entities[i]
-    if i == holdingEnt {
+    if ent == holdingEnt {
       continue
     }
-    
+
+    if input.isJustPressed(' ') && d_util.rectVsRect(d_util.rectShrink(ent.rect, -5), chara.rect) {
+      interaction.try(ent)
+    }
+
+    if ent.tags.isSet("obj_box") {
+      boulderTargetRect := d_util.rectMove(ent.rect, th.Vf2{0, -ent.rect.h*power})
+      ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/100.0)
+
+      // Resolve player collision
+      entShape := Shape{rect: ent.rect}
+      entVsShape(&chara, entShape)
+      entPhysics(ent)
+      entSolveCollision(ent)
+    }
+  }
+
+  if ent := interaction.entity; ent != null {
+    if ent.tags.isSet("obj_box") {
+      input.clear(' ')
+      if chara.onGround {
+        holdingEnt = ent
+      }
+    }
+
     if ent.tags.isSet("tele") {
-      if holdingEnt == -1 && input.isJustPressed(' ') && d_util.rectVsRect(d_util.rectShrink(ent.rect, -5), chara.rect) {
+      if holdingEnt == null {
         input.clear(' ')
+        saved = false
         dest := ent.tags.param("tele")
         mdbg.logt(dest)
         ent := findEntity(dest)
@@ -492,33 +535,6 @@ fn updateEntities() {
       }
     }
 
-    if ent.tags.isSet("obj_box") {
-      boulderTargetRect := d_util.rectMove(ent.rect, th.Vf2{0, -ent.rect.h*power})
-      ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/100.0)
-
-      // Resolve player collision
-      entShape := Shape{rect: ent.rect}
-      entVsShape(&chara, entShape)
-      entPhysics(ent)
-      entSolveCollision(ent)
-
-      if input.isJustPressed(' ') && d_util.rectVsRect(d_util.rectShrink(ent.rect, -5), chara.rect) {
-        input.clear(' ')
-        holdingEnt = i
-      }
-    }
-
-    if ent.tags.isSet("Lever") {
-      if d_util.rectVsRect(ent.rect, chara.rect) {
-        if input.isJustPressed(' ') {
-          levers[ent.id] = !levers[ent.id]
-        } 
-      }
-
-      if levers[ent.id] {
-        newPower += 1
-      }
-    }
   }
 }
 
@@ -595,7 +611,7 @@ fn drawChum(state: int) {
 
 fn drawEntities() {
   for i, entity in entities {
-    if i == holdingEnt {
+    if &entities[i] == holdingEnt {
       continue
     }
 
@@ -623,11 +639,10 @@ fn drawEntities() {
     }
   }
 
-  if holdingEnt >= 0 {
-    entity := &entities[holdingEnt]
-    entity.rect.x = chara.rect.x+((chumDir*2)-1)*chara.rect.w*0.8
-    entity.rect.y = chara.rect.y-16
-    drawEntity(entity)
+  if holdingEnt != null {
+    holdingEnt.rect.x = chara.rect.x+((chumDir*2)-1)*chara.rect.w*0.8
+    holdingEnt.rect.y = chara.rect.y-16
+    drawEntity(holdingEnt)
   }
 }
 
@@ -653,13 +668,12 @@ fn update*() {
     if input.isJustPressed('s') {
       savePos.x = chara.rect.x
       savePos.y = chara.rect.y
-      savePosAppearTimer = 0
       stateSave()
     }
 
     // unload ent
-    if input.isJustPressed(' ') && holdingEnt >= 0 {
-      holdingEnt = -1
+    if input.isJustPressed(' ') && holdingEnt != null {
+      holdingEnt = null
     }
 
     savePosAppearTimer += th.delta/1000.0
@@ -668,6 +682,7 @@ fn update*() {
     dialogs.advance(input.isPressed('x'))
   }
   dialogs.update()
+  savePosAppearTimer = real(int(saved))
 }
 
 fn drawGuideRects() {

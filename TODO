@@ -1,4 +1,4 @@
-# Last id: 22
+# Last id: 23
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -36,3 +36,5 @@
 
 22. Session thing will crash if I load an invalid session file.
   - no error checking
+
+23. Duplicating entities
