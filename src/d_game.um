@@ -640,8 +640,8 @@ fn drawEntities() {
   }
 
   if holdingEnt != null {
-    holdingEnt.rect.x = chara.rect.x+((chumDir*2)-1)*chara.rect.w*0.8
-    holdingEnt.rect.y = chara.rect.y-16
+    holdingEnt.rect.x = chara.rect.x
+    holdingEnt.rect.y = chara.rect.y-32*2
     drawEntity(holdingEnt)
   }
 }
@@ -673,6 +673,9 @@ fn update*() {
 
     // unload ent
     if input.isJustPressed(' ') && holdingEnt != null {
+      holdingEnt.rect.x = chara.rect.x
+      holdingEnt.rect.y = chara.rect.y
+      chara.rect.y -= 32
       holdingEnt = null
     }
 
