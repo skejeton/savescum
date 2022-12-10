@@ -243,7 +243,7 @@ fn collSortShapesByProximity(shapes: ^[]Shape, along: th.Vf2) {
 fn entVsShape(ent: ^Character, s: Shape) {
   r := s.rect
   snap := collCalcRectSnap(ent.rect, r)
-    
+
   // Not a valid collision (probably pushed back by other blocks?)
   if d_util.rectVsRect(ent.rect, r) == false {
     return
@@ -412,13 +412,15 @@ fn findEntity*(id: str): ^Character {
 fn stateLoad() {
   if saved {
     chara.rect.x = saveState.playerPos.x
-    chara.rect.y = saveState.playerPos.y
+    chara.rect.y = saveState.playerPos.y-chara.rect.h
   }
 }
 
 fn stateSave() {
   saved = true
-  saveState = SaveState{chara.rect.getPos()}
+  posSave := chara.rect.getPos()
+  posSave.y += chara.rect.h
+  saveState = SaveState{posSave}
 }
 
 fn start*(worldData: d_worlddata.WorldData) {
@@ -515,6 +517,8 @@ fn updateEntities() {
     if ent.tags.isSet("obj_box") {
       input.clear(' ')
       if chara.onGround {
+        chara.rect.y -= 64
+        chara.rect.h += 64
         holdingEnt = ent
       }
     }
@@ -595,8 +599,13 @@ const (
 )
 
 fn drawChum(state: int) {
+  r := chara.rect
+  if holdingEnt != null {
+    r.y += 64
+    r.h -= 64
+  }
   bodyRect := rect.mk(chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h)
-  chumDestRect := cameraOffsetRect(rect.mk(chara.rect.x-10, chara.rect.y-20, chumFaceRect.w/2, chumFaceRect.h/2))
+  chumDestRect := cameraOffsetRect(rect.mk(r.x-10, r.y-20, chumFaceRect.w/2, chumFaceRect.h/2))
   if chumDir == 0 {
     // Mirror.
     chumDestRect.x += chumDestRect.w;
@@ -605,7 +614,7 @@ fn drawChum(state: int) {
   drawImageRect(imgChum, bodyRect, chumDestRect, chumRotTime)
   drawImageRect(imgChum, chumFaceRect, chumDestRect, chumRotTime)
   if d_config.checkFlag(d_config.flagDebugOverlays) {
-    canvas.drawText(sprintf("%d %d", trunc(chara.rect.x/32), trunc(chara.rect.y/32)), chumDestRect.getPos(), th.red, 1)
+    canvas.drawText(sprintf("%d %d", trunc(r.x/32), trunc(r.y/32)), chumDestRect.getPos(), th.red, 1)
   }
 }
 
@@ -641,7 +650,7 @@ fn drawEntities() {
 
   if holdingEnt != null {
     holdingEnt.rect.x = chara.rect.x
-    holdingEnt.rect.y = chara.rect.y-32*2
+    holdingEnt.rect.y = chara.rect.y
     drawEntity(holdingEnt)
   }
 }
@@ -673,6 +682,8 @@ fn update*() {
 
     // unload ent
     if input.isJustPressed(' ') && holdingEnt != null {
+      chara.rect.y += 64
+      chara.rect.h -= 64
       holdingEnt.rect.x = chara.rect.x
       holdingEnt.rect.y = chara.rect.y
       chara.rect.y -= 32
@@ -704,7 +715,6 @@ fn drawSavePos() {
   shrink = (1-shrink)*16
   drawImageRect(imgObj, cropDiskette, cameraOffsetRect(d_util.rectShrink(rect.mk(savePos.x, savePos.y, 32, 32), shrink)))
 }
-
 
 
 fn draw*() {

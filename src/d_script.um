@@ -28,12 +28,6 @@ fn update*() {
   }
   switch d_game.sceneId {
   case 0:
-    if d_game.chara.rect.y > 608 {
-      d_game.lockInput = true
-      d_game.chara.rect.y -= 128
-      d_game.camera.y -= 128
-      t += 0.001
-    }
   case 1:
     if d_game.chara.onGround && !dialogActivated {
       if ent := d_game.findEntity("EntReceptionist"); ent != null {
