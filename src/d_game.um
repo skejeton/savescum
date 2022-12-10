@@ -74,8 +74,6 @@ var (
   imgObj: image.Image
   imgChum: image.Image
 
-  savePosAppearTimer: real
-  savePos: th.Vf2
   power, newPower: real
   levers: map[str]bool
   saveState: SaveState
@@ -333,27 +331,31 @@ fn entConstructColidingSolids(ent: ^Character): []Shape {
     shapeType := -1
 
     switch tangent.id {
-    case 1, 5, 7:   shapeType = shapeBlock
-    case 9:   shapeType = shapeLeftUpSlope
-    case 10:  shapeType = shapeRightUpSlope
-    case 13:  shapeType = shapeLeftDownSlope
-    case 14:  shapeType = shapeRightDownSlope
-    case 15:  shapeType = shapeLeftUpSlope
-        shapeRect.h /= 2;
-    case 16:  shapeType = shapeRightUpSlope
-        shapeRect.h /= 2;
-    case 4:   shapeType = shapeLeftUpSlope
-        shapeRect.y += world.tileset.tileSizeY/2;
-        shapeRect.h /= 2;
-    case 8:   shapeType = shapeRightUpSlope
-        shapeRect.y += world.tileset.tileSizeY/2;
-        shapeRect.h /= 2;
-    case 11:  shapeType = shapeRightDownSlope
-        shapeRect.h /= 2;
-    case 12:  shapeType = shapeLeftDownSlope
-        shapeRect.h /= 2;
-    // TODO: Investigate why uncommenting this causes a bug where you can pass through blocks
-    // default:  break
+      // slab
+      case 25: shapeType = shapeBlock
+        shapeRect.y += world.tileset.tileSizeY/2
+        shapeRect.h /= 2
+      case 1, 5, 7:   shapeType = shapeBlock
+      case 9:   shapeType = shapeLeftUpSlope
+      case 10:  shapeType = shapeRightUpSlope
+      case 13:  shapeType = shapeLeftDownSlope
+      case 14:  shapeType = shapeRightDownSlope
+      case 15:  shapeType = shapeLeftUpSlope
+          shapeRect.h /= 2;
+      case 16:  shapeType = shapeRightUpSlope
+          shapeRect.h /= 2;
+      case 4:   shapeType = shapeLeftUpSlope
+          shapeRect.y += world.tileset.tileSizeY/2;
+          shapeRect.h /= 2;
+      case 8:   shapeType = shapeRightUpSlope
+          shapeRect.y += world.tileset.tileSizeY/2;
+          shapeRect.h /= 2;
+      case 11:  shapeType = shapeRightDownSlope
+          shapeRect.h /= 2;
+      case 12:  shapeType = shapeLeftDownSlope
+          shapeRect.h /= 2;
+      // TODO: Investigate why uncommenting this causes a bug where you can pass through blocks
+      // default:  break
     }
     
     if shapeType == shapeBlock {
@@ -425,13 +427,11 @@ fn stateSave() {
 
 fn start*(worldData: d_worlddata.WorldData) {
   lockInput = false
-  savePos.x = -1000
-  savePos.y = -1000
   levers = map[str]bool{}
 
   world =  worldData.world
 
-  chara = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}}
+  chara = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX/1.2, world.tileset.tileSizeY}}
   chumRotTime = 0
   chumWalkTime = 0
   chumDir = 0
@@ -455,8 +455,7 @@ fn start*(worldData: d_worlddata.WorldData) {
   camera = getCameraProperties().pos
   cameraScale = getCameraProperties().scale
   holdingEnt = null
-
-  stateSave()
+  saved = false
 }
 
 fn init*(rl: ^d_resources.ResourceLoader) {
@@ -516,7 +515,7 @@ fn updateEntities() {
   if ent := interaction.entity; ent != null {
     if ent.tags.isSet("obj_box") {
       input.clear(' ')
-      if chara.onGround {
+      if chara.onGround && holdingEnt == null {
         chara.rect.y -= 64
         chara.rect.h += 64
         holdingEnt = ent
@@ -675,13 +674,11 @@ fn update*() {
 
     // Save state
     if input.isJustPressed('s') {
-      savePos.x = chara.rect.x
-      savePos.y = chara.rect.y
       stateSave()
     }
 
     // unload ent
-    if input.isJustPressed(' ') && holdingEnt != null {
+    if input.isJustPressed(' ') && holdingEnt != null && chara.onGround {
       chara.rect.y += 64
       chara.rect.h -= 64
       holdingEnt.rect.x = chara.rect.x
@@ -690,13 +687,10 @@ fn update*() {
       holdingEnt = null
     }
 
-    savePosAppearTimer += th.delta/1000.0
-
     // UPDATE DIALOG //
     dialogs.advance(input.isPressed('x'))
   }
   dialogs.update()
-  savePosAppearTimer = real(int(saved))
 }
 
 fn drawGuideRects() {
@@ -706,14 +700,9 @@ fn drawGuideRects() {
 }
 
 fn drawSavePos() {
-  shrink := savePosAppearTimer*savePosAppearTimer*10.0
-
-  if shrink > 1 {
-    shrink = 1
+  if saved {
+    drawImageRect(imgObj, cropDiskette, cameraOffsetRect(rect.mk(saveState.playerPos.x, saveState.playerPos.y-32, 32, 32)))
   }
-
-  shrink = (1-shrink)*16
-  drawImageRect(imgObj, cropDiskette, cameraOffsetRect(d_util.rectShrink(rect.mk(savePos.x, savePos.y, 32, 32), shrink)))
 }
 
 
