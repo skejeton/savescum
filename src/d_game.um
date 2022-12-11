@@ -1,5 +1,6 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "image.um"
   "misc/mstrings.um"; "mdbg.um";
+  th_color = "color.um";
   "d_rerp.um"; "d_background.um"; "d_resources.um"; "d_config.um"
   "d_util.um"; "d_world.um"; "d_dialogs.um"; "d_global.um"; "d_worlddata.um")
 
@@ -33,6 +34,7 @@ type (
     vel: th.Vf2
     onGround: bool
     onSlope: bool
+    invertGravity: bool
   }
 
   SaveState* = struct {
@@ -147,8 +149,12 @@ fn cameraOffsetRect(r: rect.Rect): rect.Rect {
 }
 
 fn playerControl() {
+  sign := 1.0
+  if chara.invertGravity {
+    sign = -1.0
+  }
   if input.isPressed(input.key_up) && chara.onGround {
-    chara.vel.y = -2.57
+    chara.vel.y = -2.57*sign
   }
   if input.isPressed(input.key_left) {
     chumDir = 0
@@ -174,15 +180,30 @@ fn playerControl() {
 }
 
 fn entPhysics(ent: ^Character) {
+  gravity := 0.0
   if ent.onSlope {
-    ent.vel.y += 0.1*th.delta/1000.0*60.0
+    gravity = 0.1*th.delta/1000.0*60.0
   } else {
-    ent.vel.y += 0.1*th.delta/1000.0*60.0
+    gravity = 0.1*th.delta/1000.0*60.0
   }
 
-  if ent.vel.y > 10 {
-    ent.vel.y = 10
+  sign := 1.0
+  if ent.invertGravity {
+    sign = -1.0
   }
+
+  ent.vel.y += gravity*sign
+
+  if ent.invertGravity {
+    if ent.vel.y < -10 {
+      ent.vel.y = -10
+    }
+  } else {
+    if ent.vel.y > 10 {
+      ent.vel.y = 10
+    }
+  }
+  
 
   ent.rect.x += ent.vel.x*th.delta/1000.0*60.0
   ent.rect.y += ent.vel.y*th.delta/1000.0*60.0
@@ -258,11 +279,14 @@ fn entVsShape(ent: ^Character, s: Shape) {
     if hitY > r.h {
       hitY = r.h
     }
+
     
     if cornerY > hitY {
       ent.vel.y = 0;
-      ent.onGround = true;
-      ent.onSlope = true;
+      if !ent.invertGravity {
+        ent.onGround = true;
+        ent.onSlope = true;
+      }
       ent.rect.y += hitY-cornerY;
     }
   case shapeRightUpSlope:
@@ -275,8 +299,10 @@ fn entVsShape(ent: ^Character, s: Shape) {
 
     if cornerY > hitY {
       ent.vel.y = 0;
-      ent.onGround = true;
-      ent.onSlope = true;
+      if !ent.invertGravity {
+        ent.onGround = true;
+        ent.onSlope = true;
+      }
       ent.rect.y += hitY-cornerY;
     }
   case shapeLeftDownSlope:
@@ -288,6 +314,10 @@ fn entVsShape(ent: ^Character, s: Shape) {
     hitY := (r.h/r.w) * (cornerX)
 
     if cornerY < hitY {
+      if ent.invertGravity {
+        ent.onGround = true;
+        ent.onSlope = true;
+      }
       if ent.vel.y < 0 {
         ent.vel.y = 0;
       }
@@ -302,6 +332,10 @@ fn entVsShape(ent: ^Character, s: Shape) {
     hitY := r.h - ((r.h/r.w) * (cornerX))
 
     if cornerY < hitY {
+      if ent.invertGravity {
+        ent.onGround = true;
+        ent.onSlope = true;
+      }
       if ent.vel.y < 0 {
         ent.vel.y = 0;
       }
@@ -313,7 +347,10 @@ fn entVsShape(ent: ^Character, s: Shape) {
     } else if (snap.y > 0 && ent.vel.y < 0) || (snap.y < 0 && ent.vel.y > 0) {
       ent.vel.y = 0
     }
-    if snap.y < 0 {
+
+    groundCond := [2]bool{snap.y < 0, snap.y > 0}
+
+    if groundCond[int(ent.invertGravity)] {
       ent.onGround = true
     }
     ent.rect.x += snap.x
@@ -496,8 +533,19 @@ fn updateEntities() {
       continue
     }
 
-    if input.isJustPressed(' ') && d_util.rectVsRect(d_util.rectShrink(ent.rect, -5), chara.rect) {
+    vagueCollision := d_util.rectVsRect(d_util.rectShrink(ent.rect, -5), chara.rect)
+    preciseCollision := d_util.rectVsRect(ent.rect, chara.rect)
+
+    if input.isJustPressed(' ') && vagueCollision {
       interaction.try(ent)
+    }
+
+    if ent.tags.isSet("obj_gravityswitch") && preciseCollision {
+      // to prevent further collisions firing, this is not really how
+      // it's supposed to work in the end, so this is merely a hack
+      entShape := Shape{rect: ent.rect}
+      entVsShape(&chara, entShape)
+      chara.invertGravity = !chara.invertGravity
     }
 
     if ent.tags.isSet("obj_box") {
@@ -605,6 +653,11 @@ fn drawChum(state: int) {
   }
   bodyRect := rect.mk(chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h)
   chumDestRect := cameraOffsetRect(rect.mk(r.x-10, r.y-20, chumFaceRect.w/2, chumFaceRect.h/2))
+  if chara.invertGravity {
+    // Mirror
+    chumDestRect.y += chumDestRect.h*1.33 // FIXME: bad
+    chumDestRect.h *= -1
+  }
   if chumDir == 0 {
     // Mirror.
     chumDestRect.x += chumDestRect.w;
@@ -627,12 +680,16 @@ fn drawEntities() {
   }
 
   //drawEntity(&chara)
-  if chara.vel.y > 0 {
-    if chara.vel.y > 3 {
+  sign := 1.0
+  if chara.invertGravity {
+    sign *= -1
+  }
+  if sign*chara.vel.y > 0 {
+    if sign*chara.vel.y > 3 {
       chumRotTime += th.delta/10.0
     }
     drawChum(chumStateFall)
-  } else if chara.vel.y < 0 {
+  } else if !chara.onGround {
     chumRotTime = 0
     drawChum(chumStateJump)
   } else if chumWalkTime == 0.0 {
@@ -652,6 +709,13 @@ fn drawEntities() {
     holdingEnt.rect.y = chara.rect.y
     drawEntity(holdingEnt)
   }
+}
+
+fn drawEntityDebugRects() {
+  for i, entity in entities {
+    canvas.drawRect(th_color.alpha(th.blue, 0.4), cameraOffsetRect(entity.rect)) 
+  }
+  canvas.drawRect(th_color.alpha(th.blue, 0.4), cameraOffsetRect(chara.rect)) 
 }
 
 fn update*() {
@@ -705,6 +769,7 @@ fn drawSavePos() {
   }
 }
 
+showDebug := false
 
 fn draw*() {
   // RENDER BG //
@@ -725,9 +790,15 @@ fn draw*() {
 
   // DEBUG OVERYALS //
 
-  if d_config.checkFlag(d_config.flagDebugOverlays) {
+  //if d_config.checkFlag(d_config.flagDebugOverlays) {
+  if input.isPressed(input.key_alt) && input.isJustPressed('d') {
+    showDebug = !showDebug
+  }
+
+  if showDebug {
     _drawRectTangents(chara.rect)
     drawGuideRects()
     d_util.drawRectLines(th.green, cameraOffsetRect(getCameraTargetRect()))
+    drawEntityDebugRects()
   }
 }

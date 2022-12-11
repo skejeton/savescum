@@ -1,14 +1,14 @@
 import (
-	"console/mconsole.um"
-	"d_global.um"
-	"input.um"
-	th_font = "font.um"
+  "console/mconsole.um"
+  "d_global.um"
+  "input.um"
+  th_font = "font.um"
 )
 
 var (
-	console: mconsole.Console
-	visualConsole: mconsole.VisualConsole
-	consolevis*: bool
+  console: mconsole.Console
+  visualConsole: mconsole.VisualConsole
+  consolevis*: bool
 )
 
 
@@ -27,12 +27,12 @@ fn getConsole*(): ^mconsole.Console {
 }
 
 fn scrollConsole*(by: real) {
-	visualConsole.scrollBy(1)
+  visualConsole.scrollBy(1)
 }
 
 // draws fullscreen console.
 fn drawConsole*(font: th_font.Font) {
-	if consolevis {
-		mconsole.render(&console, &visualConsole, font, d_global.screen) 
-	}
+  if consolevis {
+    mconsole.render(&console, &visualConsole, font, d_global.screen) 
+  }
 }
