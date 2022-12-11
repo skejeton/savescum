@@ -154,7 +154,7 @@ fn playerControl() {
     sign = -1.0
   }
   if input.isPressed(input.key_up) && chara.onGround {
-    chara.vel.y = -2.57*sign
+    chara.vel.y = -2.56*sign
   }
   if input.isPressed(input.key_left) {
     chumDir = 0
@@ -450,8 +450,16 @@ fn findEntity*(id: str): ^Character {
 
 fn stateLoad() {
   if saved {
+    prevchar := chara
+
     chara.rect.x = saveState.playerPos.x
     chara.rect.y = saveState.playerPos.y-chara.rect.h
+
+    
+    entSolveCollision(&chara)
+    if d_util.abs(chara.rect.x-saveState.playerPos.x) > 2 || d_util.abs(chara.rect.y-(saveState.playerPos.y-chara.rect.h)) > 2 {
+      chara = prevchar
+    }
   }
 }
 
@@ -506,7 +514,7 @@ fn init*(rl: ^d_resources.ResourceLoader) {
   dialogs.register("receptionist", 
     d_resources.loadImage(rl, "data/img/dialog_frames.png"), 0, 
     d_resources.loadImage(rl, "data/img/dlg_receptionist.png"), 0,
-    d_resources.loadFont(rl, "data/font/monospace.otf", 16, 0), 0xFFFFFFFF, 0.1, []str{"smirk"})
+    d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 0), 0xFFFFFFFF, 0.1, []str{"smirk"})
 }
 
 type EntityInteractPriority = struct {
@@ -519,6 +527,25 @@ fn (eip: ^EntityInteractPriority) try(entity: ^Character) {
   } else if !entity.tags.isSet("tele") { // NOTE: teleport takes least priority
     eip.entity = entity
   }
+}
+
+fn getCollidingEntities(against: ^Character): []^Character {
+  collided := []^Character{}
+  if d_util.rectVsRect(chara.rect, against.rect) {
+    collided = append(collided, &chara)
+  }
+
+  for i in entities {
+    // Prevent self collision
+    ent := &entities[i]
+    if ent == against {
+      continue
+    }
+    if d_util.rectVsRect(ent.rect, against.rect) {
+      collided = append(collided, ent)
+    }
+  }
+  return collided
 }
 
 fn updateEntities() {
@@ -534,18 +561,22 @@ fn updateEntities() {
     }
 
     vagueCollision := d_util.rectVsRect(d_util.rectShrink(ent.rect, -5), chara.rect)
-    preciseCollision := d_util.rectVsRect(ent.rect, chara.rect)
 
     if input.isJustPressed(' ') && vagueCollision {
       interaction.try(ent)
     }
 
-    if ent.tags.isSet("obj_gravityswitch") && preciseCollision {
-      // to prevent further collisions firing, this is not really how
-      // it's supposed to work in the end, so this is merely a hack
-      entShape := Shape{rect: ent.rect}
-      entVsShape(&chara, entShape)
-      chara.invertGravity = !chara.invertGravity
+    if ent.tags.isSet("obj_gravityswitch") {
+      collisions := getCollidingEntities(ent)
+      for i, collision in collisions {
+        // to prevent further collisions firing, this is not really how
+        // it's supposed to work in the end, so this is merely a hack
+        entShape := Shape{rect: ent.rect}
+        entVsShape(collision, entShape)
+        collision.onGround = false
+
+        collision.invertGravity = !collision.invertGravity
+      }
     }
 
     if ent.tags.isSet("obj_box") {
