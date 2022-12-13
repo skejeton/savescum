@@ -2,42 +2,13 @@
   Scripted events for game
 */
 
-import ("th.um"; "rect.um"; "canvas.um";
-  "d_game.um"; "d_util.um"; "d_global.um")
-
-var (
-  dialogActivated: bool
-  t: real
-)
-
 fn init*() {
-  // TODO(skejeton): Properly initialize the scene index for correct update handler.
-  //                 this can be done with checking against scene name. But right now I'm not storing that in the game.
-  t = 0
-  switch d_game.sceneId {
-  case 0:
-  case 1:
-    d_game.entities = append(d_game.entities, d_game.Character{rect: rect.mk(32*14, 32*19, 32, 32)})
-    d_game.chara.vel.y = 5;
-  }
+
 }
 
 fn update*() {
-  if t > 0.006 {
-    t += th.delta/1000.0
-  }
-  switch d_game.sceneId {
-  case 0:
-  case 1:
-    if d_game.chara.onGround && !dialogActivated {
-      if ent := d_game.findEntity("EntReceptionist"); ent != null {
-        d_game.dialogs.say("receptionist", "", "Ohh hey... #{emote:smirk}#{sp:0.05}Another one bites the dust?", ent.rect.getPos())
-        dialogActivated = true
-      }
-    }
-  }
 }
 
 fn draw*() {
-  canvas.drawRect(th.black, rect.mk(0, d_global.screen.h, d_global.screen.w, -d_global.screen.h*t*t))
+
 }

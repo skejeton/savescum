@@ -2,7 +2,7 @@ import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "image.um"
   "misc/mstrings.um"; "mdbg.um";
   th_color = "color.um";
   "d_rerp.um"; "d_background.um"; "d_resources.um"; "d_config.um"
-  "d_util.um"; "d_world.um"; "d_dialogs.um"; "d_global.um"; "d_worlddata.um")
+  "d_util.um"; "d_world.um"; "d_global.um"; "d_worlddata.um")
 
 const (
   shapeBlock          = 0
@@ -34,7 +34,6 @@ type (
     vel: th.Vf2
     onGround: bool
     onSlope: bool
-    invertGravity: bool
   }
 
   SaveState* = struct {
@@ -76,21 +75,14 @@ var (
   imgObj: image.Image
   imgChum: image.Image
 
-  power, newPower: real
-  levers: map[str]bool
-  saveState: SaveState
-  saved: bool
-
   lockInput*: bool
   guides: []rect.Rect
   entities*: []Character
   sceneId*: int
   world*: d_world.World
   chara*: Character
-  dialogs*: d_dialogs.Dialogs
   camera*: th.Vf2
   cameraScale*: real
-  holdingEnt: ^Character
 )
 
 fn getCameraRect(): rect.Rect {
@@ -149,12 +141,8 @@ fn cameraOffsetRect(r: rect.Rect): rect.Rect {
 }
 
 fn playerControl() {
-  sign := 1.0
-  if chara.invertGravity {
-    sign = -1.0
-  }
   if input.isPressed(input.key_up) && chara.onGround {
-    chara.vel.y = -2.56*sign
+    chara.vel.y = -2.56
   }
   if input.isPressed(input.key_left) {
     chumDir = 0
@@ -187,21 +175,10 @@ fn entPhysics(ent: ^Character) {
     gravity = 0.1*th.delta/1000.0*60.0
   }
 
-  sign := 1.0
-  if ent.invertGravity {
-    sign = -1.0
-  }
+  ent.vel.y += gravity
 
-  ent.vel.y += gravity*sign
-
-  if ent.invertGravity {
-    if ent.vel.y < -10 {
-      ent.vel.y = -10
-    }
-  } else {
-    if ent.vel.y > 10 {
-      ent.vel.y = 10
-    }
+  if ent.vel.y > 10 {
+    ent.vel.y = 10
   }
   
 
@@ -283,10 +260,8 @@ fn entVsShape(ent: ^Character, s: Shape) {
     
     if cornerY > hitY {
       ent.vel.y = 0;
-      if !ent.invertGravity {
-        ent.onGround = true;
-        ent.onSlope = true;
-      }
+      ent.onGround = true;
+      ent.onSlope = true;
       ent.rect.y += hitY-cornerY;
     }
   case shapeRightUpSlope:
@@ -299,10 +274,8 @@ fn entVsShape(ent: ^Character, s: Shape) {
 
     if cornerY > hitY {
       ent.vel.y = 0;
-      if !ent.invertGravity {
-        ent.onGround = true;
-        ent.onSlope = true;
-      }
+      ent.onGround = true;
+      ent.onSlope = true;
       ent.rect.y += hitY-cornerY;
     }
   case shapeLeftDownSlope:
@@ -314,10 +287,6 @@ fn entVsShape(ent: ^Character, s: Shape) {
     hitY := (r.h/r.w) * (cornerX)
 
     if cornerY < hitY {
-      if ent.invertGravity {
-        ent.onGround = true;
-        ent.onSlope = true;
-      }
       if ent.vel.y < 0 {
         ent.vel.y = 0;
       }
@@ -332,10 +301,6 @@ fn entVsShape(ent: ^Character, s: Shape) {
     hitY := r.h - ((r.h/r.w) * (cornerX))
 
     if cornerY < hitY {
-      if ent.invertGravity {
-        ent.onGround = true;
-        ent.onSlope = true;
-      }
       if ent.vel.y < 0 {
         ent.vel.y = 0;
       }
@@ -348,9 +313,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
       ent.vel.y = 0
     }
 
-    groundCond := [2]bool{snap.y < 0, snap.y > 0}
-
-    if groundCond[int(ent.invertGravity)] {
+    if snap.y < 0 {
       ent.onGround = true
     }
     ent.rect.x += snap.x
@@ -403,7 +366,6 @@ fn entConstructColidingSolids(ent: ^Character): []Shape {
   }
 
 
-  //collSortShapesByProximity(&nonBlockSolids, th.Vf2{ent.rect.x+ent.rect.w/2, ent.rect.y+ent.rect.h/2})
   solids = append(solids, nonBlockSolids)
   collSortShapesByProximity(&solids, th.Vf2{ent.rect.x+ent.rect.w/2, ent.rect.y+ent.rect.h/2})
   return solids
@@ -448,33 +410,10 @@ fn findEntity*(id: str): ^Character {
   return null
 }
 
-fn stateLoad() {
-  if saved {
-    prevchar := chara
-
-    chara.rect.x = saveState.playerPos.x
-    chara.rect.y = saveState.playerPos.y-chara.rect.h
-
-    
-    entSolveCollision(&chara)
-    if d_util.abs(chara.rect.x-saveState.playerPos.x) > 2 || d_util.abs(chara.rect.y-(saveState.playerPos.y-chara.rect.h)) > 2 {
-      chara = prevchar
-    }
-  }
-}
-
-fn stateSave() {
-  saved = true
-  posSave := chara.rect.getPos()
-  posSave.y += chara.rect.h
-  saveState = SaveState{posSave}
-}
-
 fn start*(worldData: d_worlddata.WorldData) {
   lockInput = false
-  levers = map[str]bool{}
 
-  world =  worldData.world
+  world = worldData.world
 
   chara = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX/1.2, world.tileset.tileSizeY}}
   chumRotTime = 0
@@ -483,7 +422,6 @@ fn start*(worldData: d_worlddata.WorldData) {
 
   entities = make([]Character, 0)
   guides = make([]rect.Rect, 0)
-  levers = map[str]bool{}
 
   for i, ent in worldData.entities {
     chr := convertEntityDescToCharacter(ent)
@@ -499,8 +437,6 @@ fn start*(worldData: d_worlddata.WorldData) {
 
   camera = getCameraProperties().pos
   cameraScale = getCameraProperties().scale
-  holdingEnt = null
-  saved = false
 }
 
 fn init*(rl: ^d_resources.ResourceLoader) {
@@ -508,25 +444,6 @@ fn init*(rl: ^d_resources.ResourceLoader) {
   imgObj.setfilter(0)
   imgChum = d_resources.loadImage(rl, "data/img/chr_chum.png")
   imgChum.setfilter(0)
-  dialogs = d_dialogs.init()
-
-  // TODO: Maybe for registering dialogs I should have a "DialogEntry" struct that I can load via resource loader directly? This is jank!
-  dialogs.register("receptionist", 
-    d_resources.loadImage(rl, "data/img/dialog_frames.png"), 0, 
-    d_resources.loadImage(rl, "data/img/dlg_receptionist.png"), 0,
-    d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 0), 0xFFFFFFFF, 0.1, []str{"smirk"})
-}
-
-type EntityInteractPriority = struct {
-  entity: ^Character
-}
-
-fn (eip: ^EntityInteractPriority) try(entity: ^Character) {
-  if eip.entity == null {
-    eip.entity = entity
-  } else if !entity.tags.isSet("tele") { // NOTE: teleport takes least priority
-    eip.entity = entity
-  }
 }
 
 fn getCollidingEntities(against: ^Character): []^Character {
@@ -552,81 +469,12 @@ fn updateEntities() {
   entPhysics(&chara)
   entSolveCollision(&chara)
 
-  interaction := EntityInteractPriority{}
-
   for i := 0; i < len(entities); i++ {
     ent := &entities[i]
-    if ent == holdingEnt {
-      continue
-    }
 
-    vagueCollision := d_util.rectVsRect(d_util.rectShrink(ent.rect, -5), chara.rect)
-
-    if input.isJustPressed(' ') && vagueCollision {
-      interaction.try(ent)
-    }
-
-    if ent.tags.isSet("obj_gravityswitch") {
-      collisions := getCollidingEntities(ent)
-      for i, collision in collisions {
-        // to prevent further collisions firing, this is not really how
-        // it's supposed to work in the end, so this is merely a hack
-        entShape := Shape{rect: ent.rect}
-        entVsShape(collision, entShape)
-        collision.onGround = false
-
-        collision.invertGravity = !collision.invertGravity
-      }
-    }
-
-    if ent.tags.isSet("obj_box") {
-      boulderTargetRect := d_util.rectMove(ent.rect, th.Vf2{0, -ent.rect.h*power})
-      ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/100.0)
-
-      // Resolve player collision
-      entShape := Shape{rect: ent.rect}
-      entVsShape(&chara, entShape)
-      entPhysics(ent)
-      entSolveCollision(ent)
-    }
-  }
-
-  if ent := interaction.entity; ent != null {
-    if ent.tags.isSet("obj_box") {
-      input.clear(' ')
-      if chara.onGround && holdingEnt == null {
-        chara.rect.y -= 64
-        chara.rect.h += 64
-        holdingEnt = ent
-      }
-    }
-
-    if ent.tags.isSet("tele") {
-      if holdingEnt == null {
-        input.clear(' ')
-        saved = false
-        dest := ent.tags.param("tele")
-        mdbg.logt(dest)
-        ent := findEntity(dest)
-        if ent != null {
-          chara.rect.x = ent.rect.x
-          chara.rect.y = ent.rect.y
-        } else {
-          mdbg.logt("Error: Destination entity doesn't exist")
-        }
-      }
-    }
-
+    // TODO
   }
 }
-
-const (
-  cropBox = rect.Rect{128, 64, 64, 64}
-  cropLeverOn = rect.Rect{64, 64, 64, 64}
-  cropLeverOff = rect.Rect{64, 0, 64, 64}
-  cropDiskette = rect.Rect{128, 0, 64, 64}
-  cropTele = rect.Rect{128+64, 0, 64, 64}
-)
 
 fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0) {
   d_util.imageCropRect(img, src)
@@ -639,28 +487,12 @@ fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0
 fn drawEntityCustomRect(ent: ^Character, r: rect.Rect) {
   destRect := d_util.rectShrink(cameraOffsetRect(r), -2*cameraScale)
 
-  if ent.tags.isSet("Lever") {
-    if levers[ent.id] {
-      drawImageRect(imgObj, cropLeverOn, destRect)
-    } else {
-      drawImageRect(imgObj, cropLeverOff, destRect)
-    }
-  } else if ent.tags.isSet("tele") {
-    drawImageRect(imgObj, cropTele, destRect)
-  } else if ent.tags.isSet("obj_box") {
-    drawImageRect(imgObj, cropBox, destRect)
-  } else {
-    color := th.blue
-    if ent.onGround {
-      color = th.red
-    }
-
-    if levers[ent.id] {
-      color = th.green 
-    }
-
-    canvas.drawRect(color, cameraOffsetRect(ent.rect))
+  color := th.blue
+  if ent.onGround {
+    color = th.red
   }
+
+  canvas.drawRect(color, cameraOffsetRect(ent.rect))
 }
 
 fn drawEntity(ent: ^Character) {
@@ -678,17 +510,8 @@ const (
 
 fn drawChum(state: int) {
   r := chara.rect
-  if holdingEnt != null {
-    r.y += 64
-    r.h -= 64
-  }
   bodyRect := rect.mk(chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h)
   chumDestRect := cameraOffsetRect(rect.mk(r.x-10, r.y-20, chumFaceRect.w/2, chumFaceRect.h/2))
-  if chara.invertGravity {
-    // Mirror
-    chumDestRect.y += chumDestRect.h*1.33 // FIXME: bad
-    chumDestRect.h *= -1
-  }
   if chumDir == 0 {
     // Mirror.
     chumDestRect.x += chumDestRect.w;
@@ -703,20 +526,11 @@ fn drawChum(state: int) {
 
 fn drawEntities() {
   for i, entity in entities {
-    if &entities[i] == holdingEnt {
-      continue
-    }
-
     drawEntity(&entities[i])
   }
 
-  //drawEntity(&chara)
-  sign := 1.0
-  if chara.invertGravity {
-    sign *= -1
-  }
-  if sign*chara.vel.y > 0 {
-    if sign*chara.vel.y > 3 {
+  if chara.vel.y > 0 {
+    if chara.vel.y > 3 {
       chumRotTime += th.delta/10.0
     }
     drawChum(chumStateFall)
@@ -734,12 +548,6 @@ fn drawEntities() {
       case 2: drawChum(chumStateJump)
     }
   }
-
-  if holdingEnt != null {
-    holdingEnt.rect.x = chara.rect.x
-    holdingEnt.rect.y = chara.rect.y
-    drawEntity(holdingEnt)
-  }
 }
 
 fn drawEntityDebugRects() {
@@ -754,49 +562,14 @@ fn update*() {
   updateEntities()
   cameraControl()
 
-  power = newPower
-  newPower = 0
-
   if !lockInput {
-    if ok, _ := dialogs.getTopPos(); !ok {
-      playerControl()
-    }
-    
-    // Load state
-    if input.isJustPressed('a') {
-      stateLoad()
-    }
-
-    // Save state
-    if input.isJustPressed('s') {
-      stateSave()
-    }
-
-    // unload ent
-    if input.isJustPressed(' ') && holdingEnt != null && chara.onGround {
-      chara.rect.y += 64
-      chara.rect.h -= 64
-      holdingEnt.rect.x = chara.rect.x
-      holdingEnt.rect.y = chara.rect.y
-      chara.rect.y -= 32
-      holdingEnt = null
-    }
-
-    // UPDATE DIALOG //
-    dialogs.advance(input.isPressed('x'))
+    playerControl()
   }
-  dialogs.update()
 }
 
 fn drawGuideRects() {
   for i, guide in guides {
     d_util.drawRectLines(th.yellow, cameraOffsetRect(guide))
-  }
-}
-
-fn drawSavePos() {
-  if saved {
-    drawImageRect(imgObj, cropDiskette, cameraOffsetRect(rect.mk(saveState.playerPos.x, saveState.playerPos.y-32, 32, 32)))
   }
 }
 
@@ -814,14 +587,9 @@ fn draw*() {
   world.drawLayer(camera.mulf(-cameraScale), 0, cameraScale)
   drawEntities()
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
-  drawSavePos()
-
-  // RENDER DIALOG //
-  dialogs.draw(cameraOffsetRect(rect.mk(0, 0, 0, 0)).getPos(), cameraScale)
 
   // DEBUG OVERYALS //
 
-  //if d_config.checkFlag(d_config.flagDebugOverlays) {
   if input.isPressed(input.key_alt) && input.isJustPressed('d') {
     showDebug = !showDebug
   }
