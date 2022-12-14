@@ -35,10 +35,6 @@ type (
     onGround: bool
     onSlope: bool
   }
-
-  SaveState* = struct {
-    playerPos: th.Vf2
-  }
 )
 
 fn (t: ^TagSet) set*(tag: str) {
