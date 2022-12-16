@@ -164,12 +164,7 @@ fn playerControl() {
 }
 
 fn entPhysics(ent: ^Character) {
-  gravity := 0.0
-  if ent.onSlope {
-    gravity = 0.1*th.delta/1000.0*60.0
-  } else {
-    gravity = 0.1*th.delta/1000.0*60.0
-  }
+  gravity := 0.1*th.delta/1000.0*60.0
 
   ent.vel.y += gravity
 
@@ -350,8 +345,6 @@ fn entConstructColidingSolids(ent: ^Character): []Shape {
           shapeRect.h /= 2;
       case 12:  shapeType = shapeLeftDownSlope
           shapeRect.h /= 2;
-      // TODO: Investigate why uncommenting this causes a bug where you can pass through blocks
-      // default:  break
     }
     
     if shapeType == shapeBlock {
