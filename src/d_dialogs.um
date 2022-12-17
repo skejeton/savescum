@@ -13,7 +13,7 @@ type (
     font: th_font.Font
     fontColor: uint32
     speed: real
-    emotes: map[str]int // str -> int
+    emotes: map[str]int
   }
 
   Dialog* = struct {

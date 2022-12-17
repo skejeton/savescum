@@ -897,7 +897,6 @@ fn editorLoadWorld(editor: ^Editor, portal: str): bool {
     // TODO(skejeton): maybe I shouldn't initialize empty world like that??!
     editor.world = d_world.fromTileset(editor.world.tileset)
     editor.entities = createEditorEntities()
-    
   }
   return false
 }
@@ -1734,7 +1733,6 @@ fn editorMain*() {
   } else {
     loadPortal(&editor, "testbed_savepartial")
   }
-
 
   for window.cycle() {
     mshortcuts.console()

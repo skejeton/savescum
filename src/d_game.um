@@ -578,7 +578,6 @@ fn draw*() {
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
 
   // DEBUG OVERYALS //
-
   if input.isPressed(input.key_alt) && input.isJustPressed('d') {
     showDebug = !showDebug
   }
