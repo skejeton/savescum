@@ -1,4 +1,4 @@
-# Last id: 23
+# Last id: 24
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -38,3 +38,5 @@
   - no error checking
 
 23. Duplicating entities
+
+24. Fix commas encoded incorrectly in CSV
