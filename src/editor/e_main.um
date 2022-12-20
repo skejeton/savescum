@@ -1359,6 +1359,9 @@ fn drawTaggedEntityRect(editor: ^Editor, entity: ^d_worlddata.EntityDesc, r: rec
   }
 
   if tags.isSet("Comment") {
+    size := editor.resources.mainFont.measure(entity.name)
+    entity.rect.w = size.x
+    entity.rect.h = size.y
     editor.ctx.drawText(editor.resources.mainFont, entity.name, th.Vf2{r.x, r.y}, th.white, editor.tilemapGrid.scaling)
   }
 }

@@ -95,7 +95,6 @@ fn (ctx: ^DrawContext) getCurrentScissorRect*(): (bool, rect.Rect) {
 // Flushes all the layers and commands, outputting them onto the screen.
 */
 fn (ctx: ^DrawContext) flush*() {
-  scissorCounter := 0
   for _, i in ctx.layerOrder {
     layer := ctx.layers[i]
 
@@ -106,16 +105,9 @@ fn (ctx: ^DrawContext) flush*() {
         case commandRectLines:
           d_util.drawRectLines(command.color, command.rect, command.attr)
         case commandBeginScissorRect:
-          scissorCounter++
           window.beginScissorRect(command.rect)
         case commandEndScissor:
-          scissorCounter--
-          if scissorCounter < 0 {
-            scissorCounter = -1
-          }
-          if scissorCounter == 0 {
-            window.endScissor()
-          }
+          window.endScissor()
         case commandCustom:
           command.custom.draw(DrawProperties{})
       }
