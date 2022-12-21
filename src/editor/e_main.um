@@ -1366,6 +1366,25 @@ fn drawTaggedEntityRect(editor: ^Editor, entity: ^d_worlddata.EntityDesc, r: rec
   }
 }
 
+fn adjustEntityRect(editor: ^Editor, tags: ^d_game.TagSet, ent: ^d_worlddata.EntityDesc): rect.Rect {
+  r := ent.rect
+
+  if r.w < 10 {
+    r.w = 10
+  }
+  if r.h < 10 {
+    r.h = 10
+  }
+
+  if tags.isSet("Comment") {
+    size := editor.resources.mainFont.measure(ent.name)
+    r.w = size.x
+    r.h = size.y
+  }
+
+  return r
+}
+
 fn scaleRect(r: rect.Rect, by: real): rect.Rect {
   return rect.mk(r.x*by, r.y*by, r.w*by, r.h*by)
 }
@@ -1392,14 +1411,12 @@ fn putWorldEntities(editor: ^Editor) {
       if isEntitySelected(&editor.entities, i) {
         editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
 
-        ent.rect = applyRectResizeCommand(putRectGrips(editor, entVisRect), ent.rect, editor.mouseState.delta.divf(editor.tilemapGrid.scaling))
+        rectCmd := putRectGrips(editor, entVisRect)
+        delta := editor.mouseState.delta.divf(editor.tilemapGrid.scaling)
 
-        if ent.rect.w < 10 {
-          ent.rect.w = 10
-        }
-        if ent.rect.h < 10 {
-          ent.rect.h = 10
-        }
+        orig := ent.rect
+        ent.rect = applyRectResizeCommand(rectCmd, ent.rect, delta)
+        adjusted := adjustEntityRect(editor, &tags, ent)
       }
 
       events := editor.endTool()
