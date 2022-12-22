@@ -79,6 +79,8 @@ var (
   chara*: Character
   camera*: th.Vf2
   cameraScale*: real
+
+  saves: []th.Vf2
 )
 
 fn getCameraRect(): rect.Rect {
@@ -470,12 +472,12 @@ fn updateEntities() {
   }
 }
 
-fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0) {
+fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0, tint: uint32 = 0xFFFFFFFF) {
   d_util.imageCropRect(img, src)
 
   pos := dst.getPos()
   scale := dst.getDims().div(src.getDims())
-  img.draw(th.Transform{p: pos, s: scale, r: rot, o: th.Vf2{dst.w/2, dst.h/2}})
+  img.draw(th.Transform{p: pos, s: scale, r: rot, o: th.Vf2{dst.w/2, dst.h/2}}, tint)
 }
 
 fn drawEntityCustomRect(ent: ^Character, r: rect.Rect) {
@@ -502,20 +504,23 @@ const (
   chumFaceRect = rect.Rect{0, 0, 94, 107}
 )
 
-fn drawChum(state: int) {
-  r := chara.rect
+fn drawChumAt(at: th.Vf2, state: int, alpha: real) {
   bodyRect := rect.mk(chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h)
-  chumDestRect := cameraOffsetRect(rect.mk(r.x-10, r.y-20, chumFaceRect.w/2, chumFaceRect.h/2))
+  chumDestRect := cameraOffsetRect(rect.mk(at.x-10, at.y-20, chumFaceRect.w/2, chumFaceRect.h/2))
   if chumDir == 0 {
     // Mirror.
     chumDestRect.x += chumDestRect.w;
     chumDestRect.w *= -1;
   }
-  drawImageRect(imgChum, bodyRect, chumDestRect, chumRotTime)
-  drawImageRect(imgChum, chumFaceRect, chumDestRect, chumRotTime)
+  drawImageRect(imgChum, bodyRect, chumDestRect, chumRotTime, th_color.alpha(0xFFFFFFFF, alpha))
+  drawImageRect(imgChum, chumFaceRect, chumDestRect, chumRotTime, th_color.alpha(0xFFFFFFFF, alpha))
   if d_config.checkFlag(d_config.flagDebugOverlays) {
-    canvas.drawText(sprintf("%d %d", trunc(r.x/32), trunc(r.y/32)), chumDestRect.getPos(), th.red, 1)
+    canvas.drawText(sprintf("%d %d", trunc(at.x/32), trunc(at.y/32)), chumDestRect.getPos(), th.red, 1)
   }
+}
+
+fn drawChum(state: int) {
+  drawChumAt(chara.rect.getPos(), state, 1.0)
 }
 
 fn drawEntities() {
@@ -551,6 +556,11 @@ fn drawEntityDebugRects() {
   canvas.drawRect(th_color.alpha(th.blue, 0.4), cameraOffsetRect(chara.rect)) 
 }
 
+fn loadStateToChar(state: th.Vf2) {
+  chara.rect.x = state.x
+  chara.rect.y = state.y
+}
+
 fn update*() {
   // UPDATE PLAYER & CAMERA //
   updateEntities()
@@ -558,6 +568,17 @@ fn update*() {
 
   if !lockInput {
     playerControl()
+
+    if input.isJustPressed('z') {
+      if len(saves) > 0 {
+        loadStateToChar(saves[len(saves)-1])
+        saves = delete(saves, len(saves)-1)
+      }
+    }
+
+    if input.isJustPressed('x') {
+      saves = append(saves, chara.rect.getPos())
+    }
   }
 }
 
@@ -580,6 +601,11 @@ fn draw*() {
   world.drawLayer(camera.mulf(-cameraScale), -1, cameraScale)
   world.drawLayer(camera.mulf(-cameraScale), 0, cameraScale)
   drawEntities()
+    
+  for i, state in saves {
+    drawChumAt(state, 0, (i+1)/(real(len(saves)))/2.0)
+  }
+
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
 
   // DEBUG OVERYALS //
