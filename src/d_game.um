@@ -99,12 +99,17 @@ fn getCameraTargetRect(): rect.Rect {
   guide := findGuideInPoint(chara.rect.getPos())
   cameraRect := getCameraRect()
   scale := d_util.min(guide.w/cameraRect.w, guide.h/cameraRect.h)
+  maxScale := 1.0/(d_global.screen.w/600)
+  if scale > maxScale {
+    scale = maxScale
+  }
+
+
+  // put at center
   cameraRect.w *= scale
   cameraRect.h *= scale
-  // put at center
   cameraRect.x = chara.rect.x+chara.rect.w/2-cameraRect.w/2
   cameraRect.y = chara.rect.y+chara.rect.h/2-cameraRect.h/2
-
 
   return d_util.rectKeepInBounds(cameraRect, guide)
 }
@@ -138,7 +143,7 @@ fn cameraOffsetRect(r: rect.Rect): rect.Rect {
 
 fn playerControl() {
   if input.isPressed(input.key_up) && chara.onGround {
-    chara.vel.y = -2.56
+    chara.vel.y = -2.6
   }
   if input.isPressed(input.key_left) {
     chumDir = 0
