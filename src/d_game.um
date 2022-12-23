@@ -63,6 +63,13 @@ fn initTagSetFromString*(s: str): TagSet {
   return tagSet
 }
 
+type ChumState = struct {
+  dir: int
+  rotTime: real
+  walkTime: real
+  ent: Character
+}
+
 var (
   // Resources:
   chumDir: int
@@ -80,7 +87,7 @@ var (
   camera*: th.Vf2
   cameraScale*: real
 
-  saves: []th.Vf2
+  saves: []ChumState
 )
 
 fn getCameraRect(): rect.Rect {
@@ -101,7 +108,7 @@ fn getCameraTargetRect(): rect.Rect {
   guide := findGuideInPoint(chara.rect.getPos())
   cameraRect := getCameraRect()
   scale := d_util.min(guide.w/cameraRect.w, guide.h/cameraRect.h)
-  maxScale := 1.0/(d_global.screen.w/600)
+  maxScale := 1.0/(d_global.screen.w/800)
   if scale > maxScale {
     scale = maxScale
   }
@@ -431,6 +438,7 @@ fn start*(worldData: d_worlddata.WorldData) {
     }
   }
 
+  saves = []ChumState{}
   camera = getCameraProperties().pos
   cameraScale = getCameraProperties().scale
 }
@@ -504,23 +512,58 @@ const (
   chumFaceRect = rect.Rect{0, 0, 94, 107}
 )
 
-fn drawChumAt(at: th.Vf2, state: int, alpha: real) {
+fn drawChumState(state: int, chum: ChumState, alpha: real) {
+  at := chum.ent.rect.getPos()
   bodyRect := rect.mk(chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h)
   chumDestRect := cameraOffsetRect(rect.mk(at.x-10, at.y-20, chumFaceRect.w/2, chumFaceRect.h/2))
-  if chumDir == 0 {
+  if chum.dir == 0 {
     // Mirror.
     chumDestRect.x += chumDestRect.w;
     chumDestRect.w *= -1;
   }
-  drawImageRect(imgChum, bodyRect, chumDestRect, chumRotTime, th_color.alpha(0xFFFFFFFF, alpha))
-  drawImageRect(imgChum, chumFaceRect, chumDestRect, chumRotTime, th_color.alpha(0xFFFFFFFF, alpha))
+  drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, th_color.alpha(0xFFFFFFFF, alpha))
+  drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, th_color.alpha(0xFFFFFFFF, alpha))
   if d_config.checkFlag(d_config.flagDebugOverlays) {
     canvas.drawText(sprintf("%d %d", trunc(at.x/32), trunc(at.y/32)), chumDestRect.getPos(), th.red, 1)
   }
 }
 
+fn loadStateToChar(state: ChumState) {
+  chara = state.ent
+  chumDir = state.dir
+  chumWalkTime = state.walkTime
+  chumRotTime = state.rotTime
+}
+
+fn getCharState(): ChumState {
+  return ChumState{
+    dir: chumDir,
+    walkTime: chumWalkTime,
+    rotTime: chumRotTime,
+    ent: chara}
+}
+
 fn drawChum(state: int) {
-  drawChumAt(chara.rect.getPos(), state, 1.0)
+  drawChumState(state, getCharState(), 1.0)
+}
+
+fn getChumSpriteState(chum: ChumState): int {
+  chara := &chum.ent
+
+  if chara.vel.y > 0 {
+    return chumStateFall
+  } else if !chara.onGround {
+    return chumStateJump
+  } else if chum.walkTime == 0.0 {
+    return chumStateStand
+  } else {
+    switch trunc(chum.walkTime*8.0) % 3 {
+      case 0: return chumStateJump
+      case 1: return chumStateStand
+      case 2: return chumStateJump
+    }
+  }
+  return -1
 }
 
 fn drawEntities() {
@@ -528,25 +571,14 @@ fn drawEntities() {
     drawEntity(&entities[i])
   }
 
-  if chara.vel.y > 0 {
-    if chara.vel.y > 3 {
-      chumRotTime += th.delta/10.0
-    }
-    drawChum(chumStateFall)
-  } else if !chara.onGround {
-    chumRotTime = 0
-    drawChum(chumStateJump)
-  } else if chumWalkTime == 0.0 {
-    chumRotTime = 0;
-    drawChum(chumStateStand)
-  } else {
-    chumRotTime = 0
-    switch trunc(chumWalkTime*8.0) % 3 {
-      case 0: drawChum(chumStateJump)
-      case 1: drawChum(chumStateStand)
-      case 2: drawChum(chumStateJump)
-    }
+  if chara.vel.y > 3 {
+    chumRotTime += th.delta/10.0
   }
+  if chara.vel.y <= 0 {
+    chumRotTime = 0
+  }
+  
+  drawChum(getChumSpriteState(getCharState()))
 }
 
 fn drawEntityDebugRects() {
@@ -554,11 +586,6 @@ fn drawEntityDebugRects() {
     canvas.drawRect(th_color.alpha(th.blue, 0.4), cameraOffsetRect(entity.rect)) 
   }
   canvas.drawRect(th_color.alpha(th.blue, 0.4), cameraOffsetRect(chara.rect)) 
-}
-
-fn loadStateToChar(state: th.Vf2) {
-  chara.rect.x = state.x
-  chara.rect.y = state.y
 }
 
 fn update*() {
@@ -577,7 +604,7 @@ fn update*() {
     }
 
     if input.isJustPressed('x') {
-      saves = append(saves, chara.rect.getPos())
+      saves = append(saves, getCharState())
     }
   }
 }
@@ -603,7 +630,7 @@ fn draw*() {
   drawEntities()
     
   for i, state in saves {
-    drawChumAt(state, 0, (i+1)/(real(len(saves)))/2.0)
+    drawChumState(getChumSpriteState(state), state, (i+1)/(real(len(saves)))/2.0)
   }
 
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
