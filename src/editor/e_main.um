@@ -1512,6 +1512,9 @@ fn editorPutUi(editor: ^Editor) {
 
   // put ui
   if editor.isPlaying {
+    if input.isJustPressed(input.key_escape) {
+      editor.isPlaying = !editor.isPlaying 
+    } 
     d_game.update()
     d_script.update()
 

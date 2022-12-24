@@ -88,6 +88,7 @@ var (
   cameraScale*: real
 
   saves: []ChumState
+  showDebug: bool = false
 )
 
 fn getCameraRect(): rect.Rect {
@@ -593,9 +594,13 @@ fn update*() {
   updateEntities()
   cameraControl()
 
+  if input.isPressed(input.key_alt) && input.isJustPressed('d') {
+    showDebug = !showDebug
+  }
+
   if !lockInput {
     playerControl()
-
+    
     if input.isJustPressed('z') {
       if len(saves) > 0 {
         loadStateToChar(saves[len(saves)-1])
@@ -615,7 +620,6 @@ fn drawGuideRects() {
   }
 }
 
-showDebug := false
 
 fn draw*() {
   // RENDER BG //
@@ -636,10 +640,6 @@ fn draw*() {
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
 
   // DEBUG OVERYALS //
-  if input.isPressed(input.key_alt) && input.isJustPressed('d') {
-    showDebug = !showDebug
-  }
-
   if showDebug {
     _drawRectTangents(chara.rect)
     drawGuideRects()
