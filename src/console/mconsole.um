@@ -56,11 +56,19 @@ fn blockRect*(pass: ^RenderPass, block: str): rect.Rect {
 }
 
 // renders a single block and moves upwards
-fn renderBlock*(pass: ^RenderPass, vc: ^VisualConsole, block: str, color: uint32) {
-	height := pass.font.measure(block).y
-	pass.pos.y -= height
 
-	pass.font.draw(block, pass.pos.add(th.Vf2{0, vc.visualScroll}), color)
+fn allocBlock*(pass: ^RenderPass, block: str): rect.Rect {
+  r := blockRect(pass, block)
+	pass.pos.y -= r.h
+  return r
+}
+
+fn renderBlock*(pass: ^RenderPass, vc: ^VisualConsole, r: rect.Rect, block: str, bg, fg: uint32) {
+  pos := r.getPos().add(th.Vf2{0, vc.visualScroll})
+  if pos.y > pass.rect.y-r.h && pos.y < pass.rect.y+pass.rect.h {
+    canvas.drawRect(bg, rect.mk(pos.x, pos.y, r.w, r.h))
+    pass.font.draw(block, pos, fg)
+  }
 }
 
 fn (vc: ^VisualConsole) scrollBy*(delta: real) {
@@ -73,17 +81,21 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: th_font.Font, r: rect.Rect) 
 	startY := pass.pos.y
 
 	canvas.drawRect(th_color.alpha(th.black, 0.95), r)
-
-	for i in con.blocks {
+	
+  for i in con.blocks {
 		block := con.blocks[len(con.blocks)-i-1]
 
 		alpha := (pass.pos.y+vc.visualScroll)/r.h+0.4
 		if alpha > 1.0 { alpha = 1.0; }
+
+    bg := 0xFFFFFFFF
 		if i % 2 == 0 {
-			canvas.drawRect(th_color.alpha(th.white, alpha*0.05), blockRect(&pass, block))	
+      bg = 0x000000FF
 		}
 
-		renderBlock(&pass, vc, block, th_color.alpha(th.white, alpha))
+    blockRect := allocBlock(&pass, block)
+
+		renderBlock(&pass, vc, blockRect, block, th_color.alpha(bg, alpha*0.05), th_color.alpha(th.white, alpha))
 	}
 
 	vc.scrolley.clientsz = r.h
