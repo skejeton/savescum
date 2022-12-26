@@ -25,12 +25,6 @@
 17. Port the debug view I had from the old UI. It was really handy.
   - there's console
 
-19. Ability to move layers
-  - what?
-
-21. Investigate random overflow bugs :/
-  - no known bugs yet
-
 22. Session thing will crash if I load an invalid session file.
   - no error checking
 

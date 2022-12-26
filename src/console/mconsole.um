@@ -94,7 +94,7 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: th_font.Font, r: rect.Rect) 
 		}
 
     blockRect := allocBlock(&pass, block)
-
+    
 		renderBlock(&pass, vc, blockRect, block, th_color.alpha(bg, alpha*0.05), th_color.alpha(th.white, alpha))
 	}
 
