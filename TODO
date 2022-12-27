@@ -1,4 +1,4 @@
-# Last id: 24
+# Last id: 25
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -13,8 +13,6 @@
     the worlddata can return that patch which user can apply.
   * Decouple world from it's rendering and everything else, instead make it a bare tilemap, removing all connections to
     tilesets and so on. Probably a better option.
-
-11. Maybe savestates should be stackable instead.
 
 13. Fix input system ordering going from first sibling to last, it should be from last to first.
   - guaranteed one frame delay 
@@ -31,3 +29,5 @@
 23. Duplicating entities
 
 24. Fix commas encoded incorrectly in CSV
+
+25. For some reason not adding the newline while loading data messes up everything

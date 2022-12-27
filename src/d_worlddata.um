@@ -5,6 +5,7 @@ import (
   "std.um"
   "csv.um"
   "th.um"
+  "mdbg.um"
 )
 
 type (
@@ -73,6 +74,9 @@ fn loadEntityDesc(s: []str): EntityDesc {
 
 fn load*(world: d_world.World, data: str): WorldData {
   csvData := csv.parse(data)
+
+  mdbg.logt(data)
+  return WorldData{}
 
   var (
     entities: []EntityDesc = make([]EntityDesc, 0)
