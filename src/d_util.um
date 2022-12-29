@@ -1,5 +1,5 @@
 import (
-  "image.um"; "std.um"; "th.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um"
+  "image.um"; "std.um"; "th.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um"; "misc/mstrings.um"
 )
 
 fn posTrans*(x, y: th.fu): th.Transform {
@@ -12,7 +12,7 @@ fn isMouseInRect*(r: rect.Rect): bool {
 }
 
 fn readFileStr*(path: str): (bool, str) {
-  file := std.fopen(path, "r")
+  file := std.fopen(path, "rb")
   if file == null {
     return false, ""
   }
@@ -23,6 +23,9 @@ fn readFileStr*(path: str): (bool, str) {
   data := make([]char, datasiz+1)
   std.fread(file, data)
   
+  // FIXME: Really bad CRLF fix bruhhh
+  data = mstrings.join(mstrings.splitBy(data, '\r'))
+
   return true, data
 }
 

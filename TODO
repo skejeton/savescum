@@ -29,5 +29,3 @@
 23. Duplicating entities
 
 24. Fix commas encoded incorrectly in CSV
-
-25. For some reason not adding the newline while loading data messes up everything

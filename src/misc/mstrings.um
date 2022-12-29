@@ -2,6 +2,16 @@ import (
   "utf8.um"
 )
 
+fn join*(texts: []str): str {
+  result := ""
+  
+  for i, text in texts {
+    result += text
+  }
+
+  return result
+}
+
 fn splitBy*(text: str, by: char): []str {
   items := []str{}
   last := 0
