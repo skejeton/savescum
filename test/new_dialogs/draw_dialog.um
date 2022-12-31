@@ -1,7 +1,7 @@
 import (
   // shame
   "th.um"
-  "strings.um"
+  strings = "../../src/misc/mstrings.um"
   th_color = "color.um"
   th_font = "font.um"
 )

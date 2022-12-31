@@ -25,7 +25,7 @@ import (
   "load_poems.um"
   "speech_typing.um"
   "construct.um"
-  "strings.um"
+  strings = "../../src/misc/mstrings.um"
   m_layout = "layout.um"
   "draw_dialog.um"
   "../../src/d_test.um"

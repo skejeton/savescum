@@ -1,6 +1,6 @@
 import (
   "sequence.um"
-  "strings.um"
+  strings = "../../src/misc/mstrings.um"
 )
 
 type SpeechNode* = struct {

@@ -25,6 +25,31 @@ fn splitBy*(text: str, by: char): []str {
   return items
 }
 
+// inserts string `sub` at the end of every string in array except for last
+fn intersperse*(strl: []str, sub: str): []str {
+  newl := copy(strl)
+
+  for i := 0; i < len(newl)-1; i++ {
+    newl[i] += sub
+  }
+
+  return newl
+}
+
+fn separateChar*(words: []str, c: char): []str {
+  result := []str{}
+  for i, word in words {
+    lines := splitBy(word, c)
+    for i, line in lines {
+      if i != 0 {
+        result = append(result, c)
+      }
+      result = append(result, line)
+    }
+  }
+  return result
+}
+
 fn uniSliceFrom*(text: str, start: uint): str {
   startPos := 0
   for i := 0; i < start; i++ {
