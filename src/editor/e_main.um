@@ -1785,11 +1785,10 @@ fn editorMain*() {
 
 
     editorPutUi(&editor)
+    mdbg.drawConsole(editor.resources.mainFont)
 
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
-
-    mdbg.drawConsole(editor.resources.mainFont)
   }
 
   d_util.writeFileStr("user/session.csv", msession.save(editorSaveSession(&editor)))
