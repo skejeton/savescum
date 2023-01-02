@@ -1111,7 +1111,14 @@ fn putTilePicker(editor: ^Editor) {
       editor.ctx.drawRect(th.black, contentRect)
       editor.ctx.moveLayer(1)
       {
-        selectedTile = editor.tilesetGrid.put(editor, contentRect)
+        imgDims := editor.tileset.image.getDims()
+        newSelectedTile := editor.tilesetGrid.put(editor, contentRect)
+        if !(newSelectedTile.x < 0 || newSelectedTile.y < 0 ||
+           newSelectedTile.x >= imgDims.x/(imgDims.x/4) || newSelectedTile.y >= imgDims.y/(imgDims.x/4)) {
+          selectedTile = newSelectedTile
+        } else {
+          selectedTile = editor.tileSelected
+        }
 
         selectedTilePos := editor.tilesetGrid.mapPos(editor.tileSelected)
         
