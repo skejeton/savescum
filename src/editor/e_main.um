@@ -167,6 +167,7 @@ const (
   entityListActionNone = EntityListAction(0)
   entityListActionRemove = EntityListAction(1)
   entityListActionEdit = EntityListAction(2)
+  entityListActionDuplicate = EntityListAction(3)
 )
 
 // Creates an input sink with all inputs set to 1.
@@ -1144,7 +1145,7 @@ fn putTilePicker(editor: ^Editor) {
 }
 
 fn putEntityEntry(editor: ^Editor, ent: d_worlddata.EntityDesc, r: rect.Rect, selected: bool): EntityListAction  {
-  r.w -= 30
+  r.w -= 60
   action := entityListActionNone
 
   editor.beginTool(ent.id, r)
@@ -1163,6 +1164,10 @@ fn putEntityEntry(editor: ^Editor, ent: d_worlddata.EntityDesc, r: rect.Rect, se
       if putSimpleButton(editor, r, "✎").isReleased {
         action = entityListActionEdit
       }
+    }
+    r.x += 30
+    if putSimpleButton(editor, r, "d").isReleased {
+      action = entityListActionDuplicate
     }
   }
   editor.endTool()
@@ -1214,6 +1219,11 @@ fn initEntityAtCenter(editor: ^Editor, ent: d_worlddata.EntityDesc): d_worlddata
   return ent
 }
 
+fn cloneEntity(ent: d_worlddata.EntityDesc): d_worlddata.EntityDesc {
+  ent.id = d_hashname.random()
+  return ent
+}
+
 fn putEntityList(editor: ^Editor) {
   entryRemoveIndex := -1
 
@@ -1246,6 +1256,8 @@ fn putEntityList(editor: ^Editor) {
             case entityListActionEdit:
               selectEntity(&editor.entities, i)
               editor.wm.setWindowVisible("Entity Editor", true)
+            case entityListActionDuplicate:
+              appendEntity(&editor.entities, cloneEntity(ent))
           }
           entryRect.y += 30
         }
