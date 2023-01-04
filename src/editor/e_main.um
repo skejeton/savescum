@@ -1421,7 +1421,7 @@ fn putWorldEntities(editor: ^Editor) {
     drawTaggedEntityRect(editor, ent, entVisRect, &tags)
 
     if !ignore {
-      editor.beginTool("Ent"+ent.name, entVisRect)
+      editor.beginTool("Ent"+ent.id, entVisRect)
 
       if editor.isCurrentToolActive() {
         editor.ctx.drawRectLines(th.blue, d_util.rectShrink(entVisRect, -1))
@@ -1743,8 +1743,6 @@ fn editorLoadSession(editor: ^Editor, session: msession.Session) {
 }
 
 fn editorMain*() {
-  std.srand(std.time())
-
   d_global.screen = rect.mk(0, 0, 800, 600)
   window.setup("Editor", trunc(d_global.screen.w), trunc(d_global.screen.h))
 
@@ -1778,6 +1776,7 @@ fn editorMain*() {
   }
 
   for window.cycle() {
+    std.srand(std.time())
     mshortcuts.console()
     mshortcuts.fullscreen()
 
