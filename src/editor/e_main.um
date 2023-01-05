@@ -1219,8 +1219,21 @@ fn initEntityAtCenter(editor: ^Editor, ent: d_worlddata.EntityDesc): d_worlddata
   return ent
 }
 
-fn cloneEntity(ent: d_worlddata.EntityDesc): d_worlddata.EntityDesc {
+fn findEntity(entities: []d_worlddata.EntityDesc, id: str): bool {
+  for i, entity in entities {
+    if entity.id == id {
+      return true
+    }
+  }
+  return false
+}
+
+fn cloneEntity(entities: []d_worlddata.EntityDesc, ent: d_worlddata.EntityDesc): d_worlddata.EntityDesc {
   ent.id = d_hashname.random()
+  for findEntity(entities, ent.id) {
+    mdbg.logt("cloneEntity: Awugh, collision!")
+    ent.id = d_hashname.random()
+  }
   return ent
 }
 
@@ -1257,7 +1270,7 @@ fn putEntityList(editor: ^Editor) {
               selectEntity(&editor.entities, i)
               editor.wm.setWindowVisible("Entity Editor", true)
             case entityListActionDuplicate:
-              appendEntity(&editor.entities, cloneEntity(ent))
+              appendEntity(&editor.entities, cloneEntity(editor.entities.list, ent))
           }
           entryRect.y += 30
         }
