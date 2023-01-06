@@ -1191,12 +1191,29 @@ fn removeEntity(editorEntities: ^EditorEntities, index: int) {
   editorEntities.list = delete(editorEntities.list, index)
 }
 
+fn findEntity(entities: []d_worlddata.EntityDesc, id: str): bool {
+  for i, entity in entities {
+    if entity.id == id {
+      return true
+    }
+  }
+  return false
+}
+
+fn allocateEntityId(entities: []d_worlddata.EntityDesc): str {
+  id := d_hashname.random()
+  for findEntity(entities, id) {
+    mdbg.logt("allocateEntityId: regenerating id!!")
+    id = d_hashname.random()
+  }
+  return id
+}
+
 /*
  * \brief Creates a random entity with a random ID and name, empty tags
  */
-fn makeRandomEntity(): d_worlddata.EntityDesc {
-  ident := d_hashname.random()
-  return d_worlddata.EntityDesc{name: ident, id: ident, tags: ""}
+fn makeRandomEntity(id: str): d_worlddata.EntityDesc {
+  return d_worlddata.EntityDesc{name: id, id: id, tags: ""}
 }
 
 /*
@@ -1219,21 +1236,8 @@ fn initEntityAtCenter(editor: ^Editor, ent: d_worlddata.EntityDesc): d_worlddata
   return ent
 }
 
-fn findEntity(entities: []d_worlddata.EntityDesc, id: str): bool {
-  for i, entity in entities {
-    if entity.id == id {
-      return true
-    }
-  }
-  return false
-}
-
 fn cloneEntity(entities: []d_worlddata.EntityDesc, ent: d_worlddata.EntityDesc): d_worlddata.EntityDesc {
-  ent.id = d_hashname.random()
-  for findEntity(entities, ent.id) {
-    mdbg.logt("cloneEntity: Awugh, collision!")
-    ent.id = d_hashname.random()
-  }
+  ent.id = allocateEntityId(entities)
   return ent
 }
 
@@ -1249,7 +1253,7 @@ fn putEntityList(editor: ^Editor) {
       buttonRect := d_util.rectShrink(d_util.rectCutRight(windowInfo.titlebarRect, 20), 1)
 
       if (putSimpleButton(editor, buttonRect, "+").isReleased) {
-        appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity()))
+        appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
       }
     }
 
