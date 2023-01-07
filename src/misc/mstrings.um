@@ -36,6 +36,10 @@ fn intersperse*(strl: []str, sub: str): []str {
   return newl
 }
 
+fn joinBy*(texts: []str, by: str): str {
+  return join(intersperse(texts, by))
+}
+
 fn separateChar*(words: []str, c: char): []str {
   result := []str{}
   for i, word in words {
