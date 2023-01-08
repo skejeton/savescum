@@ -1452,8 +1452,13 @@ fn putWorldEntities(editor: ^Editor) {
 
         orig := ent.rect
         ent.rect = applyRectResizeCommand(rectCmd, ent.rect, delta)
+
         adjusted := adjustEntityRect(editor, &tags, ent)
-        ent.rect = adjusted
+        sizeD := adjusted.getDims().sub(ent.rect.getDims())
+        ent.rect = adjusted 
+
+        ent.rect.x -= rectCmd.posFactor.x*sizeD.x
+        ent.rect.y -= rectCmd.posFactor.y*sizeD.y
       }
 
       events := editor.endTool()
