@@ -1,4 +1,4 @@
-# Last id: 25
+# Last id: 26
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -29,3 +29,8 @@
 23. Duplicating entities
 
 24. Fix commas encoded incorrectly in CSV
+
+26. The tileset right now assigns ID's to tiles based on `X+(Y*W)` where X
+  is the tile id X, Y is the tile id Y, and W is the tile count in a row
+  of the image. This makes it so that if image width is resized all ID's will
+  be messed up. This can be fixed by using more sparse lookup table for ID's.
