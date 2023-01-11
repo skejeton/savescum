@@ -1,4 +1,4 @@
-# Last id: 26
+# Last id: 27
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -33,4 +33,5 @@
   of the image. This makes it so that if image width is resized all ID's will
   be messed up. This can be fixed by using more sparse lookup table for ID's.
 
-
+27. Investigate weird white blips appearing on the screen, especially in
+  the console. 
