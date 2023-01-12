@@ -1,4 +1,4 @@
-# Last id: 27
+# Last id: 28
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -35,3 +35,6 @@
 
 27. Investigate weird white blips appearing on the screen, especially in
   the console. 
+
+28. Handle overlapping camera constraints properly, make it possible for 
+  them to be merged.
