@@ -1740,6 +1740,7 @@ fn editorSaveSession(editor: ^Editor): msession.Session {
   session.allLayers = editor.tilemapShowAllLayers
   session.entityBypass = editor.entityBypass
   session.layerSelected = editor.tilemapLayer
+  session.tileSelected  = editor.tileSelected
 
   for name, win in editor.wm.windows {
     isVisible := editor.wm.windowVisibility[name]
@@ -1757,7 +1758,8 @@ fn editorLoadSession(editor: ^Editor, session: msession.Session) {
   editor.tilemapShowAllLayers = session.allLayers
   editor.entityBypass = session.entityBypass
   editor.tilemapLayer = session.layerSelected
-
+  editor.tileSelected = session.tileSelected 
+  
   for i, win in session.windows {
     editor.wm.setWindowVisible(win.name, win.visible)
     editor.wm.getWindowRect(win.name, win.rect)

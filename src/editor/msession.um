@@ -21,6 +21,7 @@ type Session* = struct {
   allLayers: bool
   entityBypass: bool
   layerSelected: int
+  tileSelected: th.Vf2
   windows: []Window
 }
 
@@ -32,6 +33,7 @@ fn save*(session: Session): str {
   result = append(result, ut.saveBool(session.allLayers))
   result = append(result, ut.saveBool(session.entityBypass))
   result = append(result, ut.saveReal(session.layerSelected))
+  result = append(result, ut.saveVf2(session.tileSelected))
   
   result = append(result, ut.saveReal(len(session.windows)))
   for i, window in session.windows {
@@ -52,15 +54,16 @@ fn load*(sourceStr: str): Session {
   session.allLayers = ut.loadBool(source[3])
   session.entityBypass = ut.loadBool(source[4])
   session.layerSelected = trunc(ut.loadReal(source[5]))
+  session.tileSelected = ut.loadVf2(source[6])
 
-  count := trunc(ut.loadReal(source[6]))
+  count := trunc(ut.loadReal(source[7]))
 
   for i := 0; i < count; i++ {
     window := Window{}
 
-    window.name = source[7+i*3][0]
-    window.visible = ut.loadBool(source[8+i*3])
-    window.rect = ut.loadRect(source[9+i*3])
+    window.name = source[8+i*3][0]
+    window.visible = ut.loadBool(source[9+i*3])
+    window.rect = ut.loadRect(source[10+i*3])
 
     session.windows = append(session.windows, window)
   }
