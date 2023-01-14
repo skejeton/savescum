@@ -1,5 +1,5 @@
 import (
-  "image.um"; "std.um"; "th.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um"; "misc/mstrings.um"
+  "image.um"; "std.um"; "th.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um"; "misc/mstrings.um"; th_font = "font.um"
 )
 
 fn posTrans*(x, y: th.fu): th.Transform {
@@ -248,4 +248,22 @@ fn rectDiff*(a, b: rect.Rect): rect.Rect {
     x,y, 
     min(a.x + a.w, b.x + b.w) - x,
     min(a.y + a.h, b.y + b.h) - y};
+}
+
+fn wrapText*(font: ^th_font.Font, text: str, boundary: real): []str {
+  result := []str{}
+  lastIndex := 0
+  shift := 0.0
+
+  for i, chr in text {
+    if (shift+font.measure(""+chr).x) > boundary {
+      shift = 0
+      result = append(result, slice(text, lastIndex, i))
+      lastIndex = i
+    }
+    shift += font.measure(""+chr).x
+  }
+  result = append(result, slice(text, lastIndex))
+
+  return result
 }

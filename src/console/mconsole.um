@@ -10,6 +10,8 @@ import (
 	"../d_rerp.um"
 	th_color = "color.um"
 	th_font = "font.um"
+  mstrings = "../misc/mstrings.um"
+  "../d_util.um"
 )
 
 type Console* = struct {
@@ -84,6 +86,7 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: th_font.Font, r: rect.Rect) 
 	
   for i in con.blocks {
 		block := con.blocks[len(con.blocks)-i-1]
+    block = mstrings.joinBy(d_util.wrapText(&font, block, r.w), "\n")
 
 		alpha := (pass.pos.y+vc.visualScroll)/r.h+0.4
 		if alpha > 1.0 { alpha = 1.0; }
