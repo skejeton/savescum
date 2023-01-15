@@ -1166,7 +1166,7 @@ fn putEntityEntry(editor: ^Editor, ent: d_worlddata.EntityDesc, r: rect.Rect, se
       }
     }
     r.x += 30
-    if putSimpleButton(editor, r, "d").isReleased {
+    if putSimpleButton(editor, r, "⎘").isReleased {
       action = entityListActionDuplicate
     }
   }
