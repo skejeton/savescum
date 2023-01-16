@@ -1163,6 +1163,7 @@ fn putEntityEntry(editor: ^Editor, ent: d_worlddata.EntityDesc, r: rect.Rect, se
     } else {
       if putSimpleButton(editor, r, "✎").isReleased {
         action = entityListActionEdit
+        editor.wm.putWindowOnFront("Entity Editor")
       }
     }
     r.x += 30
