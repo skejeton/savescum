@@ -929,6 +929,7 @@ fn putToolbarIconButton(editor: ^Editor, btnName: str, buttonRectangle: ^rect.Re
 fn putToolbarWindowIconButton(editor: ^Editor, windowName: str, buttonRectangle: ^rect.Rect, ix, iy: int) {
   isVisible := editor.wm.isWindowVisible(windowName)
   if putToolbarIconButton(editor, windowName, buttonRectangle, ix, iy, isVisible) {
+    editor.wm.putWindowOnFront(windowName)
     editor.wm.setWindowVisible(windowName, !isVisible)
   }
 }
