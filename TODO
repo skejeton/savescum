@@ -1,4 +1,4 @@
-# Last id: 28
+# Last id: 29
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -38,3 +38,5 @@
 
 28. Handle overlapping camera constraints properly, make it possible for 
   them to be merged.
+
+29. Add some kind of docking/tab support for windows so to not make it a mess

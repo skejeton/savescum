@@ -1277,6 +1277,7 @@ fn putEntityList(editor: ^Editor) {
               editor.wm.setWindowVisible("Entity Editor", true)
             case entityListActionDuplicate:
               appendEntity(&editor.entities, cloneEntity(editor.entities.list, ent))
+
           }
           entryRect.y += 30
         }
