@@ -737,8 +737,12 @@ type SingleLineEdit = struct {
   cursor: e_buffer.Cursor
 }
 
-fn initSingleLineEdit(): SingleLineEdit {
-  return SingleLineEdit{0, e_buffer.Buffer{lines: []str{""}}, e_buffer.Cursor{}}
+fn initSingleLineEdit(from: str): SingleLineEdit {
+  buf :=  e_buffer.Buffer{lines: []str{from}}
+  // NOTE: Maxout cursor
+  cursor := e_buffer.sanitizeCursor(&buf, e_buffer.Cursor{10000, 10000})
+
+  return SingleLineEdit{0, buf, cursor}
 }
 
 fn initBufferFromString(s: str): e_buffer.Buffer {
@@ -776,7 +780,7 @@ fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect.Rect, draw
 
 fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str) {
   editor.beginTool(name, r)
-    edit := ^SingleLineEdit(editor.getPropertyLazy("Editor", null, fn (ctx: interface{}): interface{} {return initSingleLineEdit()}))
+    edit := ^SingleLineEdit(editor.getPropertyLazy("Editor", value^, fn (ctx: interface{}): interface{} {return initSingleLineEdit(^str(ctx)^)}))
     edit.buffer = initBufferFromString(value^)
     edit.cursor = e_buffer.sanitizeCursor(&edit.buffer, edit.cursor)
 
