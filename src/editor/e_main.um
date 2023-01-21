@@ -832,7 +832,11 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (
   }
   doNotTruncateScroll := false
 
-  editor.ctx.drawRect(0x777777FF, areaRect)
+  rightRect := areaRect
+  rightRect.w = handleSize
+  rightRect.x += areaRect.w - handleSize
+
+  editor.ctx.drawRect(0x777777FF, rightRect)
   rightHandleRect := d_util.rectCutRight(areaRect, handleSize)
 
   // If there's yknow, some overflow..
@@ -868,6 +872,7 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (
   areaRect = d_util.rectShrink(areaRect, 1)
   areaRect.w += 1 // Account for uneven padding between content and border
   contentRect := areaRect
+  contentRect.w -= 1
   contentRect.y -= scrollValue
 
 
