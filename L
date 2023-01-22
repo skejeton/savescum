@@ -13,6 +13,7 @@ ISUNITTEST="false"
 NARG=0
 PROG_NAME=$0
 TOPHAT=./tophat
+COMPILER=no_compiler_lol
 
 # Probe if we are running WSL.
 if grep -qi microsoft /proc/version; then
@@ -23,6 +24,20 @@ fi
 if [[ "`uname`" == "WindowsNT" ]]; then
   TOPHAT=./tophat.exe
 fi
+
+if [ -x "$(command -v gcc)" ]; then
+  COMPILER=gcc
+fi
+
+if [ -x "$(command -v clang)" ]; then
+  COMPILER=clang
+fi
+
+# TODO: cl compiler support, because windows doesn't have the same cli
+
+no_compiler_lol() {
+  echo "WARNING: NO COMPILER, RUNNING AS IS"
+}
 
 # $1 offset
 getarg() {
@@ -56,7 +71,7 @@ target_test() {
 target_compile_extern() {
   # TODO(skejeton): Remove this when I'll need to have umi modules for real.
   #                 I commented it out temporarily because windows doesn't have cc set in bash.
-  # cc external/jumbo.c -shared -o src/d_extern.umi
+  $COMPILER external/jumbo.c -shared -o src/d_extern.umi
   
   # NOTE(skejeton): This is required for function to compile without errors /shrug
   echo
