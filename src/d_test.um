@@ -30,15 +30,18 @@ fn pfx*(): str {
 //   automatically ignore any test that has windows,
 //   but currently this is all I have.
 fn isUnitTest*(isUnitTest: bool) {
-  isExpectingUnitTest := std.getenv("ISUNITTEST") != "false"
-
-  // Yes, a string true, because it's an env variable which are all strings lol,
-  //  I could've used any other value other than true, but that one sounds aight. 
-  if isExpectingUnitTest && !isUnitTest {
-    printf("Is not a unit test - skipping\n")
-    exit()
-  } else if !isExpectingUnitTest && isUnitTest {
-    printf("Is a unit test - skipping\n")
-    exit()
+  testType := std.getenv("testType")
+  
+  // Here test types are either unit, testbed. Any other value will be ignored
+  if testType == "unit" {
+    if !isUnitTest {
+      printf("Is not a unit test - skipping\n")
+      exit()     
+    }
+  } else if testType == "testbed" {
+     if isUnitTest {
+      printf("Is a unit test - skipping\n")
+      exit()     
+    }   
   }
 }

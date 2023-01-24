@@ -9,7 +9,7 @@ fi
 ARGS=( $@ )
 SILENT=""
 PROF=""
-ISUNITTEST="false"
+TESTTYPE="any"
 NARG=0
 PROG_NAME=$0
 TOPHAT=./tophat
@@ -60,7 +60,7 @@ target_test() {
     echo -e "What am I gonna test? \n$PROG_NAME test test_name" 
     exit 1
   elif [[ -d "test/$1" && -f "test/$1/main.um" ]]; then 
-    ISUNITTEST=$ISUNITTEST TEST_PFX="test/$1/" engage main "test/$1/main.um"
+    TESTTYPE=$TESTTYPE TEST_PFX="test/$1/" engage main "test/$1/main.um"
   else
     echo -e "I don't know test \"$1\".\nTests are in ./test directory, you must make a folder named \"$1\" inside it, and put a main.um file in it. That's the way it is!" 
     exit 2
@@ -91,9 +91,13 @@ do
       NARG=$(( $NARG + 1 ))
       SILENT=silent
     ;; 
+    testbed)
+      NARG=$(( $NARG + 1 ))
+      TESTTYPE="testbed"
+    ;; 
     unit)
       NARG=$(( $NARG + 1 ))
-      ISUNITTEST="true"
+      TESTTYPE="unit"
     ;; 
     *)
       hasargs=0
