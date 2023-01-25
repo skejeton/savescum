@@ -1,4 +1,4 @@
-import ("d_util.um"; /*"toml.um"*/ "th.um")
+import ("d_util.um"; "toml.um"; "th.um")
 
 type (
   Path* = struct {
@@ -16,7 +16,6 @@ var (
 )
 
 fn reloadSession() {
-  /*
   if ok, file := d_util.readFileStr("session.toml"); ok {
     result := toml.parse(file)
     if error := result.getError(); error != null {
@@ -25,7 +24,6 @@ fn reloadSession() {
       configData = result.data
     }
   }
-  */
 }
 
 fn probeSessionUpdate(): bool {
@@ -41,8 +39,6 @@ fn getTree*(): map[str]interface{} {
 }
 
 fn getProperty*(key: str): interface{} {
-  return null
-  /*
   if probeSessionUpdate() { reloadSession() }
 
   tree := getTree()
@@ -51,12 +47,9 @@ fn getProperty*(key: str): interface{} {
   }
 
   return tree[key]
-  */
 }
 
 fn checkFlag*(path: Path): bool {
-  return false
-  /*
   if mapValue := ^map[str]interface{}(getProperty(path.sector)); mapValue != null {
     if boolValue := ^bool(mapValue[path.property]); boolValue != null {
       return boolValue^
@@ -64,6 +57,5 @@ fn checkFlag*(path: Path): bool {
   }
 
   return false
-  */
 }
 

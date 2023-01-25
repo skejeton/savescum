@@ -687,7 +687,7 @@ fn (ge: ^EditorGrid) put(editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
       // Draw highlighted tile
     }
 
-    coordinate := grid.toGrid(th.Vf2{0, 0}).floor()
+    coordinate := grid.toGridRel(th.Vf2{0, 0}).floor()
     coordinateString := sprintf("%+-4g %+-4g", coordinate.x, coordinate.y)
 
     bottomLeft := th.Vf2{rectangle.x, rectangle.y+rectangle.h}

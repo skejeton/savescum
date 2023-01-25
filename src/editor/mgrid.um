@@ -21,6 +21,10 @@ type Line = [2]th.Vf2
 
 type Lines = []Line
 
+fn (grid: ^Grid) toGridRel*(screen: th.Vf2): th.Vf2 {
+	return screen.div(grid.s).sub(grid.p)
+}
+
 fn (grid: ^Grid) toGrid*(screen: th.Vf2): th.Vf2 {
 	return screen.sub(grid.bb.getPos()).div(grid.s).sub(grid.p)
 }
