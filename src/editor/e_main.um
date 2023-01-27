@@ -1474,6 +1474,8 @@ fn putWorldEntities(editor: ^Editor) {
 
       if events.queryMouse(0, d_mouseinput.pressed) {
         selectEntity(&editor.entities, i)
+        editor.wm.setWindowVisible("Entity Editor", true)
+        editor.wm.putWindowOnFront("Entity Editor")
       }
       if events.queryMouse(0, d_mouseinput.down) {
         ent.rect.x += events.mouseState.delta.x/editor.tilemapGrid.scaling
