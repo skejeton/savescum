@@ -1574,8 +1574,14 @@ fn editorPutUi(editor: ^Editor) {
     editor.ctx.drawCustom(GameCmd{})
   } else {
     tool := editor.beginTool("TileEditor", rect.mk(0, 0, d_global.screen.w, d_global.screen.h-34))
-
+    
     selectedTile := editor.tilemapGrid.put(editor, tool.rect)
+
+    if editor.isCurrentToolActive() {
+      if input.isPressed(input.key_ctrl) && input.isJustPressed('i') {
+        appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
+      }
+    }
 
     putWorldEntities(editor)
 
