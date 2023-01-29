@@ -767,6 +767,10 @@ fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect.Rect, draw
     edit.scrollX = -cursorRect.x
   }
 
+  if r.w > cursorRect.x {
+    edit.scrollX = 0
+  }
+
   cursorRect.x += r.x+edit.scrollX
   cursorRect.y += r.y
 
