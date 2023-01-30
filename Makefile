@@ -1,2 +1,2 @@
 all:
-	./L test ui
+	./L play
