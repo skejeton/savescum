@@ -1543,6 +1543,11 @@ fn editorPutUi(editor: ^Editor) {
     if input.isJustPressed('s') {
       editorSaveWorld(editor)
     }
+    if input.isJustPressed('d') {
+      for w in editor.wm.windows {
+        editor.wm.setWindowVisible(w, false)
+      }
+    }
   }
 
   if input.isPressed(input.key_shift) {
