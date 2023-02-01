@@ -173,7 +173,7 @@ fn rectCenterWithinRect*(child, parent: rect.Rect): rect.Rect {
 // )
 //
 // Pushes the child rect into the parent rect. 
-// Won't work if child one of rect's dimensions are bigger than parents. 
+// Won't work if child rectangle dimensions are bigger than parents rectangle. 
 fn rectKeepInBounds*(child, parent: rect.Rect): rect.Rect {
   if child.x < parent.x {
     child.x = parent.x
@@ -237,7 +237,9 @@ fn clamp*(a, b, c: real): real {
 }
 
 fn isprint*(c: uint32): bool {
-  // Check if not first 32 reserved ASCII chars and not DEL
+  // ASCII 0..31 (inclusive), are control characters
+  // ASCII 125 is a control character (DEL)
+  // we want to skip these 
   return c >= 32 && c != 127
 }
 
