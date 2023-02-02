@@ -69,12 +69,7 @@ target_test() {
 
 # Compiles external C code
 target_compile_extern() {
-  # TODO(skejeton): Remove this when I'll need to have umi modules for real.
-  #                 I commented it out temporarily because windows doesn't have cc set in bash.
   $COMPILER external/jumbo.c -shared -o src/d_extern.umi
-  
-  # NOTE(skejeton): This is required for function to compile without errors /shrug
-  echo
 }
 
 hasargs=1
