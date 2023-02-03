@@ -705,6 +705,18 @@ fn putIconButton(editor: ^Editor, name: str, r: rect.Rect, img: image.Image, rev
   return bs
 }
 
+fn putRadioButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = false): ButtonState {
+  if revert {
+    putButton(editor, r, text)
+    drawButtonInactive(editor, r, text)
+  } else {
+    bs := putButtonBase(editor, r, text, revert)
+    editor.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), th.black)
+    return bs
+  }
+  return ButtonState{}
+}
+
 fn putSimpleButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = false): ButtonState {
   bs := putButtonBase(editor, r, text, revert)
   editor.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), th.black)
@@ -1606,17 +1618,17 @@ fn editorPutUi(editor: ^Editor) {
       }
       position.x -= elementSize
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "BG", editor.tilemapLayer == -1).isReleased) {
+      if (putRadioButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "BG", editor.tilemapLayer == -1).isReleased) {
         editor.tilemapLayer = -1
       }
       position.x -= elementSize
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "MG", editor.tilemapLayer == 0).isReleased) {
+      if (putRadioButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "MG", editor.tilemapLayer == 0).isReleased) {
         editor.tilemapLayer = 0
       }
       position.x -= elementSize
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "FG", editor.tilemapLayer == 1).isReleased) {
+      if (putRadioButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "FG", editor.tilemapLayer == 1).isReleased) {
         editor.tilemapLayer = 1
       }
       position.x -= elementSize
