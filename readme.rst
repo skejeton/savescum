@@ -34,10 +34,16 @@ The test will run in the root directory of the project.
 Run test
 --------
 
+
+| Format: ``./L [unit|testbed] test <test_name>``. [launching]_
+
 | Execute ``./L test <test_name>``. [launching]_
 | Where ``<test_name>`` is a name of folder located in ``test/``.
 | The test will run in the root directory of the project.
 | The modules are loaded relative to the directory of the test.
+
+| To execute unit test or testbed test specifically, use ``unit`` or ``testbed``
+| as specified in the format
 
 Create test
 -----------
