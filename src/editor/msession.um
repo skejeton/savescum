@@ -32,7 +32,7 @@ fn save*(session: Session): str {
   result = append(result, []str{session.portal})
   result = append(result, ut.saveBool(session.allLayers))
   result = append(result, ut.saveBool(session.entityBypass))
-  result = append(result, ut.saveReal(session.layerSelected))
+  result = append(result, ut.saveInt(session.layerSelected))
   result = append(result, ut.saveVf2(session.tileSelected))
   
   result = append(result, ut.saveReal(len(session.windows)))
@@ -53,7 +53,7 @@ fn load*(sourceStr: str): Session {
   session.portal = source[2][0]
   session.allLayers = ut.loadBool(source[3])
   session.entityBypass = ut.loadBool(source[4])
-  session.layerSelected = trunc(ut.loadReal(source[5]))
+  session.layerSelected = trunc(ut.loadInt(source[5]))
   session.tileSelected = ut.loadVf2(source[6])
 
   count := trunc(ut.loadReal(source[7]))

@@ -30,6 +30,14 @@ fn loadReal*(s: []str): real {
   return std.atof(s[0])
 }
 
+fn saveInt*(f: int): []str {
+  return []str{std.itoa(f)}
+}
+
+fn loadInt*(s: []str): int {
+  return std.atoi(s[0])
+}
+
 const sign = [2]str{"-", "+"}
 
 fn saveBool*(f: bool): []str {
