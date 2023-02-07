@@ -3,9 +3,9 @@
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
 5. The text editor currently is very janky as it requires you to hover over it to enter anything,
-  I should somehow facilitate "focused" elements in the editor. #7
+  I should somehow facilitate "focused" elements in the editor. (Github #7)
 
-6. Text box improvements: #7
+6. Text box improvements: (Github #7)
 
 9. Currently worlddata needs to accept a world as a parameter because it needs some data initialized prior,
   The tilemap needs its image, tile size set, etc.
@@ -34,7 +34,7 @@
   be messed up. This can be fixed by using more sparse lookup table for ID's.
 
 27. Investigate weird white blips appearing on the screen, especially in
-  the console. 
+  the console.
 
 28. Handle overlapping camera constraints properly, make it possible for 
   them to be merged.
