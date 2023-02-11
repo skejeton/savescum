@@ -67,6 +67,13 @@ fn imageCropRect*(img: image.Image, rec: rect.Rect) {
   img.crop(th.Vf2{rec.x/size.x, rec.y/size.y}, th.Vf2{(rec.x + rec.w)/size.x, (rec.y + rec.h)/size.y})
 }
 
+fn drawImageRect*(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0, tint: uint32 = 0xFFFFFFFF) {
+  imageCropRect(img, src)
+
+  pos := dst.getPos()
+  scale := dst.getDims().div(src.getDims())
+  img.draw(th.Transform{p: pos, s: scale, r: rot, o: th.Vf2{dst.w/2, dst.h/2}}, tint)
+}
 
 //
 // Returns lowest number among a, b

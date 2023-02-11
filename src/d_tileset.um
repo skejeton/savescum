@@ -1,4 +1,4 @@
-import ("th.um"; "image.um")
+import ("th.um"; "image.um"; "rect.um"; "d_util.um")
 
 type (
   Tileset* = struct {
@@ -14,7 +14,7 @@ fn fromImage*(img: image.Image, tileSizeX, tileSizeY: int, scale: real): Tileset
   return Tileset{
     image: img,
     tileSizeX: tileSizeX, tileSizeY: tileSizeY,
-    tileCountX: trunc(dims.x/(tileSizeX/scale)), tileCountY: trunc(dims.y/(tileSizeY/scale)), scale: scale+0.01}
+    tileCountX: trunc(dims.x/(tileSizeX*scale)), tileCountY: trunc(dims.y/(tileSizeY*scale)), scale: scale}
 }
 
 fn (ts: ^Tileset) tileToPos*(x, y: int): int {
@@ -26,9 +26,18 @@ fn (ts: ^Tileset) posToTile*(pos: int): th.Vf2 {
   return th.Vf2{pos%ts.tileCountX, pos/ts.tileCountX}
 }
 
+fn (ts: ^Tileset) getCroppingRect*(x, y: int): rect.Rect {
+  return rect.mk(x*ts.tileSizeX*ts.scale, y*ts.tileSizeY*ts.scale,
+                 ts.tileSizeX*ts.scale, ts.tileSizeY*ts.scale)
+}
+
+fn (ts: ^Tileset) getCroppingRectId*(id: int): rect.Rect {
+  id -= 1
+  return ts.getCroppingRect(id%ts.tileCountX, id/ts.tileCountX)
+}
+
 fn (ts: ^Tileset) selectTile*(x, y: int) {
-  ts.image.crop(th.Vf2{x/real(ts.tileCountX)+0.001, y/real(ts.tileCountY)+0.001},
-          th.Vf2{(x+1)/real(ts.tileCountX)-0.001, (y+1)/real(ts.tileCountY)-0.001})
+  d_util.imageCropRect(ts.image, ts.getCroppingRect(x, y))
 }
 
 fn (ts: ^Tileset) selectTilePos*(pos: int) {

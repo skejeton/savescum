@@ -109,7 +109,7 @@ fn getCameraTargetRect(): rect.Rect {
   guide := findGuideInPoint(chara.rect.getPos())
   cameraRect := getCameraRect()
   scale := d_util.min(guide.w/cameraRect.w, guide.h/cameraRect.h)
-  maxScale := 1.0/(d_global.screen.w/800)
+  maxScale := 1.0/(d_global.screen.w/640)
   if scale > maxScale {
     scale = maxScale
   }
@@ -341,7 +341,7 @@ fn entConstructColidingSolids(ent: ^Character): []Shape {
       case 25: shapeType = shapeBlock
         shapeRect.y += world.tileset.tileSizeY/2
         shapeRect.h /= 2
-      case 1, 5, 7:   shapeType = shapeBlock
+      case 1, 5, 7, 29:   shapeType = shapeBlock
       case 9:   shapeType = shapeLeftUpSlope
       case 10:  shapeType = shapeRightUpSlope
       case 13:  shapeType = shapeLeftDownSlope
@@ -481,14 +481,6 @@ fn updateEntities() {
   }
 }
 
-fn drawImageRect(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0, tint: uint32 = 0xFFFFFFFF) {
-  d_util.imageCropRect(img, src)
-
-  pos := dst.getPos()
-  scale := dst.getDims().div(src.getDims())
-  img.draw(th.Transform{p: pos, s: scale, r: rot, o: th.Vf2{dst.w/2, dst.h/2}}, tint)
-}
-
 fn drawEntityCustomRect(ent: ^Character, r: rect.Rect) {
   destRect := d_util.rectShrink(cameraOffsetRect(r), -2*cameraScale)
 
@@ -522,8 +514,8 @@ fn drawChumState(state: int, chum: ChumState, alpha: real) {
     chumDestRect.x += chumDestRect.w;
     chumDestRect.w *= -1;
   }
-  drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, th_color.alpha(0xFFFFFFFF, alpha))
-  drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, th_color.alpha(0xFFFFFFFF, alpha))
+  d_util.drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, th_color.alpha(0xFFFFFFFF, alpha))
+  d_util.drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, th_color.alpha(0xFFFFFFFF, alpha))
   if d_config.checkFlag(d_config.flagDebugOverlays) {
     canvas.drawText(sprintf("%d %d", trunc(at.x/32), trunc(at.y/32)), chumDestRect.getPos(), th.red, 1)
   }
@@ -620,6 +612,13 @@ fn drawGuideRects() {
   }
 }
 
+fn drawOutlines() {
+  renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
+  for i, renderTile in renderTiles {
+    canvas.drawRect(0xAAAAFF99, d_util.rectShrink(renderTile.rect, -4))
+    canvas.drawRect(0xAAAAFF22, d_util.rectShrink(renderTile.rect, -8))
+  }
+}
 
 fn draw*() {
   // RENDER BG //
@@ -630,12 +629,14 @@ fn draw*() {
 
   // RENDER WORLD //
   world.drawLayer(camera.mulf(-cameraScale), -1, cameraScale)
+  drawOutlines()
   world.drawLayer(camera.mulf(-cameraScale), 0, cameraScale)
   drawEntities()
     
   for i, state in saves {
     drawChumState(getChumSpriteState(state), state, (i+1)/(real(len(saves)))/2.0)
   }
+
 
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
 

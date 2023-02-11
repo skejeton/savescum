@@ -1,5 +1,5 @@
 import (
-  "rect.um"; "image.um"; "canvas.um"; "th.um"
+  "rect.um"; "image.um"; "canvas.um"; "th.um"; th_color = "color.um";
   "d_util.um"; "d_global.um"; "d_resources.um"; "d_partition.um";
 )
 
@@ -50,7 +50,19 @@ fn drawClouds*(screen: rect.Rect) {
 
 fn drawImageScaled(img: image.Image, pos: th.Vf2, scale: th.Vf2) {
   imgRocks.draw(th.Transform{p: th.Vf2{pos.x*scale.x, pos.y*scale.y}, s: scale})
-} 
+}
+
+fn jazzColor(time: real): uint32 {
+  phase := trunc(time)%6
+  
+  color := th_color.hsv(real(phase)/6.0, 1.0, 0.1, 1.0)
+
+  return color
+}
+
+fn drawJazz*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
+  canvas.drawRect(jazzColor(th.time/1000.0), d_global.screen)
+}
 
 fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
   tileSize := imgRocks.getDims()
@@ -74,5 +86,6 @@ fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
 }
 
 fn draw*(screen: rect.Rect) {
-  drawCave(d_global.screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
+  drawJazz(screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
+  //drawCave(d_global.screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
 }

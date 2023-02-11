@@ -31,6 +31,10 @@ type (
     x, y: int
     id: int
   }
+  RenderTile* = struct {
+    rect: rect.Rect
+    id: int
+  }
 )
 
 fn fromTileset*(ts: d_tileset.Tileset): World {
@@ -108,21 +112,13 @@ fn getTileSizeInPixels(world: ^World): th.Vf2 {
   return th.Vf2{world.tileset.tileSizeX, world.tileset.tileSizeY}
 }
 
-fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, pan: th.Vf2, scale: real = 1.0, tint: uint32 = 0xFFFFFFFF) {
+fn collectChunkRenderTiles(world: ^World, chunk: ^Chunk, offset: th.Vf2, pan: th.Vf2, scale: real = 1.0): []RenderTile {
   offset = offset.mulf(scale).add(pan)
   tileSize := getTileSizeInPixels(world).mulf(scale)
   chunkSize := tileSize.mul(th.Vf2{chunkW, chunkH})
   chunkRect := rect.mk(offset.x, offset.y, chunkSize.x, chunkSize.y)
 
   intersectionRect := d_util.rectDiff(chunkRect, d_global.screen)
-  imgScale := th.Vf2{scale*world.tileset.scale, scale*world.tileset.scale}
-
-
-  // Debug.
-  if false {
-    d_util.drawRectLines(th.green, intersectionRect, 3)
-    d_util.drawRectLines(th.black, chunkRect)
-  }
 
   startTileIndex := intersectionRect.getPos().sub(chunkRect.getPos()).div(tileSize)
   endTileIndex := intersectionRect.getEnd().sub(chunkRect.getPos()).div(tileSize)
@@ -132,35 +128,50 @@ fn drawChunk(world: ^World, chunk: ^Chunk, offset: th.Vf2, pan: th.Vf2, scale: r
   if ex > chunkW { ex = chunkW }
   if ey > chunkH { ey = chunkH }
 
-  tileSel := 0
+  renderTiles := []RenderTile{}
 
   for cx := sx; cx < ex; cx++ {
     for cy := sy; cy < ey; cy++ {
       if chunk[cx][cy] > 0 {
         tile := chunk[cx][cy]
-
-        if tileSel != tile {
-          world.tileset.selectTilePos(tile)
-          tileSel = tile
-        }
-        world.tileset.image.draw(th.Transform{p: th.Vf2{cx*tileSize.x+offset.x, cy*tileSize.y+offset.y}, s: imgScale}, tint)
+        
+        pos := th.Vf2{cx*tileSize.x+offset.x, cy*tileSize.y+offset.y}
+        renderTiles = append(renderTiles, RenderTile{rect.mk(pos.x, pos.y, tileSize.x, tileSize.y), tile})
       }
     }
   }
+
+  return renderTiles
 }
 
-fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0, tint: uint32 = 0xFFFFFFFF) {
+fn (world: ^World) collectLayerRenderTiles*(pan: th.Vf2, layerId: int, scale: real = 1.0): []RenderTile {
+  renderTiles := []RenderTile{}
+
   layerId++
   if layerId < 0 || layerId > 2 {
-    return
+    return renderTiles
   }
   
   layer := &world.tilemap[layerId]
 
   for pos in layer {
     rpos := th.Vf2{pos.x, pos.y}
-    drawChunk(world, &layer[pos], rpos.mul(th.Vf2{chunkW, chunkH}).mul(getTileSizeInPixels(world)), pan, scale, tint)
+    renderTiles = append(renderTiles, collectChunkRenderTiles(world, &layer[pos], rpos.mul(th.Vf2{chunkW, chunkH}).mul(getTileSizeInPixels(world)), pan, scale))
   }
+
+  return renderTiles
+}
+
+fn (world: ^World) drawRenderTiles*(renderTiles: []RenderTile, tint: uint32) {
+  for i, renderTile in renderTiles {
+    crop := world.tileset.getCroppingRectId(renderTile.id)
+    d_util.drawImageRect(world.tileset.image, crop, renderTile.rect, 0, tint)
+  }
+}
+
+fn (world: ^World) drawLayer*(pan: th.Vf2, layerId: int, scale: real = 1.0, tint: uint32 = 0xFFFFFFFF) {
+  renderTiles := world.collectLayerRenderTiles(pan, layerId, scale)
+  world.drawRenderTiles(renderTiles, tint)
 }
 
 fn (world: ^World) draw*(pan: th.Vf2) {
