@@ -1,4 +1,4 @@
-# Last id: 29
+# Last id: 31
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -40,3 +40,7 @@
   them to be merged.
 
 29. Add some kind of docking/tab support for windows so to not make it a mess
+
+30. Spurious "Failed to open file" errors
+
+31. Fix seams in between tiles on higher resolutions
