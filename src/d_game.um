@@ -615,8 +615,8 @@ fn drawGuideRects() {
 fn drawOutlines() {
   renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
   for i, renderTile in renderTiles {
-    canvas.drawRect(0xAAAAFF99, d_util.rectShrink(renderTile.rect, -4))
-    canvas.drawRect(0xAAAAFF22, d_util.rectShrink(renderTile.rect, -8))
+    canvas.drawRect(0xAAAAFF99, d_util.rectShrink(renderTile.rect, -4*cameraScale))
+    canvas.drawRect(0xAAAAFF22, d_util.rectShrink(renderTile.rect, -8*cameraScale))
   }
 }
 
