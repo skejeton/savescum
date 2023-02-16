@@ -1130,7 +1130,7 @@ fn putTilePicker(editor: ^Editor) {
 
     editor.beginTool("Picker", contentRect)
     {
-      editor.ctx.drawRect(th.black, contentRect)
+      editor.ctx.drawRect(0x222222FF, contentRect)
       editor.ctx.moveLayer(1)
       {
         imgDims := editor.tileset.image.getDims()
