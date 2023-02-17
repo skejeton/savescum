@@ -601,7 +601,9 @@ fn update*() {
     }
 
     if input.isJustPressed('x') {
-      saves = append(saves, getCharState())
+      if len(saves) < 1 {
+        saves = append(saves, getCharState())
+      }
     }
   }
 }
