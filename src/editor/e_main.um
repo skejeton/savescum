@@ -1145,7 +1145,7 @@ fn putTilePicker(editor: ^Editor) {
         selectedTilePos := editor.tilesetGrid.mapPos(editor.tileSelected)
         
         editor.ctx.beginScissorRect(contentRect)
-        editor.ctx.drawRect(th_color.alpha(th.green, 0.3), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32))
+        editor.ctx.drawRectLines(th_color.alpha(th.green, 0.6), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32), 1)
         editor.ctx.endScissor()
       }
       editor.ctx.moveLayer(-1)

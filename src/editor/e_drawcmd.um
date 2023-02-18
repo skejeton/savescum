@@ -1,6 +1,6 @@
 /*
-// Draw commands.
-*/
+ * Draw commands.
+ */
 
 import ("th.um"; "window.um"; "rect.um"; "image.um"; "font.um"; "canvas.um"; "../d_util.um")
 
