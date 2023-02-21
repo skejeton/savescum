@@ -1104,7 +1104,7 @@ fn putPlayerPlacer(editor: ^Editor) {
 
     editor.ctx.beginScissorRect(contentRect)
     {
-      putLabelY(editor, sprintf("Player at: %d %d", trunc(playerPos.x), trunc(playerPos.y)), th.black, &position)
+      putLabelY(editor, sprintf("x %d y %d", trunc(playerPos.x), trunc(playerPos.y)), th.black, &position)
       position.y += 10
 
       if (putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Relocate", editor.isRelocatingPlayer).isReleased) {
