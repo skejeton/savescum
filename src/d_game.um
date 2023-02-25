@@ -327,7 +327,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
   }
 }
 
-fn entConstructColidingSolids(ent: ^Character): []Shape {
+fn entConstructCollidingSolids(ent: ^Character): []Shape {
   tangents := world.getTangentTiles(rect.Rect{ent.rect.x-1, ent.rect.y-1, ent.rect.w+1, ent.rect.h+1})
   solids := []Shape{}
   nonBlockSolids := []Shape{}
@@ -371,12 +371,12 @@ fn entConstructColidingSolids(ent: ^Character): []Shape {
 
 
   solids = append(solids, nonBlockSolids)
-  collSortShapesByProximity(&solids, th.Vf2{ent.rect.x+ent.rect.w/2, ent.rect.y+ent.rect.h/2})
+  collSortShapesByProximity(&solids, d_util.rectCenter(ent.rect))
   return solids
 }
 
 fn entSolveCollision(ent: ^Character) {
-  solids := entConstructColidingSolids(ent)
+  solids := entConstructCollidingSolids(ent)
 
   for i, solid in solids {
     entVsShape(ent, solid)
@@ -384,7 +384,7 @@ fn entSolveCollision(ent: ^Character) {
 }
 
 fn _drawRectTangents(r: rect.Rect) {
-  solids := entConstructColidingSolids(&chara)
+  solids := entConstructCollidingSolids(&chara)
 
   for i, solid in solids {
     rec := cameraOffsetRect(solid.rect)
