@@ -19,6 +19,8 @@ Usage ``./L <command> ...args``
         | Example: ``./L play``
 *       | ``test``. Launches a test. [testing]_
         | Example: ``./L test launcher``
+*       | ``testall``. Launches all tests. [testing]_
+        | Example: ``./L testall ``
 *       | ``check``. Checks if tests and game compile. Empty output is success.
         | Example: ``./L check``
 
