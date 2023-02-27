@@ -1612,6 +1612,11 @@ fn editorPutUi(editor: ^Editor) {
       const elementSize = 30
 
       position := tool.rect.getEnd().subf(padding).subf(elementSize)
+      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "> <").isReleased) {
+        editor.tilemapGrid.panning = th.Vf2{0, 0}
+      }
+      position.x -= elementSize
+
 
       if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "1:1").isReleased) {
         editor.tilemapGrid.zoomInto(1.0, d_util.rectCenter(editor.tilemapGrid.rect))
