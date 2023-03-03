@@ -61,6 +61,7 @@ Loading Prefix
 | Make use of ``src/d_test.um`` to acquire a file loading prefix.
 | Example: ``image.load(d_test.pfx()+"cute_rabbit.png")``, where ``"cute_rabbit.png"`` is relative to the directory of the test.
 
+
 Coding Style
 ============
 
@@ -75,3 +76,10 @@ Whenever the section of code just doesn't feel right do this: ::
 
   bad code
 
+The game
+========
+
+The idea
+--------
+
+A game with quicksave/quickload mechanic that saves the entire state.
