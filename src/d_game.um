@@ -86,6 +86,7 @@ var (
   chara*: Character
   camera*: th.Vf2
   cameraScale*: real
+  toggleActive: bool
 
   saves: []ChumState
   showDebug: bool = false
@@ -341,6 +342,7 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
       case 25: shapeType = shapeBlock
         shapeRect.y += world.tileset.tileSizeY/2
         shapeRect.h /= 2
+      case 30: if toggleActive { shapeType = shapeBlock; }
       case 1, 5, 7, 29:   shapeType = shapeBlock
       case 9:   shapeType = shapeLeftUpSlope
       case 10:  shapeType = shapeRightUpSlope
@@ -415,6 +417,7 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn start*(worldData: d_worlddata.WorldData) {
+  toggleActive = false
   lockInput = false
 
   world = worldData.world
@@ -617,13 +620,14 @@ fn drawGuideRects() {
 fn drawOutlines() {
   renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
   for i, renderTile in renderTiles {
-    if renderTile.id == 29 {
+    if renderTile.id == 29 || (toggleActive && renderTile.id == 30) {
       canvas.drawRect(0xAAAAFF99, d_util.rectShrink(renderTile.rect, -4*cameraScale))
       canvas.drawRect(0xAAAAFF22, d_util.rectShrink(renderTile.rect, -8*cameraScale))
 
     }
   }
 }
+
 
 fn draw*() {
   // RENDER BG //
@@ -642,6 +646,10 @@ fn draw*() {
     drawChumState(getChumSpriteState(state), state, (i+1)/(real(len(saves)))/2.0)
   }
 
+
+  if input.isJustPressed('1') {
+    toggleActive = !toggleActive
+  }
 
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
 
