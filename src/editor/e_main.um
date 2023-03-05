@@ -38,6 +38,7 @@ import (
   "image.um"
   "canvas.um"
   "input.um"
+  "signal.um"
 
   "utf8.um"
   "std.um"
@@ -1552,10 +1553,10 @@ fn editorPutUi(editor: ^Editor) {
   editor.inputSink = InputSink{}
 
   if input.isPressed(input.key_ctrl) {
-    if input.isJustPressed('s') {
+    if input.isJustPressedc('s') {
       editorSaveWorld(editor)
     }
-    if input.isJustPressed('d') {
+    if input.isJustPressedc('d') {
       for w in editor.wm.windows {
         editor.wm.setWindowVisible(w, false)
       }
@@ -1583,7 +1584,6 @@ fn editorPutUi(editor: ^Editor) {
   editor.mouseState = editor.mouseState.updated()
 
   editor.frameNumber += 1;
-
   // put ui
   if editor.isPlaying {
     if input.isJustPressed(input.key_escape) {
@@ -1595,11 +1595,10 @@ fn editorPutUi(editor: ^Editor) {
     editor.ctx.drawCustom(GameCmd{})
   } else {
     tool := editor.beginTool("TileEditor", rect.mk(0, 0, d_global.screen.w, d_global.screen.h-34))
-    
     selectedTile := editor.tilemapGrid.put(editor, tool.rect)
 
     if editor.isCurrentToolActive() {
-      if input.isPressed(input.key_ctrl) && input.isJustPressed('i') {
+      if input.isPressed(input.key_ctrl) && input.isJustPressedc('i') {
         appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
       }
     }
@@ -1649,7 +1648,6 @@ fn editorPutUi(editor: ^Editor) {
         editor.entityBypass = !editor.entityBypass;
       }
     }
-
     editor.ctx.moveLayer(-1)
     editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tilemapGrid, &editor.world})
     editor.ctx.moveLayer(1)
@@ -1678,10 +1676,10 @@ fn editorPutUi(editor: ^Editor) {
         editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), 0)
       }
     }
-
   }
+  
   editorPutToolbar(editor)
-
+  
   if !editor.isPlaying {
     putPortalEditor(editor)
     putTilePicker(editor)
@@ -1809,11 +1807,14 @@ fn editorLoadSession(editor: ^Editor, session: msession.Session) {
   }
 }
 
+fn onFrame(cctx, uctx: any) {
+  canvas.drawText("Too bad!", th.Vf2{0, 0}, th.white, 5)
+}
+
 fn editorMain*() {
   d_global.screen = rect.mk(0, 0, 800, 600)
   window.setup("Editor", trunc(d_global.screen.w), trunc(d_global.screen.h))
-
-
+  
   mdbg.initConsole()
 
   mdbg.logt("Welcome to the console!")
@@ -1834,29 +1835,32 @@ fn editorMain*() {
   editorResources := loadEditorResources(&rl)
   showErrorScreenIfResourcesFailedToLoad(&rl)
 
-  editor := editorInit(editorResources)
+  editor := new(Editor)
+  editor ^= editorInit(editorResources)
 
   if ok, sessionFile := d_util.readFileStr("user/session.csv"); ok {
-    editorLoadSession(&editor, msession.load(sessionFile))
+    editorLoadSession(editor, msession.load(sessionFile))
   } else {
-    loadPortal(&editor, "testbed_savepartial")
+    loadPortal(editor, "testbed_savepartial")
   }
 
-  for window.cycle() {
+  window.onFrame.register(signal.Callback{
+    editor := ^Editor(uctx)
+
     std.srand(std.time())
     mshortcuts.console()
     mshortcuts.fullscreen()
 
-    if input.isPressed('1') {
+    if input.isPressedc('1') {
       mdbg.logt("Console log!")
     }
 
     // NOTE(skejeton): probably minimized
     if window.w == 0 || window.h == 0 {
-      continue
+      return
     }
 
-    d_fps.limit(60)
+    //d_fps.limit(60)
     d_fps.update()
 
     // NOTE(skejeton): Clamping delta to 50 gives generally consistent physics and reduces jitter.
@@ -1868,14 +1872,16 @@ fn editorMain*() {
     d_global.screen = rect.mk(0, 0, window.w, window.h)
     window.setViewport(d_global.screen.getDims())
 
-
-    editorPutUi(&editor)
+    editorPutUi(editor)
     mdbg.drawConsole(editor.resources.mainFont)
 
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
     editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
-  }
+  }, editor)
 
+  // TODO: WE NEED ON EXIT CALLBACK!!
+  /*
   d_util.writeFileStr("user/session.csv", msession.save(editorSaveSession(&editor)))
   editorDisconnectAllNodes(&editor, null)
+  */
 }

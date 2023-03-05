@@ -16,8 +16,8 @@ fn fullscreen*() {
 
 // handles input for a console. 
 fn console*() {
-	if input.isPressed(input.key_alt) && input.isJustPressed('t') {
-		input.clear('t')
+	if input.isPressed(input.key_alt) && input.isJustPressedc('t') {
+		input.clearc('t')
 		mdbg.consolevis = !mdbg.consolevis
 	}
 }

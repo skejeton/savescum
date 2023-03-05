@@ -28,7 +28,7 @@ const (
   released* = 2
 )
 
-fn (prev: ^MouseButtonState) updated*(button: char): MouseButtonState {
+fn (prev: ^MouseButtonState) updated*(button: int): MouseButtonState {
   return MouseButtonState{
     isDown: input.isPressed(button),
     isPressed: input.isJustPressed(button),
@@ -40,7 +40,7 @@ fn (prev: ^MouseState) updated*(): MouseState {
     lmb: prev.lmb.updated(input.mouse1),
     mmb: prev.mmb.updated(input.mouse2),
     rmb: prev.rmb.updated(input.mouse3), 
-    wheelY: real(int(input.isJustPressed(input.mouse_up))) - real(int(input.isJustPressed(input.mouse_down))),
+    wheelY: input.getMouseScroll().y,
     pos: input.getMousePos(),
     lastPos: prev.pos,
     delta: input.getMousePos().sub(prev.pos)}

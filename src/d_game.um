@@ -589,21 +589,21 @@ fn update*() {
   updateEntities()
   cameraControl()
 
-  if input.isPressed(input.key_alt) && input.isJustPressed('d') {
+  if input.isPressed(input.key_alt) && input.isJustPressedc('d') {
     showDebug = !showDebug
   }
 
   if !lockInput {
     playerControl()
     
-    if input.isJustPressed('z') {
+    if input.isJustPressedc('z') {
       if len(saves) > 0 {
         loadStateToChar(saves[len(saves)-1])
         saves = delete(saves, len(saves)-1)
       }
     }
 
-    if input.isJustPressed('x') {
+    if input.isJustPressedc('x') {
       if len(saves) < 1 {
         saves = append(saves, getCharState())
       }
@@ -647,7 +647,7 @@ fn draw*() {
   }
 
 
-  if input.isJustPressed('1') {
+  if input.isJustPressedc('1') {
     toggleActive = !toggleActive
   }
 

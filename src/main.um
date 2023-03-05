@@ -1,5 +1,8 @@
 import (
   "editor/e_main.um"
+  "canvas.um"
+  "window.um"
+  "th.um"
 )
 
 fn main*() {
