@@ -105,9 +105,9 @@ fn (ctx: ^DrawContext) flush*() {
         case commandRectLines:
           d_util.drawRectLines(command.color, command.rect, command.attr)
         case commandBeginScissorRect:
-          window.beginScissorRect(command.rect)
+          canvas.beginScissorRect(command.rect)
         case commandEndScissor:
-          window.endScissor()
+          canvas.endScissor()
         case commandCustom:
           command.custom.draw(DrawProperties{})
       }

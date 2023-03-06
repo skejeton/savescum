@@ -449,9 +449,9 @@ fn start*(worldData: d_worlddata.WorldData) {
 
 fn init*(rl: ^d_resources.ResourceLoader) {
   imgObj = d_resources.loadImage(rl, "data/img/obj_interactive.png")
-  imgObj.setfilter(0)
+  imgObj.setfilter(1)
   imgChum = d_resources.loadImage(rl, "data/img/chr_chum.png")
-  imgChum.setfilter(0)
+  imgChum.setfilter(1)
 }
 
 fn getCollidingEntities(against: ^Character): []^Character {

@@ -1746,8 +1746,8 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
     toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png"),
     mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 0)}
  
-  editorResources.tilesetImage.setfilter(0)
-  editorResources.toolbarIcons.setfilter(0)
+  editorResources.tilesetImage.setfilter(1)
+  editorResources.toolbarIcons.setfilter(1)
 
   return editorResources
 }
@@ -1860,7 +1860,6 @@ fn editorMain*() {
       return
     }
 
-    //d_fps.limit(60)
     d_fps.update()
 
     // NOTE(skejeton): Clamping delta to 50 gives generally consistent physics and reduces jitter.
