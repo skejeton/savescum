@@ -1,4 +1,4 @@
-# Last id: 32
+# Last id: 33
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -45,3 +45,5 @@
 31. Fix seams in between tiles on higher resolutions
 
 32. Investigate strange random freezee when you start a level
+
+33. I can drag windows outside the window, so I may not be able to access them. This needs to be fixed.
