@@ -25,3 +25,6 @@ trace.json
 
 # User data
 user
+
+# WASM bundle
+wasm-out

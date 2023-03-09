@@ -33,7 +33,6 @@
 
 27. Investigate weird white blips appearing on the screen, especially in
   the console.
-  - Should be fixed by the new sokol rewrite ?
 
 28. Handle overlapping camera constraints properly, make it possible for 
   them to be merged.
