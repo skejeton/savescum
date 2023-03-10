@@ -1850,6 +1850,10 @@ fn editorMain*() {
     std.srand(std.time())
     mshortcuts.console()
     mshortcuts.fullscreen()
+    
+    if input.isPressed(input.key_fn25) {
+      error("The F25 key? What's that?")
+    }
 
     if input.isPressedc('1') {
       mdbg.logt("Console log!")

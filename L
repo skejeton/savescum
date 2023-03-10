@@ -106,10 +106,10 @@ mkdir -p user
 
 case `getarg 0` in
   play)
-    engage main src/main.um
+    engage main main.um
   ;;
   check)
-    engage check main src/main.um
+    engage check main main.um
     
     for d in test/*; do
       TEST_PFX="%d/" $TOPHAT $SILENT check main "$d/main.um"

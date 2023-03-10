@@ -5,6 +5,6 @@ import (
   "th.um"
 )
 
-fn main*() {
+fn init*() {
   e_main.editorMain()
 }

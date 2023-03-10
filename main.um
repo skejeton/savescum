@@ -5,7 +5,7 @@ import (
 )
 
 fn init*() {
-  d_main.main()
+  d_main.init()
 }
 
 // dummy
