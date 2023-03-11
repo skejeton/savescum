@@ -1,4 +1,4 @@
-# Last id: 34
+# Last id: 35
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -48,3 +48,5 @@
 33. I can drag windows outside the window, so I may not be able to access them. This needs to be fixed.
 
 34. Now unit tests will also create windows. BAD
+
+35. Setup C building for emscripten
