@@ -1,12 +1,8 @@
 import (
   d_main = "src/main.um"
-  "window.um" // TODO: I don't need it, but for some reason nothing works if I
-              //         don't import it lol
 )
 
 fn init*() {
   d_main.init()
 }
 
-// dummy
-fn main() {}

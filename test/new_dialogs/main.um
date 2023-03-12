@@ -25,6 +25,7 @@ import (
   "load_poems.um"
   "speech_typing.um"
   "construct.um"
+  "signal.um"
   strings = "../../src/misc/mstrings.um"
   m_layout = "layout.um"
   "draw_dialog.um"
@@ -128,7 +129,7 @@ fn drawTempDialogBackdrop(boundingBox: rect.Rect) {
 
 fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, scrollY: real): real {
   drawTempDialogBackdrop(boundingBox)
-  window.beginScissorRect(boundingBox)
+  canvas.beginScissorRect(boundingBox)
   layout := m_layout.makeWrappingLayoutFromBoundary(boundingBox.w)
   colour := th.black
   
@@ -149,7 +150,7 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
     }
   }
 
-  window.endScissor()
+  canvas.endScissor()
   {
     cursorSize := blockCursorSizeFromFont(font)
     cursorPos := layout.push(cursorSize).add(boundingBox.getPos()).add(th.Vf2{0, -scrollY})
@@ -238,32 +239,46 @@ fn booleanProperty(at: th.Vf2, name: str, isset: ^bool) {
   }
 }
 
-fn main() {
-  autoplay := false
-  slow5x := false
+var (
+  autoplay: bool = false
+  slow5x: bool = false
+  font: th_font.Font
+  screen: rect.Rect
+  sampleText: str
+  boundingBoxContactPoint: ContactPoint
+  boundingBox: rect.Rect
+  mouseInput: d_mouseinput.MouseState
+  typingTime: real
+  scrollY: real
+  lines: []construct.TextNode
+)
+
+fn init*() {
+  autoplay = false
+  slow5x = false
 
   d_test.isUnitTest(false)
   window.setup("New dialogs", 800, 600)
 
-  font := th_font.load(d_test.pfx()+"FuzzyBubbles-Bold.ttf", 24)
-  screen := rect.mk(0, 0, 800, 600)
-  sampleText := loadPoemFromFile(d_test.pfx()+"poems.txt", 0)
+  font = th_font.load(d_test.pfx()+"FuzzyBubbles-Bold.ttf", 24)
+  screen = rect.mk(0, 0, 800, 600)
+  sampleText = loadPoemFromFile(d_test.pfx()+"poems.txt", 0)
 
-  boundingBoxContactPoint := ContactPoint{}
-  boundingBox := rect.mk(30, 30, 400, 300)
-  mouseInput := d_mouseinput.MouseState{}
+  boundingBoxContactPoint = ContactPoint{}
+  boundingBox = rect.mk(30, 30, 400, 300)
+  mouseInput = d_mouseinput.MouseState{}
 
-  typingTime := 0.0
-  scrollY := 0.0
+  typingTime = 0.0
+  scrollY = 0.0
   
-  lines := rainbowInTextNodes(sampleText)
+  lines = rainbowInTextNodes(sampleText)
 
-  for window.cycle() {
+  window.onFrame.register(signal.Callback{
     tt := typingTime
     screen.w = window.w
     screen.h = window.h
     mouseInput = mouseInput.updated()
-    if input.isJustPressed(' ') {
+    if input.isJustPressedc(' ') {
       autoplay = !autoplay
     }
     if autoplay {
@@ -296,5 +311,5 @@ fn main() {
     
     booleanProperty(th.Vf2{0, 0}, "autoplay (space)", &autoplay)
     booleanProperty(th.Vf2{10, 0}, "5x slower", &slow5x)
-  }
+  }, null)
 }
