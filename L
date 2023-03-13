@@ -60,7 +60,7 @@ target_test() {
     echo -e "What am I gonna test? \n$PROG_NAME test test_name" 
     exit 1
   elif [[ -d "test/$1" && -f "test/$1/main.um" ]]; then 
-    TESTTYPE=$TESTTYPE TEST_PFX="test/$1/" engage main "test/$1/main.um"
+    TESTTYPE=$TESTTYPE TEST_PFX="test/$1/" engage -main "test/$1/main.um"
   else
     echo -e "I don't know test \"$1\".\nTests are in ./test directory, you must make a folder named \"$1\" inside it, and put a main.um file in it. That's the way it is!" 
     exit 2
@@ -79,12 +79,12 @@ while [ $hasargs -eq 1 ]
 do
   case `getarg 0` in
     prof)
-      PROF=xprof
+      PROF=-prof
       NARG=$(( $NARG + 1 ))
     ;; 
     silent)
       NARG=$(( $NARG + 1 ))
-      SILENT=silent
+      SILENT=-silent
     ;; 
     testbed)
       NARG=$(( $NARG + 1 ))
@@ -106,10 +106,10 @@ mkdir -p user
 
 case `getarg 0` in
   play)
-    engage main main.um
+    engage -main main.um
   ;;
   check)
-    engage check main main.um
+    engage check -main main.um
     
     for d in test/*; do
       TEST_PFX="%d/" $TOPHAT $SILENT check main "$d/main.um"
