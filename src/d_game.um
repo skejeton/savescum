@@ -480,7 +480,13 @@ fn updateEntities() {
   for i := 0; i < len(entities); i++ {
     ent := &entities[i]
 
-    // TODO
+    if ent.tags.isSet("lever") {
+      if d_util.rectVsRect(ent.rect, chara.rect) {
+        if input.isJustPressedc(' ') {
+          toggleActive = !toggleActive
+        } 
+      }
+    }
   }
 }
 
@@ -644,11 +650,6 @@ fn draw*() {
     
   for i, state in saves {
     drawChumState(getChumSpriteState(state), state, (i+1)/(real(len(saves)))/2.0)
-  }
-
-
-  if input.isJustPressedc('1') {
-    toggleActive = !toggleActive
   }
 
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
