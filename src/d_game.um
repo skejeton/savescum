@@ -480,6 +480,11 @@ fn updateEntities() {
   for i := 0; i < len(entities); i++ {
     ent := &entities[i]
 
+    if ent.tags.isSet("reset") {
+      if d_util.rectVsRect(ent.rect, chara.rect) {
+        toggleActive = false
+      }
+    }
     if ent.tags.isSet("lever") {
       if d_util.rectVsRect(ent.rect, chara.rect) {
         if input.isJustPressedc(' ') {
