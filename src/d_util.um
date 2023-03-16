@@ -117,7 +117,7 @@ fn fmod*(a, b: real): real {
 fn chopUtf8*(s: str, size: int): str {
   ofs := 0
   for size > 0 && ofs < len(s) {
-    rune := utf8.getNextRune(s, ofs)
+    rune := utf8.decodeRune(s, ofs)
     ofs += rune.size()
     size -= 1
   }
