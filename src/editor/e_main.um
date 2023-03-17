@@ -1844,6 +1844,8 @@ fn editorMain*() {
     loadPortal(editor, "testbed_savepartial")
   }
 
+  d_fps.limit(10)
+
   window.onFrame.register(signal.Callback{
     editor := ^Editor(uctx)
 
