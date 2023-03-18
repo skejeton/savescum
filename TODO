@@ -1,4 +1,4 @@
-# Last id: 35
+# Last id: 36
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -50,3 +50,5 @@
 34. Now unit tests will also create windows. BAD
 
 35. Setup C building for emscripten
+
+36. Add reset portals that will allow you to load them and reset the state.

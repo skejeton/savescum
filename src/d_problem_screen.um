@@ -64,7 +64,6 @@ fn init() {
 
 oldMousePos := th.Vf2{0, 0}
 
-
 fn showResourceLoadingError*(loader: ^d_resources.ResourceLoader) {
   init()
   window.onFrame.clear()
