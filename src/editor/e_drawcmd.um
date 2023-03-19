@@ -22,7 +22,6 @@ type (
   Layer = []Command
 
   DrawContext* = struct {
-    // TODO: Stackable scissor rects
     scissorRectStack: []rect.Rect
     currentLayerId: int
     currentLayer: ^Layer
