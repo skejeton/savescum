@@ -1,4 +1,4 @@
-# Last id: 36
+# Last id: 37
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -52,3 +52,6 @@
 35. Setup C building for emscripten
 
 36. Add reset portals that will allow you to load them and reset the state.
+
+37. Fix pixel borders of tiles.
+  - this probably happens because of bilinear texturing
