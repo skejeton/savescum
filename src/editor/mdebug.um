@@ -106,6 +106,9 @@ fn drawToolDebugFrame(ctx: ^e_drawcmd.DrawContext, frame: ToolDebugFrame, font: 
 fn putDebugFramesRecursive(toolctx: ^ToolContext, font: th_font.Font, ctx: ^e_drawcmd.DrawContext, tool: ^mgui.ToolNode, prefix: str = "") {
   for toolName, toolChild in tool.children {
     ctx.setLayer(toolChild.layer)
+    if toolChild.lastFrameTouched == -1 {
+      return
+    }
 
     drawToolDebugFrame(ctx, makeToolDebugFrameFromTool(toolctx, toolName, toolChild), font)
     putDebugFramesRecursive(toolctx, font, ctx, toolChild, toolName+"::")
