@@ -1535,10 +1535,12 @@ fn putPortalEditor(editor: ^Editor) {
 
 fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources
 
-fn showErrorScreenIfResourcesFailedToLoad(rl: ^d_resources.ResourceLoader) {
+fn showErrorScreenIfResourcesFailedToLoad(rl: ^d_resources.ResourceLoader): bool {
   if d_resources.hasErrors(rl) {
     d_problem_screen.showResourceLoadingError(rl)
+    return true;
   }
+  return false;
 }
 
 
@@ -1829,11 +1831,14 @@ fn editorMain*() {
   mdbg.logt("/__.-'|_|--|_|")
 
   // init data
-  rl := d_resources.initResourceLoader()
-  d_background.init(&rl)
-  d_game.init(&rl)
-  editorResources := loadEditorResources(&rl)
-  showErrorScreenIfResourcesFailedToLoad(&rl)
+  rl := new(d_resources.ResourceLoader)
+  rl ^= d_resources.initResourceLoader()
+  d_background.init(rl)
+  d_game.init(rl)
+  editorResources := loadEditorResources(rl)
+  if showErrorScreenIfResourcesFailedToLoad(rl) {
+    return;
+  }
 
   editor := new(Editor)
   editor ^= editorInit(editorResources)
