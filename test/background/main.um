@@ -1,9 +1,14 @@
 import (
-  "window.um"; "rect.um"; "th.um"; "canvas.um"; "input.um"
+  "window.um"; "rect.um"; "th.um"; "canvas.um"; "input.um"; "signal.um"
   "../../src/d_test.um"; "../../src/d_background.um"
   "../../src/d_util.um"; "../../src/d_resources.um"; "../../src/d_problem_screen.um";)
 
-fn main() {
+var screen: rect.Rect
+var scale: real
+var offset: th.Vf2
+var oldMousePos: th.Vf2
+
+fn init*() {
   d_test.isUnitTest(false)
 
   window.setup("Bg test", 800, 600)
@@ -17,19 +22,19 @@ fn main() {
   }
 
 
-  screen := rect.mk(0, 0, 800, 600)
-  scale := 1.0
-  offset := th.Vf2{0, 0}
-  oldMousePos := input.getMousePos()
+  screen = rect.mk(0, 0, 800, 600)
+  scale = 1.0
+  offset = th.Vf2{0, 0}
+  oldMousePos = input.getMousePos()
 
-  for window.cycle() {
+  window.onFrame.register(signal.Callback{
     if input.isPressed(input.mouse2) {
       offset = offset.add(input.getMousePos().sub(oldMousePos))
     }
-    if input.isPressed('=') {
+    if input.isPressedc('=') {
       scale += th.delta/1000.0
     } 
-    if input.isPressed('-') {
+    if input.isPressedc('-') {
       scale -= th.delta/1000.0
     }
 
@@ -39,5 +44,5 @@ fn main() {
     content := d_util.rectCenterWithinRect(rect.mk(0, 0, 640, 480), screen)
     d_background.drawCave(content, offset.mulf(-1), th.Vf2{scale, scale})
     d_util.drawRectLines(th.red, content)
-  }
-}
+  }, null)
+ }

@@ -1,6 +1,7 @@
 import (
   "rect.um"; "image.um"; "canvas.um"; "th.um"; th_color = "color.um";
   "d_util.um"; "d_global.um"; "d_resources.um"; "d_partition.um";
+  "mdbg.um"
 )
 
 var (
@@ -76,7 +77,7 @@ fn drawBackgroundSquare*(bound: rect.Rect, time: real, color1, color2: uint32) {
   const frequency = 128
   rectCount := trunc(bound.w/frequency)+2
   center := rectCenter(bound)
-
+  
   canvas.beginScissorRect(bound)
 
   time *= frequency
