@@ -1,4 +1,4 @@
-# Last id: 37
+# Last id: 38
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -55,3 +55,5 @@
 
 37. Fix pixel borders of tiles.
   - this probably happens because of bilinear texturing
+
+38. Grid snapping in editor
