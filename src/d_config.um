@@ -40,6 +40,7 @@ fn getTree*(): map[str]interface{} {
 
 fn getProperty*(key: str): interface{} {
   if probeSessionUpdate() { reloadSession() }
+  
 
   tree := getTree()
   if !validkey(tree, key) {
