@@ -35,7 +35,7 @@ fn name*(hash: uint): str {
 }
 
 /*
- * \brief Generates a random name, can be useful for something like Id's
+ * BRIEF: Generates a random name, can be useful for something like Id's
  */
 fn random*(): str {
   return name(std.rand())

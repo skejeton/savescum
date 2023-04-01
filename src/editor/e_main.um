@@ -25,6 +25,7 @@ import (
   "../d_mouseinput.um"
   "../d_game.um"
   "../d_script.um"
+  "../mpayload_trigger.um"
 
   th_font = "font.um"
   th_color = "color.um"
@@ -96,6 +97,7 @@ type (
     toolbarIcons: image.Image
     bevelImage: image.Image
     tilesetImage: image.Image
+    superHotFire: image.Image
     mainFont: th_font.Font
   }
 
@@ -436,6 +438,10 @@ fn (e: ^Editor) getPropertyLazy(name: str, ctx: interface{}, do:  fn (ctx: inter
 // It may have a problem with displaying colors somewhat incorrectly,
 //   because the middle of the rectangle is tinted gray slightly.
 fn drawBevelRect(editor: ^Editor, r: rect.Rect, pushed: bool = false, color: uint32 = th.white) {
+  if (mpayload_trigger.aprilFools()) {
+    color = th_color.hsv(th.time/5000.0, 0.9, 1.0)  
+  }
+
   const (
     bevelOuterRect = rect.Rect{0, 0, 5, 5}
     bevelInnerRect = rect.Rect{2, 2, 1, 1}
@@ -508,6 +514,10 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
   )
 
   windowRect := editor.wm.getWindowRect(title, r)
+  if (mpayload_trigger.aprilFools()) {
+    windowRect.x += cos(th.time/100.0)
+    windowRect.y += sin(th.time/100.0)
+  }
 
   if !editor.wm.isWindowVisible(title) {
     // Prevent from getting pruned
@@ -977,6 +987,18 @@ fn editorPutToolbar(editor: ^Editor) {
 
   rectangle := rect.Rect{margin, d_global.screen.h - rectangleHeight + margin, d_global.screen.w - margin * 2, rectangleHeight - margin * 2}
 
+  
+  if mpayload_trigger.aprilFools() {
+    x := 0
+    y := rectangle.y - 32
+
+    d_util.imageCropRect(editor.resources.superHotFire, rect.mk(0, (th.time/100%3)*32, 32, 32))
+
+    for i := 0; i < d_global.screen.w/32+1; i++ {
+      editor.ctx.drawImage(editor.resources.superHotFire, th.Transform{p: th.Vf2{x+i*32, y}, s: th.Vf2{1, 1}})
+    }
+  }
+  
   editor.beginTool("ToolBar", rectangle)
   {
     if !editor.isPlaying {
@@ -1746,6 +1768,7 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
     bevelImage: d_resources.loadImage(rl, "data/img/ui_bevelbutton.png"),
     tilesetImage: d_resources.loadImage(rl, "data/img/ts_sky.png"),
     toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png"),
+    superHotFire: d_resources.loadImage(rl, "data/img/SUPER HOT FIRE WTF.png"),
     mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 0)}
  
   editorResources.tilesetImage.setfilter(1)
@@ -1885,8 +1908,13 @@ fn editorMain*() {
     editorPutUi(editor)
     mdbg.drawConsole(editor.resources.mainFont)
 
-    editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
-    editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
+    if (mpayload_trigger.aprilFools()) {
+      editor.resources.mainFont.draw(sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 1}, th.black)
+      editor.resources.mainFont.draw(sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 0}, th.white)
+    } else {
+      editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
+      editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
+    }
   }, editor)
 
   // TODO: WE NEED ON EXIT CALLBACK!!

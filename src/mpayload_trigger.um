@@ -1,0 +1,103 @@
+/**
+ * BRIEF: Date handlers for some event easter eggs.
+ *
+ * NOTE:  The dates marked as IMPLEMENTED are handled in the game.
+ *        The dates that aren't marked need to be implemented eventually.
+ */
+
+import (
+  "std.um"
+  "th.um"
+)
+
+
+var date: std.DateTime
+var time: int
+
+
+fn dateCached(): std.DateTime {
+  /* Update every second */
+  if date.year == 0 || ((th.time - time) > 1000) {
+    time = th.time
+    date = std.localtime(std.time())
+  }
+
+  return date
+}
+
+
+/** 
+ * Advent day, 1-indexed, 0 if not advent
+ */
+fn adventDay*(): int {
+  date := dateCached()
+  if (date.month == 12 && date.day >= 1 && date.day <= 25) {
+    return date.day
+  }
+  return 0
+}
+
+
+/* ITS LOOMING CLOSER */
+fn y2038*(): bool {
+  date := dateCached()
+  return (date.month == 1 && date.day == 19 && date.year == 2038)
+}
+
+
+/* After Y2038 */
+fn overflow*(): bool {
+  date := dateCached()
+  return (date.month == 12 && date.day == 13 && date.year == 1901)
+}
+
+
+fn oktoberfest*(): bool {
+  date := dateCached()
+  return (date.month == 9 && date.day >= 16) ||
+         (date.month == 10 && date.day <= 3)
+}
+
+
+fn christmas*(): bool {
+  date := dateCached()
+  return date.month == 12 && date.day == 25
+}
+
+
+fn newYear*(): bool {
+  date := dateCached()
+  return date.month == 1 && date.day == 1
+}
+
+
+/* When Unix was released */
+fn unixCreated*(): bool {
+  date := dateCached()
+  return date.month == 11 && date.day == 3
+}
+
+
+/* IMPLEMENTED */
+fn aprilFools*(): bool {
+  date := dateCached()
+  return date.month == 4 && date.day == 1
+}
+
+
+fn halloween*(): bool {
+  date := dateCached()
+  return date.month == 10 && date.day == 31
+}
+
+
+fn bday*(): bool {
+  date := dateCached()
+  return date.month == 10 && date.day == 14
+}
+
+
+fn prideMonth*(): bool {
+  date := dateCached()
+  return date.month == 7
+}

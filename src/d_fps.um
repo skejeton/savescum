@@ -1,4 +1,7 @@
-import ("th.um"; "window.um")
+import (
+  "th.um"
+  "window.um"
+)
 
 var (
   record: [60]real
