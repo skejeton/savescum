@@ -987,7 +987,6 @@ fn editorPutToolbar(editor: ^Editor) {
 
   rectangle := rect.Rect{margin, d_global.screen.h - rectangleHeight + margin, d_global.screen.w - margin * 2, rectangleHeight - margin * 2}
 
-  
   if mpayload_trigger.aprilFools() {
     x := 0
     y := rectangle.y - 32
@@ -1918,8 +1917,10 @@ fn editorMain*() {
   }, editor)
 
   // TODO: WE NEED ON EXIT CALLBACK!!
-  /*
-  d_util.writeFileStr("user/session.csv", msession.save(editorSaveSession(&editor)))
-  editorDisconnectAllNodes(&editor, null)
-  */
+  window.onDestroy.register(signal.Callback{
+    editor := ^Editor(uctx)
+
+    d_util.writeFileStr("user/session.csv", msession.save(editorSaveSession(editor)))
+    editorDisconnectAllNodes(editor, null)
+  }, editor)
 }
