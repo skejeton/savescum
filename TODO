@@ -33,13 +33,12 @@
 
 27. Investigate weird white blips appearing on the screen, especially in
   the console.
+  - No one can reproduce it, it's probably a problem with my GPU
 
 28. Handle overlapping camera constraints properly, make it possible for 
   them to be merged.
 
 29. Add some kind of docking/tab support for windows so to not make it a mess
-
-30. Spurious "Failed to open file" errors
 
 31. Fix seams in between tiles on higher resolutions
 
