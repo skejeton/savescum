@@ -19,8 +19,10 @@ Usage ``./L <command> ...args``
         | Example: ``./L play``
 *       | ``test``. Launches a test. [testing]_
         | Example: ``./L test launcher``
-*       | ``prof``. Profiling.
+*       | ``prof``. Profile and print results into the console.
         |
+*       | ``jprof``. Profile and output the JSON profiling data into prof.json
+        | (NOTE: Use a flamegraph visualizer, I recommend https://gravitymoth.com/spall/)
 *       | ``testall``. Launches all tests. [testing]_
         | Example: ``./L testall ``
 *       | ``check``. Checks if tests and game compile. Empty output is success.

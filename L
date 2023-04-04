@@ -82,6 +82,10 @@ do
       PROF=-prof
       NARG=$(( $NARG + 1 ))
     ;; 
+    jprof)
+      PROF=-prof\ -profjson
+      NARG=$(( $NARG + 1 ))
+    ;; 
     silent)
       NARG=$(( $NARG + 1 ))
       SILENT=-silent
