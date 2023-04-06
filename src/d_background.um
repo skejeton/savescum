@@ -72,9 +72,9 @@ fn rectCenter(rect: rect.Rect): th.Vf2 {
 }
 
 // Draws a background with a square extending from the center
-fn drawBackgroundSquare*(bound: rect.Rect, time: real, color1, color2: uint32) {
+fn drawBackgroundSquare*(bound: rect.Rect, time: real, color1, color2: uint32, scale: real) {
   // Amount of pixels to wait until a new rectangle appears
-  const frequency = 128
+  frequency := trunc(64*scale)
   rectCount := trunc(bound.w/frequency)+2
   center := rectCenter(bound)
   
@@ -101,7 +101,8 @@ fn drawBackgroundSquare*(bound: rect.Rect, time: real, color1, color2: uint32) {
 fn drawJazz*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
   color1 := jazzColor(th.time/1000.0)
   color2 := color1 + 0x11111100
-  drawBackgroundSquare(d_global.screen, th.time/1000.0, color1, color2)
+
+  drawBackgroundSquare(d_global.screen, th.time/1000.0, color1, color2, scale.y)
 }
 
 fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
@@ -126,6 +127,10 @@ fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
 }
 
 fn draw*(screen: rect.Rect) {
+  /* WHY THE HELL THE CLOUDS GO SO WELL ON THE PRELUDE?? */
+  // drawClouds(screen)
+  
+
   drawJazz(screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
   //drawCave(d_global.screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
 }
