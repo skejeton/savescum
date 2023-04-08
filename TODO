@@ -1,4 +1,4 @@
-# Last id: 41
+# Last id: 42
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -63,3 +63,6 @@
 
 41. Replace TOML with JSON
   TOML is just too complicated compared to JSON.
+
+42. ADD SOME BULLSHIT
+  blah
