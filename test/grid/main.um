@@ -8,30 +8,32 @@ import (
   "th.um"
   "canvas.um"
   "input.um"
+  "signal.um"
 )
 
-fn main() {
+var lastMousePos: th.Vf2
+var targetScale: th.Vf2
+var tileset: image.Image
+var grid: mgrid.Grid
+var screen: rect.Rect
+
+fn init*() {
   d_test.isUnitTest(false)
 
   window.setup("title", 640, 480)
-  screen := rect.mk(0, 0, 640, 480)
+  screen = rect.mk(0, 0, 640, 480)
 
-  grid := mgrid.Grid{rect.mk(20, 20, 600, 440), th.Vf2{0.5, 0.5}, th.Vf2{64, 64}}
+  grid = mgrid.Grid{rect.mk(20, 20, 600, 440), th.Vf2{0.5, 0.5}, th.Vf2{64, 64}}
 
-  lastMousePos := input.getMousePos()
-  targetScale := grid.s
-  tileset := image.load("data/img/ts_sky.png")
+  lastMousePos = input.getMousePos()
+  targetScale = grid.s
+  tileset = image.load("data/img/ts_sky.png")
   tileset.setfilter(0)
 
-  for window.cycle() {
+  window.onFrame.register(signal.Callback{
     window.setViewport(screen.getDims())
 
-  	if input.isPressed(input.mouse_up) {
-  		targetScale = grid.s.mulf(1.5)
-  	}
-  	if input.isPressed(input.mouse_down) {
-  		targetScale = grid.s.mulf(1/1.5)
-  	}
+    targetScale = targetScale.addf(input.getMouseScroll().y)
 
 		mgrid.gridZoomInto(&grid, d_rerp.iVf2(grid.s, targetScale, 0.2), input.getMousePos())
 
@@ -61,5 +63,5 @@ fn main() {
   	}	
 
   	lastMousePos = input.getMousePos()
-  }
+  }, null)
 }
