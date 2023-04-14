@@ -3,19 +3,25 @@
 import (
   "../../src/d_test.um"; th_font = "font.um"
   "window.um"; "rect.um"; "th.um"; "canvas.um"
+  "signal.um"
 )
 
-fn main() {
+var (
+  screen: rect.Rect
+  font: th_font.Font
+)
+
+fn init*() {
   d_test.isUnitTest(false)
 
   window.setup("title", 640, 480)
-  screen := rect.mk(0, 0, 640, 480)
-  font := th_font.load("data/font/monospace.ttf", 16, th_font.filterNearest)
+  screen = rect.mk(0, 0, 640, 480)
+  font = th_font.load("data/font/monospace.ttf", 16, th_font.filterNearest)
 
-  for window.cycle() {
+  window.onFrame.register(signal.Callback{
     txt := "古池や蛙飛び込む水の音\nふるいけやかわずとびこむみずのおと\nold pond\nfrog leaps in\nwater's sound\n\n初しぐれ猿も小蓑をほしげ也\nはつしぐれさるもこみのをほしげなり\nthe first cold shower\neven the monkey seems to want\na little coat of straw"
     size := font.measure(txt)
     canvas.drawRect(th.black, rect.Rect{0, 0, size.x, size.y})
     font.draw(txt, th.Vf2{0, 0}, th.white)
-  }
+  }, null)
 }

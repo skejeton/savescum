@@ -9,6 +9,7 @@ import (
   "../../src/d_test.um"
   "../../src/d_util.um"
   "../../src/editor/e_drawcmd.um"
+  "signal.um"
 )
 
 type OutlineRectCmd = struct {
@@ -20,26 +21,34 @@ fn (r: ^OutlineRectCmd) draw*(props: e_drawcmd.DrawProperties) {
   d_util.drawRectLines(r.color, r.r)
 }
 
-fn main() {
+var (
+  ctx: e_drawcmd.DrawContext
+  font1: font.Font
+  font2: font.Font
+  image1: image.Image
+  image2: image.Image
+  image3: image.Image
+  colors: [7][2]uint32
+)
+
+fn init*() {
   d_test.isUnitTest(false)
 
   window.setup("Hello", 640, 480)
-  ctx := e_drawcmd.init()
-  font1 := font.load("data/font/monospace.ttf", 16, 1)
-  font2 := font.load("data/font/sans.ttf", 16)
-  image1 := image.load("data/img/test.png")
-  image2 := image.load("data/img/test.png")
-  image3 := image.load("data/img/ui_bevelbutton.png")
+  ctx = e_drawcmd.init()
+  font1 = font.load("data/font/monospace.ttf", 16, 1)
+  font2 = font.load("data/font/sans.ttf", 16)
+  image1 = image.load("data/img/test.png")
+  image2 = image.load("data/img/test.png")
+  image3 = image.load("data/img/ui_bevelbutton.png")
   image2.setfilter(0)
-
-  var colors: [7][2]uint32
 
   for i in colors {
     colors[i][0] = th_color.hsv(i/7.0, 1.0, 1.0)
     colors[i][1] = th_color.hsv(i/7.0, 1.0, 0.5)
   }
 
-  for window.cycle() {
+  window.onFrame.register(signal.Callback{
     std.srand(th.time/200)
     for k := 0; k < 7; k++ {
       for j := 0; j < 7; j++ {
@@ -71,5 +80,5 @@ fn main() {
     ctx.drawNinepatch(image3, rect.mk(0, 0, 5, 5), rect.mk(2, 2, 1, 1), rect.mk(70, 250, 640-140, 70));
 
     ctx.flush()
-  } 
+  }, null)
 }
