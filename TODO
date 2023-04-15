@@ -63,3 +63,7 @@
 
 41. Replace TOML with JSON
   TOML is just too complicated compared to JSON.
+
+42. Consistent module naming:
+  - There was the first system, where I prepended everything with d_ (it was a cave story clone initially, so it meant Doukutsu), however, now I also have e_, which is prefix for "editor", but I also have 'm' prefix, which is prefix for module. The reason for the prefix is avoiding name conflicts with variables and module names. This is mostly obsolete since there's now module alises.
+    There's currently no consistency in the naming of the modules.
