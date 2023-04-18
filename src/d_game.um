@@ -381,6 +381,20 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
   return solids
 }
 
+fn entCheckCollision(ent: ^Character): bool {
+  solids := entConstructCollidingSolids(ent)
+  for i, shape in solids {
+    if shape.shape == shapeBlock {
+      if d_util.rectVsRect(ent.rect, shape.rect) {
+        return true
+      }
+    }
+    // TODO: Other shapes
+  }
+
+  return false
+}
+
 fn entSolveCollision(ent: ^Character) {
   solids := entConstructCollidingSolids(ent)
 
@@ -516,7 +530,7 @@ const (
   chumFaceRect = rect.Rect{0, 0, 94, 107}
 )
 
-fn drawChumState(state: int, chum: ChumState, alpha: real) {
+fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   at := chum.ent.rect.getPos()
   bodyRect := rect.mk(chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h)
   chumDestRect := cameraOffsetRect(rect.mk(at.x-10, at.y-20, chumFaceRect.w/2, chumFaceRect.h/2))
@@ -525,8 +539,8 @@ fn drawChumState(state: int, chum: ChumState, alpha: real) {
     chumDestRect.x += chumDestRect.w;
     chumDestRect.w *= -1;
   }
-  d_util.drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, th_color.alpha(0xFFFFFFFF, alpha))
-  d_util.drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, th_color.alpha(0xFFFFFFFF, alpha))
+  d_util.drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, tint)
+  d_util.drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, tint)
   if d_config.checkFlag(d_config.flagDebugOverlays) {
     canvas.drawText(sprintf("%d %d", trunc(at.x/32), trunc(at.y/32)), chumDestRect.getPos(), th.red, 1)
   }
@@ -548,7 +562,7 @@ fn getCharState(): ChumState {
 }
 
 fn drawChum(state: int) {
-  drawChumState(state, getCharState(), 1.0)
+  drawChumState(state, getCharState(), 0xFFFFFFFF)
 }
 
 fn getChumSpriteState(chum: ChumState): int {
@@ -589,8 +603,10 @@ fn update*() {
   if !lockInput {
     if input.isJustPressedc('z') {
       if len(saves) > 0 {
-        loadStateToChar(saves[len(saves)-1])
-        saves = delete(saves, len(saves)-1)
+        if !entCheckCollision(&saves[len(saves)-1].ent) {
+          loadStateToChar(saves[len(saves)-1])
+          saves = delete(saves, len(saves)-1)
+        }
       }
     }
 
@@ -664,7 +680,11 @@ fn draw*() {
   drawEntities()
     
   for i, state in saves {
-    drawChumState(getChumSpriteState(state), state, (i+1)/(real(len(saves)))/2.0)
+    if !entCheckCollision(&state.ent) {
+      drawChumState(getChumSpriteState(state), state, 0xFFFFFF44)
+    } else {
+      drawChumState(getChumSpriteState(state), state, 0xFF000044)
+    }
   }
 
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)

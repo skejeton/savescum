@@ -1,4 +1,4 @@
-# Last id: 42
+# Last id: 43
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -69,3 +69,4 @@
   One way to fix it is to introduce invalid states, for example, when PAL is inside
   the wall, it can't reload the state because it's invalid. 
   The invalid state mechanic can also be used intentionally.
+  - State lockout added
