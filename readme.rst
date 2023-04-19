@@ -69,6 +69,15 @@ Loading Prefix
 Coding Style
 ============
 
+Follow standard umka coding style:
+
+*     | module_name
+*     | functionName
+*     | varName
+*     | constName
+*     | EnumConstName
+*     | TypeName
+
 Divisor Of Shame
 ------------
 

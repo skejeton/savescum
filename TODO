@@ -70,3 +70,4 @@
   the wall, it can't reload the state because it's invalid. 
   The invalid state mechanic can also be used intentionally.
   - State lockout added
+
