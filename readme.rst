@@ -78,17 +78,6 @@ Follow standard umka coding style:
 *     | EnumConstName
 *     | TypeName
 
-Divisor Of Shame
-------------
-
-Whenever the section of code just doesn't feel right do this: ::
-
-  good code
-
-  //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-
-  bad code
-
 The game
 ========
 
