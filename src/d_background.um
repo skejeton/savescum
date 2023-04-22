@@ -4,6 +4,12 @@ import (
   "mdbg.um"
 )
 
+const (
+  backgroundClouds = 0
+  backgroundJazz   = 1
+  backgroundCave   = 2
+)
+
 var (
   imgClouds: image.Image
   imgRocks: image.Image
@@ -126,11 +132,15 @@ fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
   }
 }
 
+fn drawBg*(screen: rect.Rect, which: int) {
+  switch which {
+    case backgroundClouds: drawClouds(screen)
+    case backgroundJazz: drawJazz(screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
+    case backgroundCave: drawCave(d_global.screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
+  }
+}
+
 fn draw*(screen: rect.Rect) {
   /* WHY THE HELL THE CLOUDS GO SO WELL ON THE PRELUDE?? */
-  drawClouds(screen)
-  
-
-  //drawJazz(screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
-  //drawCave(d_global.screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
+  drawBg(screen, 0)
 }
