@@ -1,4 +1,4 @@
-# Last id: 43
+# Last id: 44
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -70,4 +70,6 @@
   the wall, it can't reload the state because it's invalid. 
   The invalid state mechanic can also be used intentionally.
   - State lockout added
+
+44. Add elevators that will move you up.
 
