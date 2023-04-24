@@ -502,8 +502,6 @@ fn updateEntities() {
   if chara.vel.y <= 0 {
     chumRotTime = 0
   }
-
-
 }
 
 fn drawEntityCustomRect(ent: ^Character, r: rect.Rect) {
@@ -517,8 +515,23 @@ fn drawEntityCustomRect(ent: ^Character, r: rect.Rect) {
   canvas.drawRect(color, cameraOffsetRect(ent.rect))
 }
 
+const (
+  cropLeverOn = rect.Rect{64, 64, 64, 64}
+  cropLeverOff = rect.Rect{64, 0, 64, 64}
+)
+
 fn drawEntity(ent: ^Character) {
-  drawEntityCustomRect(ent, ent.rect)
+  destRect := d_util.rectShrink(cameraOffsetRect(ent.rect), -2*cameraScale)
+
+  if ent.tags.isSet("lever") {
+    if toggleActive {
+      d_util.drawImageRect(imgObj, cropLeverOn, destRect)
+    } else {
+      d_util.drawImageRect(imgObj, cropLeverOff, destRect)
+    }
+  } else {
+    drawEntityCustomRect(ent, ent.rect)
+  }
 }
 
 const (
