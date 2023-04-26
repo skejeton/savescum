@@ -1,4 +1,4 @@
-# Last id: 44
+# Last id: 46
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -74,3 +74,6 @@
 44. Add elevators that will move you up.
 
 45. Add entity sprites in editor as well.
+
+46. Make dialog system into a functional state.
+
