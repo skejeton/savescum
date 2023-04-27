@@ -158,17 +158,17 @@ fn cameraOffsetRect(r: rect.Rect): rect.Rect {
 
 fn playerControl() {
   if input.isPressed(input.key_up) && chara.onGround {
-    chara.vel.y = -2.6
+    chara.vel.y = -3.65
   }
   if input.isPressed(input.key_left) {
     chumDir = 0
     chumWalkTime += updateStep
-    chara.vel.x = -2
+    chara.vel.x = -2.5
   }
   if input.isPressed(input.key_right) {
     chumDir = 1
     chumWalkTime += updateStep
-    chara.vel.x = 2
+    chara.vel.x = 2.5
   } 
   if !input.isPressed(input.key_left) && !input.isPressed(input.key_right) {
     chumWalkTime = 0
@@ -347,6 +347,7 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
         shapeRect.y += world.tileset.tileSizeY/2
         shapeRect.h /= 2
       case 30: if toggleActive { shapeType = shapeBlock; }
+      case 31: if !toggleActive { shapeType = shapeBlock; }
       case 1, 5, 7, 29:   shapeType = shapeBlock
       case 9:   shapeType = shapeLeftUpSlope
       case 10:  shapeType = shapeRightUpSlope
@@ -518,6 +519,7 @@ fn drawEntityCustomRect(ent: ^Character, r: rect.Rect) {
 const (
   cropLeverOn = rect.Rect{64, 64, 64, 64}
   cropLeverOff = rect.Rect{64, 0, 64, 64}
+  cropTele = rect.Rect{128+64, 0, 64, 64}
 )
 
 fn drawEntity(ent: ^Character) {
@@ -529,6 +531,8 @@ fn drawEntity(ent: ^Character) {
     } else {
       d_util.drawImageRect(imgObj, cropLeverOff, destRect)
     }
+  } else if ent.tags.isSet("tele") {
+    d_util.drawImageRect(imgObj, cropTele, destRect)
   } else {
     drawEntityCustomRect(ent, ent.rect)
   }
@@ -612,7 +616,32 @@ fn drawEntityDebugRects() {
   canvas.drawRect(th_color.alpha(th.blue, 0.4), cameraOffsetRect(chara.rect)) 
 }
 
+fn canActivateLever(): bool {
+  can := true
+  toggleActive = !toggleActive
+
+  if (entCheckCollision(&chara)) {
+    can = false
+  }
+
+  toggleActive = !toggleActive
+  return can
+}
+
 fn update*() {
+  for d := th.time - lastUpdateTime; d >= updateStepMs; d -= updateStepMs {
+    playerControl()
+    lastUpdateTime += updateStepMs
+
+    // UPDATE PLAYER & CAMERA //
+    updateEntities()
+    cameraControl()
+
+    if input.isPressed(input.key_alt) && input.isJustPressedc('d') {
+      showDebug = !showDebug
+    }
+  }
+ 
   if !lockInput {
     if input.isJustPressedc('z') {
       if len(saves) > 0 {
@@ -641,25 +670,33 @@ fn update*() {
       if ent.tags.isSet("lever") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
           if input.isJustPressedc(' ') {
-            toggleActive = !toggleActive
+            if canActivateLever() {
+              toggleActive = !toggleActive
+            }
           } 
         }
       }
+      if ent.tags.isSet("tele") {
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          if input.isJustPressedc(' ') {
+            input.clearc(' ')
+            dest := ent.tags.param("tele")
+            mdbg.logt(dest)
+            ent := findEntity(dest)
+            if ent != null {
+              chara.rect.x = ent.rect.x
+              chara.rect.y = ent.rect.y
+            } else {
+              mdbg.logt("Error: Destination entity doesn't exist")
+            }
+          }
+        }
+      }
+        
     }
   }
 
-  for d := th.time - lastUpdateTime; d >= updateStepMs; d -= updateStepMs {
-    playerControl()
-    lastUpdateTime += updateStepMs
 
-    // UPDATE PLAYER & CAMERA //
-    updateEntities()
-    cameraControl()
-
-    if input.isPressed(input.key_alt) && input.isJustPressedc('d') {
-      showDebug = !showDebug
-    }
-  }
 }
 
 fn drawGuideRects() {
@@ -671,13 +708,24 @@ fn drawGuideRects() {
 fn drawOutlines() {
   renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
   for i, renderTile in renderTiles {
-    if renderTile.id == 29 || (toggleActive && renderTile.id == 30) {
+    if renderTile.id == 29 || (toggleActive && renderTile.id == 30) || (renderTile.id == 31 && !toggleActive) {
       canvas.drawRect(0xAAAAFF99, d_util.rectShrink(renderTile.rect, -4*cameraScale))
       canvas.drawRect(0xAAAAFF22, d_util.rectShrink(renderTile.rect, -8*cameraScale))
     }
   }
 }
 
+fn drawOverlays() {
+  renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
+  for i, renderTile in renderTiles {
+    if (toggleActive && renderTile.id == 30) || (renderTile.id == 31 && !toggleActive) {
+      canvas.drawRect(0xFFFFFFFF, renderTile.rect)
+    }
+    if (renderTile.id == 30 && !toggleActive) || (renderTile.id == 31 && toggleActive) {
+      canvas.drawRect(0x555555FF, renderTile.rect)
+    }
+  }
+}
 
 fn draw*() {
   // RENDER BG //
@@ -690,6 +738,7 @@ fn draw*() {
   world.drawLayer(camera.mulf(-cameraScale), -1, cameraScale)
   drawOutlines()
   world.drawLayer(camera.mulf(-cameraScale), 0, cameraScale)
+  drawOverlays()
   drawEntities()
     
   for i, state in saves {

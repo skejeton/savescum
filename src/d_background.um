@@ -44,8 +44,6 @@ fn drawClouds*(screen: rect.Rect) {
 
   width = imgClouds.getDims().x
 
-  canvas.drawRect(0x001133FF, screen) 
-
   for i := 0; i < stripeCount; i++ {
     yOffset := origin+i*step
     scroll := (i + 1) * (i + 1) * th.time/1000.0 * -120/stripeCount
@@ -142,5 +140,5 @@ fn drawBg*(screen: rect.Rect, which: int) {
 
 fn draw*(screen: rect.Rect) {
   /* WHY THE HELL THE CLOUDS GO SO WELL ON THE PRELUDE?? */
-  drawBg(screen, 0)
+  drawBg(screen, 1)
 }
