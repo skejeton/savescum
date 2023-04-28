@@ -1,4 +1,4 @@
-# Last id: 46
+# Last id: 47
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -77,3 +77,4 @@
 
 46. Make dialog system into a functional state.
 
+47. Add more combinatorics/dynamicitiy into the gameplay.
