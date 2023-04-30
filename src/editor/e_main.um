@@ -935,7 +935,9 @@ fn editorLoadWorld(editor: ^Editor, portal: str): bool {
 
 fn editorSaveWorld(editor: ^Editor) {
   mdbg.logt("ed: saving world")
-  d_util.writeFileStr(portalToPath(editor.currentPortal), d_worlddata.save(d_worlddata.WorldData{editor.world, editor.entities.list}))
+  if !d_util.writeFileStr(portalToPath(editor.currentPortal), d_worlddata.save(d_worlddata.WorldData{editor.world, editor.entities.list})) {
+    mdbg.logt("ed: save failed")
+  }
 }
 
 fn editorToggleGame(editor: ^Editor) {

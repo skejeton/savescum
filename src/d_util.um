@@ -32,7 +32,7 @@ fn readFileStr*(path: str): (bool, str) {
 fn writeFileStr*(path: str, dataStr: str): bool {
   file := std.fopen(path, "w")
   if file == null {
-    error("Failed to open file")
+    return false
   }
 
   std.fwrite(file, &[]char(dataStr))

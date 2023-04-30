@@ -34,6 +34,7 @@ type (
   Character* = struct {
     id: str
     tags: TagSet
+    originalRect: rect.Rect
     rect: rect.Rect
     vel: th.Vf2
     onGround: bool
@@ -72,6 +73,7 @@ type ChumState = struct {
   rotTime: real
   walkTime: real
   ent: Character
+  toggleActiveStatic: bool
 }
 
 var (
@@ -91,6 +93,7 @@ var (
   camera*: th.Vf2
   cameraScale*: real
   toggleActive: bool
+  toggleActiveStatic: bool
 
   saves: []ChumState
   showDebug: bool = false
@@ -438,6 +441,7 @@ fn findEntity*(id: str): ^Character {
 fn start*(worldData: d_worlddata.WorldData) {
   lastUpdateTime = th.time
   toggleActive = false
+  toggleActiveStatic = false
   lockInput = false
 
   world = worldData.world
@@ -452,6 +456,7 @@ fn start*(worldData: d_worlddata.WorldData) {
 
   for i, ent in worldData.entities {
     chr := convertEntityDescToCharacter(ent)
+    chr.originalRect = chr.rect
     if chr.tags.isSet("Comment") {
       continue;
     }
@@ -517,9 +522,13 @@ fn drawEntityCustomRect(ent: ^Character, r: rect.Rect) {
 }
 
 const (
-  cropLeverOn = rect.Rect{64, 64, 64, 64}
+  cropBoulder = rect.Rect{0, 0, 64, 128}
+  cropLeverOn  = rect.Rect{64, 64, 64, 64}
   cropLeverOff = rect.Rect{64, 0, 64, 64}
-  cropTele = rect.Rect{128+64, 0, 64, 64}
+  cropLeverStaticOn  = rect.Rect{256, 64, 64, 64}
+  cropLeverStaticOff = rect.Rect{256, 0, 64, 64}
+  cropTele     = rect.Rect{128+64, 0, 64, 64}
+  cropTeleOff  = rect.Rect{128+64, 64, 64, 64}
 )
 
 fn drawEntity(ent: ^Character) {
@@ -531,8 +540,18 @@ fn drawEntity(ent: ^Character) {
     } else {
       d_util.drawImageRect(imgObj, cropLeverOff, destRect)
     }
+  } else if ent.tags.isSet("lever_s") {
+    if toggleActiveStatic {
+      d_util.drawImageRect(imgObj, cropLeverStaticOn, destRect)
+    } else {
+      d_util.drawImageRect(imgObj, cropLeverStaticOff, destRect)
+    }
+  } else if ent.tags.isSet("boulder") {
+    d_util.drawImageRect(imgObj, cropBoulder, destRect)
   } else if ent.tags.isSet("tele") {
     d_util.drawImageRect(imgObj, cropTele, destRect)
+  } else if ent.tags.isSet("tele_off") {
+    d_util.drawImageRect(imgObj, cropTeleOff, destRect)
   } else {
     drawEntityCustomRect(ent, ent.rect)
   }
@@ -568,6 +587,7 @@ fn loadStateToChar(state: ChumState) {
   chumDir = state.dir
   chumWalkTime = state.walkTime
   chumRotTime = state.rotTime
+  toggleActiveStatic = state.toggleActiveStatic
 }
 
 fn getCharState(): ChumState {
@@ -575,7 +595,8 @@ fn getCharState(): ChumState {
     dir: chumDir,
     walkTime: chumWalkTime,
     rotTime: chumRotTime,
-    ent: chara}
+    ent: chara,
+    toggleActiveStatic: toggleActiveStatic}
 }
 
 fn drawChum(state: int) {
@@ -628,6 +649,18 @@ fn canActivateLever(): bool {
   return can
 }
 
+fn canActivateStaticLever(): bool {
+  can := true
+  toggleActiveStatic = !toggleActiveStatic
+
+  if (entCheckCollision(&chara)) {
+    can = false
+  }
+
+  toggleActiveStatic = !toggleActiveStatic
+  return can
+}
+
 fn update*() {
   for d := th.time - lastUpdateTime; d >= updateStepMs; d -= updateStepMs {
     playerControl()
@@ -665,7 +698,17 @@ fn update*() {
         if d_util.rectVsRect(ent.rect, chara.rect) {
           saves = []ChumState{}
           toggleActive = false
+          toggleActiveStatic = false
         }
+      }
+      if ent.tags.isSet("boulder") {
+        power := real(int(toggleActiveStatic))
+        boulderTargetRect := d_util.rectMove(ent.originalRect, th.Vf2{0, -ent.originalRect.h*power})
+        ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/100.0)
+
+        // Resolve player collision
+        entShape := Shape{rect: ent.rect}
+        entVsShape(&chara, entShape)
       }
       if ent.tags.isSet("lever") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
@@ -676,19 +719,28 @@ fn update*() {
           } 
         }
       }
-      if ent.tags.isSet("tele") {
+      if ent.tags.isSet("lever_s") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
           if input.isJustPressedc(' ') {
-            input.clearc(' ')
-            dest := ent.tags.param("tele")
-            mdbg.logt(dest)
-            ent := findEntity(dest)
-            if ent != null {
+            if canActivateStaticLever() {
+              toggleActiveStatic = !toggleActiveStatic
+            }
+          } 
+        }
+      }
+      if ent.tags.isSet("tele") {
+        if d_util.rectVsRect(ent.rect, chara.rect) && input.isJustPressedc(' ') {
+          dest := ent.tags.param("tele")
+          mdbg.logt(dest)
+          ent := findEntity(dest)
+          if ent == null {
+            mdbg.logt("Error: Destination entity doesn't exist")
+          } else {
+            if !entCheckCollision(ent) {
               chara.rect.x = ent.rect.x
               chara.rect.y = ent.rect.y
-            } else {
-              mdbg.logt("Error: Destination entity doesn't exist")
-            }
+              input.clearc(' ')
+            } 
           }
         }
       }
