@@ -1008,11 +1008,12 @@ fn editorPutToolbar(editor: ^Editor) {
 
     buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
 
-    if putToolbarIconButton(editor, "Play", &buttonRectangle, 1, 1, editor.isPlaying) {
-      editorToggleGame(editor)
-    }
 
     if !editor.isPlaying {
+      if putToolbarIconButton(editor, "Play", &buttonRectangle, 1, 1, editor.isPlaying) {
+        editorToggleGame(editor)
+      }
+
       putToolbarWindowIconButton(editor, "Portal", &buttonRectangle, 2, 2)
       putToolbarWindowIconButton(editor, "Tile Picker", &buttonRectangle, 0, 1)
       putToolbarWindowIconButton(editor, "Player Placer", &buttonRectangle, 3, 1)
@@ -1614,9 +1615,11 @@ fn editorPutUi(editor: ^Editor) {
   editor.frameNumber += 1;
   // put ui
   if editor.isPlaying {
+    /*
     if input.isJustPressed(input.key_escape) {
       editor.isPlaying = !editor.isPlaying 
     } 
+    */
     d_game.update()
     d_script.update()
 
@@ -1876,10 +1879,19 @@ fn editorMain*() {
     loadPortal(editor, "testbed_savepartial")
   }
 
-  d_fps.limit(10)
+  editorToggleGame(editor)
 
   window.onFrame.register(signal.Callback{
     editor := ^Editor(uctx)
+    if d_global.end {
+      
+      canvas.drawRect(th.black, d_global.screen)
+      pos := centerTextWithinRect(editor.resources.mainFont, "Thanks for playing the pre-demo", d_global.screen);
+    
+      editor.resources.mainFont.draw("Thanks for playing the pre-demo", pos, th.white)
+      return
+    }
+
 
     std.srand(std.time())
     mshortcuts.console()
@@ -1912,6 +1924,7 @@ fn editorMain*() {
     editorPutUi(editor)
     mdbg.drawConsole(editor.resources.mainFont)
 
+    /*
     if (mpayload_trigger.aprilFools()) {
       editor.resources.mainFont.draw(sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 1}, th.black)
       editor.resources.mainFont.draw(sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 0}, th.white)
@@ -1919,6 +1932,7 @@ fn editorMain*() {
       editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
       editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
     }
+    */
   }, editor)
 
   // TODO: WE NEED ON EXIT CALLBACK!!

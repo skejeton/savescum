@@ -13,8 +13,8 @@ const (
 )
 
 // 125 updates per second
-const updateStep = 1/125.0; 
-const updateStepMs = 8;
+const updateStep = 1/60.0; 
+const updateStepMs = 16;
 
 type (
   Shape* = struct {
@@ -94,10 +94,14 @@ var (
   cameraScale*: real
   toggleActive: bool
   toggleActiveStatic: bool
+  resetPoint: th.Vf2
 
   saves: []ChumState
   showDebug: bool = false
   lastUpdateTime: int = 0
+  startTimer: real
+  touchTimer: real
+  ended: bool
 )
 
 fn getCameraRect(): rect.Rect {
@@ -386,10 +390,12 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
 }
 
 fn entCheckCollision(ent: ^Character): bool {
+  r := ent.rect
+  r.w -= 1
   solids := entConstructCollidingSolids(ent)
   for i, shape in solids {
     if shape.shape == shapeBlock {
-      if d_util.rectVsRect(ent.rect, shape.rect) {
+      if d_util.rectVsRect(r, shape.rect) {
         return true
       }
     }
@@ -439,6 +445,8 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn start*(worldData: d_worlddata.WorldData) {
+  startTimer = 0.5
+  touchTimer = 5
   lastUpdateTime = th.time
   toggleActive = false
   toggleActiveStatic = false
@@ -447,6 +455,9 @@ fn start*(worldData: d_worlddata.WorldData) {
   world = worldData.world
 
   chara = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX/1.2, world.tileset.tileSizeY}}
+
+  resetPoint.x = 19*32
+  resetPoint.y = -41*32
   chumRotTime = 0
   chumWalkTime = 0
   chumDir = 0
@@ -530,6 +541,8 @@ const (
   cropTele     = rect.Rect{128+64, 0, 64, 64}
   cropTeleOff  = rect.Rect{128+64, 64, 64, 64}
   cropResetV   = rect.Rect{256+64, 0, 64, 64}
+  cropResetH   = rect.Rect{256+64, 64, 64, 64}
+  cropControls = rect.Rect{0, 128, 256, 256}
 )
 
 fn drawEntity(ent: ^Character) {
@@ -554,8 +567,18 @@ fn drawEntity(ent: ^Character) {
   } else if ent.tags.isSet("tele_off") {
     d_util.drawImageRect(imgObj, cropTeleOff, destRect)
   } else if ent.tags.isSet("reset") {
-    d_util.drawImageRect(imgObj, cropResetV, destRect)
-  } else {
+    if (destRect.w < destRect.h) {
+      d_util.drawImageRect(imgObj, cropResetV, destRect)
+    } else {
+      d_util.drawImageRect(imgObj, cropResetH, destRect)
+    }
+  } else if ent.tags.isSet("portal") {
+    canvas.drawRect(0xc2FFF633, d_util.rectShrink(destRect, -10*cameraScale))
+    d_background.drawBackgroundSquare(destRect, th.time/1000.0, 0xC2FFF655, 0x526c7aFF, 1)
+
+  } else if ent.tags.isSet("controls") {
+    d_util.drawImageRect(imgObj, cropControls, destRect)
+  }  else {
     drawEntityCustomRect(ent, ent.rect)
   }
 }
@@ -665,6 +688,29 @@ fn canActivateStaticLever(): bool {
 }
 
 fn update*() {
+  touchTimer -= th.delta/1000.0
+  if ended {
+    startTimer += th.delta/1000.0
+  } else {
+    startTimer -= th.delta/1000.0
+  }
+  if startTimer < 0 {
+    startTimer = 0
+  }
+  if startTimer > 1 && ended {
+    d_global.end = true
+  }
+
+  if startTimer > 0 && !ended {
+    lastUpdateTime = th.time
+    return
+  }
+  if startTimer > 0.4 && ended {
+    lastUpdateTime = th.time
+    return
+  }
+
+
   for d := th.time - lastUpdateTime; d >= updateStepMs; d -= updateStepMs {
     playerControl()
     lastUpdateTime += updateStepMs
@@ -693,15 +739,58 @@ fn update*() {
         saves = append(saves, getCharState())
       }
     }
+ 
+    if input.isJustPressedc('r') {
+      chara.rect.x = resetPoint.x
+      chara.rect.y = resetPoint.y
+      toggleActive = false
+      toggleActiveStatic = false
+      saves = {}
+    }
+
 
     for i := 0; i < len(entities); i++ {
       ent := &entities[i]
 
       if ent.tags.isSet("reset") {
+        /*
         if d_util.rectVsRect(ent.rect, chara.rect) {
           saves = []ChumState{}
           toggleActive = false
           toggleActiveStatic = false
+        }
+        */
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          entShape := Shape{rect: ent.rect}
+          if (ent.rect.w > ent.rect.h) {
+            if ((chara.rect.y + chara.rect.h) < (ent.rect.y+ent.rect.h))  {
+              chara.rect.y = ent.rect.y - chara.rect.h+1
+              entVsShape(&chara, entShape)
+              chumRotTime = 0
+            } else {
+              ent.vel.y += 4
+              resetPoint.x = ent.rect.x+ent.rect.w/2
+              resetPoint.y = ent.rect.y-ent.rect.h/2
+
+              toggleActive = false
+              toggleActiveStatic = false
+              saves = {}
+            }
+          } else {
+            if (chara.rect.x > ent.rect.x)  {
+              chara.rect.x = ent.rect.x + ent.rect.w-1
+              entVsShape(&chara, entShape)
+              chumRotTime = 0
+            } else {
+              ent.vel.x += 4
+              resetPoint.x = ent.rect.x+ent.rect.w/2
+              resetPoint.y = ent.rect.y+ent.rect.h/2
+
+              toggleActive = false
+              toggleActiveStatic = false
+              saves = {}
+            }
+          }
         }
       }
       if ent.tags.isSet("boulder") {
@@ -748,6 +837,11 @@ fn update*() {
         }
       }
         
+      if ent.tags.isSet("portal") && touchTimer < 0 {
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          ended = true
+        }
+      }
     }
   }
 
@@ -797,6 +891,15 @@ fn draw*() {
   bgCam := rect.mk(camera.x, camera.y, d_global.screen.w/cameraScale, d_global.screen.h/cameraScale)
   bgCam.x /= 2
   bgCam.y /= 2
+  oldScale := cameraScale 
+  oldPos := camera
+
+  if startTimer > 0 {
+    cameraScale *= ((startTimer*2)+1)
+    camera.x += ((startTimer*2))*80
+    camera.y += ((startTimer*2))*40
+  }
+
   d_background.draw(bgCam)
 
   // RENDER WORLD //
@@ -825,4 +928,7 @@ fn draw*() {
     d_util.drawRectLines(th.green, cameraOffsetRect(getCameraTargetRect()))
     drawEntityDebugRects()
   }
+
+  cameraScale = oldScale
+  camera = oldPos
 }
