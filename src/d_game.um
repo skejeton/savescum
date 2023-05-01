@@ -529,6 +529,7 @@ const (
   cropLeverStaticOff = rect.Rect{256, 0, 64, 64}
   cropTele     = rect.Rect{128+64, 0, 64, 64}
   cropTeleOff  = rect.Rect{128+64, 64, 64, 64}
+  cropResetV   = rect.Rect{256+64, 0, 64, 64}
 )
 
 fn drawEntity(ent: ^Character) {
@@ -552,6 +553,8 @@ fn drawEntity(ent: ^Character) {
     d_util.drawImageRect(imgObj, cropTele, destRect)
   } else if ent.tags.isSet("tele_off") {
     d_util.drawImageRect(imgObj, cropTeleOff, destRect)
+  } else if ent.tags.isSet("reset") {
+    d_util.drawImageRect(imgObj, cropResetV, destRect)
   } else {
     drawEntityCustomRect(ent, ent.rect)
   }
@@ -757,6 +760,15 @@ fn drawGuideRects() {
   }
 }
 
+fn drawUnderlays() {
+  renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
+  for i, renderTile in renderTiles {
+    if (renderTile.id == 30 && !toggleActive) || (renderTile.id == 31 && toggleActive) {
+      canvas.drawRect(0xFFFFFF55, renderTile.rect)
+    }
+  }
+}
+
 fn drawOutlines() {
   renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
   for i, renderTile in renderTiles {
@@ -770,11 +782,12 @@ fn drawOutlines() {
 fn drawOverlays() {
   renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
   for i, renderTile in renderTiles {
+    renderTile.rect.x = floor(renderTile.rect.x)
+    renderTile.rect.y = floor(renderTile.rect.y)
+    renderTile.rect.w += 1
+    renderTile.rect.h += 1
     if (toggleActive && renderTile.id == 30) || (renderTile.id == 31 && !toggleActive) {
       canvas.drawRect(0xFFFFFFFF, renderTile.rect)
-    }
-    if (renderTile.id == 30 && !toggleActive) || (renderTile.id == 31 && toggleActive) {
-      canvas.drawRect(0x555555FF, renderTile.rect)
     }
   }
 }
@@ -787,6 +800,7 @@ fn draw*() {
   d_background.draw(bgCam)
 
   // RENDER WORLD //
+  drawUnderlays()
   world.drawLayer(camera.mulf(-cameraScale), -1, cameraScale)
   drawOutlines()
   world.drawLayer(camera.mulf(-cameraScale), 0, cameraScale)

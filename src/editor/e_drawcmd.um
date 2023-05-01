@@ -98,6 +98,8 @@ fn (ctx: ^DrawContext) flush*() {
     layer := ctx.layers[i]
 
     for j, command in layer {
+      command.rect.x = floor(command.rect.x)
+      command.rect.y = floor(command.rect.y)
       switch command.kind {
         case commandRect:
           canvas.drawRect(command.color, command.rect)

@@ -68,11 +68,9 @@ fn imageCropRect*(img: image.Image, rec: rect.Rect) {
 }
 
 fn drawImageRect*(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0, tint: uint32 = 0xFFFFFFFF) {
-  imageCropRect(img, src)
-
-  pos := dst.getPos()
-  scale := dst.getDims().div(src.getDims())
-  img.draw(th.Transform{p: pos, s: scale, r: rot, o: th.Vf2{dst.w/2, dst.h/2}}, tint)
+  dims := img.getDims()
+  img.crop(th.Vf2{src.x/dims.x, src.y/dims.y}, th.Vf2{(src.x + src.w)/dims.x, (src.y + src.h)/dims.y})
+  img.draw({p: th.Vf2{dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}, tint)
 }
 
 //

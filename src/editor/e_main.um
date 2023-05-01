@@ -1068,11 +1068,13 @@ fn (d: ^WorldEditCmd) draw(props: e_drawcmd.DrawProperties) {
   colors := []uint32{getcolor(d.showLayers&1>0), getcolor(d.showLayers&2>0), getcolor(d.showLayers&4>0)}
 
   offset := d.grid.mapPos(th.Vf2{0, 0})
-
+/*
   d.world.drawLayer(offset, -1, d.grid.scaling, colors[0])
+*/
   d.world.drawLayer(offset, 0, d.grid.scaling, colors[1])
+/*
   d.world.drawLayer(offset, 1, d.grid.scaling, colors[2])
-
+*/
   d.toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
   pos := d.grid.mapPos(d.world.playerSpawnPos)
   scale := d.grid.scaling
