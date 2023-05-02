@@ -1,4 +1,4 @@
-# Last id: 47
+# Last id: 48
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -78,3 +78,5 @@
 46. Make dialog system into a functional state.
 
 47. Add more combinatorics/dynamicitiy into the gameplay.
+
+48. Add 2 more levels to the Prologue and polish it into a presentable state, with an intro et al.
