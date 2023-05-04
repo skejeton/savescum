@@ -33,6 +33,7 @@ if [ -x "$(command -v clang)" ]; then
   COMPILER=clang
 fi
 
+# TODO: emcc compiler support, we need build target for web.
 # TODO: cl compiler support, because windows doesn't have the same cli
 
 no_compiler_lol() {
