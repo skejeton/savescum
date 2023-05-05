@@ -153,6 +153,14 @@ fn cameraControl() {
   cameraScale = d_rerp.iReal(cameraScale, props.scale, updateStep*10.0)
 }
 
+fn cameraOffsetPoint(p: th.Vf2): th.Vf2 {
+  p.x -= camera.x
+  p.y -= camera.y
+  p.x *= cameraScale
+  p.y *= cameraScale
+  return p
+}
+
 fn cameraOffsetRect(r: rect.Rect): rect.Rect {
   r.x -= camera.x
   r.y -= camera.y
@@ -855,7 +863,7 @@ fn drawGuideRects() {
 }
 
 fn drawUnderlays() {
-  renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
+  renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
   for i, renderTile in renderTiles {
     if (renderTile.id == 30 && !toggleActive) || (renderTile.id == 31 && toggleActive) {
       canvas.drawRect(0xFFFFFF55, renderTile.rect)
@@ -864,7 +872,7 @@ fn drawUnderlays() {
 }
 
 fn drawOutlines() {
-  renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
+  renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
   for i, renderTile in renderTiles {
     if renderTile.id == 29 || (toggleActive && renderTile.id == 30) || (renderTile.id == 31 && !toggleActive) {
       canvas.drawRect(0xAAAAFF99, d_util.rectShrink(renderTile.rect, -4*cameraScale))
@@ -874,7 +882,7 @@ fn drawOutlines() {
 }
 
 fn drawOverlays() {
-  renderTiles := world.collectLayerRenderTiles(camera.mulf(-cameraScale), 0, cameraScale)
+  renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
   for i, renderTile in renderTiles {
     renderTile.rect.x = floor(renderTile.rect.x)
     renderTile.rect.y = floor(renderTile.rect.y)
@@ -896,17 +904,17 @@ fn draw*() {
 
   if startTimer > 0 {
     cameraScale *= ((startTimer*2)+1)
-    camera.x += ((startTimer*2))*80
-    camera.y += ((startTimer*2))*40
+    camera.x = d_rerp.iReal(camera.x, chara.rect.x-d_global.screen.w/2/cameraScale, startTimer)
+    camera.y = d_rerp.iReal(camera.y, chara.rect.y-d_global.screen.h/2/cameraScale, startTimer)
   }
 
   d_background.draw(bgCam)
 
   // RENDER WORLD //
   drawUnderlays()
-  world.drawLayer(camera.mulf(-cameraScale), -1, cameraScale)
+  world.drawLayer(cameraOffsetPoint({0, 0}), -1, cameraScale)
   drawOutlines()
-  world.drawLayer(camera.mulf(-cameraScale), 0, cameraScale)
+  world.drawLayer(cameraOffsetPoint({0, 0}), 0, cameraScale)
   drawOverlays()
   drawEntities()
     
@@ -931,4 +939,6 @@ fn draw*() {
 
   cameraScale = oldScale
   camera = oldPos
+
+  mdbg.logt(sprintf("%g", cameraScale))
 }

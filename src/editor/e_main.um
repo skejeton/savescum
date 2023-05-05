@@ -1008,12 +1008,11 @@ fn editorPutToolbar(editor: ^Editor) {
 
     buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
 
+    if putToolbarIconButton(editor, "Play", &buttonRectangle, 1, 1, editor.isPlaying) {
+      editorToggleGame(editor)
+    }
 
     if !editor.isPlaying {
-      if putToolbarIconButton(editor, "Play", &buttonRectangle, 1, 1, editor.isPlaying) {
-        editorToggleGame(editor)
-      }
-
       putToolbarWindowIconButton(editor, "Portal", &buttonRectangle, 2, 2)
       putToolbarWindowIconButton(editor, "Tile Picker", &buttonRectangle, 0, 1)
       putToolbarWindowIconButton(editor, "Player Placer", &buttonRectangle, 3, 1)
@@ -1879,7 +1878,7 @@ fn editorMain*() {
     loadPortal(editor, "testbed_savepartial")
   }
 
-  editorToggleGame(editor)
+  // editorToggleGame(editor)
 
   window.onFrame.register(signal.Callback{
     editor := ^Editor(uctx)
@@ -1924,7 +1923,6 @@ fn editorMain*() {
     editorPutUi(editor)
     mdbg.drawConsole(editor.resources.mainFont)
 
-    /*
     if (mpayload_trigger.aprilFools()) {
       editor.resources.mainFont.draw(sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 1}, th.black)
       editor.resources.mainFont.draw(sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 0}, th.white)
@@ -1932,7 +1930,6 @@ fn editorMain*() {
       editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
       editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
     }
-    */
   }, editor)
 
   // TODO: WE NEED ON EXIT CALLBACK!!
