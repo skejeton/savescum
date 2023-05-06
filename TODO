@@ -80,7 +80,10 @@
 47. Add more combinatorics/dynamicitiy into the gameplay.
 
 48. Add 2 more levels to the Prologue and polish it into a presentable state, with an intro et al.
+  - Intro scene
+  - Loading animations
+  - 2 more levels
+  - Animations for portal destinations
+  - Make it clear what is saved and what isn't
 
 49. Add invisible tiles, that are only displayed by their icon on the editor but not actually rendered.
-
-
