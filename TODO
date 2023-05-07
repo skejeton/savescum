@@ -1,4 +1,4 @@
-# Last id: 49
+# Last id: 50
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -87,3 +87,6 @@
   - Make it clear what is saved and what isn't
 
 49. Add invisible tiles, that are only displayed by their icon on the editor but not actually rendered.
+
+50. The game lacks music. I need to find a composer, preferrably chiptune or tracker composer.
+  The game will contain demoscenes.
