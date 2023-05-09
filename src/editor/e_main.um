@@ -443,11 +443,11 @@ fn drawBevelRect(editor: ^Editor, r: rect.Rect, pushed: bool = false, color: uin
   }
 
   const (
-    bevelOuterRect = rect.Rect{0, 0, 5, 5}
-    bevelInnerRect = rect.Rect{2, 2, 1, 1}
+    bevelOuterRect = rect.Rect{0, 0, 10, 10}
+    bevelInnerRect = rect.Rect{3, 3, 3, 3}
    
-    bevelPushedOuterRect = rect.Rect{5, 0, 5, 5}
-    bevelPushedInnerRect = rect.Rect{2, 2, 1, 1}
+    bevelPushedOuterRect = rect.Rect{10, 0, 10, 10}
+    bevelPushedInnerRect = rect.Rect{3, 3, 3, 3}
   )
 
   if pushed {
@@ -455,6 +455,11 @@ fn drawBevelRect(editor: ^Editor, r: rect.Rect, pushed: bool = false, color: uin
   } else {
     editor.ctx.drawNinepatch(editor.resources.bevelImage, bevelOuterRect, bevelInnerRect, r, color)
   }
+}
+
+fn drawBackdropRect(editor: ^Editor, r: rect.Rect, color: uint32 = 0xFFFFFFFF) {
+  editor.ctx.drawRect(color, r)
+  editor.ctx.drawRectLines(0x000000FF, r)
 }
 
 fn centerTextWithinRect(font: th_font.Font, text: str, r: rect.Rect): th.Vf2 {
@@ -503,8 +508,8 @@ fn putButtonBase(editor: ^Editor, r: rect.Rect, name: str, revert: bool = false)
 
 fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) {
   const (
-    padding = 2
-    titlebarHeight = 18
+    padding = 0
+    titlebarHeight = 20
   )
 
   var (
@@ -540,7 +545,8 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
   // Frame tool.
   editor.beginTool(title, windowRect^)
   {
-    drawBevelRect(editor, windowRect^)
+    drawBackdropRect(editor, d_util.rectShrink(windowRect^, -3), 0xCCCCCCFF);
+    drawBackdropRect(editor, windowRect^)
 
     buttonSize := th.Vf2{titlebarHeight, titlebarHeight}
     buttonRect := rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y)
@@ -572,13 +578,15 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
       editor.ctx.drawRect(0x000077FF, titlebarRect)
       editor.ctx.beginScissorRect(titlebarRect)
         editor.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, titlebarRect), th.white)
+        titlebarRect.x += 1
+        editor.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, titlebarRect), th.white)
       editor.ctx.endScissor()
     
       position.x += handleSize.x + padding
     }
 
-    position.x = 1
-    position.y += titlebarHeight + 1
+    position.x = 0
+    position.y += titlebarHeight
 
     contentSize := th.Vf2{windowRect.w - position.x - padding, windowRect.h - position.y - padding}
     contentRect = rect.mk(position.x+windowRect.x, position.y+windowRect.y, contentSize.x-1, contentSize.y-1)
@@ -871,7 +879,7 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (
     thumbRect.h = thumbHeight
     thumbRect.y += thumbOffset
 
-    thumbState := putButtonBase(editor, d_util.rectShrink(thumbRect, 2), "ScrollbarThumb")
+    thumbState := putButtonBase(editor, d_util.rectShrink(thumbRect, 1), "SacrollbarThumb")
     if thumbState.isDown {
       doNotTruncateScroll = true
       scroll ^+= editor.mouseState.delta.y*yScrollOverflowFactor
@@ -983,7 +991,7 @@ fn getEntitySelected(entities: ^EditorEntities): ^d_worlddata.EntityDesc {
 fn editorPutToolbar(editor: ^Editor) {
   const (
     margin = 0
-    padding = 1
+    padding = 2
     rectangleHeight = 32 + margin * 2 + padding * 2
   )
 
@@ -1003,7 +1011,7 @@ fn editorPutToolbar(editor: ^Editor) {
   editor.beginTool("ToolBar", rectangle)
   {
     if !editor.isPlaying {
-      drawBevelRect(editor, rectangle, false)
+      drawBackdropRect(editor, rectangle)
     }
 
     buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
@@ -1300,7 +1308,7 @@ fn putEntityList(editor: ^Editor) {
 
     // Put add button.
     {
-      buttonRect := d_util.rectShrink(d_util.rectCutRight(windowInfo.titlebarRect, 20), 1)
+      buttonRect := d_util.rectCutRight(windowInfo.titlebarRect, 20)
 
       if (putSimpleButton(editor, buttonRect, "+").isReleased) {
         appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
