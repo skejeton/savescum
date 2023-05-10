@@ -172,7 +172,10 @@ fn (world: ^World) drawRenderTiles*(renderTiles: []RenderTile, tint: uint32) {
     if prevTileId != renderTile.id {
       d_util.imageCropRect(world.tileset.image, world.tileset.getCroppingRectId(renderTile.id))
     }
-    world.tileset.image.draw({p: {renderTile.rect.x, renderTile.rect.y}, s: {renderTile.rect.w/tileSizeX, renderTile.rect.h/tileSizeY}})
+
+    if !world.tileset.tileProperties[renderTile.id].invisible {
+      world.tileset.image.draw({p: {renderTile.rect.x, renderTile.rect.y}, s: {renderTile.rect.w/tileSizeX, renderTile.rect.h/tileSizeY}})
+    }
     prevTileId = renderTile.id
   }
 }

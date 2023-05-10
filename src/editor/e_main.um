@@ -1796,6 +1796,9 @@ fn editorInit(resources: EditorResources): Editor {
   rootNode ^= mgui.ToolNode{children: map[str]^mgui.ToolNode{}}
 
   tileset := d_tileset.fromImage(resources.tilesetImage, 32, 32, 2)
+  tileset.setTileProperties(30, {invisible: true})
+  tileset.setTileProperties(31, {invisible: true})
+
   world := d_world.fromTileset(tileset)
 
   return Editor{

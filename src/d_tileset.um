@@ -1,11 +1,16 @@
 import ("th.um"; "image.um"; "rect.um"; "d_util.um")
 
 type (
+  TileProperties* = struct {
+    invisible: bool
+  }
+
   Tileset* = struct {
     image: image.Image
     scale: real
     tileSizeX, tileSizeY: int
     tileCountX, tileCountY: int
+    tileProperties: map[int]TileProperties
   }
 )
 
@@ -24,6 +29,10 @@ fn (ts: ^Tileset) tileToPos*(x, y: int): int {
 fn (ts: ^Tileset) posToTile*(pos: int): th.Vf2 {
   pos -= 1
   return th.Vf2{pos%ts.tileCountX, pos/ts.tileCountX}
+}
+
+fn (ts: ^Tileset) setTileProperties*(pos: int, props: TileProperties) {
+  ts.tileProperties[pos] = props
 }
 
 fn (ts: ^Tileset) getCroppingRect*(x, y: int): rect.Rect {

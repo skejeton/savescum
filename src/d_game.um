@@ -93,6 +93,7 @@ var (
   camera*: th.Vf2
   cameraScale*: real
   toggleActive: bool
+  toggleActiveVal: real
   toggleActiveStatic: bool
   resetPoint: th.Vf2
 
@@ -718,6 +719,7 @@ fn update*() {
     return
   }
 
+  toggleActiveVal = d_rerp.iReal(toggleActiveVal, real(int(toggleActive)), th.delta/100.0)
 
   for d := th.time - lastUpdateTime; d >= updateStepMs; d -= updateStepMs {
     playerControl()
@@ -862,15 +864,6 @@ fn drawGuideRects() {
   }
 }
 
-fn drawUnderlays() {
-  renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
-  for i, renderTile in renderTiles {
-    if (renderTile.id == 30 && !toggleActive) || (renderTile.id == 31 && toggleActive) {
-      canvas.drawRect(0xFFFFFF55, renderTile.rect)
-    }
-  }
-}
-
 fn drawOutlines() {
   renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
   for i, renderTile in renderTiles {
@@ -883,13 +876,14 @@ fn drawOutlines() {
 
 fn drawOverlays() {
   renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
+  colorA := th_color.alpha(0xFFFFFFFF, d_util.clamp(toggleActiveVal+0.1, 0, 1))
+  colorB := th_color.alpha(0xFFFFFFFF, d_util.clamp(1-toggleActiveVal+0.1, 0, 1))
+
   for i, renderTile in renderTiles {
-    renderTile.rect.x = floor(renderTile.rect.x)
-    renderTile.rect.y = floor(renderTile.rect.y)
-    renderTile.rect.w += 1
-    renderTile.rect.h += 1
-    if (toggleActive && renderTile.id == 30) || (renderTile.id == 31 && !toggleActive) {
-      canvas.drawRect(0xFFFFFFFF, renderTile.rect)
+    switch renderTile.id {
+      case 30: canvas.drawRect(colorA, renderTile.rect)
+      case 31: canvas.drawRect(colorB, renderTile.rect)
+      default:
     }
   }
 }
@@ -911,7 +905,6 @@ fn draw*() {
   d_background.draw(bgCam)
 
   // RENDER WORLD //
-  drawUnderlays()
   world.drawLayer(cameraOffsetPoint({0, 0}), -1, cameraScale)
   drawOutlines()
   world.drawLayer(cameraOffsetPoint({0, 0}), 0, cameraScale)
