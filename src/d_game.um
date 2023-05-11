@@ -96,6 +96,7 @@ var (
   toggleActiveVal: real
   toggleActiveStatic: bool
   resetPoint: th.Vf2
+  toPortal: str
 
   saves: []ChumState
   showDebug: bool = false
@@ -454,6 +455,7 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn start*(worldData: d_worlddata.WorldData) {
+  toPortal = ""
   startTimer = 0.5
   touchTimer = 5
   lastUpdateTime = th.time
@@ -556,6 +558,10 @@ const (
 
 fn drawEntity(ent: ^Character) {
   destRect := d_util.rectShrink(cameraOffsetRect(ent.rect), -2*cameraScale)
+  if toPortal == ent.id {
+    destRect.x += cos(th.time/1000.0*10)*5*cameraScale
+    destRect.y += sin(th.time/1000.0*10)*5*cameraScale
+  }
 
   if ent.tags.isSet("lever") {
     if toggleActive {
@@ -697,6 +703,7 @@ fn canActivateStaticLever(): bool {
 }
 
 fn update*() {
+  toPortal = ""
   touchTimer -= th.delta/1000.0
   if ended {
     startTimer += th.delta/1000.0
@@ -831,13 +838,14 @@ fn update*() {
         }
       }
       if ent.tags.isSet("tele") {
-        if d_util.rectVsRect(ent.rect, chara.rect) && input.isJustPressedc(' ') {
+        if d_util.rectVsRect(ent.rect, chara.rect) {
           dest := ent.tags.param("tele")
           mdbg.logt(dest)
           ent := findEntity(dest)
+          toPortal = dest
           if ent == null {
             mdbg.logt("Error: Destination entity doesn't exist")
-          } else {
+          } else if input.isJustPressedc(' ') {
             if !entCheckCollision(ent) {
               chara.rect.x = ent.rect.x
               chara.rect.y = ent.rect.y
