@@ -1,4 +1,4 @@
-# Last id: 50
+# Last id: 51
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -88,5 +88,7 @@
 
 50. The game lacks music. I need to find a composer, preferrably chiptune or tracker composer.
   The game will contain demoscenes.
+
+51. Fix FPS drops in outline code, right now outlines are drawn for non border tile too.
 
 bogus milk

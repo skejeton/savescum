@@ -559,8 +559,8 @@ const (
 fn drawEntity(ent: ^Character) {
   destRect := d_util.rectShrink(cameraOffsetRect(ent.rect), -2*cameraScale)
   if toPortal == ent.id {
-    destRect.x += cos(th.time/1000.0*10)*5*cameraScale
-    destRect.y += sin(th.time/1000.0*10)*5*cameraScale
+    destRect.x += cos(th.time/1000.0*6)*5*cameraScale
+    destRect.y += sin(th.time/1000.0*6)*5*cameraScale
   }
 
   if ent.tags.isSet("lever") {
