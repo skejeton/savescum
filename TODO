@@ -91,4 +91,8 @@
 
 51. Fix FPS drops in outline code, right now outlines are drawn for non border tile too.
 
+52. Add visual feedback for the saving.
+
 bogus milk
+
+
