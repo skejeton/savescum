@@ -11,7 +11,6 @@ import (
 
   "../mdbg.um"
   "../mshortcuts.um"
-  "../d_config.um" 
   "../d_hashname.um"
   "../d_fps.um"
   "../d_worlddata.um"
@@ -30,7 +29,6 @@ import (
   th_font = "font.um"
   th_color = "color.um"
   "../misc/mdatatree.um"
-  "../misc/mcommoncfg.um"
   "../misc/mstrings.um" 
 
   "window.um"

@@ -1,7 +1,7 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "image.um"
   "misc/mstrings.um"; "mdbg.um";
   th_color = "color.um";
-  "d_rerp.um"; "d_background.um"; "d_resources.um"; "d_config.um"
+  "d_rerp.um"; "d_background.um"; "d_resources.um"; 
   "d_util.um"; "d_world.um"; "d_global.um"; "d_worlddata.um")
 
 const (
@@ -618,7 +618,7 @@ fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   }
   d_util.drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, tint)
   d_util.drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, tint)
-  if d_config.checkFlag(d_config.flagDebugOverlays) {
+  if showDebug {
     canvas.drawText(sprintf("%d %d", trunc(at.x/32), trunc(at.y/32)), chumDestRect.getPos(), th.red, 1)
   }
 }
