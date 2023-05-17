@@ -1939,6 +1939,9 @@ fn editorMain*() {
       editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
       editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
     }
+
+    editor.resources.mainFont.draw(sprintf("%d frameskip", trunc(d_game.frameSkips)), th.Vf2{0, 1+16}, th.black)
+    editor.resources.mainFont.draw(sprintf("%d frameskip", trunc(d_game.frameSkips)), th.Vf2{0, 0+16}, th.white)
   }, editor)
 
   // TODO: WE NEED ON EXIT CALLBACK!!

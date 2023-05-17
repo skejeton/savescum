@@ -104,6 +104,7 @@ var (
   startTimer: real
   touchTimer: real
   ended: bool
+  frameSkips*: int
 )
 
 fn getCameraRect(): rect.Rect {
@@ -728,9 +729,16 @@ fn update*() {
 
   toggleActiveVal = d_rerp.iReal(toggleActiveVal, real(int(toggleActive)), th.delta/100.0)
 
-  for d := th.time - lastUpdateTime; d >= updateStepMs; d -= updateStepMs {
+  iterations := (th.time - lastUpdateTime) / updateStepMs
+  lastUpdateTime += iterations * updateStepMs
+
+  if iterations > 120 {
+    frameSkips += iterations-120
+    iterations = 120
+  } 
+
+  for d := 0; d < iterations; d++ {
     playerControl()
-    lastUpdateTime += updateStepMs
 
     // UPDATE PLAYER & CAMERA //
     updateEntities()
