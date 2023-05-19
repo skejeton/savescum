@@ -848,7 +848,6 @@ fn update*() {
       if ent.tags.isSet("tele") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
           dest := ent.tags.param("tele")
-          mdbg.logt(dest)
           ent := findEntity(dest)
           toPortal = dest
           if ent == null {
