@@ -579,7 +579,11 @@ fn drawEntity(ent: ^Character) {
   } else if ent.tags.isSet("boulder") {
     d_util.drawImageRect(imgObj, cropBoulder, destRect)
   } else if ent.tags.isSet("tele") {
-    d_util.drawImageRect(imgObj, cropTele, destRect)
+    if !entCheckCollision(ent) {
+      d_util.drawImageRect(imgObj, cropTele, destRect)
+    } else {
+      d_util.drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
+    }
   } else if ent.tags.isSet("tele_off") {
     d_util.drawImageRect(imgObj, cropTeleOff, destRect)
   } else if ent.tags.isSet("reset") {
