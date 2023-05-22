@@ -951,6 +951,4 @@ fn draw*() {
 
   cameraScale = oldScale
   camera = oldPos
-
-  mdbg.logt(sprintf("%g", cameraScale))
 }
