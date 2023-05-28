@@ -687,7 +687,7 @@ fn (ge: ^EditorGrid) put(editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
   // Then I can use events.queryMouse()
   if editor.isCurrentToolActive() {
     // Handle input
-    if editor.mouseState.mmb.isDown {
+    if editor.mouseState.mmb.isDown || input.isPressed(input.key_space) {
       ge.panning = ge.panning.add(editor.mouseState.delta.divf(ge.scaling))
     }
   }
