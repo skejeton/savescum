@@ -1,8 +1,8 @@
 ===============
-Save Game (Temp name)
+SAVESCUM
 ===============
 
-This is an example platforming engine which uses tophat
+A game about saving and loading states.
 
 Launching
 =========
@@ -78,10 +78,3 @@ Follow standard umka coding style:
 *     | EnumConstName
 *     | TypeName
 
-The game
-========
-
-The idea
---------
-
-A game with quicksave/quickload mechanic that saves the entire state.
