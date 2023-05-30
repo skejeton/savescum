@@ -10,7 +10,6 @@ Launching
 Root directory launcher application. 
 To be able to launch, install POSIX shell (sh, bash...)
 
-
 Usage ``./L <command> ...args``
 
 ``<command>:``
