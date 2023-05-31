@@ -1,4 +1,4 @@
-# Last id: 53
+# Last id: 54
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -82,6 +82,8 @@
 52. Add visual feedback for the saving.
 
 53. Rewrite build script in python.
+
+54. Update tophat and make it not slow when rendering even a few tiles.
 
 bogus milk
 
