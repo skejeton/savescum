@@ -85,6 +85,9 @@
 
 54. Update tophat and make it not slow when rendering even a few tiles.
 
+55. Fix DPI blur issues (tophat side)
+  For this we probably want the DPI blur to be an option.
+
 bogus milk
 
 
