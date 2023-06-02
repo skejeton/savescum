@@ -1525,6 +1525,28 @@ fn putWorldEntities(editor: ^Editor) {
       }
 
       if isEntitySelected(&editor.entities, i) {
+        dx, dy := 0, 0  
+        if input.isJustPressed(input.key_up) {
+          dy += -1
+        }
+        if input.isJustPressed(input.key_down) {
+          dy += 1 
+        }
+        if input.isJustPressed(input.key_right) {
+          dx += 1
+        }
+        if input.isJustPressed(input.key_left) {
+          dx += -1 
+        }
+        if dx != 0 {
+          ent.rect.x += dx*32
+          ent.rect.x = 32*round(ent.rect.x/32)
+        }
+        if dy != 0 {
+          ent.rect.y += dy*32
+          ent.rect.y = 32*round(ent.rect.y/32)
+        }
+
         editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
 
         rectCmd := putRectGrips(editor, entVisRect)

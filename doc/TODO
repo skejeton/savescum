@@ -1,4 +1,4 @@
-# Last id: 54
+# Last id: 55
 
 2. The scrollbar area currently doesn't work with horizontal scrolling.
 
@@ -50,6 +50,7 @@
   - this probably happens because of bilinear texturing
 
 38. Grid snapping in editor
+  - Works for arrow keys now
 
 39. Performance issues and rendering bugs (RE: tophat)
 
