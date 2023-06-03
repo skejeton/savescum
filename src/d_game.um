@@ -437,7 +437,7 @@ fn _drawRectTangents(r: rect.Rect) {
     case shapeRightUpSlope, shapeLeftDownSlope:
       canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y}, th.Vf2{rec.x+rec.w, rec.y+rec.h}, 2)
     }
-    canvas.drawText(repr(i), th.Vf2{rec.x, rec.y}, th.white, 1)
+    canvas.drawText(sprintf("%v", i), th.Vf2{rec.x, rec.y}, th.white, 1)
   }
 }
 

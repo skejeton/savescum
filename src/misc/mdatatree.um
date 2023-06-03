@@ -133,7 +133,7 @@ fn drawTree*(pushy: ^PushText, hover: ^str, env: interface{}) {
     pushy.newLine()
     pushy.push("}")
   } else if boolValue := ^bool(env); boolValue != null {
-    represented := repr(env)
+    represented := sprintf("%v", env)
 
     color := 0xFF0040FF
     if boolValue^ {
@@ -149,7 +149,7 @@ fn drawTree*(pushy: ^PushText, hover: ^str, env: interface{}) {
       hover ^= valueTypeName(env)
     }
   } else {
-    represented := repr(env)
+    represented := sprintf("%v", env)
 
     if d_util.isMouseInRect(pushy.push(slice(represented, 0, len(represented)-1), 0xFFFF00FF)) {
       hover ^= valueTypeName(env)
