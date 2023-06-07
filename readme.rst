@@ -77,3 +77,4 @@ Follow standard umka coding style:
 *     | EnumConstName
 *     | TypeName
 
+For more information, refer to ``.editorconfig``, make sure to follow the rules.
