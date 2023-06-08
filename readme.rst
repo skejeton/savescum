@@ -77,4 +77,6 @@ Follow standard umka coding style:
 *     | EnumConstName
 *     | TypeName
 
+Use 2 spaces everywhere for indentation, except Makefiles.
+
 For more information, refer to ``.editorconfig``, make sure to follow the rules.
