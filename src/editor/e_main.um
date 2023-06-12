@@ -151,6 +151,7 @@ type (
     currentWindow: str
     currentWindowLayer: int
     wm: WindowManager
+    keepActive: bool
 
     // Input
     mouseState: d_mouseinput.MouseState
@@ -688,6 +689,7 @@ fn (ge: ^EditorGrid) put(editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
   if editor.isCurrentToolActive() {
     // Handle input
     if editor.mouseState.mmb.isDown || input.isPressed(input.key_space) {
+      editor.keepActive = true
       ge.panning = ge.panning.add(editor.mouseState.delta.divf(ge.scaling))
     }
   }
@@ -1796,9 +1798,10 @@ fn editorPutUi(editor: ^Editor) {
   editor.ctx.flush()
 
   // swap frame census
-  if !isAnyButtonHeld(&editor.mouseState) {
+  if !isAnyButtonHeld(&editor.mouseState) && !editor.keepActive {
     editor.activeTool = editor.maybeActiveTool
   }
+  editor.keepActive = false
   editor.hoveredTool = editor.maybeActiveTool
   editor.maybeActiveTool = null
   editor.pruneToolsRecursive(editor.tools)
