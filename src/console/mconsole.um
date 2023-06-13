@@ -4,64 +4,63 @@
 //  block: block of text. similar to line in console, but can have multiple lines inside it
 
 import (
-	"rect.um"
-	"th.um"
-	"canvas.um"
-	"../d_rerp.um"
-	th_color = "color.um"
-	th_font = "font.um"
+  "rect.um"
+  "th.um"
+  "canvas.um"
+  "../d_rerp.um"
+  th_color = "color.um"
+  th_font = "font.um"
   mstrings = "../misc/mstrings.um"
   "../d_util.um"
 )
 
 type Console* = struct {
-	blocks: []str
+  blocks: []str
 }
 
 fn (con: ^Console) write*(block: str) {
-	con.blocks = append(con.blocks, block)
+  con.blocks = append(con.blocks, block)
 }
 
 type Scrolley* = struct {
-	contentsz: real
-	clientsz: real
-	scroll: real
+  contentsz: real
+  clientsz: real
+  scroll: real
 }
 
 fn (s: ^Scrolley) scrollTo(scroll: real) {
-	if scroll > (s.contentsz-s.clientsz) {
-		scroll = (s.contentsz-s.clientsz)
-	}
-	if scroll < 0 {
-		scroll = 0
-	}
-	s.scroll = scroll
+  if scroll > (s.contentsz-s.clientsz) {
+    scroll = (s.contentsz-s.clientsz)
+  }
+  if scroll < 0 {
+    scroll = 0
+  }
+  s.scroll = scroll
 }
 
 type VisualConsole* = struct {
-	// interpolated
-	visualScroll: real
-	scrolley: Scrolley
+  // interpolated
+  visualScroll: real
+  scrolley: Scrolley
 }
 
 type RenderPass = struct {
-	rect: rect.Rect
-	pos: th.Vf2
-	font: th_font.Font
+  rect: rect.Rect
+  pos: th.Vf2
+  font: th_font.Font
 }
 
 fn blockRect*(pass: ^RenderPass, block: str): rect.Rect {
-	height := pass.font.measure(block).y
+  height := pass.font.measure(block).y
 
-	return rect.Rect{pass.rect.x, pass.pos.y-height,
-									 pass.rect.w, height}
+  return rect.Rect{pass.rect.x, pass.pos.y-height, pass.rect.w, height}
 }
 
 // renders a single block and moves upwards
 
 fn allocBlock*(pass: ^RenderPass, block: str): rect.Rect {
   r := blockRect(pass, block)
-	pass.pos.y -= r.h
+  pass.pos.y -= r.h
   return r
 }
 
@@ -74,37 +73,37 @@ fn renderBlock*(pass: ^RenderPass, vc: ^VisualConsole, r: rect.Rect, block: str,
 }
 
 fn (vc: ^VisualConsole) scrollBy*(delta: real) {
-	vc.scrolley.scrollTo(vc.scrolley.scroll+delta)
+  vc.scrolley.scrollTo(vc.scrolley.scroll+delta)
 }
 
 // NOTE: this function does not clip
 fn render*(con: ^Console, vc: ^VisualConsole, font: th_font.Font, r: rect.Rect) { 
-	pass := RenderPass{r, th.Vf2{r.x, r.y+r.h}, font}
-	startY := pass.pos.y
+  pass := RenderPass{r, th.Vf2{r.x, r.y+r.h}, font}
+  startY := pass.pos.y
 
-	canvas.drawRect(th_color.alpha(th.black, 0.95), r)
+  canvas.drawRect(th_color.alpha(th.black, 0.95), r)
 	
-	// FIXME: Inefficent
+  // FIXME: Inefficent
   for i in con.blocks {
-		block := con.blocks[len(con.blocks)-i-1]
+    block := con.blocks[len(con.blocks)-i-1]
     block = mstrings.joinBy(d_util.wrapText(&font, block, r.w), "\n")
 
-		alpha := (pass.pos.y+vc.visualScroll)/r.h+0.4
-		if alpha > 1.0 { alpha = 1.0; }
+    alpha := (pass.pos.y+vc.visualScroll)/r.h+0.4
+    if alpha > 1.0 { alpha = 1.0; }
 
     bg := 0xFFFFFFFF
-		if i % 2 == 0 {
+    if i % 2 == 0 {
       bg = 0x000000FF
-		}
+    }
 
     blockRect := allocBlock(&pass, block)
     
-		renderBlock(&pass, vc, blockRect, block, th_color.alpha(bg, alpha*0.05), th_color.alpha(th.white, alpha))
-	}
+    renderBlock(&pass, vc, blockRect, block, th_color.alpha(bg, alpha*0.05), th_color.alpha(th.white, alpha))
+  }
 
-	vc.scrolley.clientsz = r.h
-	vc.scrolley.contentsz = startY-pass.pos.y
+  vc.scrolley.clientsz = r.h
+  vc.scrolley.contentsz = startY-pass.pos.y
 
-	// TODO: use delta    
-	vc.visualScroll = d_rerp.iReal(vc.visualScroll, vc.scrolley.scroll, 0.2)
+  // TODO: use delta
+  vc.visualScroll = d_rerp.iReal(vc.visualScroll, vc.scrolley.scroll, 0.2)
 }
