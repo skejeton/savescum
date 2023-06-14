@@ -82,8 +82,11 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: th_font.Font, r: rect.Rect) 
   startY := pass.pos.y
 
   canvas.drawRect(th_color.alpha(th.black, 0.95), r)
-	
+  
+  y := 0.0
   // FIXME: Inefficent
+  //        right now size calculation and layouting of this console is done at the same time,
+  //        so we cant spatially optimize its rendering
   for i in con.blocks {
     block := con.blocks[len(con.blocks)-i-1]
     block = mstrings.joinBy(d_util.wrapText(&font, block, r.w), "\n")
