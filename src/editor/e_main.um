@@ -537,9 +537,6 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
     windowRect.y = -windowRect.h+25
   }
 
-
-
-
   if (mpayload_trigger.aprilFools()) {
     windowRect.x += cos(th.time/100.0)
     windowRect.y += sin(th.time/100.0)
@@ -1234,13 +1231,16 @@ fn putEntityEntry(editor: ^Editor, ent: d_worlddata.EntityDesc, r: rect.Rect, se
     }
     r.x += r.w
     r.w = 30
-    if putSimpleButton(editor, r, "^").isReleased {
+    r.h = 15
+    if putSimpleButton(editor, r, "▲").isReleased {
       action = entityListActionMoveUp
     }
-    r.x += 30
-    if putSimpleButton(editor, r, "v").isReleased {
+    r.y += 15
+    if putSimpleButton(editor, r, "▼").isReleased {
       action = entityListActionMoveDown
     }
+    r.y -= 15
+    r.h = 30
     r.x += 30
     if input.isPressed(input.key_shift) {
       if putSimpleButton(editor, r, "␡").isReleased {
