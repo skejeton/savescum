@@ -1384,6 +1384,10 @@ fn putEntityList(editor: ^Editor) {
     uiEndWindow(editor)
   }
 
+  if getEntitySelectedIndex(&editor.entities) == moveFrom {
+    selectEntity(&editor.entities, moveTo)
+  }
+
   if moveFrom != -1 && moveTo != -1 && moveFrom < len(editor.entities.list) && moveTo < len(editor.entities.list) {
     ent := editor.entities.list[moveFrom]
     editor.entities.list[moveFrom] = editor.entities.list[moveTo]
