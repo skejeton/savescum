@@ -1,6 +1,6 @@
 import ("../../src/d_typer.um"; "../../src/d_test.um")
 
-fn main() {
+fn init*() {
   d_test.isUnitTest(true)
   typer := d_typer.init("Ohh hey... #{emote:smirk}Another one bites the dust?")
 

@@ -10,7 +10,7 @@ fn printElem(elem: ^tree.Elem, depth: int = 0) {
   }
 }
 
-fn main() {
+fn init*() {
   d_test.isUnitTest(true)
   theTree := tree.init()
 
