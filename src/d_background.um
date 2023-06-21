@@ -83,7 +83,7 @@ fn drawBackgroundSquare*(bound: rect.Rect, time: real, color1, color2: uint32, s
   center := rectCenter(bound)
   
   canvas.beginScissorRect(bound)
-
+  
   time *= frequency
  
   for i := 0; i < rectCount; i++ {
