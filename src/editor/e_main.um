@@ -1616,7 +1616,7 @@ fn loadPortal(editor: ^Editor, portal: str) {
 }
 
 fn putPortalEditor(editor: ^Editor) {
-  if windowInfo, ok := uiBeginWindow(editor, "Portal", rect.mk(30, 30, 200, 300)); ok {
+  if windowInfo, ok := uiBeginWindow(editor, "Portal", rect.mk(180, 5, 200, 300)); ok {
     contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
     position := contentRect.getPos()
 
@@ -1717,11 +1717,15 @@ fn editorPutUi(editor: ^Editor) {
       const elementSize = 30
 
       position := tool.rect.getEnd().subf(padding).subf(elementSize)
+      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "R/U").isReleased) {
+        editor.wm.windows = {}
+      }
+      position.x -= elementSize
+
       if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "> <").isReleased) {
         editor.tilemapGrid.panning = th.Vf2{0, 0}
       }
       position.x -= elementSize
-
 
       if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "1:1").isReleased) {
         editor.tilemapGrid.zoomInto(1.0, d_util.rectCenter(editor.tilemapGrid.rect))
@@ -1787,11 +1791,11 @@ fn editorPutUi(editor: ^Editor) {
   editorPutToolbar(editor)
   
   if !editor.isPlaying {
-    putPortalEditor(editor)
     putTilePicker(editor)
     putPlayerPlacer(editor)
     putEntityList(editor)
     putEntityEditor(editor)
+    putPortalEditor(editor)
   }
 
   if editor.isRelocatingPlayer {
@@ -1916,10 +1920,6 @@ fn editorLoadSession(editor: ^Editor, session: msession.Session) {
     editor.wm.setWindowVisible(win.name, win.visible)
     editor.wm.getWindowRect(win.name, win.rect)
   }
-}
-
-fn onFrame(cctx, uctx: any) {
-  canvas.drawText("Too bad!", th.Vf2{0, 0}, th.white, 5)
 }
 
 fn editorMain*() {
