@@ -841,10 +841,15 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str) {
     // Handle input.
     if (editor.isCurrentToolActive()) {
       insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input.getStr())
-      // TODO: Add DEL check for deleting the character in front. 
-      //       I currently can't do that because tophat doesn't support DEL.
       if input.isJustPressed(input.key_backspace) {
         e_buffer.erase(&edit.buffer, &edit.cursor)
+      }
+      // TODO: key_delete doesn't work, why
+      if input.isJustPressed(input.key_delete) {
+        cursorNext := edit.cursor
+        cursorNext.column += 1
+        cursorNext = e_buffer.sanitizeCursor(&edit.buffer, cursorNext)
+        e_buffer.erase(&edit.buffer, &cursorNext)
       }
       if input.isJustPressed(input.key_left) {
         edit.cursor = e_buffer.moveCursor(&edit.buffer, edit.cursor, -1, 0)
