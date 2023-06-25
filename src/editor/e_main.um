@@ -1223,7 +1223,7 @@ fn putTilePicker(editor: ^Editor) {
 }
 
 fn putEntityEntry(editor: ^Editor, ent: d_worlddata.EntityDesc, r: rect.Rect, selected: bool): EntityListAction  {
-  r.w -= 90
+  r.w -= 60
   action := entityListActionNone
 
   editor.beginTool(ent.id, r)
@@ -1252,13 +1252,9 @@ fn putEntityEntry(editor: ^Editor, ent: d_worlddata.EntityDesc, r: rect.Rect, se
         action = entityListActionRemove
       }
     } else {
-      if putSimpleButton(editor, r, "✎").isReleased {
-        action = entityListActionEdit
+      if putSimpleButton(editor, r, "⎘").isReleased {
+        action = entityListActionDuplicate
       }
-    }
-    r.x += 30
-    if putSimpleButton(editor, r, "⎘").isReleased {
-      action = entityListActionDuplicate
     }
   }
   editor.endTool()
