@@ -1344,6 +1344,7 @@ fn putEntityList(editor: ^Editor) {
 
       if (putSimpleButton(editor, buttonRect, "+").isReleased) {
         appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
+        selectEntity(&editor.entities, len(editor.entities.list)-1)
       }
     }
 
