@@ -102,7 +102,7 @@ fn drawToolDebugFrame(ctx: ^e_drawcmd.DrawContext, frame: ToolDebugFrame, font: 
   ctx.drawRectLines(frame.color, frame.rect)
 }
 
-
+// TODO: Draw text handles on top
 fn putDebugFramesRecursive(toolctx: ^ToolContext, font: th_font.Font, ctx: ^e_drawcmd.DrawContext, tool: ^mgui.ToolNode, prefix: str = "") {
   for toolName, toolChild in tool.children {
     ctx.setLayer(toolChild.layer)
