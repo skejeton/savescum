@@ -1530,10 +1530,6 @@ fn adjustEntityRect(editor: ^Editor, tags: ^d_game.TagSet, ent: ^d_worlddata.Ent
   return r
 }
 
-fn scaleRect(r: rect.Rect, by: real): rect.Rect {
-  return rect.mk(r.x*by, r.y*by, r.w*by, r.h*by)
-}
-
 fn putWorldEntities(editor: ^Editor) {
   for i in editor.entities.list {
     ent := &editor.entities.list[i]
@@ -1581,7 +1577,6 @@ fn putWorldEntities(editor: ^Editor) {
         rectCmd := putRectGrips(editor, entVisRect)
         delta := editor.mouseState.delta.divf(editor.tilemapGrid.scaling)
 
-        orig := ent.rect
         ent.rect = applyRectResizeCommand(rectCmd, ent.rect, delta)
 
         adjusted := adjustEntityRect(editor, &tags, ent)
@@ -1762,8 +1757,6 @@ fn editorPutUi(editor: ^Editor) {
     editor.ctx.moveLayer(-1)
     editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tilemapGrid, &editor.world})
     editor.ctx.moveLayer(1)
-    xy := editor.tilemapGrid.mapPos(th.Vf2{0, 0})
-
 
     events := editor.endTool()
     
