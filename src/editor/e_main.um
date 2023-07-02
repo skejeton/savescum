@@ -803,7 +803,6 @@ fn initBufferFromString(s: str): e_buffer.Buffer {
 fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect.Rect, drawCursor: bool) {
 
   editor.ctx.beginScissorRect(r)
-
   firstLine := getFirstLineOfBuffer(&edit.buffer)
   precursor := mstrings.uniSlice(firstLine, 0, edit.cursor.column)
   precursorMeasured := editor.resources.mainFont.measure(precursor)
@@ -829,7 +828,6 @@ fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect.Rect, draw
     editor.ctx.drawRect(th.black, cursorRect)
   }
   editor.ctx.drawText(editor.resources.mainFont, firstLine, r.getPos().add(th.Vf2{edit.scrollX, 0}), th.black)
-
   editor.ctx.endScissor()
 }
 

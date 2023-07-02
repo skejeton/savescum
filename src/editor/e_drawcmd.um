@@ -94,6 +94,8 @@ fn (ctx: ^DrawContext) getCurrentScissorRect*(): (bool, rect.Rect) {
 // Flushes all the layers and commands, outputting them onto the screen.
 */
 fn (ctx: ^DrawContext) flush*() {
+  scissorCounter := 0
+
   for _, i in ctx.layerOrder {
     layer := ctx.layers[i]
 
@@ -107,12 +109,21 @@ fn (ctx: ^DrawContext) flush*() {
           d_util.drawRectLines(command.color, command.rect, command.attr)
         case commandBeginScissorRect:
           canvas.beginScissorRect(command.rect)
+          scissorCounter += 1
         case commandEndScissor:
           canvas.endScissor()
+          scissorCounter -= 1
+          if scissorCounter < 0 {
+            error("Scissor mismatch")
+          }
         case commandCustom:
           command.custom.draw(DrawProperties{})
       }
     } 
+  }
+
+  if scissorCounter != 0 {
+    error(sprintf("Scissor mismatch: %d", scissorCounter))
   }
 
   ctx ^= init()
@@ -181,13 +192,7 @@ fn (ctx: ^DrawContext) endScissor*() {
 
   ctx.scissorRectStack = delete(ctx.scissorRectStack, len(ctx.scissorRectStack)-1)
 
-  // Only call window.endScissor on the final call.
-  // Otherwise pop the previous scissor rect from the stack.
-  if len(ctx.scissorRectStack) == 0 {
-    ctx.currentLayer.appendCommand(Command{kind: commandEndScissor})
-  } else {
-    ctx.currentLayer.appendCommand(Command{kind: commandBeginScissorRect, rect: ctx.scissorRectStack[len(ctx.scissorRectStack)-1]})
-  }
+  ctx.currentLayer.appendCommand(Command{kind: commandEndScissor})
 }
 
 type ImageCmd = struct {
