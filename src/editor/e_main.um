@@ -1695,7 +1695,6 @@ fn editorPutUi(editor: ^Editor) {
     editor.ctx.drawCustom(GameCmd{})
   } else {
     tool := editor.beginTool("TileEditor", rect.mk(0, 0, d_global.screen.w, d_global.screen.h-38))
-    selectedTile := editor.tilemapGrid.put(editor, tool.rect)
 
     if editor.isCurrentToolActive() {
       if input.isPressed(input.key_ctrl) && input.isJustPressedc('i') {
@@ -1704,6 +1703,8 @@ fn editorPutUi(editor: ^Editor) {
     }
 
     putWorldEntities(editor)
+
+    selectedTile := editor.tilemapGrid.put(editor, tool.rect)
 
     // Draw ToggleAll/FG/MG/BG buttons.
     {
