@@ -1955,8 +1955,7 @@ fn editorMain*() {
 
   // editorToggleGame(editor)
 
-  window.onFrame.register(signal.Callback{
-    editor := ^Editor(uctx)
+  window.onFrame.register(|editor| {
     if d_global.end {
       
       canvas.drawRect(th.black, d_global.screen)
@@ -2011,9 +2010,7 @@ fn editorMain*() {
   }, editor)
 
   // TODO: WE NEED ON EXIT CALLBACK!!
-  window.onDestroy.register(signal.Callback{
-    editor := ^Editor(uctx)
-
+  window.onDestroy.register(|editor| {
     d_util.writeFileStr("user/session.csv", msession.save(editorSaveSession(editor)))
     editorDisconnectAllNodes(editor, null)
   }, editor)
