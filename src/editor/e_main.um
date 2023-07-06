@@ -1711,6 +1711,11 @@ fn editorPutUi(editor: ^Editor) {
       const padding = 10
       const elementSize = 30
 
+      editor.ctx.moveLayer(-1)
+      editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tilemapGrid, &editor.world})
+      editor.ctx.moveLayer(1)
+      putWorldEntities(editor)
+
       position := tool.rect.getEnd().subf(padding).subf(elementSize)
       if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "R/U").isReleased) {
         editor.wm.windows = {}
@@ -1754,10 +1759,6 @@ fn editorPutUi(editor: ^Editor) {
       }
     }
 
-    putWorldEntities(editor)
-    editor.ctx.moveLayer(-1)
-    editor.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tilemapGrid, &editor.world})
-    editor.ctx.moveLayer(1)
 
     events := editor.endTool()
     
