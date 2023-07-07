@@ -1,6 +1,6 @@
 import (
 	"mgui.um"
-  "e_drawcmd.um"
+  "../editor/e_drawcmd.um"
   "rect.um"
   "th.um"
   th_font = "font.um"

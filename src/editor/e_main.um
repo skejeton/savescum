@@ -6,8 +6,8 @@ import (
   "e_drawcmd.um"
   "e_buffer.um" 
   "mgrid.um"
-  "mgui.um"
-  "mdebug.um"
+  "../ui/mgui.um"
+  "../ui/mdebug.um"
   "msession.um"
 
   "../mdbg.um"
