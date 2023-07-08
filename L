@@ -50,7 +50,7 @@ engage() {
     $TOPHAT $SILENT $@
   else
     # https://github.com/colrdavidson/spall
-    # https://skejeton.github.io/spall
+    # https://gravitymoth.com/spall/spall-web.html
     $TOPHAT $PROF trace.json $SILENT $@
   fi
 }
