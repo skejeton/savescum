@@ -67,8 +67,7 @@ oldMousePos := th.Vf2{0, 0}
 fn showResourceLoadingError*(loader: ^d_resources.ResourceLoader) {
   init()
   window.onFrame.clear()
-  window.onFrame.register(signal.Callback{
-    loader := ^d_resources.ResourceLoader(uctx)
+  window.onFrame.register(|loader| {
     newMousePos := input.getMousePos()
 
     if input.isPressed(input.mouse2) {
@@ -81,5 +80,5 @@ fn showResourceLoadingError*(loader: ^d_resources.ResourceLoader) {
       pushText(" "+error, th.red)
     }
     oldMousePos = newMousePos
-  }, loader)
+  })
 }
