@@ -1,5 +1,6 @@
 // Entry point for the editor.
 // TODO: UI HiDPI support
+// TODO: Refactor
 // (C) skejeton
 
 import (
