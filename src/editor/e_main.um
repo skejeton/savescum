@@ -2011,7 +2011,6 @@ fn editorMain*() {
     editor.resources.mainFont.draw(sprintf("%d frameskip", trunc(d_game.frameSkips)), th.Vf2{0, 0+16}, th.white)
   })
 
-  // TODO: WE NEED ON EXIT CALLBACK!!
   window.onDestroy.register(|editor| {
     d_util.writeFileStr("user/session.csv", msession.save(editorSaveSession(editor)))
     editorDisconnectAllNodes(editor, null)
