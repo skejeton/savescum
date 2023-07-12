@@ -1986,12 +1986,6 @@ fn editorMain*() {
     }
 
     d_fps.update()
-
-    // NOTE(skejeton): Clamping delta to 50 gives generally consistent physics and reduces jitter.
-    // TODO(skejeton): I may change this at some point, since the physics are likely to be re written. 
-    if th.delta > 50 {
-      th.delta = 50
-    }
     
     d_global.screen = rect.mk(0, 0, window.w, window.h)
     window.setViewport(d_global.screen.getDims())
