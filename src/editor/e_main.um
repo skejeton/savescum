@@ -1919,6 +1919,11 @@ fn editorLoadSession(editor: ^Editor, session: msession.Session) {
   }
 }
 
+fn drawShadowText*(font: th_font.Font, text: str, pos: th.Vf2) {
+  font.draw(text, text, pos.add(th.Vf2{0, 1}), th.black)
+  font.draw(text, text, pos.add(th.Vf2{0, 0}), th.white)
+}
+
 fn editorMain*() {
   d_global.screen = rect.mk(0, 0, 800, 600)
   window.setup("Editor", trunc(d_global.screen.w), trunc(d_global.screen.h))
@@ -1994,8 +1999,7 @@ fn editorMain*() {
     mdbg.drawConsole(editor.resources.mainFont)
 
     if (mpayload_trigger.aprilFools()) {
-      editor.resources.mainFont.draw(sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 1}, th.black)
-      editor.resources.mainFont.draw(sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 0}, th.white)
+      drawShadowText(editor.resources.mainFont, sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 1}) {
     } else {
       editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
       editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
