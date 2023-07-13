@@ -1920,8 +1920,8 @@ fn editorLoadSession(editor: ^Editor, session: msession.Session) {
 }
 
 fn drawShadowText*(font: th_font.Font, text: str, pos: th.Vf2) {
-  font.draw(text, text, pos.add(th.Vf2{0, 1}), th.black)
-  font.draw(text, text, pos.add(th.Vf2{0, 0}), th.white)
+  font.draw(text, pos.add(th.Vf2{0, 1}), th.black)
+  font.draw(text, pos.add(th.Vf2{0, 0}), th.white)
 }
 
 fn editorMain*() {
@@ -1999,14 +1999,12 @@ fn editorMain*() {
     mdbg.drawConsole(editor.resources.mainFont)
 
     if (mpayload_trigger.aprilFools()) {
-      drawShadowText(editor.resources.mainFont, sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 1}) {
+      drawShadowText(editor.resources.mainFont, sprintf("%.3fspf", 1/d_fps.getFps()), th.Vf2{0, 1})
     } else {
-      editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1}, th.black)
-      editor.resources.mainFont.draw(sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 0}, th.white)
+      drawShadowText(editor.resources.mainFont, sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1})
     }
 
-    editor.resources.mainFont.draw(sprintf("%d frameskip", trunc(d_game.frameSkips)), th.Vf2{0, 1+16}, th.black)
-    editor.resources.mainFont.draw(sprintf("%d frameskip", trunc(d_game.frameSkips)), th.Vf2{0, 0+16}, th.white)
+    drawShadowText(editor.resources.mainFont, sprintf("%d frameskip", trunc(d_game.frameSkips)), th.Vf2{0, 0+16})
   })
 
   window.onDestroy.register(|editor| {
