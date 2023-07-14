@@ -1985,11 +1985,6 @@ fn editorMain*() {
       mdbg.logt("Console log!")
     }
 
-    // NOTE(skejeton): probably minimized
-    if window.w == 0 || window.h == 0 {
-      return
-    }
-
     d_fps.update()
     
     d_global.screen = rect.mk(0, 0, window.w, window.h)
