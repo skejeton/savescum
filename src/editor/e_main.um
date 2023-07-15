@@ -146,7 +146,7 @@ type (
     entities: EditorEntities
     potentialPortal: str // the portal which is in the text box
     currentPortal: str
-
+    dirty: bool
 
     // UI misc.
     inputSink: InputSink
@@ -419,13 +419,13 @@ fn (e: ^Editor) getProperty(name: str, def: interface{}): interface{} {
   return tool.userdata
 }
 
-fn (e: ^Editor) getPropertyLazy(name: str, ctx: interface{}, do:  fn (ctx: interface{}): interface{}): interface{} {
+fn (e: ^Editor) getPropertyLazy(name: str, getter: fn (): any): any {
   // Create a dummy tool where we'll store the data.
   tool := e.beginTool(name, rect.mk(-100000, -100000, 0, 0))
   e.endTool()
 
   if !valid(tool.userdata) {
-    tool.userdata = do(ctx)
+    tool.userdata = getter()
   }
 
   return tool.userdata
@@ -765,16 +765,20 @@ fn putSimpleButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = fals
   return bs
 }
 
-fn insertInputTextIntoOneLineBuffer(buffer: ^e_buffer.Buffer, cursor: ^e_buffer.Cursor, text: str) {
+fn insertInputTextIntoOneLineBuffer(buffer: ^e_buffer.Buffer, cursor: ^e_buffer.Cursor, text: str): bool {
   runes := utf8.decode(text)
+  dirty := false
 
   for index, rune in runes {
     
     // Ignore non printable characters.
     if d_util.isprint(uint32(rune)) {
       e_buffer.insertAt(buffer, cursor, rune.encode())
+      dirty = true
     }
   }
+  
+  return dirty
 }
 
 fn getFirstLineOfBuffer(buffer: ^e_buffer.Buffer): str {
@@ -834,17 +838,20 @@ fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect.Rect, draw
   editor.ctx.endScissor()
 }
 
-fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str) {
+// @returns Is dirty
+fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str): bool {
+  dirty := false
   editor.beginTool(name, r)
-    edit := ^SingleLineEdit(editor.getPropertyLazy("Editor", value^, fn (ctx: interface{}): interface{} {return initSingleLineEdit(^str(ctx)^)}))
+    edit := ^SingleLineEdit(editor.getPropertyLazy("Editor", |value| { return initSingleLineEdit(value^) }))
     edit.buffer = initBufferFromString(value^)
     edit.cursor = e_buffer.sanitizeCursor(&edit.buffer, edit.cursor)
 
     // Handle input.
     if (editor.isCurrentToolActive()) {
-      insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input.getStr())
+      dirty = insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input.getStr())
       if input.isJustPressed(input.key_backspace) {
         e_buffer.erase(&edit.buffer, &edit.cursor)
+        dirty = true
       }
       // TODO: key_delete doesn't work, why
       if input.isJustPressed(input.key_delete) {
@@ -852,6 +859,7 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str) {
         cursorNext.column += 1
         cursorNext = e_buffer.sanitizeCursor(&edit.buffer, cursorNext)
         e_buffer.erase(&edit.buffer, &cursorNext)
+        dirty = true
       }
       if input.isJustPressed(input.key_left) {
         edit.cursor = e_buffer.moveCursor(&edit.buffer, edit.cursor, -1, 0)
@@ -875,6 +883,8 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str) {
     // Sync buffer up with the value.
     value ^= getFirstLineOfBuffer(&edit.buffer)
   editor.endTool()
+
+  return dirty
 }
 
 fn beginScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (bool, ScrollAreaInfo) {
@@ -972,6 +982,7 @@ fn editorSaveWorld(editor: ^Editor) {
   if !d_util.writeFileStr(portalToPath(editor.currentPortal), d_worlddata.save(d_worlddata.WorldData{editor.world, editor.entities.list})) {
     mdbg.logt("ed: save failed")
   }
+  editor.dirty = false
 }
 
 fn editorToggleGame(editor: ^Editor) {
@@ -1363,18 +1374,21 @@ fn putEntityList(editor: ^Editor) {
             case entityListActionMoveUp:
               moveFrom = i
               moveTo = i-1
+              editor.dirty = true
             case entityListActionMoveDown:
               moveFrom = i
               moveTo = i+1
+              editor.dirty = true
             case entityListActionRemove:
               entryRemoveIndex = i
+              editor.dirty = true
             case entityListActionEdit:
               selectEntity(&editor.entities, i)
               editor.wm.setWindowVisible("Entity Editor", true)
               editor.wm.putWindowOnFront("Entity Editor")
             case entityListActionDuplicate:
               appendEntity(&editor.entities, cloneEntity(editor.entities.list, ent))
-
+              editor.dirty = true
           }
           entryRect.y += 30
         }
@@ -1400,6 +1414,7 @@ fn putEntityList(editor: ^Editor) {
 
   if entryRemoveIndex != -1 {
     removeEntity(&editor.entities, entryRemoveIndex)
+    editor.dirty = true
   }
 }
 
@@ -1413,17 +1428,18 @@ fn putEntityEditor(editor: ^Editor) {
       editor.ctx.beginScissorRect(contentRect)
       position := contentRect.getPos()
       putLabelY(editor, "Name", th.black, &position)
-      putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Name ", &entitySelected.name)
+      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Name ", &entitySelected.name) || editor.dirty
       position.y += 30
       putLabelY(editor, "Id", th.black, &position)
-      putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Id ", &entitySelected.id)
+      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Id ", &entitySelected.id) || editor.dirty
       position.y += 30
       putLabelY(editor, "Tags", th.black, &position)
-      putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Tags ", &entitySelected.tags)
+      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Tags ", &entitySelected.tags) || editor.dirty
       position.y += 30
       position.y += 10
       if putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Delete").isReleased {
         removeEntity(&editor.entities, getEntitySelectedIndex(&editor.entities))
+        editor.dirty = true
       } 
       editor.ctx.endScissor()
 
@@ -1567,10 +1583,12 @@ fn putWorldEntities(editor: ^Editor) {
         if dx != 0 {
           ent.rect.x += dx*32
           ent.rect.x = 32*round(ent.rect.x/32)
+          editor.dirty = true
         }
         if dy != 0 {
           ent.rect.y += dy*32
           ent.rect.y = 32*round(ent.rect.y/32)
+          editor.dirty = true
         }
 
         editor.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
@@ -1598,6 +1616,7 @@ fn putWorldEntities(editor: ^Editor) {
       if events.queryMouse(0, d_mouseinput.down) {
         ent.rect.x += events.mouseState.delta.x/editor.tilemapGrid.scaling
         ent.rect.y += events.mouseState.delta.y/editor.tilemapGrid.scaling
+        editor.dirty = true
       }
     }
   }
@@ -1681,6 +1700,7 @@ fn editorPutUi(editor: ^Editor) {
     input.clear(input.key_delete)
     if editor.entities.entitySelected > 0 {
       removeEntity(&editor.entities, editor.entities.entitySelected)
+      editor.dirty = true
     }
   }
 
@@ -1771,6 +1791,7 @@ fn editorPutUi(editor: ^Editor) {
     if editor.isRelocatingPlayer {
       if (events.queryMouse(0, d_mouseinput.down)) {
         editor.world.playerSpawnPos = selectedTile
+        editor.dirty = true
       }
       if (events.queryMouse(0, d_mouseinput.released)) {
         editor.isRelocatingPlayer = false
@@ -1778,9 +1799,11 @@ fn editorPutUi(editor: ^Editor) {
     } else {
       if events.queryMouse(0, d_mouseinput.down) {
         editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), editor.tileset.tileToPos(trunc(editor.tileSelected.x), trunc(editor.tileSelected.y)))
+        editor.dirty = true
       }
       if events.queryMouse(2, d_mouseinput.down) {
         editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), 0)
+        editor.dirty = true
       }
     }
   }
@@ -1987,6 +2010,8 @@ fn editorMain*() {
 
     d_fps.update()
     
+
+
     d_global.screen = rect.mk(0, 0, window.w, window.h)
     window.setViewport(d_global.screen.getDims())
 
@@ -2000,6 +2025,7 @@ fn editorMain*() {
     }
 
     drawShadowText(editor.resources.mainFont, sprintf("%d frameskip", trunc(d_game.frameSkips)), th.Vf2{0, 0+16})
+    drawShadowText(editor.resources.mainFont, sprintf("%s", editor.dirty ? "Dirty" : "Not Dirty"), th.Vf2{0, 0+32})
   })
 
   window.onDestroy.register(|editor| {
