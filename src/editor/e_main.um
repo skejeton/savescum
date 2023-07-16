@@ -1827,7 +1827,7 @@ fn editorPutUi(editor: ^Editor) {
 
   if mdbg.consolevis {
     editor.ctx.moveLayer(100000000)
-    tool := editor.beginTool("Con", d_global.screen)
+    tool := editor.beginTool("Console", d_global.screen)
     if editor.hoveredTool == tool {
       mdbg.scrollConsole(editor.mouseState.wheelY)
     }
