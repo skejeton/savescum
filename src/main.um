@@ -2,6 +2,6 @@ import (
   "editor/e_main.um"
 )
 
-fn init*() {
-  e_main.editorMain()
+fn init*(editor: bool = true) {
+  e_main.editorMain(editor)
 }

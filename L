@@ -1,5 +1,32 @@
 #!/bin/bash
 
+TOPHAT_EMSCRIPTEN_VAR=""
+BUTLER_VAR=""
+
+BUTLER_USERNAME=""
+BUTLER_PROJECTNAME=""
+
+if [ -x "$(command -v butler)" ]; then
+  BUTLER_VAR="butler"
+fi
+
+if [ -x "$(command -v butler.exe)" ]; then
+  BUTLER_VAR="butler.exe"
+fi
+
+if [ -x "$(command -v ../tophat/cmd/th_emscripten_link)" ]; then
+  TOPHAT_EMSCRIPTEN_VAR="../tophat/cmd/th_emscripten_link"
+fi
+
+
+if [[ ! -z "$BUTLER_VAR" ]]; then
+  if [[ -f user/butler_env.sh ]]; then
+    source user/butler_env.sh
+  else
+    echo "No butler configuration found."
+  fi
+fi
+
 if [[ ! -f data/img/test.png ]]; then
   echo -e "There's asset files missing. You probably need to install Git LFS.\nAfter installing do \`git lfs install\` and \`git lfs pull\` while in the repo's root folder.\nOtherwise, this shouldn't happen really, I recommend to check if all files are in place."
   exit -1
@@ -68,6 +95,14 @@ target_test() {
   fi
 }
 
+target_emscripten() {
+  mv main.um main_temp.um
+  mv main_game.um main.um
+  $TOPHAT_EMSCRIPTEN_VAR data src main.um user
+  mv main.um main_game.um
+  mv main_temp.um main.um
+}
+
 # Compiles external C code
 target_compile_extern() {
   $COMPILER external/jumbo.c -shared -o src/d_extern.umi
@@ -128,6 +163,27 @@ case `getarg 0` in
   ;;
   test)
     target_test `getarg 1`
+  ;;
+  publish)
+    if [[ -z "$BUTLER_VAR" ]]; then
+      echo "Butler not found. Skipping publishing to itch.io"
+    else 
+      if [[ ! -z "$BUTLER_USERNAME" ]]; then
+        if [[ ! -z "$BUTLER_PROJECTNAME" ]]; then
+          if [[ ! -z "$TOPHAT_EMSCRIPTEN_VAR" ]]; then
+            echo "Publishing to itch.io!"
+            target_emscripten
+            $BUTLER_VAR push wasm-out $BUTLER_USERNAME/$BUTLER_PROJECTNAME:index
+          else
+            echo "Can't publish to itch.io: Can't find th_emscripten_link."
+          fi
+        else
+          echo "Can't publish to itch.io: BUTLER_PROJECTNAME is not defined. Define it in user/butler_env.sh file."
+        fi
+      else
+        echo "Can't publish to itch.io: BUTLER_USERNAME is not defined. Define it in user/butler_env.sh file."
+      fi
+    fi
   ;;
   *)
     echo "You can do: test, check, play"

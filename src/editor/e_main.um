@@ -147,6 +147,7 @@ type (
     potentialPortal: str // the portal which is in the text box
     currentPortal: str
     dirty: bool
+    enabled: bool
 
     // UI misc.
     inputSink: InputSink
@@ -1709,9 +1710,12 @@ fn editorPutUi(editor: ^Editor) {
   editor.frameNumber += 1;
   // put ui
   if editor.isPlaying {
-    if input.isJustPressed(input.key_escape) {
-      editor.isPlaying = !editor.isPlaying 
-    } 
+    if editor.enabled {
+      if input.isJustPressed(input.key_escape) {
+        editor.isPlaying = !editor.isPlaying 
+      } 
+    }
+
     d_game.update()
     d_script.update()
 
@@ -1808,8 +1812,10 @@ fn editorPutUi(editor: ^Editor) {
     }
   }
   
-  editorPutToolbar(editor)
-  
+  if editor.enabled {
+    editorPutToolbar(editor)
+  }
+
   if !editor.isPlaying {
     putTilePicker(editor)
     putPlayerPlacer(editor)
@@ -1947,7 +1953,7 @@ fn drawShadowText*(font: th_font.Font, text: str, pos: th.Vf2) {
   font.draw(text, pos.add(th.Vf2{0, 0}), th.white)
 }
 
-fn editorMain*() {
+fn editorMain*(enabled: bool) {
   d_global.screen = rect.mk(0, 0, 800, 600)
   window.setup("Editor", trunc(d_global.screen.w), trunc(d_global.screen.h))
   
@@ -1976,6 +1982,7 @@ fn editorMain*() {
 
   editor := new(Editor)
   editor ^= editorInit(editorResources)
+  editor.enabled = enabled
 
   if ok, sessionFile := d_util.readFileStr("user/session.csv"); ok {
     editorLoadSession(editor, msession.load(sessionFile))
@@ -1983,7 +1990,11 @@ fn editorMain*() {
     loadPortal(editor, "testbed_savepartial")
   }
 
-  // editorToggleGame(editor)
+  if (!enabled) {
+    editorToggleGame(editor)
+  }
+
+
 
   window.onFrame.register(|editor| {
     if d_global.end {
@@ -2026,6 +2037,7 @@ fn editorMain*() {
 
     drawShadowText(editor.resources.mainFont, sprintf("%d frameskip", trunc(d_game.frameSkips)), th.Vf2{0, 0+16})
     drawShadowText(editor.resources.mainFont, sprintf("%s", editor.dirty ? "Dirty" : "Not Dirty"), th.Vf2{0, 0+32})
+    drawShadowText(editor.resources.mainFont, sprintf("v0.2.1"), th.Vf2{0, 0+48})
   })
 
   window.onDestroy.register(|editor| {
