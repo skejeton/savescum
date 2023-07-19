@@ -884,12 +884,17 @@ fn drawGuideRects() {
 }
 
 fn drawOutlines() {
-  radius := ((sin(th.time/1000.0*2.0)+2)/2.0)*3+1
+  radiusPulsing := ((sin(th.time/1000.0*2.0)+2)/2.0)*3+1
+  radiusNormal := 3
 
   renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
 
   for i, renderTile in renderTiles {
     if renderTile.id == 29 || (toggleActive && renderTile.id == 30) || (renderTile.id == 31 && !toggleActive) {
+      radius := radiusPulsing
+      if renderTile.id == 29 {
+        radius = radiusNormal
+      }
       canvas.drawRect(0xAAAAFF99, d_util.rectShrink(renderTile.rect, -radius*cameraScale))
       canvas.drawRect(0xAAAAFF22, d_util.rectShrink(renderTile.rect, 2*-radius*cameraScale))
     }
