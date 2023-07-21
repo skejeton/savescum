@@ -1996,11 +1996,12 @@ fn editorMain*(enabled: bool) {
 
   window.onFrame.register(|editor| {
     if d_global.end {
-      
+      const preDemoText = "Thanks for playing the pre-demo"
+
       canvas.drawRect(th.black, d_global.screen)
-      pos := centerTextWithinRect(editor.resources.mainFont, "Thanks for playing the pre-demo", d_global.screen);
+      pos := centerTextWithinRect(editor.resources.mainFont, preDemoText, d_global.screen);
     
-      editor.resources.mainFont.draw("Thanks for playing the pre-demo", pos, th.white)
+      editor.resources.mainFont.draw(preDemoText, pos, th.white)
       return
     }
 
