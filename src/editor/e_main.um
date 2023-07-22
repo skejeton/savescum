@@ -2040,6 +2040,7 @@ fn editorMain*(enabled: bool) {
   })
 
   window.onDestroy.register(|editor| {
+    // TODO: What if the directory doesn't exist?
     d_util.writeFileStr("user/session.csv", msession.save(editorSaveSession(editor)))
     editorDisconnectAllNodes(editor, null)
   })
