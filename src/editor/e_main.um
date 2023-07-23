@@ -1886,6 +1886,8 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
  
   editorResources.tilesetImage.setfilter(1)
   editorResources.toolbarIcons.setfilter(1)
+  editorResources.superHotFire.setfilter(1)
+  editorResources.bevelImage.setfilter(1)
 
   return editorResources
 }
