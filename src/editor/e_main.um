@@ -1429,13 +1429,13 @@ fn putEntityEditor(editor: ^Editor) {
       editor.ctx.beginScissorRect(contentRect)
       position := contentRect.getPos()
       putLabelY(editor, "Name", th.black, &position)
-      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Name ", &entitySelected.name) || editor.dirty
+      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Name", &entitySelected.name) || editor.dirty
       position.y += 30
       putLabelY(editor, "Id", th.black, &position)
-      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Id ", &entitySelected.id) || editor.dirty
+      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Id", &entitySelected.id) || editor.dirty
       position.y += 30
       putLabelY(editor, "Tags", th.black, &position)
-      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Tags ", &entitySelected.tags) || editor.dirty
+      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Tags", &entitySelected.tags) || editor.dirty
       position.y += 30
       position.y += 10
       if putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Delete").isReleased {
