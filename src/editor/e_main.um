@@ -916,7 +916,7 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (
     thumbRect.h = thumbHeight
     thumbRect.y += thumbOffset
 
-    thumbState := putButtonBase(editor, d_util.rectShrink(thumbRect, 1), "SacrollbarThumb")
+    thumbState := putButtonBase(editor, d_util.rectShrink(thumbRect, 1), "ScrollbarThumb")
     if thumbState.isDown {
       doNotTruncateScroll = true
       scroll ^+= editor.mouseState.delta.y*yScrollOverflowFactor
