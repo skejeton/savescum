@@ -165,6 +165,9 @@ case `getarg 0` in
     target_test `getarg 1`
   ;;
   publish)
+    mkdir -p pkg
+    mkdir -p pkg/native
+    cp -r ./src ./data ./tophat.exe ./main.um ./pkg/native 
     if [[ -z "$BUTLER_VAR" ]]; then
       echo "Butler not found. Skipping publishing to itch.io"
     else 
@@ -173,7 +176,8 @@ case `getarg 0` in
           if [[ ! -z "$TOPHAT_EMSCRIPTEN_VAR" ]]; then
             echo "Publishing to itch.io!"
             target_emscripten
-            $BUTLER_VAR push wasm-out $BUTLER_USERNAME/$BUTLER_PROJECTNAME:index
+            mv wasm-out pkg
+            $BUTLER_VAR push pkg/wasm-out $BUTLER_USERNAME/$BUTLER_PROJECTNAME:index
           else
             echo "Can't publish to itch.io: Can't find th_emscripten_link."
           fi

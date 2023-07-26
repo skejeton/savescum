@@ -26,5 +26,5 @@ prof.json
 # User data
 user
 
-# WASM bundle
-wasm-out
+# Package
+pkg
