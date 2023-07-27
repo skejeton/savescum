@@ -6,3 +6,4 @@
 *.aseprite filter=lfs diff=lfs merge=lfs -text
 
 * text eol=lf
+*.bat eol=crlf
