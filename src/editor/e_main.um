@@ -528,16 +528,16 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
     windowRect.x = d_global.screen.w-25
   }
 
-  if windowRect.x < -windowRect.w+25 {
-    windowRect.x = -windowRect.w+25
+  if windowRect.x < -windowRect.w+10 {
+    windowRect.x = -windowRect.w+10
   }
 
   if windowRect.y >= d_global.screen.h-25 {
     windowRect.y = d_global.screen.h-25
   }
 
-  if windowRect.y < -windowRect.h+25 {
-    windowRect.y = -windowRect.h+25
+  if windowRect.y < -10 {
+    windowRect.y = -10
   }
 
   if (mpayload_trigger.aprilFools()) {
