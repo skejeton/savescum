@@ -572,13 +572,15 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
     buttonSize := th.Vf2{titlebarHeight, titlebarHeight}
     buttonRect := rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y)
 
-    if (putButtonBase(editor, buttonRect, "Close").isReleased) {
-      editor.wm.setWindowVisible(title, false)
+    {
+      if (putButtonBase(editor, buttonRect, "Close").isReleased) {
+        editor.wm.setWindowVisible(title, false)
+      }
+  
+      editor.ctx.drawRect(th.black, rect.mk(position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-1, buttonSize.x-10, 2))
+      position.x += buttonSize.x + padding
     }
-
-    editor.ctx.drawRect(th.black, rect.mk(position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-1, buttonSize.x-10, 2))
-    position.x += buttonSize.x + padding
-
+    
     {
       handleSize := th.Vf2{windowRect.w - position.x - padding, titlebarHeight}
       titlebarRect = rect.mk(position.x+windowRect.x, position.y+windowRect.y, handleSize.x-1, handleSize.y)
