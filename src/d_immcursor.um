@@ -1,0 +1,23 @@
+import (
+    "window.um"
+)
+
+cursor := 0
+cursorSet := false
+
+fn setCursor*(newCursor: int) {
+    if newCursor == 0 {
+        if !cursorSet {
+            cursor = 0
+            window.setCursor(0)
+        }
+        cursorSet = false
+        return
+    }
+
+    cursorSet = true
+    if cursor != newCursor {
+        cursor = newCursor
+        window.setCursor(cursor)
+    }
+}
