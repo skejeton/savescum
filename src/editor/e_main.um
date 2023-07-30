@@ -499,6 +499,8 @@ fn putButton(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
     buttonState.isDown = events.queryMouse(0, d_mouseinput.down) || events.queryMouse(0, d_mouseinput.released);
     buttonState.isPressed = events.queryMouse(0, d_mouseinput.pressed);
     buttonState.isReleased = events.queryMouse(0, d_mouseinput.released) && toolState.hovered;
+    
+    window.setCursor(window.cursorFinger)
   }
 
   return buttonState
@@ -1889,7 +1891,6 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
   editorResources.tilesetImage.setfilter(1)
   editorResources.toolbarIcons.setfilter(1)
   editorResources.superHotFire.setfilter(1)
-  editorResources.bevelImage.setfilter(1)
 
   return editorResources
 }
@@ -1999,6 +2000,8 @@ fn editorMain*(enabled: bool) {
   }
 
   window.onFrame.register(|editor| {
+    window.setCursor(window.cursorDefault)
+
     if d_global.end {
       const preDemoText = "Thanks for playing the pre-demo"
 
