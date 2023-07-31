@@ -651,7 +651,11 @@ fn uiEndWindow(editor: ^Editor) {
 
       {
         editor.beginTool("Grip", gripRect)
+        if editor.isCurrentToolActive() {
+          d_immcursor.setCursor(window.cursorSizeNWSE)
+        }
         events := editor.endTool()
+        
         if events.queryMouse(0, d_mouseinput.down) {
           squishing = editor.mouseState.delta
         }
