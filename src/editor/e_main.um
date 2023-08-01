@@ -759,7 +759,11 @@ fn putIconButton(editor: ^Editor, name: str, r: rect.Rect, img: image.Image, rev
 
 fn putRadioButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = false): ButtonState {
   if revert {
-    putButton(editor, r, text)
+    editor.beginTool(text, r)
+    if (editor.isCurrentToolActive()) {
+      d_immcursor.setCursor(window.cursorNo)
+    }
+    editor.endTool()
     drawButtonInactive(editor, r, text)
   } else {
     bs := putButtonBase(editor, r, text, revert)
@@ -1473,16 +1477,16 @@ fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
   // Grips positions are initialized as relative here.
   // Will be multiplied by rect.w/h and added rect.x/y to them.
   const eightGrips = [8]EditGrip{
-    EditGrip{th.Vf2{0.0, 0.0}, RectResizeCommand{th.Vf2{1, 1}, th.Vf2{-1, -1}}},
-    EditGrip{th.Vf2{0.5, 0.0}, RectResizeCommand{th.Vf2{0, 1}, th.Vf2{ 0, -1}}},
-    EditGrip{th.Vf2{1.0, 0.0}, RectResizeCommand{th.Vf2{0, 1}, th.Vf2{ 1, -1}}},
+    EditGrip{th.Vf2{0.0, 0.0}, RectResizeCommand{th.Vf2{1, 1}, th.Vf2{-1, -1}}}, // x
+    EditGrip{th.Vf2{0.5, 0.0}, RectResizeCommand{th.Vf2{0, 1}, th.Vf2{ 0, -1}}}, // x
+    EditGrip{th.Vf2{1.0, 0.0}, RectResizeCommand{th.Vf2{0, 1}, th.Vf2{ 1, -1}}}, // x
 
     EditGrip{th.Vf2{0.0, 0.5}, RectResizeCommand{th.Vf2{1, 0}, th.Vf2{-1,  0}}},
     EditGrip{th.Vf2{1.0, 0.5}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 1,  0}}},
 
-    EditGrip{th.Vf2{0.0, 1.0}, RectResizeCommand{th.Vf2{1, 0}, th.Vf2{-1,  1}}},
-    EditGrip{th.Vf2{0.5, 1.0}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 0,  1}}},
-    EditGrip{th.Vf2{1.0, 1.0}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 1,  1}}}}
+    EditGrip{th.Vf2{0.0, 1.0}, RectResizeCommand{th.Vf2{1, 0}, th.Vf2{-1,  1}}}, // x
+    EditGrip{th.Vf2{0.5, 1.0}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 0,  1}}}, // x
+    EditGrip{th.Vf2{1.0, 1.0}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 1,  1}}}} // x
 
   activeGrip := -1
 
@@ -1492,6 +1496,17 @@ fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
     gripDrawRect := d_util.rectShrink(gripRect, 2)
 
     editor.beginTool(sprintf("Grip%d", i), gripRect)
+
+    if editor.isCurrentToolActive() {
+      cursor := window.cursorSizeAll
+      switch i {
+      case 0, 8: cursor = window.cursorSizeNWSE
+      case 2, 5: cursor = window.cursorSizeSWNE
+      case 1, 7: cursor = window.cursorSizeEW
+      case 3, 4: cursor = window.cursorSizeNS
+      }
+      d_immcursor.setCursor(cursor)
+    }
  
     color := th.blue
 
