@@ -1589,6 +1589,10 @@ fn putWorldEntities(editor: ^Editor) {
       editor.beginTool("Ent"+ent.id, entVisRect)
 
       if editor.isCurrentToolActive() {
+        d_immcursor.setCursor(window.cursorSizeAll)
+      }
+
+      if editor.isCurrentToolActive() {
         editor.ctx.drawRectLines(th.blue, d_util.rectShrink(entVisRect, -1))
       }
 
