@@ -1500,10 +1500,10 @@ fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
     if editor.isCurrentToolActive() {
       cursor := window.cursorSizeAll
       switch i {
-      case 0, 8: cursor = window.cursorSizeNWSE
+      case 0, 7: cursor = window.cursorSizeNWSE
       case 2, 5: cursor = window.cursorSizeSWNE
-      case 1, 7: cursor = window.cursorSizeEW
-      case 3, 4: cursor = window.cursorSizeNS
+      case 1, 6: cursor = window.cursorSizeNS
+      case 3, 4: cursor = window.cursorSizeEW
       }
       d_immcursor.setCursor(cursor)
     }
