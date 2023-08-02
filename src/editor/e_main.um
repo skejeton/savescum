@@ -2024,7 +2024,9 @@ fn editorMain*(enabled: bool) {
     editorToggleGame(editor)
   }
 
-  window.onFrame.register(|editor| {
+  sampleData := []any{32, 42, "hello", map[str]any{"mapping": map[str]any{"sdf": 32}, "boolean": true}}
+
+  window.onFrame.register(|sampleData, editor| {
     d_immcursor.setCursor(window.cursorDefault)
 
     if d_global.end {
@@ -2065,6 +2067,17 @@ fn editorMain*(enabled: bool) {
     } else {
       drawShadowText(editor.resources.mainFont, sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1})
     }
+
+
+    /*
+    pushy := mdatatree.mkPushText(editor.resources.mainFont, {64, 64});
+    canvas.drawRect(th.black, {64, 64, 300, 300})
+    hover := ""
+    mdatatree.drawTree(&pushy, &hover, sampleData)
+    if hover != "" {
+      mdatatree.drawTooltip(editor.resources.mainFont, input.getMousePos().add({20, 0}), hover)
+    }
+    */
 
     drawShadowText(editor.resources.mainFont, sprintf("%d frameskip", trunc(d_game.frameSkips)), th.Vf2{0, 0+16})
     drawShadowText(editor.resources.mainFont, sprintf("%s", editor.dirty ? "Dirty" : "Not Dirty"), th.Vf2{0, 0+32})

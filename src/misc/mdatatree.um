@@ -140,7 +140,7 @@ fn drawTree*(pushy: ^PushText, hover: ^str, env: interface{}) {
       color = 0x00FF40FF
     }
 
-    if d_util.isMouseInRect(pushy.push(slice(represented, 0, len(represented)-1), color)) {
+    if d_util.isMouseInRect(pushy.push(slice(represented, 0, len(represented)), color)) {
       hover ^= valueTypeName(env)
     }
   } else if strValue := ^str(env); strValue != null {
@@ -151,7 +151,7 @@ fn drawTree*(pushy: ^PushText, hover: ^str, env: interface{}) {
   } else {
     represented := sprintf("%v", env)
 
-    if d_util.isMouseInRect(pushy.push(slice(represented, 0, len(represented)-1), 0xFFFF00FF)) {
+    if d_util.isMouseInRect(pushy.push(slice(represented, 0, len(represented)), 0xFFFF00FF)) {
       hover ^= valueTypeName(env)
     }
   }
