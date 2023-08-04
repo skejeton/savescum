@@ -1,5 +1,6 @@
 /*
  * Draw commands.
+ * TODO: Check if callbacks/closures are faster than interfaces and use them instead.
  */
 
 import ("th.um"; "window.um"; "rect.um"; "image.um"; "font.um"; "canvas.um"; "../d_util.um")

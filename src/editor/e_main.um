@@ -149,6 +149,7 @@ type (
     currentPortal: str
     dirty: bool
     enabled: bool
+    preChangeWorldData: d_worlddata.WorldData
 
     // UI misc.
     inputSink: InputSink
@@ -384,13 +385,6 @@ fn (e: ^Editor) getCurrentToolState(): ToolState {
 
 fn (e: ^Editor) isCurrentToolActive(): bool {
   return e.getCurrentToolState().active
-}
-
-fn areToolsRelated(parent, child: ^mgui.ToolNode): bool {
-  for child != null && child != parent {
-    child = child.parent
-  }
-  return child == parent;
 }
 
 fn (e: ^Editor) endTool(): EditorEvents {
@@ -975,6 +969,7 @@ fn portalToPath(portal: str): str {
 fn createEditorEntities(): EditorEntities {
   return EditorEntities{list: []d_worlddata.EntityDesc{}, entitySelected: -1}
 }
+
 
 fn editorLoadWorld(editor: ^Editor, portal: str): bool {
   mdbg.logt("ed: loading world")
@@ -1890,19 +1885,6 @@ fn editorPutUi(editor: ^Editor) {
   editor.pruneToolsRecursive(editor.tools)
 }
 
-// Disconnects all nodes in the editor from their parents.
-// Due to how the Umka GC currently works, it's not able to collect
-//   circular references, so I must do it myself.
-fn editorDisconnectAllNodes(editor: ^Editor, node: ^mgui.ToolNode) {
-  if node == null {
-    node = editor.tools
-  }
-
-  node.parent = null
-  for _, child in node.children {
-    editorDisconnectAllNodes(editor, child)
-  }
-}
 
 fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
 
@@ -2024,8 +2006,6 @@ fn editorMain*(enabled: bool) {
     editorToggleGame(editor)
   }
 
-  sampleData := []any{32, 42, "hello", map[str]any{"mapping": map[str]any{"sdf": 32}, "boolean": true}}
-
   window.onFrame.register(|sampleData, editor| {
     d_immcursor.setCursor(window.cursorDefault)
 
@@ -2067,17 +2047,6 @@ fn editorMain*(enabled: bool) {
     } else {
       drawShadowText(editor.resources.mainFont, sprintf("%dfps", trunc(d_fps.getFps())), th.Vf2{0, 1})
     }
-
-
-    /*
-    pushy := mdatatree.mkPushText(editor.resources.mainFont, {64, 64});
-    canvas.drawRect(th.black, {64, 64, 300, 300})
-    hover := ""
-    mdatatree.drawTree(&pushy, &hover, sampleData)
-    if hover != "" {
-      mdatatree.drawTooltip(editor.resources.mainFont, input.getMousePos().add({20, 0}), hover)
-    }
-    */
 
     drawShadowText(editor.resources.mainFont, sprintf("%d frameskip", trunc(d_game.frameSkips)), th.Vf2{0, 0+16})
     drawShadowText(editor.resources.mainFont, sprintf("%s", editor.dirty ? "Dirty" : "Not Dirty"), th.Vf2{0, 0+32})
