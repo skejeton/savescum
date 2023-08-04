@@ -393,7 +393,7 @@ fn (e: ^Editor) endTool(): EditorEvents {
   }
 
   mask := InputSink{}
-  if !areToolsRelated(e.currentTool, e.activeTool) {
+  if !mgui.areToolsRelated(e.currentTool, e.activeTool) {
     // Block all events if the current tool isn't hovered.
     mask = initInputSinkSet()
   }
@@ -2006,7 +2006,7 @@ fn editorMain*(enabled: bool) {
     editorToggleGame(editor)
   }
 
-  window.onFrame.register(|sampleData, editor| {
+  window.onFrame.register(|editor| {
     d_immcursor.setCursor(window.cursorDefault)
 
     if d_global.end {
@@ -2056,6 +2056,6 @@ fn editorMain*(enabled: bool) {
   window.onDestroy.register(|editor| {
     // TODO: What if the directory doesn't exist?
     d_util.writeFileStr("user/session.csv", msession.save(editorSaveSession(editor)))
-    editorDisconnectAllNodes(editor, null)
+    mgui.disconnectAllNodes(editor.tools)
   })
 }

@@ -15,7 +15,7 @@ type ToolNode* = struct {
 // @return True if child is related to parent node. 
 // @param[in] parent Parent node.
 // @param[in] child Child node.
-fn areToolsRelated(parent, child: ^mgui.ToolNode): bool {
+fn areToolsRelated*(parent, child: ^ToolNode): bool {
   for child != null && child != parent {
     child = child.parent
   }
@@ -27,7 +27,7 @@ fn areToolsRelated(parent, child: ^mgui.ToolNode): bool {
 //        Due to how the Umka GC currently works, it's not able to collect
 //        circular references, so I must do it myself.
 // @param[in] node The tool node to remove cyclic references from.
-fn disconnectAllNodes*(node: ^mgui.ToolNode) {
+fn disconnectAllNodes*(node: ^ToolNode) {
   node.parent = null
   for _, child in node.children {
     disconnectAllNodes(child)
