@@ -31,7 +31,6 @@ import (
 
   th_font = "font.um"
   th_color = "color.um"
-  "../misc/mdatatree.um"
   "../misc/mstrings.um" 
 
   "window.um"
