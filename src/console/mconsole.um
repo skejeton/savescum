@@ -20,6 +20,9 @@ type Console* = struct {
 
 fn (con: ^Console) write*(block: str) {
   con.blocks = append(con.blocks, block)
+  if len(con.blocks) > 10000 {
+    con.blocks = slice(con.blocks, 1)
+  }
 }
 
 type Scrolley* = struct {
