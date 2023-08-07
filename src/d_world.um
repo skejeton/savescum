@@ -174,7 +174,7 @@ fn (world: ^World) drawRenderTiles*(renderTiles: []RenderTile, tint: uint32) {
     }
 
     if !world.tileset.tileProperties[renderTile.id].invisible {
-      world.tileset.image.draw({p: {renderTile.rect.x, renderTile.rect.y}, s: {renderTile.rect.w/tileSizeX, renderTile.rect.h/tileSizeY}})
+      world.tileset.image.draw({p: {renderTile.rect.x, renderTile.rect.y}, s: {renderTile.rect.w/tileSizeX, renderTile.rect.h/tileSizeY}}, tint)
     }
     prevTileId = renderTile.id
   }
