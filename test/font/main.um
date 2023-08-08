@@ -23,5 +23,5 @@ fn init*() {
     size := font.measure(txt)
     canvas.drawRect(th.black, rect.Rect{0, 0, size.x, size.y})
     font.draw(txt, th.Vf2{0, 0}, th.white)
-  }, null)
+  })
 }

@@ -49,5 +49,5 @@ fn init*() {
     canvas.drawRect(th.red, rect.Rect{-camera.x, -camera.y, 5, 5})
     screen = rect.mk(0, 0, window.w, window.h) 
 		window.setViewport(screen.getDims())
-  }, null)
+  })
 }

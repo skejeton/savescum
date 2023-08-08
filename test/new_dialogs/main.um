@@ -311,5 +311,5 @@ fn init*() {
     
     booleanProperty(th.Vf2{0, 0}, "autoplay (space)", &autoplay)
     booleanProperty(th.Vf2{10, 0}, "5x slower", &slow5x)
-  }, null)
+  })
 }

@@ -25,5 +25,5 @@ fn init*() {
     img.drawNinepatch(rect.Rect{24, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{10, 220, 200, 200})
     img.drawNinepatch(rect.Rect{24*2, 0, 24, 24}, rect.Rect{8, 8, 8, 8}, rect.Rect{10, 10, 200, 200})
     img2.drawNinepatch(rect.Rect{0, 0, 48, 48}, rect.Rect{16, 16, 16, 16}, rect.Rect{220, 220, 200, 200})
-  }, null)
+  })
 }

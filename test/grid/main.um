@@ -63,5 +63,5 @@ fn init*() {
   	}	
 
   	lastMousePos = input.getMousePos()
-  }, null)
+  })
 }

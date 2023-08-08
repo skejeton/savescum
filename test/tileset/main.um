@@ -38,5 +38,5 @@ fn init*() {
       canvas.drawText(idStr, t.sub(th.Vf2{0, -1}), th.white, 1)
       canvas.drawText(idStr, t, th.black, 1)
     }
-  }, null)
+  })
 }
