@@ -3,4 +3,3 @@ import (d_main = "src/main.um")
 fn init*() {
   d_main.init(false)
 }
-
