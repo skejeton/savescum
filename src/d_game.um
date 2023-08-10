@@ -922,6 +922,7 @@ fn draw*() {
   bgCam.y /= 2
   oldScale := cameraScale 
   oldPos := camera
+  d_background.draw(bgCam)
 
   if startTimer > 0 {
     cameraScale *= ((startTimer*2)+1)
@@ -929,7 +930,6 @@ fn draw*() {
     camera.y = d_rerp.iReal(camera.y, chara.rect.y-d_global.screen.h/2/cameraScale, startTimer)
   }
 
-  d_background.draw(bgCam)
 
   // RENDER WORLD //
   world.drawLayer(cameraOffsetPoint({0, 0}), -1, cameraScale)
