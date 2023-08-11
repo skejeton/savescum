@@ -768,7 +768,7 @@ fn putRadioButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = false
 
 fn putSimpleButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = false): ButtonState {
   bs := putButtonBase(editor, r, text, revert)
-  editor.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), th.black)
+  editor.ctx.drawText(editor.resources.mainFont, mstrings.splitBy(text, '#')[0], centerTextWithinRect(editor.resources.mainFont, text, r), th.black)
   return bs
 }
 
@@ -1795,7 +1795,7 @@ fn editorPutUi(editor: ^Editor) {
       }
       position.x -= elementSize
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "", editor.tilemapShowAllLayers).isReleased) {
+      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "#Layer Select", editor.tilemapShowAllLayers).isReleased) {
         editor.tilemapShowAllLayers = !editor.tilemapShowAllLayers
       }
 
