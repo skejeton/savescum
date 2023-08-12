@@ -126,7 +126,6 @@ type (
   Editor = struct {
     // Misc
     isDebugOverlayShown: bool
-    frameNumber: int
 
     // Visual data
     ctx: e_drawcmd.DrawContext
@@ -161,11 +160,6 @@ type (
     mouseState: d_mouseinput.MouseState
 
     // Census
-    tools: ^mgui.ToolNode
-    currentTool: ^mgui.ToolNode
-    maybeActiveTool: ^mgui.ToolNode
-    activeTool: ^mgui.ToolNode
-    hoveredTool: ^mgui.ToolNode
   }
 )
 
@@ -294,136 +288,6 @@ fn (wm: ^WindowManager) putWindowOnFront(name: str) {
 
 fn (wm: ^WindowManager) setWindowVisible(name: str, to: bool) {
   wm.windowVisibility[name] = to
-}
-
-fn (e: ^Editor) maybeAcquireToolNode(name: str): ^mgui.ToolNode {
-  if e.currentTool == null {
-    e.currentTool = e.tools
-  }
-
-  if !validkey(e.currentTool.children, name) {
-    return null
-  }
-
-  return e.currentTool.children[name]
-}
-
-fn (e: ^Editor) acquireToolNode(name: str): ^mgui.ToolNode {
-  node := e.maybeAcquireToolNode(name)
-
-  if node == null {
-    tool := new(mgui.ToolNode)
-    tool ^= mgui.ToolNode{children: map[str]^mgui.ToolNode{}, parent: e.currentTool}
-    node = tool
-    e.currentTool.children[name] = node    
-  }
-
-  return node
-}
-
-// Prunes all tools untouched last frame
-fn (e: ^Editor) pruneToolsRecursive(node: ^mgui.ToolNode) {
-  if node.lastFrameTouched == -1 {
-    // Nodes with last frame -1 are not candidates to pruning (just a hardcoded value).
-    // Here we automatically unfreeze the node because you need to freeze it every time.
-    node.lastFrameTouched = e.frameNumber
-    return
-  }
-
-  for key in node.children {
-    e.pruneToolsRecursive(node.children[key])
-
-    if node.children[key].lastFrameTouched < e.frameNumber {
-      // Fix leak
-      node.children[key].parent = null
-      node.children = delete(node.children, key)
-    }
-
-  }
-}
-
-fn (e: ^Editor) freezeTool(name: str) {
-  node := e.maybeAcquireToolNode(name)
-  if node != null {
-    node.lastFrameTouched = -1
-  }
-}
-
-fn (e: ^Editor) beginTool(name: str, toolRect: rect.Rect): ^mgui.ToolNode {
-  node := e.acquireToolNode(name)
-  node.lastFrameTouched = e.frameNumber
-  node.rect = toolRect
-  node.layer = e.ctx.currentLayerId
-  e.currentTool = node
-  isOverMaybeActiveTool := true
-
-  if e.maybeActiveTool != null {
-    isOverMaybeActiveTool = node.layer >= e.maybeActiveTool.layer
-  }
- 
-  if ok, scissorRect := e.ctx.getCurrentScissorRect(); ok {
-    isOverMaybeActiveTool = isOverMaybeActiveTool && d_util.rectVsPoint(scissorRect, e.mouseState.pos)
-  }
-
-  if isOverMaybeActiveTool && d_util.rectVsPoint(node.rect, e.mouseState.pos) {
-    e.maybeActiveTool = node
-  }
-
-  return e.currentTool
-}
-
-fn (e: ^Editor) getToolState(tool: ^mgui.ToolNode): ToolState {
-  return ToolState{
-    active: tool == e.activeTool,
-    hovered: tool == e.hoveredTool}
-}
-
-fn (e: ^Editor) getCurrentToolState(): ToolState {
-  return e.getToolState(e.currentTool)
-}
-
-fn (e: ^Editor) isCurrentToolActive(): bool {
-  return e.getCurrentToolState().active
-}
-
-fn (e: ^Editor) endTool(): EditorEvents {
-  if e.currentTool.parent == null {
-    error("Parent node is null, beginTool/endTool mismatched!")
-  }
-
-  mask := InputSink{}
-  if !mgui.areToolsRelated(e.currentTool, e.activeTool) {
-    // Block all events if the current tool isn't hovered.
-    mask = initInputSinkSet()
-  }
-
-  e.currentTool = e.currentTool.parent
-
-  return EditorEvents{sink: &e.inputSink, mask: mask, mouseState: e.mouseState}
-}
-
-fn (e: ^Editor) getProperty(name: str, def: interface{}): interface{} {
-  // Create a dummy tool where we'll store the data.
-  tool := e.beginTool(name, rect.mk(-100000, -100000, 0, 0))
-  e.endTool()
-
-  if !valid(tool.userdata) {
-    tool.userdata = def
-  }
-
-  return tool.userdata
-}
-
-fn (e: ^Editor) getPropertyLazy(name: str, getter: fn (): any): any {
-  // Create a dummy tool where we'll store the data.
-  tool := e.beginTool(name, rect.mk(-100000, -100000, 0, 0))
-  e.endTool()
-
-  if !valid(tool.userdata) {
-    tool.userdata = getter()
-  }
-
-  return tool.userdata
 }
 
 // Draw bevel rect(

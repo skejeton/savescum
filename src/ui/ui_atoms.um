@@ -12,9 +12,14 @@ type ToolNode* = struct {
   rect: rect.Rect
 }
 
-// @return True if child is related to parent node. 
-// @param[in] parent Parent node.
-// @param[in] child Child node.
+type ToolState* = struct {
+  active: bool
+  hovered: bool
+}
+
+/// @return True if child is related to parent node. 
+/// @param[in] parent Parent node.
+/// @param[in] child Child node.
 fn areToolsRelated*(parent, child: ^ToolNode): bool {
   for child != null && child != parent {
     child = child.parent
@@ -23,10 +28,10 @@ fn areToolsRelated*(parent, child: ^ToolNode): bool {
 }
 
 
-// @brief Disconnects all nodes in the GUI from their parents.
-//        Due to how the Umka GC currently works, it's not able to collect
-//        circular references, so I must do it myself.
-// @param[in] node The tool node to remove cyclic references from.
+/// @brief Disconnects all nodes in the GUI from their parents.
+///        Due to how the Umka GC currently works, it's not able to collect
+///        circular references, so I must do it myself.
+/// @param[in] node The tool node to remove cyclic references from.
 fn disconnectAllNodes*(node: ^ToolNode) {
   node.parent = null
   for _, child in node.children {

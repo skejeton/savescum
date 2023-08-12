@@ -1,0 +1,142 @@
+import (
+  "ui_atoms.um"
+)
+
+type Core* = struct {
+  frameNumber: uint
+
+  tools: ^ui_atoms.ToolNode
+  currentTool: ^ui_atoms.ToolNode
+  maybeActiveTool: ^ui_atoms.ToolNode
+  activeTool: ^ui_atoms.ToolNode
+  hoveredTool: ^ui_atoms.ToolNode
+}
+
+fn (core: ^Core) getToolState(tool: ^ui_atoms.ToolNode): ui_atoms.ToolState {
+  return ToolState{
+    active: tool == core.activeTool,
+    hovered: tool == core.hoveredTool}
+}
+
+fn (core: ^Core) maybeAcquireToolNode(name: str): ^ui_atoms.ToolNode {
+  if core.currentTool == null {
+    core.currentTool = core.tools
+  }
+
+  if !validkey(core.currentTool.children, name) {
+    return null
+  }
+
+  return core.currentTool.children[name]
+}
+
+fn (core: ^Core) acquireToolNode*(name: str): ^ui_atoms.ToolNode {
+  node := core.maybeAcquireToolNode(name)
+
+  if node == null {
+    tool := new(ui_atoms.ToolNode)
+    tool ^= ui_atoms.ToolNode{children: map[str]^ui_atoms.ToolNode{}, parent: core.currentTool}
+    node = tool
+    core.currentTool.children[name] = node    
+  }
+
+  return node
+}
+
+// Prunes all tools untouched last frame
+fn (core: ^Core) pruneToolsRecursive(node: ^ui_atoms.ToolNode) {
+  if node.lastFrameTouched == -1 {
+    // Nodes with last frame -1 are not candidates to pruning (just a hardcoded value).
+    // Here we automatically unfreeze the node because you need to freeze it every time.
+    node.lastFrameTouched = core.frameNumber
+    return
+  }
+
+  for key in node.children {
+    core.pruneToolsRecursive(node.children[key])
+
+    if node.children[key].lastFrameTouched < core.frameNumber {
+      // Fix leak
+      node.children[key].parent = null
+      node.children = delete(node.children, key)
+    }
+  }
+}
+
+fn (core: ^Core) freezeTool(name: str) {
+  node := core.maybeAcquireToolNode(name)
+  if node != null {
+    node.lastFrameTouched = -1
+  }
+}
+
+fn (core: ^Core) beginTool(name: str, toolRect: rect.Rect): ^ui_atoms.ToolNode {
+  node := core.acquireToolNode(name)
+  node.lastFrameTouched = core.frameNumber
+  node.rect = toolRect
+  node.layer = core.ctx.currentLayerId
+  core.currentTool = node
+  isOverMaybeActiveTool := true
+
+  if core.maybeActiveTool != null {
+    isOverMaybeActiveTool = node.layer >= core.maybeActiveTool.layer
+  }
+ 
+  if ok, scissorRect := core.ctx.getCurrentScissorRect(); ok {
+    isOverMaybeActiveTool = isOverMaybeActiveTool && d_util.rectVsPoint(scissorRect, core.mouseState.pos)
+  }
+
+  if isOverMaybeActiveTool && d_util.rectVsPoint(node.rect, core.mouseState.pos) {
+    core.maybeActiveTool = node
+  }
+
+  return core.currentTool
+}
+
+fn (core: ^Core) getCurrentToolState(): ui_atoms.ToolState {
+  return core.getToolState(core.currentTool)
+}
+
+fn (core: ^Core) isCurrentToolActive(): bool {
+  return core.getCurrentToolState().active
+}
+
+fn (core: ^Core) endTool(): EditorEvents {
+  if core.currentTool.parent == null {
+    error("Parent node is null, beginTool/endTool mismatched!")
+  }
+
+  mask := InputSink{}
+  if !ui_atoms.areToolsRelated(core.currentTool, core.activeTool) {
+    // Block all events if the current tool isn't hovered.
+    mask = initInputSinkSet()
+  }
+
+  core.currentTool = core.currentTool.parent
+
+  return CoreEvents{sink: &core.inputSink, mask: mask, mouseState: core.mouseState}
+}
+
+fn (core: ^Core) getProperty(name: str, def: interface{}): interface{} {
+  // Create a dummy tool where we'll store the data.
+  tool := core.beginTool(name, rect.mk(-100000, -100000, 0, 0))
+  core.endTool()
+
+  if !valid(tool.userdata) {
+    tool.userdata = def
+  }
+
+  return tool.userdata
+}
+
+fn (core: ^Core) getPropertyLazy(name: str, getter: fn (): any): any {
+  // Create a dummy tool where we'll store the data.
+  tool := core.beginTool(name, rect.mk(-100000, -100000, 0, 0))
+  core.endTool()
+
+  if !valid(tool.userdata) {
+    tool.userdata = getter()
+  }
+
+  return tool.userdata
+}

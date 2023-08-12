@@ -1,5 +1,6 @@
 import (
-	"mgui.um"
+	"ui_core.um"
+  "ui_atoms.um"
   "../editor/e_drawcmd.um"
   "rect.um"
   "th.um"
@@ -16,27 +17,17 @@ type ToolDebugFrame = struct {
   rect: rect.Rect
 }
 
-type ToolState = struct {
-  active: bool
-  hovered: bool
-}
 
 type ToolContext* = struct {
-  tools: ^mgui.ToolNode
-  currentTool: ^mgui.ToolNode
-  maybeActiveTool: ^mgui.ToolNode
-  activeTool: ^mgui.ToolNode
-  hoveredTool: ^mgui.ToolNode
+  tools: ^ui_atoms.ToolNode
+  currentTool: ^ui_atoms.ToolNode
+  maybeActiveTool: ^ui_atoms.ToolNode
+  activeTool: ^ui_atoms.ToolNode
+  hoveredTool: ^ui_atoms.ToolNode
 }
 
-fn (ctx: ^ToolContext) getToolState(tool: ^mgui.ToolNode): ToolState {
-  return ToolState{
-    active: tool == ctx.activeTool,
-    hovered: tool == ctx.hoveredTool}
-}
-
-fn makeToolDebugFrameFromTool(toolctx: ^ToolContext, name: str, tool: ^mgui.ToolNode): ToolDebugFrame {
-  toolState := toolctx.getToolState(tool)
+fn makeToolDebugFrameFromTool(core: ^ui_core.Core, name: str, tool: ^ui_atoms.ToolNode): ToolDebugFrame {
+  toolState := core.getToolState(tool)
 
   color := th.red
   background := false
@@ -57,15 +48,11 @@ fn makeToolDebugFrameFromTool(toolctx: ^ToolContext, name: str, tool: ^mgui.Tool
   return ToolDebugFrame{title: name, color: color, showTitle: showTitle, rect: tool.rect, background: background}
 }
 
-type RealColor = struct {
-  r, g, b, a: real
-}
-
 /**
  * \brief Converts uint32 color to normalized RGBA.
  */
-fn decomposeColor(color: uint32): RealColor {
-  return RealColor{((color >> 24) & 0xFF) / 255.0, ((color >> 16) & 0xFF) / 255.0, ((color >> 8) & 0xFF) / 255.0, ((color >> 0) & 0xFF) / 255.0}
+fn decomposeColor(color: uint32): [4]real {
+  return [4]real{((color >> 24) & 0xFF) / 255.0, ((color >> 16) & 0xFF) / 255.0, ((color >> 8) & 0xFF) / 255.0, ((color >> 0) & 0xFF) / 255.0}
 }
 
 /**
@@ -74,7 +61,7 @@ fn decomposeColor(color: uint32): RealColor {
  */
 fn isWhiteForeground(color: uint32): bool {
   realColor := decomposeColor(color)
-  sum := realColor.r * 0.7 + realColor.g * 1.5 + realColor.b * 0.8
+  sum := realColor[0] * 0.7 + realColor[1] * 1.5 + realColor[2] * 0.8
   return sum >= 1.5
 }
 
@@ -102,8 +89,7 @@ fn drawToolDebugFrame(ctx: ^e_drawcmd.DrawContext, frame: ToolDebugFrame, font: 
   ctx.drawRectLines(frame.color, frame.rect)
 }
 
-// TODO: Draw text handles on top
-fn putDebugFramesRecursive(toolctx: ^ToolContext, font: th_font.Font, ctx: ^e_drawcmd.DrawContext, tool: ^mgui.ToolNode, prefix: str = "") {
+fn putDebugFramesRecursive(toolctx: ^ToolContext, font: th_font.Font, ctx: ^e_drawcmd.DrawContext, tool: ^ui_atoms.ToolNode, prefix: str = "") {
   for toolName, toolChild in tool.children {
     ctx.setLayer(toolChild.layer)
     if toolChild.lastFrameTouched == -1 {
