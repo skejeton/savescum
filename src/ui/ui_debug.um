@@ -17,15 +17,6 @@ type ToolDebugFrame = struct {
   rect: rect.Rect
 }
 
-
-type ToolContext* = struct {
-  tools: ^ui_atoms.ToolNode
-  currentTool: ^ui_atoms.ToolNode
-  maybeActiveTool: ^ui_atoms.ToolNode
-  activeTool: ^ui_atoms.ToolNode
-  hoveredTool: ^ui_atoms.ToolNode
-}
-
 fn makeToolDebugFrameFromTool(core: ^ui_core.Core, name: str, tool: ^ui_atoms.ToolNode): ToolDebugFrame {
   toolState := core.getToolState(tool)
 
@@ -89,18 +80,18 @@ fn drawToolDebugFrame(ctx: ^e_drawcmd.DrawContext, frame: ToolDebugFrame, font: 
   ctx.drawRectLines(frame.color, frame.rect)
 }
 
-fn putDebugFramesRecursive(toolctx: ^ToolContext, font: th_font.Font, ctx: ^e_drawcmd.DrawContext, tool: ^ui_atoms.ToolNode, prefix: str = "") {
+fn putDebugFramesRecursive(core: ^ui_core.Core, font: th_font.Font, ctx: ^e_drawcmd.DrawContext, tool: ^ui_atoms.ToolNode, prefix: str = "") {
   for toolName, toolChild in tool.children {
     ctx.setLayer(toolChild.layer)
     if toolChild.lastFrameTouched == -1 {
       return
     }
 
-    drawToolDebugFrame(ctx, makeToolDebugFrameFromTool(toolctx, toolName, toolChild), font)
-    putDebugFramesRecursive(toolctx, font, ctx, toolChild, toolName+"::")
+    drawToolDebugFrame(ctx, makeToolDebugFrameFromTool(core, toolName, toolChild), font)
+    putDebugFramesRecursive(core, font, ctx, toolChild, toolName+"::")
   }
 }
 
-fn putDebugFrames*(toolctx: ToolContext, font: th_font.Font, ctx: ^e_drawcmd.DrawContext) {
-  putDebugFramesRecursive(&toolctx, font, ctx, toolctx.tools)
+fn putDebugFrames*(core: ^ui_core.Core, font: th_font.Font, ctx: ^e_drawcmd.DrawContext) {
+  putDebugFramesRecursive(core, font, ctx, core.tools)
 }
