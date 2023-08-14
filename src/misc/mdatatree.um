@@ -51,26 +51,16 @@ fn (pushy: ^PushText) indent*(by: int) {
   pushy.indents += by
 }
 
-fn valueTypeName*(value: interface{}): str {
-  if ^[]interface{}(value) != null {
-    return "array"
-  } 
-  if ^map[str]interface{}(value) != null {
-    return "map"
+fn valueTypeName*(value: any): str {
+  switch _ := type(value) {
+    case []any:       return "array"
+    case map[str]any: return "map"
+    case int:         return "int"
+    case str:         return "str"
+    case real:        return "real"
+    case bool:        return "bool"
   }
-  if ^int(value) != null {
-    return "int"
-  }
-  if ^str(value) != null {
-    return "str"
-  }
-  if ^real(value) != null {
-    return "real"
-  }
-  if ^bool(value) != null {
-    return "bool"
-  }
-  return ""
+  return "invalid type"
 }
 
 fn representString*(s: str): str {
