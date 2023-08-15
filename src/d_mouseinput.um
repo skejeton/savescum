@@ -14,7 +14,7 @@ type (
     lmb: MouseButtonState
     mmb: MouseButtonState
     rmb: MouseButtonState
-    wheelY: real
+    scroll: th.Vf2
     pos: th.Vf2
     lastPos: th.Vf2 
     delta: th.Vf2 // mousePos - lastMousePos
@@ -40,7 +40,7 @@ fn (prev: ^MouseState) updated*(): MouseState {
     lmb: prev.lmb.updated(input.mouse1),
     mmb: prev.mmb.updated(input.mouse2),
     rmb: prev.rmb.updated(input.mouse3), 
-    wheelY: input.getMouseScroll().y,
+    scroll: input.getMouseScroll(),
     pos: input.getMousePos(),
     lastPos: prev.pos,
     delta: input.getMousePos().sub(prev.pos)}
