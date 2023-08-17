@@ -1908,15 +1908,15 @@ fn editorMain*(enabled: bool) {
     infoText := ""
 
     if (mpayload_trigger.aprilFools()) {
-      infoText += sprintf("%.3fspf", 1/d_fps.getFps())
+      infoText += sprintf("%.3fspf", 1/d_fps.getFps())+"\n"
       drawShadowText(editor.resources.mainFont, ), th.Vf2{0, 1})
     } else {
-      infoText += sprintf("%dfps", trunc(d_fps.getFps()))
+      infoText += sprintf("%dfps", trunc(d_fps.getFps()))+"\n"
     }
 
-    infoText += sprintf("%d frameskip", trunc(d_game.frameSkips))
-    infoText += sprintf("%s", editor.dirty ? "Dirty" : "Not Dirty")
-    infoText += "v0.2.1"
+    infoText += sprintf("%d frameskip", trunc(d_game.frameSkips))+"\n"
+    infoText += sprintf("%s", editor.dirty ? "Dirty" : "Not Dirty")+"\n"
+    infoText += "v0.2.1"+"\n"
     drawShadowText(editor.resources.mainFont, infoText, th.Vf2{0, 0})
   })
 
