@@ -1834,10 +1834,6 @@ fn editorMain*(enabled: bool) {
   
   mdbg.initConsole()
 
-  mdbg.logt("Welcome to the console!")
-  mdbg.logt("To use the console, use the .write method.")
-  mdbg.logt("You can render the console using mconsole.render")
-  mdbg.logt("The console uses blocks that can be\nMultiline!")
   mdbg.logt("              [ _ _]")
   mdbg.logt("              [ ----]")
   mdbg.logt("     _/\\/\\/\\_/ /")
