@@ -1912,7 +1912,7 @@ fn editorMain*(enabled: bool) {
 
     infoText += sprintf("%d frameskip", trunc(d_game.frameSkips))+"\n"
     infoText += sprintf("%s", editor.dirty ? "Dirty" : "Not Dirty")+"\n"
-    infoText += "v0.2.1"+"\n"
+    infoText += "v0.2.2"+"\n"
     drawShadowText(editor.resources.mainFont, infoText, th.Vf2{0, 0})
   })
 
