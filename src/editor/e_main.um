@@ -1564,9 +1564,11 @@ fn editorPutUi(editor: ^Editor) {
 
   if input.isPressed(input.key_ctrl) {
     if input.isJustPressedc('s') {
+      input.clearc('s')
       editorSaveWorld(editor)
     }
     if input.isJustPressedc('d') {
+      input.clearc('d')
       for w in editor.wm.windows {
         editor.wm.setWindowVisible(w, false)
       }
