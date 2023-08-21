@@ -111,17 +111,7 @@ type (
     list: []d_worlddata.EntityDesc
   }
 
-  InputSink = struct {
-    sunk: [eventCount]bool
-  }
 
-  EditorEvents = struct {
-    sink: ^InputSink
-    // The events the element itself has sunk, so we can return true if the event were to be queried again.
-    acquired: InputSink
-    mask: InputSink
-    mouseState: d_mouseinput.MouseState
-  }
 
   Editor = struct {
     // Misc
