@@ -45,13 +45,7 @@ import (
   "std.um"
 )
 
-const (
-  eventMouseLeft = 0
-  eventMouseMiddle = 1
-  eventMouseRight = 2
-  eventMouseScroll = 3
-  eventCount = 4
-)
+
 
 type (
   EditorGrid = struct {
