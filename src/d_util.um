@@ -23,7 +23,8 @@ fn readFileStr*(path: str): (bool, str) {
   data := make([]char, datasiz+1)
   std.fread(file, data)
   
-  // FIXME: Really bad CRLF fix bruhhh
+  // FIXME: Really bad CRLF fix bruhhh 
+  // what this does is it replaces all \r\n with \n
   data = mstrings.join(mstrings.splitBy(data, '\r'))
 
   return true, data
@@ -72,6 +73,9 @@ fn drawImageRect*(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 
   img.crop(th.Vf2{src.x/dims.x, src.y/dims.y}, th.Vf2{(src.x + src.w)/dims.x, (src.y + src.h)/dims.y})
   img.draw({p: th.Vf2{dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}, tint)
 }
+
+
+
 
 //
 // Returns lowest number among a, b
@@ -248,7 +252,8 @@ fn isprint*(c: uint32): bool {
   return c >= 32 && c != 127
 }
 
-fn rectDiff*(a, b: rect.Rect): rect.Rect {
+
+fn rectUnion*(a, b: rect.Rect): rect.Rect {
   x := max(a.x, b.x);
   y := max(a.y, b.y);
   return rect.Rect{

@@ -161,3 +161,4 @@ fn (core: ^Core) getPropertyLazy(name: str, getter: fn (): any): any {
 
   return tool.userdata
 }
+

@@ -3,7 +3,16 @@
  * TODO: Check if callbacks/closures are faster than interfaces and use them instead.
  */
 
-import ("th.um"; "window.um"; "rect.um"; "image.um"; "font.um"; "canvas.um"; "../d_util.um")
+import (
+  "th.um"
+  "window.um"
+  "rect.um"
+  "image.um"
+  "font.um"
+  "canvas.um"
+  "../d_util.um"
+)
+
 
 type (
   DrawProperties* = struct{}
@@ -89,11 +98,6 @@ fn (ctx: ^DrawContext) getCurrentScissorRect*(): (bool, rect.Rect) {
   return false, rect.Rect{}
 }
 
-/*
-// DrawContext.Flush()
-//
-// Flushes all the layers and commands, outputting them onto the screen.
-*/
 fn (ctx: ^DrawContext) flush*() {
   scissorCounter := 0
 

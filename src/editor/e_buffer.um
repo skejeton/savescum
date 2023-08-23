@@ -11,6 +11,12 @@ type Cursor* = struct {
   line, column: int
 }
 
+// Creates a new buffer with the provided text.
+fn newBuffer*(text: str): Buffer {
+  return Buffer{lines: mstrings.splitBy(text, '\n')}
+}
+
+
 // Splits line at the cursor, equivalent to inserting a newline.
 fn splitLine*(buffer: ^Buffer, cursor: ^Cursor) {
   firstHalf, secondHalf := mstrings.uniSlice(buffer.lines[cursor.line], 0, cursor.column), mstrings.uniSliceFrom(buffer.lines[cursor.line], cursor.column)
