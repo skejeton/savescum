@@ -16,6 +16,10 @@ fn newBuffer*(text: str): Buffer {
   return Buffer{lines: mstrings.splitBy(text, '\n')}
 }
 
+// Converts buffer to string
+fn bufferToString*(buffer: Buffer): str {
+  return mstrings.join(buffer.lines, '\n')
+}
 
 // Splits line at the cursor, equivalent to inserting a newline.
 fn splitLine*(buffer: ^Buffer, cursor: ^Cursor) {
