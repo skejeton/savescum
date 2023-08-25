@@ -13,6 +13,8 @@ type Cursor* = struct {
 
 // Creates a new buffer with the provided text.
 fn newBuffer*(text: str): Buffer {
+  // Normalize line endings.
+  text = mstrings.join(mstrings.splitBy(text, '\r\n'), '\n')
   return Buffer{lines: mstrings.splitBy(text, '\n')}
 }
 
