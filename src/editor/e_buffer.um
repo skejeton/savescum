@@ -23,6 +23,7 @@ fn bufferToString*(buffer: Buffer): str {
   return mstrings.join(buffer.lines, '\n')
 }
 
+
 // Splits line at the cursor, equivalent to inserting a newline.
 fn splitLine*(buffer: ^Buffer, cursor: ^Cursor) {
   firstHalf, secondHalf := mstrings.uniSlice(buffer.lines[cursor.line], 0, cursor.column), mstrings.uniSliceFrom(buffer.lines[cursor.line], cursor.column)
