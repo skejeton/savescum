@@ -1,10 +1,16 @@
 import (
-    "window.um"
+  "window.um"
 )
 
 cursor := 0
 cursorSet := false
 
+/**
+ * @brief Sets the cursor to the specified value.
+ * @param newCursor The new cursor value.
+ * @note Refer to window.um for the cursor values. 0 represents the default 
+ *       cursor. 
+ */
 fn setCursor*(newCursor: int) {
   if newCursor == 0 {
     if !cursorSet {

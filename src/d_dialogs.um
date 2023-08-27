@@ -1,6 +1,6 @@
 import (
   "std.um"; "image.um"; "th.um"; "rect.um"; th_font = "font.um";
-  "d_util.um"; "d_typer.um"; "d_global.um"
+  "d_util.um"; "d_typer.um"; "d_global.um";
 )
 
 type (
@@ -38,6 +38,11 @@ type (
 /////// PERSONA
 ////
 
+/**
+ * @brief Gets the emote of the persona.
+ * @param emotion The emotion to get.
+ * @return The emote.
+ */
 fn (p: ^Persona) getEmote*(emotion: str): int {
   emote := 0
   if validkey(p.emotes, emotion) { 
@@ -50,18 +55,37 @@ fn (p: ^Persona) getEmote*(emotion: str): int {
 /////// DIALOG
 ////
 
+/**
+ * @brief Initializes a dialog.
+ * @param persona The persona to use.
+ * @param emote The emote to use.
+ * @param position The position of the dialog.
+ * @param message The message to display.
+ * @return The dialog.
+ */
 fn initDialog*(persona: ^Persona, emote: int, position: th.Vf2, message: str): Dialog {
   return Dialog{persona: persona, speed: persona.speed, emote: emote, position: position, typer: d_typer.init(message), appearTimer: 0}
 }
 
+/**
+ * @return Whether the dialog is finished.
+ */
 fn (d: ^Dialog) isFinished(): bool {
   return d.typer.isFinished()
 }
 
+/**
+ * @brief Gets the offset of the box image.
+ * @return The offset.
+ */
 fn (d: ^Dialog) getBoximgOffset(): th.Vf2 {
   return th.Vf2{0, d.persona.boximgY*48}
 }
 
+/**
+ * @brief Gets the box of the dialog.
+ * @return The box.
+ */
 fn (d: ^Dialog) getBox*(): rect.Rect {
   boxSize := d.persona.font.measure(d.typer.fullMessage)
   boxSize.x += 16+64+8
@@ -84,6 +108,9 @@ fn (d: ^Dialog) getBox*(): rect.Rect {
   return box
 }
 
+/**
+ * @brief Draws the dialog.
+ */
 fn (d: ^Dialog) draw*() {
 
   // PRECALC VALUES //
@@ -125,10 +152,26 @@ fn (d: ^Dialog) draw*() {
 /////// DIALOGS
 ////
 
+/**
+ * @brief Initializes the dialog system.
+ * @return The dialog system.
+ */
 fn init*(): Dialogs {
   return Dialogs{personas: map[str]Persona{}, list: make([]Dialog, 0)}
 }
 
+/**
+ * @brief Registers a persona.
+ * @param name The name of the persona.
+ * @param boximg The image of the box.
+ * @param boximgY The Y texture offset of the box.
+ * @param faceimg The image of the face.
+ * @param faceimgY The Y texture offset of the face.
+ * @param font The font to use.
+ * @param fontColor The color of the font.
+ * @param speed The speed of the dialog.
+ * @param emotes The emotes of the persona.
+ */
 fn (d: ^Dialogs) register*(name: str, boximg: image.Image, boximgY: int, faceimg: image.Image, faceimgY: int, font: th_font.Font, fontColor: uint32, speed: real, emotes: []str) {
   var persona: Persona
   persona.name = name
@@ -148,6 +191,13 @@ fn (d: ^Dialogs) register*(name: str, boximg: image.Image, boximgY: int, faceimg
   d.personas[name] = persona
 }
 
+/**
+ * @brief Creates and shows a dialog.
+ * @param name The name of the persona.
+ * @param emotion The emotion of the persona.
+ * @param message The message to display.
+ * @param pos The position of the dialog.
+ */
 fn (d: ^Dialogs) say*(name, emotion: str, message: str, pos: th.Vf2) {
   // TODO: Fallback text if persona doesn't exist
   if validkey(d.personas, name) {
@@ -160,7 +210,10 @@ fn (d: ^Dialogs) say*(name, emotion: str, message: str, pos: th.Vf2) {
   }
 }
 
-// Returns (success, position of top dialog)
+/**
+ * @brief Gets the position of the top dialog.
+ * @return Whether there is a dialog, and the position.
+ */
 fn (d: ^Dialogs) getTopPos*(): (bool, th.Vf2) {
   if len(d.list) > 0 {
     return true, d.list[len(d.list)-1].position
@@ -168,6 +221,10 @@ fn (d: ^Dialogs) getTopPos*(): (bool, th.Vf2) {
   return false, th.Vf2{0, 0}
 }
 
+/**
+ * @brief Advances the dialog.
+ * @param press Whether the player is pressing the dialog advance button.
+ */
 fn (d: ^Dialogs) advance*(press: bool) {
   if len(d.list) > 0 {
     dialog := &d.list[len(d.list)-1]
@@ -189,6 +246,9 @@ fn (d: ^Dialogs) advance*(press: bool) {
   }
 }
 
+/**
+ * @brief Updates all dialogs
+ */
 fn (d: ^Dialogs) update*() {
   for x in d.list {
     dialog := &d.list[x]
@@ -210,6 +270,11 @@ fn (d: ^Dialogs) update*() {
   }
 }
 
+/**
+ * @brief Draws all dialogs
+ * @param offset The offset of the camera
+ * @param scale The scale of the camera
+ */
 fn (d: ^Dialogs) draw*(offset: th.Vf2, scale: real) {
   for x in d.list {
     prevPos := d.list[x].position
