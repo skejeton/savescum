@@ -1,0 +1,11 @@
+import (
+  "th.um"
+)
+
+fn assert*(condition: bool, message: str) {
+  if !condition {
+    // TODO: Show the stack trace
+    printf("assertion failed: %s", message);
+    th.quit();
+  }
+}

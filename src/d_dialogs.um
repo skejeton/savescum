@@ -1,6 +1,6 @@
 import (
   "std.um"; "image.um"; "th.um"; "rect.um"; th_font = "font.um";
-  "d_util.um"; "d_typer.um"; "d_global.um";
+  "d_util.um"; "d_typer.um"; "d_global.um"; "d_assert.um"
 )
 
 type (
@@ -200,14 +200,12 @@ fn (d: ^Dialogs) register*(name: str, boximg: image.Image, boximgY: int, faceimg
  */
 fn (d: ^Dialogs) say*(name, emotion: str, message: str, pos: th.Vf2) {
   // TODO: Fallback text if persona doesn't exist
-  if validkey(d.personas, name) {
-    persona := &d.personas[name]
-    dialog := initDialog(persona, persona.getEmote(emotion), th.Vf2{0, persona.boximgY*48}, message)
-    dialog.position = pos
-    d.list = append(d.list, dialog)
-  } else {
-    printf("Hell! The persona doesn't exist!");
-  }
+  d_assert.assert(validkey(d.personas, name), "Persona doesn't exist!")
+
+  persona := &d.personas[name]
+  dialog := initDialog(persona, persona.getEmote(emotion), th.Vf2{0, persona.boximgY*48}, message)
+  dialog.position = pos
+  d.list = append(d.list, dialog)
 }
 
 /**
