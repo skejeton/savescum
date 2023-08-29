@@ -80,6 +80,12 @@ fn representString*(s: str): str {
   return "\"\"\""+result+"\"\"\""
 }
 
+/**
+ * Draws a tree of arbitrary data
+ * @param pushy The PushText object to draw with
+ * @param hover A pointer to a string that will be set to the name of the value the mouse is hovering over
+ * @param env The data to draw
+ */
 fn drawTree*(pushy: ^PushText, hover: ^str, env: interface{}) {
   if arrValue := ^[]interface{}(env); arrValue != null {
     pushy.push(sprintf("["))
