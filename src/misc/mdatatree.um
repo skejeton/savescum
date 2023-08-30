@@ -17,6 +17,11 @@ type PushText* = struct {
   lineHeight: real
 }
 
+/**
+ * Creates a new PushText object
+ * @param font The font to draw with
+ * @param pos The position to start drawing at
+ */
 fn mkPushText*(font: th_font.Font, pos: th.Vf2): PushText {
   return PushText{font, pos, pos, 0, font.measure(" ").y}
 }
