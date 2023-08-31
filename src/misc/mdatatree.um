@@ -42,16 +42,26 @@ fn (pushy: ^PushText) push*(txt: str, color: uint32 = 0xFFFFFFFF): rect.Rect {
 }
 
 
+/**
+ * @returns true if the text should wrap to the next line
+ */
 fn (pushy: ^PushText) shouldWrap*(): bool {
   return pushy.pos.x - pushy.initPos.x > 200
 }
 
+/**
+ * @brief Moves the cursor to the next line
+ */
 fn (pushy: ^PushText) newLine*() {
   pushy.pos.y += pushy.lineHeight
   pushy.lineHeight = pushy.font.measure(" ").y
   pushy.pos.x = pushy.indents*30+pushy.initPos.x
 }
 
+/**
+ * @brief Indents the text
+ * @param by The amount to indent by
+ */
 fn (pushy: ^PushText) indent*(by: int) {
   pushy.indents += by
 }
@@ -158,6 +168,12 @@ fn drawTree*(pushy: ^PushText, hover: ^str, env: interface{}) {
   }
 }
 
+/**
+ * Draws a tooltip
+ * @param font The font to draw with
+ * @param pos The position to draw at
+ * @param tooltip The tooltip to draw
+ */
 fn drawTooltip*(font: th_font.Font, pos: th.Vf2, tooltip: str) {
   size := font.measure(tooltip)
   r := rect.mk(pos.x, pos.y, size.x, size.y)
