@@ -2,6 +2,10 @@ import (
   "utf8.um"
 )
 
+/**
+ * @param texts The strings to join.
+ * @return The joined string.
+ */
 fn join*(texts: []str): str {
   result := ""
   
@@ -12,6 +16,11 @@ fn join*(texts: []str): str {
   return result
 }
 
+/**
+ * @param text The string to split.
+ * @param by The character to split by.
+ * @return The split string.
+ */
 fn splitBy*(text: str, by: char): []str {
   items := []str{}
   last := 0
@@ -26,6 +35,11 @@ fn splitBy*(text: str, by: char): []str {
 }
 
 // inserts string `sub` at the end of every string in array except for last
+/**
+ * @param strl The strings to intersperse.
+ * @param sub The string to intersperse with.
+ * @return The interspersed string array.
+ */
 fn intersperse*(strl: []str, sub: str): []str {
   newl := copy(strl)
 
@@ -36,6 +50,11 @@ fn intersperse*(strl: []str, sub: str): []str {
   return newl
 }
 
+/**
+ * @param texts The strings to join.
+ * @param by The string to join by.
+ * @return The joined string.
+ */
 fn joinBy*(texts: []str, by: str): str {
   return join(intersperse(texts, by))
 }
