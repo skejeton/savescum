@@ -14,16 +14,14 @@ type Cursor* = struct {
 // Creates a new buffer with the provided text.
 fn newBuffer*(text: str): Buffer {
   // Normalize line endings.
-  text = mstrings.join(mstrings.splitBy(text, '\r\n'), '\n')
+  text = mstrings.join(mstrings.splitBy(text, '\r'))
   return Buffer{lines: mstrings.splitBy(text, '\n')}
 }
 
 // Converts buffer to string
 fn bufferToString*(buffer: Buffer): str {
-  return mstrings.join(buffer.lines, '\n')
+  return mstrings.joinBy(buffer.lines, '\n')
 }
-
-
 
 // Splits line at the cursor, equivalent to inserting a newline.
 fn splitLine*(buffer: ^Buffer, cursor: ^Cursor) {
@@ -80,13 +78,15 @@ fn eraseRange*(buffer: ^Buffer, cursor: ^Cursor, start, end: Cursor) {
     buffer.lines[start.line] = mstrings.uniRemove(buffer.lines[start.line], start.column, end.column-start.column)
   } else {
     // Remove the first line.
-    buffer.lines[start.line] = mstrings.uniRemoveFrom(buffer.lines[start.line], start.column)
+    buffer.lines[start.line] = mstrings.uniSliceFrom(buffer.lines[start.line], start.column)
     // Remove the last line.
     buffer.lines[end.line] = mstrings.uniRemove(buffer.lines[end.line], 0, end.column)
     // Join the two lines.
     buffer.lines[start.line] += buffer.lines[end.line]
     // Remove the lines in between.
-    buffer.lines = delete(buffer.lines, start.line+1, end.line-start.line)
+    for i := start.line+1; i < end.line-1; i++ {
+      buffer.lines = delete(buffer.lines, i)
+    }
   }
   cursor.line = start.line
   cursor.column = start.column

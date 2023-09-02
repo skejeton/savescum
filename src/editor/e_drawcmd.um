@@ -173,7 +173,7 @@ fn mergeScissorRects(child, parent: rect.Rect): rect.Rect {
   }
 
   // Otherwise return the intersection rect.
-  return d_util.rectDiff(child, parent)
+  return d_util.rectUnion(child, parent)
 }
 
 fn (ctx: ^DrawContext) beginScissorRect*(r: rect.Rect) {
