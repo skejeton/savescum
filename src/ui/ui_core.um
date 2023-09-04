@@ -162,3 +162,81 @@ fn (core: ^Core) getPropertyLazy(name: str, getter: fn (): any): any {
   return tool.userdata
 }
 
+// Creates an input sink with all inputs set to 1.
+// Can be used for masking.
+fn initInputSinkSet*(): InputSink {
+  sink := InputSink{}
+ 
+  for i in sink.sunk {
+    sink.sunk[i] = true
+  }
+
+  return sink
+}
+
+fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: int): bool {
+  if event < 0 || event >= eventCount {
+    error(sprintf("Invalid event id: %d", event))
+  }
+ 
+  // This event is masked so we can't process it.
+  if mask.sunk[event] {
+    return false
+  }
+
+  // This event was acquired, so it's successful.
+  if acquire.sunk[event] {
+    return true
+  }
+
+  // This event was already sunk. Can't sink it again.
+  if sink.sunk[event] {
+    return false
+  }
+
+  // Sink and acquire the event.
+  sink.sunk[event] = true;
+  acquire.sunk[event] = true;
+
+  return true
+}
+
+fn sinkEvent*(events: ^, event: int): bool {
+  return sinkAcquireMaskEvent(events.sink, &events.acquired, events.mask, event)
+}
+
+fn convertButtonToEvent(btn: int): int {
+  return btn
+}
+
+fn (events: ^Events) queryMouse(btn: int, which: int): bool {
+  if sinkEvent(events, convertButtonToEvent(btn)) == false {
+    return false
+  }
+
+  var mouseButton: d_mouseinput.MouseButtonState
+
+  switch btn {
+    case 0: mouseButton = events.mouseState.lmb
+    case 1: mouseButton = events.mouseState.mmb
+    case 2: mouseButton = events.mouseState.rmb
+    default: error(sprintf("Invalid mouse button index %d", btn))
+  }
+
+  switch which {
+    case d_mouseinput.down: return mouseButton.isDown
+    case d_mouseinput.pressed: return mouseButton.isPressed
+    case d_mouseinput.released: return mouseButton.isReleased
+    default: error(sprintf("Invalid mouse button property index %d", which))
+  }
+  return false;
+
+}
+
+fn (events: ^Events) queryScroll(): real {
+  if sinkEvent(events, eventMouseScroll) == false {
+    return 0
+  }
+
+  return events.mouseState.wheelY
+}
