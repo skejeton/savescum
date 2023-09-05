@@ -209,7 +209,7 @@ fn convertButtonToEvent(btn: int): int {
   return btn
 }
 
-fn (events: ^Events) queryMouse(btn: int, which: int): bool {
+fn (events: ^Events) queryMouse*(btn: int, which: int): bool {
   if sinkEvent(events, convertButtonToEvent(btn)) == false {
     return false
   }
@@ -233,7 +233,7 @@ fn (events: ^Events) queryMouse(btn: int, which: int): bool {
 
 }
 
-fn (events: ^Events) queryScroll(): real {
+fn (events: ^Events) queryScroll*(): real {
   if sinkEvent(events, eventMouseScroll) == false {
     return 0
   }
