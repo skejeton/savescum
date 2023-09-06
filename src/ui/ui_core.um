@@ -201,7 +201,7 @@ fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: int)
   return true
 }
 
-fn sinkEvent*(events: ^, event: int): bool {
+fn sinkEvent*(events: ^Events, event: int): bool {
   return sinkAcquireMaskEvent(events.sink, &events.acquired, events.mask, event)
 }
 
