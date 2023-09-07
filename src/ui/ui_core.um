@@ -205,7 +205,7 @@ fn sinkEvent*(events: ^Events, event: int): bool {
   return sinkAcquireMaskEvent(events.sink, &events.acquired, events.mask, event)
 }
 
-fn convertButtonToEvent(btn: int): int {
+fn convertButtonToEvent*(btn: int): int {
   return btn
 }
 
