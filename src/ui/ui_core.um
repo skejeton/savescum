@@ -36,7 +36,8 @@ type Events* = struct {
 fn (core: ^Core) getToolState(tool: ^ui_atoms.ToolNode): ui_atoms.ToolState {
   return ToolState{
     active: tool == core.activeTool,
-    hovered: tool == core.hoveredTool}
+    hovered: tool == core.hoveredTool
+  }
 }
 
 fn (core: ^Core) maybeAcquireToolNode(name: str): ^ui_atoms.ToolNode {
