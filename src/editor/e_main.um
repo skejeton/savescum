@@ -28,6 +28,7 @@ import (
   "../d_script.um"
   "../d_immcursor.um"
   "../mpayload_trigger.um"
+  "ui_core.um"
 
   th_font = "font.um"
   th_color = "color.um"
@@ -134,7 +135,6 @@ type (
     preChangeWorldData: d_worlddata.WorldData
 
     // UI misc.
-    inputSink: InputSink
     currentWindow: str
     currentWindowLayer: int
     wm: WindowManager
@@ -143,7 +143,8 @@ type (
     // Input
     mouseState: d_mouseinput.MouseState
 
-    // Census
+    // UI state
+    ui: ui_core.Core
   }
 )
 
