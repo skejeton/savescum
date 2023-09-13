@@ -1742,13 +1742,14 @@ fn editorMain*(enabled: bool) {
   
   mdbg.initConsole()
 
-  mdbg.logt("              [ _ _]")
-  mdbg.logt("              [ ----]")
-  mdbg.logt("     _/\\/\\/\\_/ /")
-  mdbg.logt("   _|         /")
-  mdbg.logt(" _|  (  | (  |")
-  mdbg.logt("/__.-'|_|--|_|")
-
+  mdbg.logt(
+    "              [ _ _]\n"+
+    "              [ ----]\n"+
+    "     _/\\/\\/\\_/ /\n"+
+    "   _|         /\n"+
+    " _|  (  | (  |\n"+
+    "/__.-'|_|--|_|\n"
+  )
   // init data
   rl := new(d_resources.ResourceLoader)
   rl ^= d_resources.initResourceLoader()
