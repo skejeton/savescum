@@ -259,10 +259,10 @@ fn putButton(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
   events := editor.endTool()
 
   if (toolState.active) {
-    buttonState.isOver = true;
-    buttonState.isDown = events.queryMouse(0, d_mouseinput.down) || events.queryMouse(0, d_mouseinput.released);
-    buttonState.isPressed = events.queryMouse(0, d_mouseinput.pressed);
-    buttonState.isReleased = events.queryMouse(0, d_mouseinput.released) && toolState.hovered;
+    buttonState.isOver = true
+    buttonState.isDown = events.queryMouse(0, d_mouseinput.down) || events.queryMouse(0, d_mouseinput.released)
+    buttonState.isPressed = events.queryMouse(0, d_mouseinput.pressed)
+    buttonState.isReleased = events.queryMouse(0, d_mouseinput.released) && toolState.hovered
     
     d_immcursor.setCursor(window.cursorFinger)
   }
@@ -332,7 +332,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
   // Frame tool.
   editor.beginTool(title, windowRect^)
   {
-    drawBackdropRect(editor, d_util.rectShrink(windowRect^, -3), 0xCCCCCCFF);
+    drawBackdropRect(editor, d_util.rectShrink(windowRect^, -3), 0xCCCCCCFF)
     drawBackdropRect(editor, windowRect^)
 
     buttonSize := th.Vf2{titlebarHeight, titlebarHeight}
@@ -409,7 +409,7 @@ fn uiEndWindow(editor: ^Editor) {
         movement = events.mouseState.delta
       }
 
-      gripSize := th.Vf2{10, 10};
+      gripSize := th.Vf2{10, 10}
       gripRect := rect.mk(windowRect.x+windowRect.w-gripSize.x, windowRect.y+windowRect.h-gripSize.y, gripSize.x, gripSize.y)
 
       {
@@ -429,7 +429,7 @@ fn uiEndWindow(editor: ^Editor) {
   editor.ctx.moveLayer(-1000*editor.currentWindowLayer)
 
   windowRect ^= d_util.rectMove(windowRect^, movement)
-  windowRect.w += squishing.x; windowRect.h += squishing.y;
+  windowRect.w += squishing.x; windowRect.h += squishing.y
   // Clamp
   if windowRect.w < 100 {
     windowRect.w = 100
@@ -1345,7 +1345,7 @@ fn putWorldEntities(editor: ^Editor) {
 
     // FIXME: Initializing tag set every time we render an entity is not efficent at all.
     tags := d_game.initTagSetFromString(ent.tags)
-    ignore := tags.isSet("Guide") && editor.entityBypass && !isEntitySelected(&editor.entities, i);
+    ignore := tags.isSet("Guide") && editor.entityBypass && !isEntitySelected(&editor.entities, i)
 
     drawTaggedEntityRect(editor, ent, entVisRect, &tags)
 
@@ -1452,9 +1452,9 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources
 fn showErrorScreenIfResourcesFailedToLoad(rl: ^d_resources.ResourceLoader): bool {
   if d_resources.hasErrors(rl) {
     d_problem_screen.showResourceLoadingError(rl)
-    return true;
+    return true
   }
-  return false;
+  return false
 }
 
 
@@ -1502,7 +1502,7 @@ fn editorPutUi(editor: ^Editor) {
 
   editor.mouseState = editor.mouseState.updated()
 
-  editor.frameNumber += 1;
+  editor.frameNumber += 1
   // put ui
   if editor.isPlaying {
     if editor.enabled {
@@ -1575,7 +1575,7 @@ fn editorPutUi(editor: ^Editor) {
       position.x -= elementSize
 
       if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "✋", editor.entityBypass).isReleased) {
-        editor.entityBypass = !editor.entityBypass;
+        editor.entityBypass = !editor.entityBypass
       }
     }
 
@@ -1757,7 +1757,7 @@ fn editorMain*(enabled: bool) {
   d_game.init(rl)
   editorResources := loadEditorResources(rl)
   if showErrorScreenIfResourcesFailedToLoad(rl) {
-    return;
+    return
   }
 
   editor := new(Editor)
@@ -1781,7 +1781,7 @@ fn editorMain*(enabled: bool) {
       const preDemoText = "Thanks for playing the pre-demo"
 
       canvas.drawRect(th.black, d_global.screen)
-      pos := centerTextWithinRect(editor.resources.mainFont, preDemoText, d_global.screen);
+      pos := centerTextWithinRect(editor.resources.mainFont, preDemoText, d_global.screen)
     
       editor.resources.mainFont.draw(preDemoText, pos, th.white)
       return
