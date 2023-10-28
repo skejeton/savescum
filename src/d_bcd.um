@@ -1,0 +1,43 @@
+
+type BcdNum = struct {
+	values: []uint8
+}
+
+// @returns carry and digit
+fn addBcdDigit(a: uint8, b: uint8): int, int {
+	return (a + b) / 10, (a + b) % 10
+}
+
+fn intoBcd*(number: uint64): BcdNum {
+	bcd := BcdNum{}
+
+	for number > 0 {
+		bcd.values.push(number % 10)
+		number /= 10
+	}
+
+	return bcd
+}
+
+fn getBcdDigit*(bcd: BcdNum, n: int): int {
+	return (n >= len(bcd.values) ? 0 : bcd.values[n])
+}
+
+fn maxDigits*(a: BcdNum, b: BcdNum): int {
+	return len(a.values) > len(b.values) ? len(a.values) : len(b.values)
+}
+
+fn add*(a: BcdNum, b: BcdNum) {
+	r := BcdNum{}
+
+	mx := maxDigits(a, b)
+	carry := 0
+
+	for i := 0; i < mx; i++ {
+		c1, v1 := addBcdDigit(a.values[i], carry)
+		c2, v2 := addBcdDigit(a.values[i], b.values[i])
+		
+		val := carry + v1 + v2
+		carry := c1 + c2
+	}
+}
