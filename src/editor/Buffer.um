@@ -1,6 +1,6 @@
 import (
   "utf8.um"
-  "../misc/mstrings.um"
+  "../misc/Strings.um"
 )
 
 type Buffer* = struct {
@@ -14,18 +14,18 @@ type Cursor* = struct {
 // Creates a new buffer with the provided text.
 fn newBuffer*(text: str): Buffer {
   // Normalize line endings.
-  text = mstrings.join(mstrings.splitBy(text, '\r'))
-  return Buffer{lines: mstrings.splitBy(text, '\n')}
+  text = Strings.join(Strings.splitBy(text, '\r'))
+  return Buffer{lines: Strings.splitBy(text, '\n')}
 }
 
 // Converts buffer to string
 fn bufferToString*(buffer: Buffer): str {
-  return mstrings.joinBy(buffer.lines, '\n')
+  return Strings.joinBy(buffer.lines, '\n')
 }
 
 // Splits line at the cursor, equivalent to inserting a newline.
 fn splitLine*(buffer: ^Buffer, cursor: ^Cursor) {
-  firstHalf, secondHalf := mstrings.uniSlice(buffer.lines[cursor.line], 0, cursor.column), mstrings.uniSliceFrom(buffer.lines[cursor.line], cursor.column)
+  firstHalf, secondHalf := Strings.uniSlice(buffer.lines[cursor.line], 0, cursor.column), Strings.uniSliceFrom(buffer.lines[cursor.line], cursor.column)
 
   buffer.lines[cursor.line] = firstHalf
 
@@ -56,31 +56,31 @@ fn erase*(buffer: ^Buffer, cursor: ^Cursor) {
     }
   } else {
     // Remove char strategy.
-    buffer.lines[cursor.line] = mstrings.uniRemove(buffer.lines[cursor.line], cursor.column, 1)
+    buffer.lines[cursor.line] = Strings.uniRemove(buffer.lines[cursor.line], cursor.column, 1)
   }
 }
 
 // Inserts provided text into buffer. 
 fn insertAt*(buffer: ^Buffer, cursor: ^Cursor, text: str) {
-  linesToInsert := mstrings.splitBy(text, '\n')
+  linesToInsert := Strings.splitBy(text, '\n')
   for index, line in linesToInsert {
     // Reset the column if we're on a new line.
     if index != 0 { 
       splitLine(buffer, cursor)
     }
-    buffer.lines[cursor.line] = mstrings.uniInsert(buffer.lines[cursor.line], cursor.column, line)
+    buffer.lines[cursor.line] = Strings.uniInsert(buffer.lines[cursor.line], cursor.column, line)
     cursor.column += utf8.runeCount(line)
   }
 }
 
 fn eraseRange*(buffer: ^Buffer, cursor: ^Cursor, start, end: Cursor) {
   if start.line == end.line {
-    buffer.lines[start.line] = mstrings.uniRemove(buffer.lines[start.line], start.column, end.column-start.column)
+    buffer.lines[start.line] = Strings.uniRemove(buffer.lines[start.line], start.column, end.column-start.column)
   } else {
     // Remove the first line.
-    buffer.lines[start.line] = mstrings.uniSliceFrom(buffer.lines[start.line], start.column)
+    buffer.lines[start.line] = Strings.uniSliceFrom(buffer.lines[start.line], start.column)
     // Remove the last line.
-    buffer.lines[end.line] = mstrings.uniRemove(buffer.lines[end.line], 0, end.column)
+    buffer.lines[end.line] = Strings.uniRemove(buffer.lines[end.line], 0, end.column)
     // Join the two lines.
     buffer.lines[start.line] += buffer.lines[end.line]
     // Remove the lines in between.

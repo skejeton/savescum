@@ -1,0 +1,5 @@
+import ("src/main.um")
+
+fn init*() {
+  Main.init(false)
+}

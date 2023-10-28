@@ -87,19 +87,19 @@ target_test() {
   if [ -z "$1" ]; then
     echo -e "What am I gonna test? \n$PROG_NAME test test_name" 
     exit 1
-  elif [[ -d "test/$1" && -f "test/$1/main.um" ]]; then 
-    TESTTYPE=$TESTTYPE TEST_PFX="test/$1/" engage -main "test/$1/main.um"
+  elif [[ -d "test/$1" && -f "test/$1/Main.um" ]]; then 
+    TESTTYPE=$TESTTYPE TEST_PFX="test/$1/" engage -main "test/$1/Main.um"
   else
-    echo -e "I don't know test \"$1\".\nTests are in ./test directory, you must make a folder named \"$1\" inside it, and put a main.um file in it. That's the way it is!" 
+    echo -e "I don't know test \"$1\".\nTests are in ./test directory, you must make a folder named \"$1\" inside it, and put a Main.um file in it. That's the way it is!" 
     exit 2
   fi
 }
 
 target_emscripten() {
   mv main.um main_temp.um
-  mv main_game.um main.um
+  mv MainGame.um main.um
   $TOPHAT_EMSCRIPTEN_VAR data src main.um user
-  mv main.um main_game.um
+  mv main.um MainGame.um
   mv main_temp.um main.um
 }
 
@@ -152,7 +152,7 @@ case `getarg 0` in
     engage check -main main.um
     
     for d in test/*; do
-      TEST_PFX="%d/" $TOPHAT $SILENT check main "$d/main.um"
+      TEST_PFX="%d/" $TOPHAT $SILENT check main "$d/Main.um"
     done
   ;;
   testall)
