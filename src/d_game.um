@@ -1,8 +1,8 @@
 import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "image.um"
-  "misc/mstrings.um"; "mdbg.um";
+  "misc/d_strings.um"; "d_dbg.um";
   th_color = "color.um";
   "d_rerp.um"; "d_background.um"; "d_resources.um"; 
-  "d_util.um"; "d_world.um"; "d_global.um"; "d_worlddata.um")
+  "d_util.um"; "d_world.um"; "d_global.um"; "d_world_data.um")
 
 const (
   shapeBlock          = 0
@@ -43,7 +43,7 @@ type (
 )
 
 fn (t: ^TagSet) set*(tag: str) {
-  params := mstrings.splitBy(tag, ':')
+  params := d_strings.splitBy(tag, ':')
   if len(params) > 1 {
     t.tags[params[0]].param = params[1]
   }
@@ -60,7 +60,7 @@ fn (t: ^TagSet) isSet*(tag: str): bool {
 
 fn initTagSetFromString*(s: str): TagSet {
   tagSet := TagSet{map[str]Tag{}}
-  tags := mstrings.splitBy(s, ';')
+  tags := d_strings.splitBy(s, ';')
   for i, tag in tags {
     tagSet.set(tag)
   }
@@ -441,7 +441,7 @@ fn _drawRectTangents(r: rect.Rect) {
   }
 }
 
-fn convertEntityDescToCharacter(ent: d_worlddata.EntityDesc): Character {
+fn convertEntityDescToCharacter(ent: d_world_data.EntityDesc): Character {
   return Character{id: ent.id, tags: initTagSetFromString(ent.tags), rect: ent.rect}
 }
 
@@ -455,7 +455,7 @@ fn findEntity*(id: str): ^Character {
   return null
 }
 
-fn start*(worldData: d_worlddata.WorldData) {
+fn start*(worldData: d_world_data.WorldData) {
   toPortal = ""
   startTimer = 0.5
   touchTimer = 5
@@ -855,7 +855,7 @@ fn update*() {
           ent := findEntity(dest)
           toPortal = dest
           if ent == null {
-            mdbg.logt("Error: Destination entity doesn't exist")
+            d_dbg.logt("Error: Destination entity doesn't exist")
           } else if input.isJustPressedc(' ') {
             if !entCheckCollision(ent) {
               chara.rect.x = ent.rect.x

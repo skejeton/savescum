@@ -1,7 +1,7 @@
 import (
-  "editor/e_main.um"
+  editor_main = "editor/d_main.um"
 )
 
 fn init*(editor: bool = true) {
-  e_main.editorMain(editor)
+  editor_main.editorMain(editor)
 }

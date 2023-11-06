@@ -1,5 +1,5 @@
-import ("src/main.um")
+import ("src/d_main.um")
 
 fn init*() {
-  Main.init(false)
+  d_main.init(false)
 }

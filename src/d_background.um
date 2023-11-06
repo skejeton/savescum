@@ -1,7 +1,7 @@
 import (
   "rect.um"; "image.um"; "canvas.um"; "th.um"; th_color = "color.um";
   "d_util.um"; "d_global.um"; "d_resources.um"; "d_partition.um";
-  "mdbg.um"
+  "d_dbg.um"
 )
 
 const (

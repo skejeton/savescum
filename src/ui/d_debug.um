@@ -1,7 +1,7 @@
 import (
-	"ui_core.um"
-  "ui_atoms.um"
-  "../editor/e_drawcmd.um"
+	"d_core.um"
+  "d_atoms.um"
+  "../editor/d_drawcmd.um"
   "rect.um"
   "th.um"
   th_font = "font.um"
@@ -17,7 +17,7 @@ type ToolDebugFrame = struct {
   rect: rect.Rect
 }
 
-fn makeToolDebugFrameFromTool(core: ^ui_core.Core, name: str, tool: ^ui_atoms.ToolNode): ToolDebugFrame {
+fn makeToolDebugFrameFromTool(core: ^d_core.Core, name: str, tool: ^d_atoms.ToolNode): ToolDebugFrame {
   toolState := core.getToolState(tool)
 
   color := th.red
@@ -56,7 +56,7 @@ fn isWhiteForeground(color: uint32): bool {
   return sum >= 1.5
 }
 
-fn drawToolDebugFrame(ctx: ^e_drawcmd.DrawContext, frame: ToolDebugFrame, font: th_font.Font) {
+fn drawToolDebugFrame(ctx: ^d_drawcmd.DrawContext, frame: ToolDebugFrame, font: th_font.Font) {
   textColor := th.white
   if isWhiteForeground(frame.color) {
     textColor = th.black
@@ -80,7 +80,7 @@ fn drawToolDebugFrame(ctx: ^e_drawcmd.DrawContext, frame: ToolDebugFrame, font: 
   ctx.drawRectLines(frame.color, frame.rect)
 }
 
-fn putDebugFramesRecursive(core: ^ui_core.Core, font: th_font.Font, ctx: ^e_drawcmd.DrawContext, tool: ^ui_atoms.ToolNode, prefix: str = "") {
+fn putDebugFramesRecursive(core: ^d_core.Core, font: th_font.Font, ctx: ^d_drawcmd.DrawContext, tool: ^d_atoms.ToolNode, prefix: str = "") {
   for toolName, toolChild in tool.children {
     ctx.setLayer(toolChild.layer)
     if toolChild.lastFrameTouched == -1 {
@@ -92,6 +92,6 @@ fn putDebugFramesRecursive(core: ^ui_core.Core, font: th_font.Font, ctx: ^e_draw
   }
 }
 
-fn putDebugFrames*(core: ^ui_core.Core, font: th_font.Font, ctx: ^e_drawcmd.DrawContext) {
+fn putDebugFrames*(core: ^d_core.Core, font: th_font.Font, ctx: ^d_drawcmd.DrawContext) {
   putDebugFramesRecursive(core, font, ctx, core.tools)
 }

@@ -176,6 +176,7 @@ case `getarg 0` in
           if [[ ! -z "$TOPHAT_EMSCRIPTEN_VAR" ]]; then
             echo "Publishing to itch.io!"
             target_emscripten
+            rm -rf pkg/wasm-out
             mv wasm-out pkg
             $BUTLER_VAR push pkg/wasm-out $BUTLER_USERNAME/$BUTLER_PROJECTNAME:index
           else

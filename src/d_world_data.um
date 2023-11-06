@@ -1,11 +1,11 @@
 import (
   "d_world.um"
-  "mcsvutil.um"
+  "d_csvutil.um"
   "rect.um"
   "std.um"
   "csv.um"
   "th.um"
-  "mdbg.um"
+  "d_dbg.um"
 )
 
 type (
@@ -27,7 +27,7 @@ const (
 )
 
 fn saveEntityDesc(ent: EntityDesc): []str {
-  return append([]str{ent.id, ent.name, ent.tags}, mcsvutil.saveRect(ent.rect))
+  return append([]str{ent.id, ent.name, ent.tags}, d_csvutil.saveRect(ent.rect))
 } 
 
 fn save*(wd: WorldData): str {
@@ -69,7 +69,7 @@ fn save*(wd: WorldData): str {
 }
 
 fn loadEntityDesc(s: []str): EntityDesc {
-  return EntityDesc{id: s[0], name: s[1], tags: s[2], rect: mcsvutil.loadRect(slice(s, 3, 7))}
+  return EntityDesc{id: s[0], name: s[1], tags: s[2], rect: d_csvutil.loadRect(slice(s, 3, 7))}
 }
 
 fn load*(world: d_world.World, data: str): WorldData {

@@ -1,12 +1,7 @@
 // import ("src/Main.um")
-import ("window.um"; "input.um")
+import ("window.um"; "input.um"; "src/d_main.um")
 
 fn init*() {
-  window.onFrame.register({
-    if input.isPressed(input.key_fn15) || input.isJustReleased(input.key_fn15) {
-      error("excuse me")
-    }
-  })
-  // Main.init()
+  d_main.init()
 }
 

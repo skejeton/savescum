@@ -1,5 +1,5 @@
 import (
-  "image.um"; "std.um"; "th.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um"; "misc/mstrings.um"; th_font = "font.um"
+  "image.um"; "std.um"; "th.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um"; "misc/d_strings.um"; th_font = "font.um"
 )
 
 fn posTrans*(x, y: th.fu): th.Transform {
@@ -25,7 +25,7 @@ fn readFileStr*(path: str): (bool, str) {
   
   // FIXME: Really bad CRLF fix bruhhh 
   // what this does is it replaces all \r\n with \n
-  data = mstrings.join(mstrings.splitBy(data, '\r'))
+  data = d_strings.join(d_strings.splitBy(data, '\r'))
 
   return true, data
 }

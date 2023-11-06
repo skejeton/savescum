@@ -5,7 +5,7 @@ import (
   "rect.um"
   "csv.um"
 
-  ut = "../mcsvutil.um"
+  ut = "../d_csvutil.um"
 )
 
 type Window* = struct {

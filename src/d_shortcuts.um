@@ -1,7 +1,7 @@
 import (
 	"input.um"
 	"window.um"
-	"mdbg.um"
+	"d_dbg.um"
 )
 
 // Enables: alt+enter: Enter/Leave fullscreen
@@ -18,6 +18,6 @@ fn fullscreen*() {
 fn console*() {
 	if input.isPressed(input.key_alt) && input.isJustPressedc('t') {
 		input.clearc('t')
-		mdbg.consolevis = !mdbg.consolevis
+		d_dbg.consolevis = !d_dbg.consolevis
 	}
 }

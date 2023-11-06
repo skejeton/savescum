@@ -5,7 +5,7 @@ import (
   "th.um"
   "../d_util.um"
   "rect.um"
-  "mstrings.um"
+  "d_strings.um"
   "canvas.um"
 )
 

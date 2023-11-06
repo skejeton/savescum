@@ -1,6 +1,9 @@
 import (
-  "ui_atoms.um"
-  "d_mouseinput.um"
+  "d_atoms.um"
+  "../d_mouseinput.um"
+  "../editor/d_drawcmd.um"
+  "../d_util.um"
+  "rect.um"
 )
 
 const (
@@ -11,18 +14,21 @@ const (
   eventCount = 4
 )
 
-type Core* = struct {
-  frameNumber: uint
-
-  tools: ^ui_atoms.ToolNode
-  currentTool: ^ui_atoms.ToolNode
-  maybeActiveTool: ^ui_atoms.ToolNode
-  activeTool: ^ui_atoms.ToolNode
-  hoveredTool: ^ui_atoms.ToolNode
-}
-
 type InputSink* = struct {
   sunk: [eventCount]bool
+}
+
+type Core* = struct {
+  mouseState: d_mouseinput.MouseState
+  frameNumber: uint
+  inputSink: InputSink
+
+  ctx: d_drawcmd.DrawContext
+  tools: ^d_atoms.ToolNode
+  currentTool: ^d_atoms.ToolNode
+  maybeActiveTool: ^d_atoms.ToolNode
+  activeTool: ^d_atoms.ToolNode
+  hoveredTool: ^d_atoms.ToolNode
 }
 
 type Events* = struct {
@@ -33,14 +39,14 @@ type Events* = struct {
   mouseState: d_mouseinput.MouseState
 }
 
-fn (core: ^Core) getToolState(tool: ^ui_atoms.ToolNode): ui_atoms.ToolState {
-  return ToolState{
+fn (core: ^Core) getToolState*(tool: ^d_atoms.ToolNode): d_atoms.ToolState {
+  return d_atoms.ToolState{
     active: tool == core.activeTool,
     hovered: tool == core.hoveredTool
   }
 }
 
-fn (core: ^Core) maybeAcquireToolNode(name: str): ^ui_atoms.ToolNode {
+fn (core: ^Core) maybeAcquireToolNode(name: str): ^d_atoms.ToolNode {
   if core.currentTool == null {
     core.currentTool = core.tools
   }
@@ -52,12 +58,12 @@ fn (core: ^Core) maybeAcquireToolNode(name: str): ^ui_atoms.ToolNode {
   return core.currentTool.children[name]
 }
 
-fn (core: ^Core) acquireToolNode*(name: str): ^ui_atoms.ToolNode {
+fn (core: ^Core) acquireToolNode*(name: str): ^d_atoms.ToolNode {
   node := core.maybeAcquireToolNode(name)
 
   if node == null {
-    tool := new(ui_atoms.ToolNode)
-    tool ^= ui_atoms.ToolNode{children: map[str]^ui_atoms.ToolNode{}, parent: core.currentTool}
+    tool := new(d_atoms.ToolNode)
+    tool ^= d_atoms.ToolNode{children: map[str]^d_atoms.ToolNode{}, parent: core.currentTool}
     node = tool
     core.currentTool.children[name] = node    
   }
@@ -66,7 +72,7 @@ fn (core: ^Core) acquireToolNode*(name: str): ^ui_atoms.ToolNode {
 }
 
 // Prunes all tools untouched last frame
-fn (core: ^Core) pruneToolsRecursive(node: ^ui_atoms.ToolNode) {
+fn (core: ^Core) pruneToolsRecursive*(node: ^d_atoms.ToolNode) {
   if node.lastFrameTouched == -1 {
     // Nodes with last frame -1 are not candidates to pruning (just a hardcoded value).
     // Here we automatically unfreeze the node because you need to freeze it every time.
@@ -85,14 +91,14 @@ fn (core: ^Core) pruneToolsRecursive(node: ^ui_atoms.ToolNode) {
   }
 }
 
-fn (core: ^Core) freezeTool(name: str) {
+fn (core: ^Core) freezeTool*(name: str) {
   node := core.maybeAcquireToolNode(name)
   if node != null {
     node.lastFrameTouched = -1
   }
 }
 
-fn (core: ^Core) beginTool(name: str, toolRect: rect.Rect): ^ui_atoms.ToolNode {
+fn (core: ^Core) beginTool*(name: str, toolRect: rect.Rect): ^d_atoms.ToolNode {
   node := core.acquireToolNode(name)
   node.lastFrameTouched = core.frameNumber
   node.rect = toolRect
@@ -115,52 +121,12 @@ fn (core: ^Core) beginTool(name: str, toolRect: rect.Rect): ^ui_atoms.ToolNode {
   return core.currentTool
 }
 
-fn (core: ^Core) getCurrentToolState(): ui_atoms.ToolState {
+fn (core: ^Core) getCurrentToolState*(): d_atoms.ToolState {
   return core.getToolState(core.currentTool)
 }
 
-fn (core: ^Core) isCurrentToolActive(): bool {
+fn (core: ^Core) isCurrentToolActive*(): bool {
   return core.getCurrentToolState().active
-}
-
-fn (core: ^Core) endTool(): Events {
-  if core.currentTool.parent == null {
-    error("Parent node is null, beginTool/endTool mismatched!")
-  }
-
-  mask := InputSink{}
-  if !ui_atoms.areToolsRelated(core.currentTool, core.activeTool) {
-    // Block all events if the current tool isn't hovered.
-    mask = initInputSinkSet()
-  }
-
-  core.currentTool = core.currentTool.parent
-
-  return Events{sink: &core.inputSink, mask: mask, mouseState: core.mouseState}
-}
-
-fn (core: ^Core) getProperty(name: str, def: interface{}): interface{} {
-  // Create a dummy tool where we'll store the data.
-  tool := core.beginTool(name, rect.mk(-100000, -100000, 0, 0))
-  core.endTool()
-
-  if !valid(tool.userdata) {
-    tool.userdata = def
-  }
-
-  return tool.userdata
-}
-
-fn (core: ^Core) getPropertyLazy(name: str, getter: fn (): any): any {
-  // Create a dummy tool where we'll store the data.
-  tool := core.beginTool(name, rect.mk(-100000, -100000, 0, 0))
-  core.endTool()
-
-  if !valid(tool.userdata) {
-    tool.userdata = getter()
-  }
-
-  return tool.userdata
 }
 
 // Creates an input sink with all inputs set to 1.
@@ -174,6 +140,47 @@ fn initInputSinkSet*(): InputSink {
 
   return sink
 }
+
+fn (core: ^Core) endTool*(): Events {
+  if core.currentTool.parent == null {
+    error("Parent node is null, beginTool/endTool mismatched!")
+  }
+
+  mask := InputSink{}
+  if !d_atoms.areToolsRelated(core.currentTool, core.activeTool) {
+    // Block all events if the current tool isn't hovered.
+    mask = initInputSinkSet()
+  }
+
+  core.currentTool = core.currentTool.parent
+
+  return Events{sink: &core.inputSink, mask: mask, mouseState: core.mouseState}
+}
+
+fn (core: ^Core) getProperty*(name: str, def: interface{}): interface{} {
+  // Create a dummy tool where we'll store the data.
+  tool := core.beginTool(name, rect.mk(-100000, -100000, 0, 0))
+  core.endTool()
+
+  if !valid(tool.userdata) {
+    tool.userdata = def
+  }
+
+  return tool.userdata
+}
+
+fn (core: ^Core) getPropertyLazy*(name: str, getter: fn (): any): any {
+  // Create a dummy tool where we'll store the data.
+  tool := core.beginTool(name, rect.mk(-100000, -100000, 0, 0))
+  core.endTool()
+
+  if !valid(tool.userdata) {
+    tool.userdata = getter()
+  }
+
+  return tool.userdata
+}
+
 
 fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: int): bool {
   if event < 0 || event >= eventCount {
@@ -239,5 +246,5 @@ fn (events: ^Events) queryScroll*(): real {
     return 0
   }
 
-  return events.mouseState.wheelY
+  return events.mouseState.scroll.y
 }
