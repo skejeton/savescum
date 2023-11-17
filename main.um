@@ -1,7 +1,5 @@
-// import ("src/Main.um")
-import ("window.um"; "input.um"; "src/d_main.um")
+import ("src/d_main.um")
 
 fn init*() {
-  d_main.init()
+  d_main.init(true)
 }
-

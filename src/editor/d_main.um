@@ -192,12 +192,6 @@ fn (wm: ^WindowManager) setWindowVisible(name: str, to: bool) {
   wm.windowVisibility[name] = to
 }
 
-// Draw bevel rect(
-//   Rectangle to draw,
-//   Does rectangle look pushed in,
-//   Color tint, the iconic gray is the default
-// )
-//
 // Draws a beveled rectangle in Windows 3.11 style.
 // It may have a problem with displaying colors somewhat incorrectly,
 //   because the middle of the rectangle is tinted gray slightly.
@@ -207,11 +201,11 @@ fn drawBevelRect(editor: ^Editor, r: rect.Rect, pushed: bool = false, color: uin
   }
 
   const (
-    bevelOuterRect = rect.Rect{0, 0, 32, 32}
-    bevelInnerRect = rect.Rect{5, 5, 32-10, 32-10}
-   
-    bevelPushedOuterRect = rect.Rect{0, 0, 32, 32}
-    bevelPushedInnerRect = rect.Rect{5, 5, 32-10, 32-10}
+    bevelOuterRect = rect.Rect{0, 0, 10, 10}
+    bevelInnerRect = rect.Rect{3, 3, 2, 2}
+ 
+    bevelPushedOuterRect = rect.Rect{10, 0, 10, 10}
+    bevelPushedInnerRect = rect.Rect{3, 3, 2, 2}
   )
 
   if pushed {
@@ -1654,12 +1648,14 @@ fn editorPutUi(editor: ^Editor) {
 fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
 
   editorResources := EditorResources {
-    bevelImage: d_resources.loadImage(rl, "data/img/ui_7button.png"),
+    bevelImage: d_resources.loadImage(rl, "data/img/ui_bevelbutton.png"),
     tilesetImage: d_resources.loadImage(rl, "data/img/ts_sky.png"),
     toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png"),
     superHotFire: d_resources.loadImage(rl, "data/img/SUPER HOT FIRE WTF.png"),
-    mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 0)}
+    mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 1)}
  
+  //editorResources.bevelImage.setfilter(1)
+  editorResources.superHotFire.setfilter(1)
   editorResources.tilesetImage.setfilter(1)
   editorResources.toolbarIcons.setfilter(1)
   editorResources.superHotFire.setfilter(1)
@@ -1737,7 +1733,8 @@ fn drawShadowText*(font: th_font.Font, text: str, pos: th.Vf2) {
 
 fn editorMain*(enabled: bool) {
   d_global.screen = rect.mk(0, 0, 800, 600)
-  window.setup("Editor", trunc(d_global.screen.w), trunc(d_global.screen.h))
+  sf := window.getDpiScaleFactor()
+  window.setup("Editor", trunc(d_global.screen.w*sf), trunc(d_global.screen.h*sf))
   
   d_dbg.initConsole()
 
@@ -1749,6 +1746,10 @@ fn editorMain*(enabled: bool) {
     " _|  (  | (  |\n"+
     "/__.-'|_|--|_|\n"
   )
+  d_dbg.logt("SAVESCUM");
+  d_dbg.logt(sprintf("DPI aware: %v\nDPI scale factor: %g", window.isDpiEnabled(), sf));
+  d_dbg.logt("-*-");
+
   // init data
   rl := new(d_resources.ResourceLoader)
   rl ^= d_resources.initResourceLoader()
@@ -1766,14 +1767,14 @@ fn editorMain*(enabled: bool) {
   if ok, sessionFile := d_util.readFileStr("user/session.csv"); ok {
     editorLoadSession(editor, d_session.load(sessionFile))
   } else {
-    loadPortal(editor, "mfldentr")
+    loadPortal(editor, "vasilydemo")
   }
 
   if (!enabled) {
     editorToggleGame(editor)
   }
 
-  window.onFrame.register(|editor| {
+  window.onFrame.register(|sf, editor| {
     d_immcursor.setCursor(window.cursorDefault)
 
     if d_global.end {
@@ -1802,8 +1803,7 @@ fn editorMain*(enabled: bool) {
     d_fps.update()
     
 
-
-    d_global.screen = rect.mk(0, 0, window.w, window.h)
+    d_global.screen = rect.mk(0, 0, window.w/sf, window.h/sf)
     window.setViewport(d_global.screen.getDims())
 
     editorPutUi(editor)
