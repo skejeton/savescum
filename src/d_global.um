@@ -1,6 +1,7 @@
 import ("rect.um")
 
 var (
+  version*: str = "0.3.0-a+1"
   screen*: rect.Rect
   end*: bool
 )

@@ -1351,7 +1351,7 @@ fn putWorldEntities(editor: ^Editor) {
       }
 
       if isEntitySelected(&editor.entities, i) {
-        dx, dy := 0, 0  
+        dx, dy := 0, 0
         if input.isJustPressed(input.key_up) {
           dy += -1
         }
@@ -1728,7 +1728,11 @@ fn editorLoadSession(editor: ^Editor, session: d_session.Session) {
 
 fn drawShadowText*(font: th_font.Font, text: str, pos: th.Vf2) {
   font.draw(text, pos.add(th.Vf2{0, 1}), th.black)
+  font.draw(text, pos.add(th.Vf2{1, 0}), th.black)
+  font.draw(text, pos.add(th.Vf2{0, -1}), th.black)
+  font.draw(text, pos.add(th.Vf2{-1, 0}), th.black)
   font.draw(text, pos.add(th.Vf2{0, 0}), th.white)
+
 }
 
 fn editorMain*(enabled: bool) {
@@ -1820,7 +1824,7 @@ fn editorMain*(enabled: bool) {
 
     infoText += sprintf("%d frameskip", trunc(d_game.frameSkips))+"\n"
     infoText += sprintf("%s", editor.dirty ? "Dirty" : "Not Dirty")+"\n"
-    infoText += "v0.2.3_02"+"\n"
+    infoText += d_global.version+"\n"
     drawShadowText(editor.resources.mainFont, infoText, th.Vf2{0, 0})
   })
 

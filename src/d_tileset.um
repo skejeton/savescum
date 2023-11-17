@@ -1,4 +1,9 @@
-import ("th.um"; "image.um"; "rect.um"; "d_util.um")
+import (
+  "th.um"
+  "image.um"
+  "rect.um"
+  "d_util.um"
+)
 
 type (
   TileProperties* = struct {
@@ -36,8 +41,8 @@ fn (ts: ^Tileset) setTileProperties*(pos: int, props: TileProperties) {
 }
 
 fn (ts: ^Tileset) getCroppingRect*(x, y: int): rect.Rect {
-  return rect.mk(x*ts.tileSizeX*ts.scale, y*ts.tileSizeY*ts.scale,
-                 ts.tileSizeX*ts.scale, ts.tileSizeY*ts.scale)
+  return rect.mk(x*ts.tileSizeX*ts.scale+0.5, y*ts.tileSizeY*ts.scale+0.5,
+                 ts.tileSizeX*ts.scale-1, ts.tileSizeY*ts.scale-1)
 }
 
 fn (ts: ^Tileset) getCroppingRectId*(id: int): rect.Rect {

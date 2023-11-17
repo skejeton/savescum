@@ -5,9 +5,10 @@ import (
 )
 
 const (
-  backgroundClouds = 0
-  backgroundJazz   = 1
-  backgroundCave   = 2
+  backgroundDebug  = 0
+  backgroundClouds = 1
+  backgroundJazz   = 2
+  backgroundCave   = 3
 )
 
 var (
@@ -34,7 +35,7 @@ fn drawCloudStrip(scroll: real, y: real, colorMod: uint32) {
   }
 }
 
-fn drawClouds*(screen: rect.Rect) {
+fn drawClouds*(screen: rect.Rect, tint: uint32, bg: uint32) {
   const (
     step = 60
     stripeCount = 5
@@ -44,10 +45,12 @@ fn drawClouds*(screen: rect.Rect) {
 
   width = imgClouds.getDims().x
 
+  canvas.drawRect(bg, d_global.screen)
+
   for i := 0; i < stripeCount; i++ {
     yOffset := origin+i*step
     scroll := (i + 1) * (i + 1) * th.time/1000.0 * -120/stripeCount
-    color := 0x7777FF00 | (trunc(((i + 1.0) / stripeCount) * 0xFF) & 0xFF)
+    color := tint | (trunc(((i + 1.0) / stripeCount) * 0xFF) & 0xFF)
 
     drawCloudStrip(scroll, yOffset, color);
   }
@@ -132,7 +135,8 @@ fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
 
 fn drawBg*(screen: rect.Rect, which: int) {
   switch which {
-    case backgroundClouds: drawClouds(screen)
+    case backgroundDebug: drawClouds(screen, 0x99994400, 0x555555FF)
+    case backgroundClouds: drawClouds(screen, 0x7777FF00, 0x777777FF)
     case backgroundJazz: drawJazz(screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
     case backgroundCave: drawCave(d_global.screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
   }
@@ -140,5 +144,5 @@ fn drawBg*(screen: rect.Rect, which: int) {
 
 fn draw*(screen: rect.Rect) {
   /* WHY THE HELL THE CLOUDS GO SO WELL ON THE PRELUDE?? */
-  drawBg(screen, 1)
+  drawBg(screen, 0)
 }
