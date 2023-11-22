@@ -887,32 +887,28 @@ fn drawGuideRects() {
 }
 
 fn drawOutlines() {
-  radiusPulsing := ((sin(th.time/1000.0*2.0)+2)/2.0)*3+1
-  radiusNormal := 3
+  radiusPulsing := 3//((sin(th.time/1000.0*2.0)+2)/2.0)*3
 
   renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
 
   for i, renderTile in renderTiles {
-    if renderTile.id == 29 || (toggleActive && renderTile.id == 30) || (renderTile.id == 31 && !toggleActive) {
+    if (renderTile.id == 30) || (renderTile.id == 31) {
       radius := radiusPulsing
-      if renderTile.id == 29 {
-        radius = radiusNormal
-      }
-      canvas.drawRect(0xAAAAFF99, d_util.rectShrink(renderTile.rect, -radius*cameraScale))
-      canvas.drawRect(0xAAAAFF22, d_util.rectShrink(renderTile.rect, 2*-radius*cameraScale))
+      canvas.drawRect(0x000000FF, d_util.rectShrink(renderTile.rect, (-radius-1)*cameraScale))
+      canvas.drawRect(0xFFFF00FF, d_util.rectShrink(renderTile.rect, -radius*cameraScale))
     }
   }
 }
 
 fn drawOverlays() {
   renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
-  colorA := th_color.alpha(0xFFFFFFFF, d_util.clamp(toggleActiveVal+0.1, 0, 1))
-  colorB := th_color.alpha(0xFFFFFFFF, d_util.clamp(1-toggleActiveVal+0.1, 0, 1))
 
   for i, renderTile in renderTiles {
     switch renderTile.id {
-      case 30: canvas.drawRect(colorA, renderTile.rect)
-      case 31: canvas.drawRect(colorB, renderTile.rect)
+      case 31: 
+        d_util.drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 30 : 31), renderTile.rect)
+      case 30: 
+        d_util.drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 31 : 30), renderTile.rect)
       default:
     }
   }
