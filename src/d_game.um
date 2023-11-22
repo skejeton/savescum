@@ -584,7 +584,7 @@ const (
 )
 
 fn drawEntity(ent: ^Character) {
-  destRect := d_util.rectShrink(cameraOffsetRect(ent.rect), -2*cameraScale)
+  destRect := d_util.rectShrink(cameraOffsetRect(ent.rect), -1*cameraScale)
   if toPortal == ent.id {
     destRect.x += cos(th.time/1000.0*6)*5*cameraScale
     destRect.y += sin(th.time/1000.0*6)*5*cameraScale
@@ -626,7 +626,7 @@ fn drawEntity(ent: ^Character) {
     d_util.drawImageRect(imgObj, cropControls, destRect)
   } else if ent.tags.isSet("Comment") {
     canvas.drawRect(0x000000FF, d_util.rectShrink(destRect, -cameraScale))
-    canvas.drawRect(0xFFFF00FF, destRect)
+    canvas.drawRect(0x00FFFFFF, destRect)
     defaultFont.draw(ent.name, destRect.getPos(), 0x000000FF, cameraScale)
   } else {
     drawEntityCustomRect(ent, ent.rect)
@@ -639,13 +639,13 @@ const (
   chumStateFall = 2
   chumStateWalk = 3
   chumStateWalk2 = 4
-  chumFaceRect = rect.Rect{0, 0, 94, 107}
+  chumFaceRect = rect.Rect{0, 0, 128, 128}
 )
 
 fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   at := chum.ent.rect.getPos()
   bodyRect := rect.mk(chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h)
-  chumDestRect := cameraOffsetRect(rect.mk(at.x-10, at.y-20, chumFaceRect.w/2, chumFaceRect.h/2))
+  chumDestRect := cameraOffsetRect(rect.mk(at.x, at.y-29, chumFaceRect.w/2, chumFaceRect.h/2))
   if chum.dir == 0 {
     // Mirror.
     chumDestRect.x += chumDestRect.w;
