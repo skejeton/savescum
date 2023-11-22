@@ -1,8 +1,22 @@
-import ("th.um"; "rect.um"; "canvas.um"; "input.um"; "image.um"
-  "misc/d_strings.um"; "d_dbg.um";
-  th_color = "color.um";
-  "d_rerp.um"; "d_background.um"; "d_resources.um"; 
-  "d_util.um"; "d_world.um"; "d_global.um"; "d_world_data.um")
+import (
+  "th.um"
+  "rect.um"
+  "canvas.um"
+  "input.um"
+  "image.um"
+  "misc/d_strings.um"
+  "d_dbg.um"
+  th_color = "color.um"
+  "d_rerp.um"
+  "d_background.um"
+  "d_resources.um"
+  "d_util.um"
+  "d_world.um"
+  "d_global.um"
+  "d_world_data.um"
+  "font.um"
+  "audio.um"
+)
 
 const (
   shapeBlock          = 0
@@ -32,6 +46,7 @@ type (
   }
 
   Character* = struct {
+    name: str
     id: str
     tags: TagSet
     originalRect: rect.Rect
@@ -59,6 +74,7 @@ fn (t: ^TagSet) isSet*(tag: str): bool {
 } 
 
 fn initTagSetFromString*(s: str): TagSet {
+
   tagSet := TagSet{map[str]Tag{}}
   tags := d_strings.splitBy(s, ';')
   for i, tag in tags {
@@ -83,6 +99,8 @@ var (
   chumWalkTime: real
   imgObj: image.Image
   imgChum: image.Image
+  defaultFont: font.Font
+  bgAudio: audio.Sound
 
   lockInput*: bool
   guides: []rect.Rect
@@ -101,9 +119,6 @@ var (
   saves: []ChumState
   showDebug: bool = false
   lastUpdateTime: int = 0
-  startTimer: real
-  touchTimer: real
-  ended: bool
   frameSkips*: int
 )
 
@@ -442,7 +457,7 @@ fn _drawRectTangents(r: rect.Rect) {
 }
 
 fn convertEntityDescToCharacter(ent: d_world_data.EntityDesc): Character {
-  return Character{id: ent.id, tags: initTagSetFromString(ent.tags), rect: ent.rect}
+  return Character{name: ent.name, id: ent.id, tags: initTagSetFromString(ent.tags), rect: ent.rect}
 }
 
 fn findEntity*(id: str): ^Character {
@@ -456,9 +471,9 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn start*(worldData: d_world_data.WorldData) {
+  bgAudio.seekToFrame(0)
+  bgAudio.play()
   toPortal = ""
-  startTimer = 0.5
-  touchTimer = 5
   lastUpdateTime = th.time
   toggleActive = false
   toggleActiveStatic = false
@@ -468,8 +483,8 @@ fn start*(worldData: d_world_data.WorldData) {
 
   chara = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX/1.2, world.tileset.tileSizeY}}
 
-  resetPoint.x = 19*32
-  resetPoint.y = -41*32
+  resetPoint.x = chara.rect.x
+  resetPoint.y = chara.rect.y
   chumRotTime = 0
   chumWalkTime = 0
   chumDir = 0
@@ -481,6 +496,10 @@ fn start*(worldData: d_world_data.WorldData) {
     chr := convertEntityDescToCharacter(ent)
     chr.originalRect = chr.rect
     if chr.tags.isSet("Comment") {
+      if chr.tags.isSet("Show") {
+        d_dbg.logt(sprintf("Comment: %v", chr.name))
+        entities = append(entities, chr)
+      }
       continue;
     }
     if chr.tags.isSet("Guide") {
@@ -495,7 +514,14 @@ fn start*(worldData: d_world_data.WorldData) {
   cameraScale = getCameraProperties().scale
 }
 
+fn stop*() {
+  bgAudio.stop()
+}
+
 fn init*(rl: ^d_resources.ResourceLoader) {
+  bgAudio = d_resources.loadAudio(rl, "data/audio/soundtrack/background.mp3")
+  bgAudio.setLooping(true)
+  defaultFont = d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 1)
   imgObj = d_resources.loadImage(rl, "data/img/obj_interactive.png")
   imgObj.setfilter(1)
   imgChum = d_resources.loadImage(rl, "data/img/chr_chum.png")
@@ -598,7 +624,11 @@ fn drawEntity(ent: ^Character) {
 
   } else if ent.tags.isSet("controls") {
     d_util.drawImageRect(imgObj, cropControls, destRect)
-  }  else {
+  } else if ent.tags.isSet("Comment") {
+    canvas.drawRect(0x000000FF, d_util.rectShrink(destRect, -cameraScale))
+    canvas.drawRect(0xFFFF00FF, destRect)
+    defaultFont.draw(ent.name, destRect.getPos(), 0x000000FF, cameraScale)
+  } else {
     drawEntityCustomRect(ent, ent.rect)
   }
 }
@@ -709,27 +739,6 @@ fn canActivateStaticLever(): bool {
 
 fn update*() {
   toPortal = ""
-  touchTimer -= th.delta/1000.0
-  if ended {
-    startTimer += th.delta/1000.0
-  } else {
-    startTimer -= th.delta/1000.0
-  }
-  if startTimer < 0 {
-    startTimer = 0
-  }
-  if startTimer > 1 && ended {
-    d_global.end = true
-  }
-
-  if startTimer > 0 && !ended {
-    lastUpdateTime = th.time
-    return
-  }
-  if startTimer > 0.4 && ended {
-    lastUpdateTime = th.time
-    return
-  }
 
   toggleActiveVal = d_rerp.iReal(toggleActiveVal, real(int(toggleActive)), th.delta/100.0)
 
@@ -813,7 +822,7 @@ fn update*() {
             } else {
               ent.vel.x += 4
               resetPoint.x = ent.rect.x+ent.rect.w/2
-              resetPoint.y = ent.rect.y+ent.rect.h/2
+              resetPoint.y = ent.rect.y+ent.rect.h-chara.rect.h+1
 
               toggleActive = false
               toggleActiveStatic = false
@@ -863,12 +872,6 @@ fn update*() {
               input.clearc(' ')
             } 
           }
-        }
-      }
-        
-      if ent.tags.isSet("portal") && touchTimer < 0 {
-        if d_util.rectVsRect(ent.rect, chara.rect) {
-          ended = true
         }
       }
     }
@@ -923,13 +926,6 @@ fn draw*() {
   oldScale := cameraScale 
   oldPos := camera
   d_background.draw(bgCam)
-
-  if startTimer > 0 {
-    cameraScale *= ((startTimer*2)+1)
-    camera.x = d_rerp.iReal(camera.x, chara.rect.x-d_global.screen.w/2/cameraScale, startTimer)
-    camera.y = d_rerp.iReal(camera.y, chara.rect.y-d_global.screen.h/2/cameraScale, startTimer)
-  }
-
 
   // RENDER WORLD //
   world.drawLayer(cameraOffsetPoint({0, 0}), -1, cameraScale)

@@ -758,6 +758,8 @@ fn editorToggleGame(editor: ^Editor) {
   if (!editor.isPlaying) {
     d_game.start(d_world_data.WorldData{editor.world, editor.entities.list})
     d_script.init()
+  } else {
+    d_game.stop()
   }
   editor.isPlaying = !editor.isPlaying
 } 
@@ -817,7 +819,7 @@ fn editorPutToolbar(editor: ^Editor) {
   editor.ui.beginTool("ToolBar", rectangle)
   {
     if !editor.isPlaying {
-      drawBackdropRect(editor, rectangle)
+      drawBackdropRect(editor, rectangle, editor.dirty ? 0xFF0000FF : 0xFFFFFFFF)
     }
 
     buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
@@ -1738,6 +1740,9 @@ fn drawShadowText*(font: th_font.Font, text: str, pos: th.Vf2) {
 fn editorMain*(enabled: bool) {
   d_global.screen = rect.mk(0, 0, 800, 600)
   sf := window.getDpiScaleFactor()
+  if d_global.skeDpiHack {
+    sf = 1.2
+  }
   window.setup("Editor", trunc(d_global.screen.w*sf), trunc(d_global.screen.h*sf))
   
   d_dbg.initConsole()
@@ -1790,7 +1795,6 @@ fn editorMain*(enabled: bool) {
       editor.resources.mainFont.draw(preDemoText, pos, th.white)
       return
     }
-
 
     std.srand(std.time())
     d_shortcuts.console()

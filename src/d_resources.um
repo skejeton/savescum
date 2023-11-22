@@ -4,6 +4,7 @@
 import (
   "image.um"
   th_font = "font.um"
+  "audio.um"
 )
 
 type (
@@ -33,6 +34,17 @@ fn loadImage*(loader: ^ResourceLoader, path: str): image.Image {
 
   return theImage
 }
+
+fn loadAudio*(loader: ^ResourceLoader, path: str): audio.Sound {
+  theAudio := audio.load(path)
+  
+  if theAudio.validate() == false {
+    loadingError(loader, path, "Could not load audio.")
+  }
+
+  return theAudio
+}
+
 
 fn loadFont*(loader: ^ResourceLoader, path: str, size: real, filter: int): th_font.Font {
   theFont := th_font.load(path, size, filter)
