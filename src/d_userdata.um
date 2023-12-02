@@ -1,0 +1,31 @@
+import (
+  "std.um"
+  "misc/d_strings.um"
+  "extern.um"
+)
+
+/*
+fn storeData*(data: []int) {
+  de := ""
+  for i, v in data {
+    de += std.itoa(v)
+    if i != len(data)-1 {
+      de += ","
+    }
+  }  
+  d_extern.local_storage_set(de)
+}
+
+fn loadData*(): []int {
+  s := d_extern.local_storage_get()
+
+  strs := d_strings.splitBy(s, ",")  
+  nums := []int{}
+
+  for i, v in strs {
+    nums = append(nums, std.atoi(v))
+  }
+
+  return nums
+}
+*/

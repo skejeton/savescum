@@ -179,6 +179,7 @@ case `getarg 0` in
             rm -rf pkg/wasm-out
             mv wasm-out pkg
             $BUTLER_VAR push pkg/wasm-out $BUTLER_USERNAME/$BUTLER_PROJECTNAME:index
+            $BUTLER_VAR push pkg/native $BUTLER_USERNAME/$BUTLER_PROJECTNAME:windows
           else
             echo "Can't publish to itch.io: Can't find th_emscripten_link."
           fi

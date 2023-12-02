@@ -101,6 +101,7 @@ var (
   imgChum: image.Image
   defaultFont: font.Font
   bgAudio: audio.Sound
+  end*: bool
 
   lockInput*: bool
   guides: []rect.Rect
@@ -387,19 +388,19 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
       case 13:  shapeType = shapeLeftDownSlope
       case 14:  shapeType = shapeRightDownSlope
       case 15:  shapeType = shapeLeftUpSlope
-          shapeRect.h /= 2;
+        shapeRect.h /= 2;
       case 16:  shapeType = shapeRightUpSlope
-          shapeRect.h /= 2;
+        shapeRect.h /= 2;
       case 4:   shapeType = shapeLeftUpSlope
-          shapeRect.y += world.tileset.tileSizeY/2;
-          shapeRect.h /= 2;
+        shapeRect.y += world.tileset.tileSizeY/2;
+        shapeRect.h /= 2;
       case 8:   shapeType = shapeRightUpSlope
-          shapeRect.y += world.tileset.tileSizeY/2;
-          shapeRect.h /= 2;
+        shapeRect.y += world.tileset.tileSizeY/2;
+        shapeRect.h /= 2;
       case 11:  shapeType = shapeRightDownSlope
-          shapeRect.h /= 2;
+        shapeRect.h /= 2;
       case 12:  shapeType = shapeLeftDownSlope
-          shapeRect.h /= 2;
+        shapeRect.h /= 2;
     }
     
     if shapeType == shapeBlock {
@@ -645,7 +646,14 @@ const (
 fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   at := chum.ent.rect.getPos()
   bodyRect := rect.mk(chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h)
-  chumDestRect := cameraOffsetRect(rect.mk(at.x, at.y-29, chumFaceRect.w/2, chumFaceRect.h/2))
+  offs := 0.0
+  if chum.dir == 0 {
+    offs -= 24.5
+  } else {
+    offs -= 12.5
+  }
+  
+  chumDestRect := cameraOffsetRect(rect.mk(at.x+offs, at.y-29, chumFaceRect.w/2, chumFaceRect.h/2))
   if chum.dir == 0 {
     // Mirror.
     chumDestRect.x += chumDestRect.w;
@@ -856,6 +864,11 @@ fn update*() {
               toggleActiveStatic = !toggleActiveStatic
             }
           } 
+        }
+      }
+      if ent.tags.isSet("exit") {
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          end = true
         }
       }
       if ent.tags.isSet("tele") {

@@ -1,9 +1,9 @@
 import ("rect.um")
 
 var (
-  version*: str = "0.3.0-a+3"
+  version*: str = "0.3.0+5"
   screen*: rect.Rect
   end*: bool
-  skeDpiHack*: bool = true
+  skeDpiHack*: bool = false
 )
 

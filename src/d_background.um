@@ -2,13 +2,15 @@ import (
   "rect.um"; "image.um"; "canvas.um"; "th.um"; th_color = "color.um";
   "d_util.um"; "d_global.um"; "d_resources.um"; "d_partition.um";
   "d_dbg.um"
+  "std.um"
 )
 
 const (
   backgroundDebug  = 0
   backgroundClouds = 1
-  backgroundJazz   = 2
-  backgroundCave   = 3
+  backgroundAdvent = 2
+  backgroundJazz   = 3
+  backgroundCave   = 4
 )
 
 var (
@@ -20,30 +22,30 @@ var (
 fn init*(rl: ^d_resources.ResourceLoader) {
   imgClouds = d_resources.loadImage(rl, "data/img/bg_sky.png")
   imgRocks = d_resources.loadImage(rl, "data/img/bg_pit.png")
-  imgRocks.setfilter(0)
 
   width = imgClouds.getDims().x
 }
 
-fn drawCloudStrip(scroll: real, y: real, colorMod: uint32) {
+fn drawCloudStrip(scroll: real, y: real, colorMod: uint32, scale: real) {
   scroll = d_util.fmod(scroll, -width)
 
   times := trunc(d_global.screen.w/width)+2
 
   for i := 0; i < times; i++ {
-    imgClouds.draw(d_util.posTrans(scroll+i*width, y), colorMod)
+    imgClouds.draw({p: {scroll+i*width, y}, s: {scale, scale}}, colorMod)
   }
 }
 
-fn drawClouds*(screen: rect.Rect, tint: uint32, bg: uint32) {
+fn drawClouds*(screen: rect.Rect, tint: uint32, bg: uint32, scale: real) {
   const (
-    step = 60
     stripeCount = 5
   )
+  step := scale * 60
 
-  origin := d_global.screen.h - 480 - (stripeCount - 1) * step + 120
+  origin := d_global.screen.h - 480 * scale - (stripeCount - 1) * step
 
   width = imgClouds.getDims().x
+  width *= scale
 
   canvas.drawRect(bg, d_global.screen)
 
@@ -52,9 +54,20 @@ fn drawClouds*(screen: rect.Rect, tint: uint32, bg: uint32) {
     scroll := (i + 1) * (i + 1) * th.time/1000.0 * -120/stripeCount
     color := tint | (trunc(((i + 1.0) / stripeCount) * 0xFF) & 0xFF)
 
-    drawCloudStrip(scroll, yOffset, color);
+    drawCloudStrip(scroll, yOffset, color, scale)
   }
 }
+
+/*
+fn drawSnow*(screen: rect.Rect) {
+  std.srand(3)
+  for i := 0; i < 50; i++ {
+    x, y := std.rand()%trunc(screen.w), std.rand()%trunc(screen.h)
+    canvas.drawRect(th.white&0xFFFFFF77, rect.mk(x, y, 3, 5))
+  }
+  std.srand(th.time)
+}
+*/
 
 fn drawImageScaled(img: image.Image, pos: th.Vf2, scale: th.Vf2) {
   imgRocks.draw(th.Transform{p: th.Vf2{pos.x*scale.x, pos.y*scale.y}, s: scale})
@@ -135,14 +148,14 @@ fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
 
 fn drawBg*(screen: rect.Rect, which: int) {
   switch which {
-    case backgroundDebug: drawClouds(screen, 0x99994400, 0x555555FF)
-    case backgroundClouds: drawClouds(screen, 0x7777FF00, 0x777777FF)
+    case backgroundDebug: drawClouds(screen, 0x99994400, 0x555555FF, d_global.screen.w/screen.w*0.5)
+    case backgroundClouds: drawClouds(screen, 0x7777FF00, 0xEEEEEEFF, d_global.screen.w/screen.w*0.5)
+    case backgroundAdvent: drawClouds(screen, 0x4444AA00, 0x000022FF, d_global.screen.w/screen.w*0.5); 
     case backgroundJazz: drawJazz(screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
     case backgroundCave: drawCave(d_global.screen, th.Vf2{screen.x, screen.y}, th.Vf2{d_global.screen.w/screen.w, d_global.screen.h/screen.h})
   }
 }
 
 fn draw*(screen: rect.Rect) {
-  /* WHY THE HELL THE CLOUDS GO SO WELL ON THE PRELUDE?? */
-  drawBg(screen, 0)
+  drawBg(screen, 2)
 }

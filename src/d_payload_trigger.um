@@ -19,7 +19,7 @@ fn dateCached(): std.DateTime {
   /* Update every second */
   if date.year == 0 || ((th.time - time) > 1000) {
     time = th.time
-    date = std.localtime(std.time())
+    date = std.gmtime(std.time())
   }
 
   return date
@@ -29,12 +29,17 @@ fn dateCached(): std.DateTime {
 /** 
  * Advent day, 1-indexed, 0 if not advent
  */
-fn adventDay*(): int {
+fn adventDay*(): (int, int) {
   date := dateCached()
   if (date.month == 12 && date.day >= 1 && date.day <= 25) {
-    return date.day
+    // TODO: Check if hour calculations are correct
+    if date.hour >= 12 {
+      return date.day, date.day * 24 - (date.hour - 12) - (date.minute > 30 ? 1 : 0)
+    } else {
+      return date.day - 1, 12 - date.hour - (date.minute > 30 ? 1 : 0)
+    }
   }
-  return 0
+  return 0, 999
 }
 
 
