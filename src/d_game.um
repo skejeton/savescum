@@ -138,7 +138,11 @@ fn findGuideInPoint(p: th.Vf2): rect.Rect {
 }
 
 fn getCameraTargetRect(): rect.Rect {
+
   guide := findGuideInPoint(chara.rect.getPos())
+  if input.isPressedc('z') && len(saves) > 0 {
+    guide = findGuideInPoint(saves[len(saves)-1].ent.rect.getPos())
+  }
   cameraRect := getCameraRect()
   scale := d_util.min(guide.w/cameraRect.w, guide.h/cameraRect.h)
   maxScale := 1.0/(d_global.screen.w/640)
@@ -149,9 +153,14 @@ fn getCameraTargetRect(): rect.Rect {
   // put at center
   cameraRect.w *= scale
   cameraRect.h *= scale
-  cameraRect.x = chara.rect.x+chara.rect.w/2-cameraRect.w/2
-  cameraRect.y = chara.rect.y+chara.rect.h/2-cameraRect.h/2
-
+  if input.isPressedc('z') && len(saves) > 0 {
+    cameraRect.x = saves[len(saves)-1].ent.rect.x+saves[len(saves)-1].ent.rect.w/2-cameraRect.w/2
+    cameraRect.y = saves[len(saves)-1].ent.rect.y+saves[len(saves)-1].ent.rect.h/2-cameraRect.h/2
+  } else {
+    cameraRect.x = chara.rect.x+chara.rect.w/2-cameraRect.w/2
+    cameraRect.y = chara.rect.y+chara.rect.h/2-cameraRect.h/2
+  }
+  
   return d_util.rectKeepInBounds(cameraRect, guide)
 }
 
@@ -850,7 +859,7 @@ fn update*() {
       }
       if ent.tags.isSet("lever") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
-          if input.isJustPressedc(' ') {
+          if input.isJustPressedc(' ') && chara.onGround {
             if canActivateLever() {
               toggleActive = !toggleActive
             }
@@ -858,7 +867,7 @@ fn update*() {
         }
       }
       if ent.tags.isSet("lever_s") {
-        if d_util.rectVsRect(ent.rect, chara.rect) {
+        if d_util.rectVsRect(ent.rect, chara.rect) && chara.onGround {
           if input.isJustPressedc(' ') {
             if canActivateStaticLever() {
               toggleActiveStatic = !toggleActiveStatic
