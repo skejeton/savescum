@@ -1799,7 +1799,6 @@ fn adventPutUi(editor: ^Editor) {
 
   editor.resources.mainFont.draw("SAVESCUM", {20+x, 20}, th.red, 5)
   available, hour := d_payload_trigger.adventDay()
-  available+=1
   playable := 5
 
 
