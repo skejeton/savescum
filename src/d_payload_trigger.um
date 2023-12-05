@@ -106,3 +106,9 @@ fn prideMonth*(): bool {
   date := dateCached()
   return date.month == 7
 }
+
+// Do you remember? 
+fn sep21*(): bool {
+  date := dateCached()
+  return date.month == 9 && date.day == 21
+}

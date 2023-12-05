@@ -1812,7 +1812,7 @@ fn adventPutUi(editor: ^Editor) {
   }
 
   if input.isPressed(input.key_alt) && input.isPressed(input.key_ctrl) && input.isPressed(input.key_shift) {
-    if putSimpleButton(editor, rect.mk(20+90, 130, 80, 40), "EDIT").isDown { editor.mode = 2 }
+    if putSimpleButton(editor, rect.mk(220, 130, 80, 40), "EDIT").isDown { editor.mode = 2 }
   }
 
   for i := 0; i < 25; i++ {

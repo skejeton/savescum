@@ -81,7 +81,6 @@ fn jazzColor(time: real): uint32 {
   return color
 }
 
-
 fn extrudeSquareFromCenter(center: th.Vf2, diameter: real): rect.Rect {
   radius := diameter/2
   return rect.Rect{center.x-radius, center.y-radius, diameter, diameter}
@@ -116,7 +115,6 @@ fn drawBackgroundSquare*(bound: rect.Rect, time: real, color1, color2: uint32, s
 
   canvas.endScissor()
 }
-
 
 fn drawJazz*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
   color1 := jazzColor(th.time/1000.0)

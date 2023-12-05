@@ -380,6 +380,15 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
   solids := []Shape{}
   nonBlockSolids := []Shape{}
 
+  for i, entity in entities {
+    if entity.id == ent.id {
+      continue
+    }
+    if d_util.rectVsRect(ent.rect, entity.rect) && entity.tags.isSet("boulder") {
+      solids = append(solids, Shape{entity.rect, shapeBlock})
+    }
+  }
+
   for i, tangent in tangents {
     shapeRect := rect.Rect{tangent.x*world.tileset.tileSizeX, tangent.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY} 
     shapeType := -1
@@ -852,10 +861,6 @@ fn update*() {
         power := real(int(toggleActiveStatic))
         boulderTargetRect := d_util.rectMove(ent.originalRect, th.Vf2{0, -ent.originalRect.h*power})
         ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/100.0)
-
-        // Resolve player collision
-        entShape := Shape{rect: ent.rect}
-        entVsShape(&chara, entShape)
       }
       if ent.tags.isSet("lever") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
