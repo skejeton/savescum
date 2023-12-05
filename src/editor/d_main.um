@@ -1799,7 +1799,8 @@ fn adventPutUi(editor: ^Editor) {
 
   editor.resources.mainFont.draw("SAVESCUM", {20+x, 20}, th.red, 5)
   available, hour := d_payload_trigger.adventDay()
-  playable := 4
+  available+=1
+  playable := 5
 
 
   if putSimpleButton(editor, rect.mk(20, 130, 80, 40), "Tutorial").isDown {
@@ -1954,6 +1955,13 @@ fn editorMain*(enabled: bool) {
           if editor.currentPortal == "advent4b" {
             editor.completions[3][1] = true
           }
+          if editor.currentPortal == "advent5a" {
+            editor.completions[4][0] = true
+          }
+          if editor.currentPortal == "advent5b" {
+            editor.completions[4][1] = true
+          }
+  
           d_game.end = false
           editor.mode = 0
         }
