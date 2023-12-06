@@ -435,8 +435,8 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
 }
 
 fn entCheckCollision(ent: ^Character): bool {
-  r := ent.rect
-  r.w -= 1
+  r := d_util.rectShrink(ent.rect, 1)
+
   solids := entConstructCollidingSolids(ent)
   for i, shape in solids {
     if shape.shape == shapeBlock {
@@ -860,7 +860,7 @@ fn update*() {
       if ent.tags.isSet("boulder") {
         power := real(int(toggleActiveStatic))
         boulderTargetRect := d_util.rectMove(ent.originalRect, th.Vf2{0, -ent.originalRect.h*power})
-        ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/100.0)
+        ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/50.0)
       }
       if ent.tags.isSet("lever") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
