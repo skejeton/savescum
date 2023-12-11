@@ -22,13 +22,13 @@ import (
   "th.um"
   "canvas.um"
   "input.um"
-  "load_poems.um"
-  "speech_typing.um"
-  "construct.um"
+  "d_load_poems.um"
+  "d_speech.um"
+  "d_construct.um"
   "signal.um"
-  strings = "../../src/misc/mstrings.um"
-  m_layout = "layout.um"
-  "draw_dialog.um"
+  strings = "../../src/misc/d_strings.um"
+  m_layout = "d_layout.um"
+  "d_draw_dialog.um"
   "../../src/d_test.um"
   "../../src/d_util.um"
   "../../src/d_mouseinput.um"
@@ -94,7 +94,7 @@ const poemBadId =
 
 fn loadPoemFromFile(file: str, poemId: int): str {
   if ok, poems := d_util.readFileStr(file); ok {
-    if ok, poem := load_poems.getPoem(load_poems.loadPoems(poems), poemId); ok {
+    if ok, poem := d_load_poems.getPoem(d_load_poems.loadPoems(poems), poemId); ok {
       return poem
     }
     return poemBadId
@@ -107,14 +107,14 @@ type ForeignObject = struct{size: th.Vf2}
 type NewLine = struct{}
 type SwitchColor = struct{color: uint32}
 
-fn makeObjectArrayFromSpeechNodes(nodes: []speech_typing.SpeechNode): []PushObj {
+fn makeObjectArrayFromSpeechNodes(nodes: []d_speech.SpeechNode): []PushObj {
   appearingTexts := []PushObj{}
 
   for i, node in nodes {
     if node.word == "\n" {
       appearingTexts = append(appearingTexts, NewLine{})
     } else {
-      appearingTexts = append(appearingTexts, draw_dialog.constructAppearingTextFromUnit(node.word, node.unit))
+      appearingTexts = append(appearingTexts, d_draw_dialog.constructAppearingTextFromUnit(node.word, node.unit))
     }
   }
 
@@ -138,12 +138,12 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
       colour = sc.color
     } else if nl := ^NewLine(words[i]); nl != null {
       layout.wrapAtMin(font.measure(" ").y)
-    } else if word := ^draw_dialog.AppearingText(words[i]); word != null {
-      size := draw_dialog.measureAppearingText(word, font)
+    } else if word := ^d_draw_dialog.AppearingText(words[i]); word != null {
+      size := d_draw_dialog.measureAppearingText(word, font)
       full := font.measure(word.orig).x
       pos := layout.pushPartial(size, full).add(boundingBox.getPos())
 
-      draw_dialog.drawAppearingText(word, font, pos.add(th.Vf2{0, -scrollY}), colour)
+      d_draw_dialog.drawAppearingText(word, font, pos.add(th.Vf2{0, -scrollY}), colour)
     } else if obj := ^ForeignObject(words[i]); obj != null {
       pos := layout.push(obj.size)
       canvas.drawRect(colour, rect.mk(pos.x, pos.y, obj.size.x, obj.size.y)) 
@@ -183,7 +183,7 @@ type TransformedText = struct {
   seconds: real
 }
 
-fn transformTextNodesIntoObjectArray(textNodes: []construct.TextNode, typingTimeSeconds: real): TransformedText {
+fn transformTextNodesIntoObjectArray(textNodes: []d_construct.TextNode, typingTimeSeconds: real): TransformedText {
   objects := []PushObj{}
   offsetSeconds := 0.0
   speed := 1.0
@@ -196,7 +196,7 @@ fn transformTextNodesIntoObjectArray(textNodes: []construct.TextNode, typingTime
   //                 text and return us the index at which we are typing as well as the unit value for the next letter.
   //                 that's much simplier to analyze but I don't know the implications yet.
   for i, node in textNodes {
-    spokenText := speech_typing.makeSpokenText(node.text, typingTimeSeconds - offsetSeconds, speed)
+    spokenText := d_speech.makeSpokenText(node.text, typingTimeSeconds - offsetSeconds, speed)
     offsetSeconds += spokenText.seconds
 
     speed = node.speed
@@ -207,13 +207,13 @@ fn transformTextNodesIntoObjectArray(textNodes: []construct.TextNode, typingTime
   return TransformedText{objects, offsetSeconds}
 }
 
-fn rainbowInTextNodes(text: str): []construct.TextNode {
+fn rainbowInTextNodes(text: str): []d_construct.TextNode {
   // ngl tophat's deafult green is too hard to see
   colorCycle := []uint32{th.red, 0x55FF55FF, th.blue, th.yellow}
-  nodes := []construct.TextNode{}
+  nodes := []d_construct.TextNode{}
   lines := strings.intersperse(strings.splitBy(text, ' '), ' ')
   for i, line in lines {
-    nodes = append(nodes, construct.TextNode{color: colorCycle[i%len(colorCycle)], text: line, speed: real(i/3.0+1)})
+    nodes = append(nodes, d_construct.TextNode{color: colorCycle[i%len(colorCycle)], text: line, speed: real(i/3.0+1)})
   }
 
   return nodes
@@ -250,7 +250,7 @@ var (
   mouseInput: d_mouseinput.MouseState
   typingTime: real
   scrollY: real
-  lines: []construct.TextNode
+  lines: []d_construct.TextNode
 )
 
 fn init*() {

@@ -1,6 +1,6 @@
 import (
-  "sequence.um"
-  strings = "../../src/misc/mstrings.um"
+  "d_sequence.um"
+  strings = "../../src/misc/d_strings.um"
 )
 
 type SpeechNode* = struct {
@@ -23,7 +23,7 @@ fn makeSpokenText*(text: str, time: real, speed: real): SpokenText {
   //                  so we separate them here so it'll be "easier" later.
   words := strings.separateChar(strings.intersperse(strings.splitBy(text, ' '), ' '), '\n')
 
-  seq := sequence.Sequence{}  
+  seq := d_sequence.Sequence{}  
 
   for i, word in words {
     seq.pushNext(len(word)/20.0/speed+0.0001)
@@ -33,11 +33,12 @@ fn makeSpokenText*(text: str, time: real, speed: real): SpokenText {
   playbacks := seq.playbacksAt(time)
 
   for i, playback in playbacks {
-    node := SpeechNode{words[playback.id], sequence.sanitize(speechHeuristic(words[playback.id], playback.unit))}
+    node := SpeechNode{words[playback.id], d_sequence.sanitize(speechHeuristic(words[playback.id], playback.unit))}
     nodes = append(nodes, node)
   }
 
   return SpokenText{
     nodes: nodes,
-    seconds: sequence.fastTotalLength(&seq)}
+    seconds: d_sequence.fastTotalLength(&seq)
+  }
 }

@@ -97,11 +97,15 @@ var (
   chumDir: int
   chumRotTime: real
   chumWalkTime: real
+  chumFrown: bool = false
   imgObj: image.Image
   imgChum: image.Image
   defaultFont: font.Font
   bgAudio: audio.Sound
   end*: bool
+  jitterDir: real
+  jitterTime: real
+  jitterCounter: int
 
   lockInput*: bool
   guides: []rect.Rect
@@ -568,6 +572,22 @@ fn getCollidingEntities(against: ^Character): []^Character {
 
 fn updateEntities() {
   entPhysics(&chara)
+  if chara.vel.y < 0 && jitterDir >= 0 {
+    jitterDir = -1
+    jitterTime = 0
+  }
+  if chara.vel.y > 0 && jitterDir <= 0 {
+    jitterDir = 1
+    jitterTime = 0
+  }
+
+  jitterTime += updateStep
+
+  if jitterTime < 0.1 {
+    jitterCounter += 1
+  } else {
+    jitterCounter = 0
+  }
   entSolveCollision(&chara)
  
   if chara.vel.y > 3 {
@@ -630,7 +650,11 @@ fn drawEntity(ent: ^Character) {
       d_util.drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
     }
   } else if ent.tags.isSet("tele_off") {
-    d_util.drawImageRect(imgObj, cropTeleOff, destRect)
+    if !entCheckCollision(ent) {
+      d_util.drawImageRect(imgObj, cropTeleOff, destRect)
+    } else {
+      d_util.drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
+    }
   } else if ent.tags.isSet("reset") {
     if (destRect.w < destRect.h) {
       d_util.drawImageRect(imgObj, cropResetV, destRect)
@@ -659,6 +683,7 @@ const (
   chumStateWalk = 3
   chumStateWalk2 = 4
   chumFaceRect = rect.Rect{0, 0, 128, 128}
+  chumMouthRect = rect.Rect{39, 48, 23, 8}
 )
 
 fn drawChumState(state: int, chum: ChumState, tint: uint32) {
@@ -672,13 +697,26 @@ fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   }
   
   chumDestRect := cameraOffsetRect(rect.mk(at.x+offs, at.y-29, chumFaceRect.w/2, chumFaceRect.h/2))
+  chumMouthDestRect := cameraOffsetRect(rect.mk(at.x+offs+39/2.0, at.y-28+49/2.0+6/2.0, 23/2.0, -8/2.0))
+
   if chum.dir == 0 {
     // Mirror.
     chumDestRect.x += chumDestRect.w;
     chumDestRect.w *= -1;
+
+    chumMouthDestRect.x += chumMouthDestRect.w+1.5*cameraScale;
   }
+
+  chumMouthDestRect.x -= 0.5;
+  chumMouthDestRect.y += 0.5;
+  chumMouthDestRect.h -= 1;
+  chumMouthDestRect.w += 1;
+  
   d_util.drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, tint)
   d_util.drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, tint)
+  if chumFrown {
+    d_util.drawImageRect(imgChum, chumMouthRect, chumMouthDestRect, chum.rotTime, tint)
+  }
   if showDebug {
     canvas.drawText(sprintf("%d %d", trunc(at.x/32), trunc(at.y/32)), chumDestRect.getPos(), th.red, 1)
   }
@@ -764,6 +802,9 @@ fn canActivateStaticLever(): bool {
 }
 
 fn update*() {
+  chumFrown = jitterCounter > 300
+
+
   toPortal = ""
 
   toggleActiveVal = d_rerp.iReal(toggleActiveVal, real(int(toggleActive)), th.delta/100.0)
@@ -966,7 +1007,6 @@ fn draw*() {
   }
 
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
-
 
   // DEBUG OVERYALS //
   if showDebug {

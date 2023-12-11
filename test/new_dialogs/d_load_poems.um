@@ -4,7 +4,7 @@
 
 import (
   "std.um"
-  strings = "../../src/misc/mstrings.um"
+  strings = "../../src/misc/d_strings.um"
 )
 
 fn loadPoems*(poemsSource: str): []str {
