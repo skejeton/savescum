@@ -1,5 +1,13 @@
 import (
-  "image.um"; "std.um"; "th.um"; "rect.um"; "input.um"; "canvas.um"; "utf8.um"; "misc/d_strings.um"; th_font = "font.um"
+  "image.um"
+  "std.um"
+  "th.um"
+  "rect.um"
+  "input.um"
+  "canvas.um"
+  "utf8.um"
+  "misc/d_strings.um"
+  th_font = "font.um"
 )
 
 fn posTrans*(x, y: th.fu): th.Transform {
@@ -77,9 +85,6 @@ fn drawImageRect*(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 
   img.crop(th.Vf2{src.x/dims.x, src.y/dims.y}, th.Vf2{(src.x + src.w)/dims.x, (src.y + src.h)/dims.y})
   img.draw({p: th.Vf2{dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}, tint)
 }
-
-
-
 
 //
 // Returns lowest number among a, b

@@ -547,7 +547,6 @@ fn insertInputTextIntoOneLineBuffer(buffer: ^d_buffer.Buffer, cursor: ^d_buffer.
   dirty := false
 
   for index, rune in runes {
-    
     // Ignore non printable characters.
     if d_util.isprint(uint32(rune)) {
       d_buffer.insertAt(buffer, cursor, rune.encode())
@@ -1781,7 +1780,17 @@ fn showClosePopup(editor: ^Editor) {
 fn showCreditsPopup(editor: ^Editor) {
   if windowInfo, ok := uiBeginWindow(editor, "Credits", {800/2-300/2, 600/2-120/2, 300, 120}); ok { 
     position := th.Vf2{windowInfo.contentRect.x+5, windowInfo.contentRect.y+5}
-    putLabelY(editor, "Tommy Tallarico", th.black, &position)
+    if input.isPressed(input.key_alt) {
+      putLabelY(editor, "Tommy Tallarico - Savescum", th.black, &position)
+      putLabelY(editor, "Tommy Tallarico - Level help", th.black, &position)
+      putLabelY(editor, "Tommy Tallarico - Umka language", th.black, &position)
+      putLabelY(editor, "Tommy Tallarico - Tophat game framework", th.black, &position)
+    } else {
+      putLabelY(editor, "ske - Savescum", th.black, &position)
+      putLabelY(editor, "rari - Level help", th.black, &position)
+      putLabelY(editor, "vtereshkov - Umka language", th.black, &position)
+      putLabelY(editor, "mrms - Tophat game framework", th.black, &position)
+    }
     uiEndWindow(editor)
   }
 }
@@ -1799,8 +1808,10 @@ fn adventPutUi(editor: ^Editor) {
 
   editor.resources.mainFont.draw("SAVESCUM", {20+x, 20}, th.red, 5)
   available, hour := d_payload_trigger.adventDay()
-  playable := 5
-
+  playable := 25
+  if available == 0 {
+      available = 25
+  }
 
   if putSimpleButton(editor, rect.mk(20, 130, 80, 40), "Tutorial").isDown {
     loadPortal(editor, "030")
@@ -1826,14 +1837,22 @@ fn adventPutUi(editor: ^Editor) {
       if lv_playable {
         //putSimpleButton(editor, rect.mk(x+70, 105+(((i+4)/7)*95), 25, 25), sprintf("★#%d", i))
         compl := editor.completions[i]
-        if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 35), sprintf("Side A%s#%d", compl[0] ? "✓" : "", i)).isDown {
-          loadPortal(editor, sprintf("advent%da", i+1))
-          editor.mode = 1
+        if i == 24 {
+          if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 35+35), sprintf("Finish%s#%d", compl[0] ? "✓" : "", i), false, 0xFFFF00FF).isDown {
+            loadPortal(editor, sprintf("advent%da", i+1))
+            editor.mode = 1
+          }
+        } else {
+          if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 35), sprintf("Side A%s#%d", compl[0] ? "✓" : "", i)).isDown {
+            loadPortal(editor, sprintf("advent%da", i+1))
+            editor.mode = 1
+          }
+          if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95)+35, 80, 35), sprintf("Side B%s#%d", compl[1] ? "✓" : "", i), false, 0xFFFF77FF).isDown {
+            loadPortal(editor, sprintf("advent%db", i+1))
+            editor.mode = 1
+          }
         }
-        if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95)+35, 80, 35), sprintf("Side B%s#%d", compl[1] ? "✓" : "", i), false, 0xFFFF77FF).isDown {
-          loadPortal(editor, sprintf("advent%db", i+1))
-          editor.mode = 1
-        }
+
       } else {
         drawButtonInactive(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 70), sprintf("Reload\nthe page\nto access"), 0xFFFF77FF)
       }
@@ -1930,37 +1949,18 @@ fn editorMain*(enabled: bool) {
         d_script.update()
         editor.ui.ctx.drawCustom(GameCmd{})
         if d_game.end {
-          if editor.currentPortal == "advent1a" {
-            editor.completions[0][0] = true
+          for i := 0; i < 25; i++ {
+            adventA := sprintf("advent%da", i+1)
+            adventB := sprintf("advent%db", i+1)
+
+            if editor.currentPortal == adventA {
+              editor.completions[i][0] = true
+            }
+            if editor.currentPortal == adventB {
+              editor.completions[i][1] = true
+            }
           }
-          if editor.currentPortal == "advent1b" {
-            editor.completions[0][1] = true
-          }
-          if editor.currentPortal == "advent2a" {
-            editor.completions[1][0] = true
-          }
-          if editor.currentPortal == "advent2b" {
-            editor.completions[1][1] = true
-          }
-          if editor.currentPortal == "advent3a" {
-            editor.completions[2][0] = true
-          }
-          if editor.currentPortal == "advent3b" {
-            editor.completions[2][1] = true
-          }
-          if editor.currentPortal == "advent4a" {
-            editor.completions[3][0] = true
-          }
-          if editor.currentPortal == "advent4b" {
-            editor.completions[3][1] = true
-          }
-          if editor.currentPortal == "advent5a" {
-            editor.completions[4][0] = true
-          }
-          if editor.currentPortal == "advent5b" {
-            editor.completions[4][1] = true
-          }
-  
+
           d_game.end = false
           editor.mode = 0
         }

@@ -90,6 +90,7 @@ type ChumState = struct {
   walkTime: real
   ent: Character
   toggleActiveStatic: bool
+  toggleActiveWater: bool
 }
 
 var (
@@ -97,12 +98,21 @@ var (
   chumDir: int
   chumRotTime: real
   chumWalkTime: real
+  chumFrown: bool = false
   imgObj: image.Image
   imgChum: image.Image
   defaultFont: font.Font
   bgAudio: audio.Sound
   end*: bool
+  jitterDir: real
+  jitterTime: real
+  jitterCounter: int
+  metaBoulders: bool
+  fadeout: real = 0.0
+  fadeoutTarget: real = 0.0
 
+  noSaveLoad: bool
+  insideStatic: bool
   lockInput*: bool
   guides: []rect.Rect
   entities*: []Character
@@ -112,6 +122,7 @@ var (
   camera*: th.Vf2
   cameraScale*: real
   toggleActive: bool
+  toggleActiveWater: bool
   toggleActiveVal: real
   toggleActiveStatic: bool
   resetPoint: th.Vf2
@@ -435,8 +446,8 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
 }
 
 fn entCheckCollision(ent: ^Character): bool {
-  r := ent.rect
-  r.w -= 1
+  r := d_util.rectShrink(ent.rect, 1)
+
   solids := entConstructCollidingSolids(ent)
   for i, shape in solids {
     if shape.shape == shapeBlock {
@@ -492,11 +503,14 @@ fn findEntity*(id: str): ^Character {
 fn start*(worldData: d_world_data.WorldData) {
   bgAudio.seekToFrame(0)
   bgAudio.play()
+  fadeout = 0
+  fadeoutTarget = 0
   toPortal = ""
   lastUpdateTime = th.time
   toggleActive = false
-  toggleActiveStatic = false
+  toggleActiveWater = true
   lockInput = false
+  metaBoulders = false
 
   world = worldData.world
 
@@ -521,6 +535,9 @@ fn start*(worldData: d_world_data.WorldData) {
       }
       continue;
     }
+    if chr.tags.isSet("meta_boulders") {
+      metaBoulders = chr.tags.param("meta_boulders") == "on"
+    }
     if chr.tags.isSet("Guide") {
       guides = append(guides, chr.rect)
     } else {
@@ -528,6 +545,7 @@ fn start*(worldData: d_world_data.WorldData) {
     }
   }
 
+  toggleActiveStatic = metaBoulders
   saves = []ChumState{}
   camera = getCameraProperties().pos
   cameraScale = getCameraProperties().scale
@@ -568,6 +586,22 @@ fn getCollidingEntities(against: ^Character): []^Character {
 
 fn updateEntities() {
   entPhysics(&chara)
+  if chara.vel.y < 0 && jitterDir >= 0 {
+    jitterDir = -1
+    jitterTime = 0
+  }
+  if chara.vel.y > 0 && jitterDir <= 0 {
+    jitterDir = 1
+    jitterTime = 0
+  }
+
+  jitterTime += updateStep
+
+  if jitterTime < 0.1 {
+    jitterCounter += 1
+  } else {
+    jitterCounter = 0
+  }
   entSolveCollision(&chara)
  
   if chara.vel.y > 3 {
@@ -595,6 +629,9 @@ const (
   cropLeverOff = rect.Rect{64, 0, 64, 64}
   cropLeverStaticOn  = rect.Rect{256, 64, 64, 64}
   cropLeverStaticOff = rect.Rect{256, 0, 64, 64}
+  cropLeverWaterOn = rect.Rect{320, 128, 64, 64}
+  cropLeverWaterOff = rect.Rect{320, 192, 64, 64}
+
   cropTele     = rect.Rect{128+64, 0, 64, 64}
   cropTeleOff  = rect.Rect{128+64, 64, 64, 64}
   cropResetV   = rect.Rect{256+64, 0, 64, 64}
@@ -621,6 +658,16 @@ fn drawEntity(ent: ^Character) {
     } else {
       d_util.drawImageRect(imgObj, cropLeverStaticOff, destRect)
     }
+  } else if ent.tags.isSet("lever_w") {
+    if toggleActiveWater {
+      d_util.drawImageRect(imgObj, cropLeverWaterOn, destRect)
+    } else {
+      d_util.drawImageRect(imgObj, cropLeverWaterOff, destRect)
+    }
+  } else if ent.tags.isSet("water") {
+    canvas.drawRect(0x0099FF66, d_util.rectShrink(destRect, -2*cameraScale))
+  } else if ent.tags.isSet("static") {
+    canvas.drawRect(0xFFFF0066, d_util.rectShrink(destRect, -2*cameraScale))
   } else if ent.tags.isSet("boulder") {
     d_util.drawImageRect(imgObj, cropBoulder, destRect)
   } else if ent.tags.isSet("tele") {
@@ -630,7 +677,11 @@ fn drawEntity(ent: ^Character) {
       d_util.drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
     }
   } else if ent.tags.isSet("tele_off") {
-    d_util.drawImageRect(imgObj, cropTeleOff, destRect)
+    if !entCheckCollision(ent) {
+      d_util.drawImageRect(imgObj, cropTeleOff, destRect)
+    } else {
+      d_util.drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
+    }
   } else if ent.tags.isSet("reset") {
     if (destRect.w < destRect.h) {
       d_util.drawImageRect(imgObj, cropResetV, destRect)
@@ -647,6 +698,8 @@ fn drawEntity(ent: ^Character) {
     canvas.drawRect(0x000000FF, d_util.rectShrink(destRect, -cameraScale))
     canvas.drawRect(0x00FFFFFF, destRect)
     defaultFont.draw(ent.name, destRect.getPos(), 0x000000FF, cameraScale)
+  } else if ent.tags.isSet("resetfield") || ent.tags.isSet("fadeout") {
+ 
   } else {
     drawEntityCustomRect(ent, ent.rect)
   }
@@ -659,6 +712,7 @@ const (
   chumStateWalk = 3
   chumStateWalk2 = 4
   chumFaceRect = rect.Rect{0, 0, 128, 128}
+  chumMouthRect = rect.Rect{39, 48, 23, 8}
 )
 
 fn drawChumState(state: int, chum: ChumState, tint: uint32) {
@@ -672,13 +726,26 @@ fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   }
   
   chumDestRect := cameraOffsetRect(rect.mk(at.x+offs, at.y-29, chumFaceRect.w/2, chumFaceRect.h/2))
+  chumMouthDestRect := cameraOffsetRect(rect.mk(at.x+offs+39/2.0, at.y-28+49/2.0+6/2.0, 23/2.0, -8/2.0))
+
   if chum.dir == 0 {
     // Mirror.
     chumDestRect.x += chumDestRect.w;
     chumDestRect.w *= -1;
+
+    chumMouthDestRect.x += chumMouthDestRect.w+1.5*cameraScale;
   }
+
+  chumMouthDestRect.x -= 0.5;
+  chumMouthDestRect.y += 0.5;
+  chumMouthDestRect.h -= 1;
+  chumMouthDestRect.w += 1;
+  
   d_util.drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, tint)
   d_util.drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, tint)
+  if chumFrown {
+    d_util.drawImageRect(imgChum, chumMouthRect, chumMouthDestRect, chum.rotTime, tint)
+  }
   if showDebug {
     canvas.drawText(sprintf("%d %d", trunc(at.x/32), trunc(at.y/32)), chumDestRect.getPos(), th.red, 1)
   }
@@ -689,7 +756,10 @@ fn loadStateToChar(state: ChumState) {
   chumDir = state.dir
   chumWalkTime = state.walkTime
   chumRotTime = state.rotTime
-  toggleActiveStatic = state.toggleActiveStatic
+  if !insideStatic {
+    toggleActiveStatic = state.toggleActiveStatic
+    toggleActiveWater = state.toggleActiveWater
+  }
 }
 
 fn getCharState(): ChumState {
@@ -698,11 +768,14 @@ fn getCharState(): ChumState {
     walkTime: chumWalkTime,
     rotTime: chumRotTime,
     ent: chara,
-    toggleActiveStatic: toggleActiveStatic}
+    toggleActiveStatic: toggleActiveStatic,
+    toggleActiveWater: toggleActiveWater
+  }
 }
 
 fn drawChum(state: int) {
-  drawChumState(state, getCharState(), 0xFFFFFFFF)
+  alpha := trunc((1-fadeout) * real(0xFF))
+  drawChumState(state, getCharState(), 0xFFFFFF00|alpha)
 }
 
 fn getChumSpriteState(chum: ChumState): int {
@@ -728,7 +801,7 @@ fn drawEntities() {
   for i, entity in entities {
     drawEntity(&entities[i])
   }
-  
+ 
   drawChum(getChumSpriteState(getCharState()))
 }
 
@@ -763,7 +836,21 @@ fn canActivateStaticLever(): bool {
   return can
 }
 
+fn canActivateWaterLever(): bool {
+  can := true
+  toggleActiveWater = !toggleActiveWater
+
+  if (entCheckCollision(&chara)) {
+    can = false
+  }
+
+  toggleActiveWater = !toggleActiveWater
+  return can
+}
+
 fn update*() {
+  chumFrown = jitterCounter > 300
+
   toPortal = ""
 
   toggleActiveVal = d_rerp.iReal(toggleActiveVal, real(int(toggleActive)), th.delta/100.0)
@@ -777,6 +864,13 @@ fn update*() {
   } 
 
   for d := 0; d < iterations; d++ {
+    fadeout = d_rerp.iReal(fadeout, fadeoutTarget, updateStep*1.0)
+    if fadeout < 0 {
+      fadeout = 0
+    }
+    if fadeout > 0.99 {
+      fadeout = 0.99
+    }
     playerControl()
 
     // UPDATE PLAYER & CAMERA //
@@ -789,26 +883,31 @@ fn update*() {
   }
  
   if !lockInput {
-    if input.isJustPressedc('z') {
-      if len(saves) > 0 {
-        if !entCheckCollision(&saves[len(saves)-1].ent) {
-          loadStateToChar(saves[len(saves)-1])
-          saves = delete(saves, len(saves)-1)
+    if !noSaveLoad {
+      if input.isJustPressedc('z') {
+        if len(saves) > 0 {
+          if !entCheckCollision(&saves[len(saves)-1].ent) {
+            loadStateToChar(saves[len(saves)-1])
+            saves = delete(saves, len(saves)-1)
+          }
+        }
+      }
+
+      if input.isJustPressedc('x') {
+        if len(saves) < 1 {
+          saves = append(saves, getCharState())
         }
       }
     }
-
-    if input.isJustPressedc('x') {
-      if len(saves) < 1 {
-        saves = append(saves, getCharState())
-      }
-    }
+    noSaveLoad = false
+    insideStatic = false
  
     if input.isJustPressedc('r') {
       chara.rect.x = resetPoint.x
       chara.rect.y = resetPoint.y
       toggleActive = false
-      toggleActiveStatic = false
+      toggleActiveStatic = metaBoulders 
+      toggleActiveWater = true
       saves = {}
     }
 
@@ -860,7 +959,7 @@ fn update*() {
       if ent.tags.isSet("boulder") {
         power := real(int(toggleActiveStatic))
         boulderTargetRect := d_util.rectMove(ent.originalRect, th.Vf2{0, -ent.originalRect.h*power})
-        ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/100.0)
+        ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/50.0)
       }
       if ent.tags.isSet("lever") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
@@ -880,9 +979,50 @@ fn update*() {
           } 
         }
       }
+      if ent.tags.isSet("water") {
+        if toggleActiveWater {
+          ent.rect.y = ent.originalRect.y
+        } else {
+          ent.rect.y = ent.originalRect.y+100000
+        }
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          noSaveLoad = true
+        }
+      }
+
+      if ent.tags.isSet("static") {
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          insideStatic = true
+        }
+      }
+      if ent.tags.isSet("lever_w") {
+         if d_util.rectVsRect(ent.rect, chara.rect) && chara.onGround {
+          if input.isJustPressedc(' ') {
+            if canActivateWaterLever() {
+              toggleActiveWater = !toggleActiveWater
+            }
+          } 
+        }
+      }
       if ent.tags.isSet("exit") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
           end = true
+        }
+      }
+      if ent.tags.isSet("resetfield") {
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          chara.rect.x = resetPoint.x
+          chara.rect.y = resetPoint.y
+          toggleActive = false
+          toggleActiveStatic = metaBoulders
+          toggleActiveWater = true
+          saves = {}
+        }
+      }
+      if ent.tags.isSet("fadeout") {
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          fadeoutTarget = 1
+          saves = {}
         }
       }
       if ent.tags.isSet("tele") {
@@ -903,8 +1043,6 @@ fn update*() {
       }
     }
   }
-
-
 }
 
 fn drawGuideRects() {
@@ -950,11 +1088,14 @@ fn draw*() {
   oldPos := camera
   d_background.draw(bgCam)
 
+
+  bgAudio.setVol(1.0-fadeout)
   // RENDER WORLD //
   world.drawLayer(cameraOffsetPoint({0, 0}), -1, cameraScale)
   drawOutlines()
   world.drawLayer(cameraOffsetPoint({0, 0}), 0, cameraScale)
   drawOverlays()
+  canvas.drawRect(th.black*trunc((1.0-fadeout)*real(0xFF)), d_global.screen)
   drawEntities()
     
   for i, state in saves {
@@ -966,7 +1107,6 @@ fn draw*() {
   }
 
   world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
-
 
   // DEBUG OVERYALS //
   if showDebug {

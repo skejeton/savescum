@@ -51,7 +51,7 @@ fn drawClouds*(screen: rect.Rect, tint: uint32, bg: uint32, scale: real) {
 
   for i := 0; i < stripeCount; i++ {
     yOffset := origin+i*step
-    scroll := (i + 1) * (i + 1) * th.time/1000.0 * -120/stripeCount
+    scroll := (i + 1) * (i + 1) * th.time/5000.0 * -120/stripeCount
     color := tint | (trunc(((i + 1.0) / stripeCount) * 0xFF) & 0xFF)
 
     drawCloudStrip(scroll, yOffset, color, scale)
@@ -157,3 +157,4 @@ fn drawBg*(screen: rect.Rect, which: int) {
 fn draw*(screen: rect.Rect) {
   drawBg(screen, 2)
 }
+

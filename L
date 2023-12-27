@@ -6,6 +6,8 @@ BUTLER_VAR=""
 BUTLER_USERNAME=""
 BUTLER_PROJECTNAME=""
 
+alias butler=/mnt/c/Butler/butler.exe 
+
 if [ -x "$(command -v butler)" ]; then
   BUTLER_VAR="butler"
 fi
@@ -105,7 +107,7 @@ target_emscripten() {
 
 # Compiles external C code
 target_compile_extern() {
-  $COMPILER external/jumbo.c -shared -o src/d_extern.umi
+  echo 
 }
 
 hasargs=1
