@@ -109,7 +109,11 @@ var (
   jitterCounter: int
   metaBoulders: bool
 
+  fadeout: real = 0.0
+  fadeoutTarget: real = 0.0
+
   noSaveLoad: bool
+  insideStatic: bool
   lockInput*: bool
   guides: []rect.Rect
   entities*: []Character
@@ -500,6 +504,8 @@ fn findEntity*(id: str): ^Character {
 fn start*(worldData: d_world_data.WorldData) {
   bgAudio.seekToFrame(0)
   bgAudio.play()
+  fadeout = 0
+  fadeoutTarget = 0
   toPortal = ""
   lastUpdateTime = th.time
   toggleActive = false
@@ -661,6 +667,8 @@ fn drawEntity(ent: ^Character) {
     }
   } else if ent.tags.isSet("water") {
     canvas.drawRect(0x0099FF66, d_util.rectShrink(destRect, -2*cameraScale))
+  } else if ent.tags.isSet("static") {
+    canvas.drawRect(0xFFFF0066, d_util.rectShrink(destRect, -2*cameraScale))
   } else if ent.tags.isSet("boulder") {
     d_util.drawImageRect(imgObj, cropBoulder, destRect)
   } else if ent.tags.isSet("tele") {
@@ -691,7 +699,7 @@ fn drawEntity(ent: ^Character) {
     canvas.drawRect(0x000000FF, d_util.rectShrink(destRect, -cameraScale))
     canvas.drawRect(0x00FFFFFF, destRect)
     defaultFont.draw(ent.name, destRect.getPos(), 0x000000FF, cameraScale)
-  } else if ent.tags.isSet("resetfield") {
+  } else if ent.tags.isSet("resetfield") || ent.tags.isSet("fadeout") {
  
   } else {
     drawEntityCustomRect(ent, ent.rect)
@@ -749,8 +757,11 @@ fn loadStateToChar(state: ChumState) {
   chumDir = state.dir
   chumWalkTime = state.walkTime
   chumRotTime = state.rotTime
-  toggleActiveStatic = state.toggleActiveStatic
-  toggleActiveWater = state.toggleActiveWater
+  
+  if !insideStatic {
+    toggleActiveStatic = state.toggleActiveStatic
+    toggleActiveWater = state.toggleActiveWater
+  }
 }
 
 fn getCharState(): ChumState {
@@ -765,7 +776,8 @@ fn getCharState(): ChumState {
 }
 
 fn drawChum(state: int) {
-  drawChumState(state, getCharState(), 0xFFFFFFFF)
+  alpha := trunc((1-fadeout) * real(0xFF))
+  drawChumState(state, getCharState(), 0xFFFFFF00|alpha)
 }
 
 fn getChumSpriteState(chum: ChumState): int {
@@ -791,7 +803,7 @@ fn drawEntities() {
   for i, entity in entities {
     drawEntity(&entities[i])
   }
-  
+ 
   drawChum(getChumSpriteState(getCharState()))
 }
 
@@ -854,6 +866,13 @@ fn update*() {
   } 
 
   for d := 0; d < iterations; d++ {
+    fadeout = d_rerp.iReal(fadeout, fadeoutTarget, updateStep*1.0)
+    if fadeout < 0 {
+      fadeout = 0
+    }
+    if fadeout > 0.99 {
+      fadeout = 0.99
+    }
     playerControl()
 
     // UPDATE PLAYER & CAMERA //
@@ -883,6 +902,7 @@ fn update*() {
       }
     }
     noSaveLoad = false
+    insideStatic = false
  
     if input.isJustPressedc('r') {
       chara.rect.x = resetPoint.x
@@ -971,6 +991,7 @@ fn update*() {
           noSaveLoad = true
         }
       }
+
       if ent.tags.isSet("lever_w") {
          if d_util.rectVsRect(ent.rect, chara.rect) && chara.onGround {
           if input.isJustPressedc(' ') {
@@ -995,6 +1016,14 @@ fn update*() {
           saves = {}
         }
       }
+      
+      if ent.tags.isSet("fadeout") {
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          fadeoutTarget = 1
+          saves = {}
+        }
+      }
+
       if ent.tags.isSet("tele") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
           dest := ent.tags.param("tele")
@@ -1058,11 +1087,14 @@ fn draw*() {
   oldPos := camera
   d_background.draw(bgCam)
 
+
+  bgAudio.setVol(1.0-fadeout)
   // RENDER WORLD //
   world.drawLayer(cameraOffsetPoint({0, 0}), -1, cameraScale)
   drawOutlines()
   world.drawLayer(cameraOffsetPoint({0, 0}), 0, cameraScale)
   drawOverlays()
+  canvas.drawRect(th.black*trunc((1.0-fadeout)*real(0xFF)), d_global.screen)
   drawEntities()
     
   for i, state in saves {

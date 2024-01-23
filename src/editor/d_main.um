@@ -547,7 +547,6 @@ fn insertInputTextIntoOneLineBuffer(buffer: ^d_buffer.Buffer, cursor: ^d_buffer.
   dirty := false
 
   for index, rune in runes {
-    
     // Ignore non printable characters.
     if d_util.isprint(uint32(rune)) {
       d_buffer.insertAt(buffer, cursor, rune.encode())
@@ -1809,7 +1808,11 @@ fn adventPutUi(editor: ^Editor) {
 
   editor.resources.mainFont.draw("SAVESCUM", {20+x, 20}, th.red, 5)
   available, hour := d_payload_trigger.adventDay()
-  playable := 18
+  
+  playable := 25
+  if available == 0 {
+      available = 25
+  }
 
   if putSimpleButton(editor, rect.mk(20, 130, 80, 40), "Tutorial").isDown {
     loadPortal(editor, "030")
@@ -1835,14 +1838,22 @@ fn adventPutUi(editor: ^Editor) {
       if lv_playable {
         //putSimpleButton(editor, rect.mk(x+70, 105+(((i+4)/7)*95), 25, 25), sprintf("★#%d", i))
         compl := editor.completions[i]
-        if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 35), sprintf("Side A%s#%d", compl[0] ? "✓" : "", i)).isDown {
-          loadPortal(editor, sprintf("advent%da", i+1))
-          editor.mode = 1
+        if i == 24 {
+          if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 35+35), sprintf("Finish%s#%d", compl[0] ? "✓" : "", i), false, 0xFFFF00FF).isDown {
+            loadPortal(editor, sprintf("advent%da", i+1))
+            editor.mode = 1
+          }
+        } else {
+          if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 35), sprintf("Side A%s#%d", compl[0] ? "✓" : "", i)).isDown {
+            loadPortal(editor, sprintf("advent%da", i+1))
+            editor.mode = 1
+          }
+          if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95)+35, 80, 35), sprintf("Side B%s#%d", compl[1] ? "✓" : "", i), false, 0xFFFF77FF).isDown {
+            loadPortal(editor, sprintf("advent%db", i+1))
+            editor.mode = 1
+          }
         }
-        if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95)+35, 80, 35), sprintf("Side B%s#%d", compl[1] ? "✓" : "", i), false, 0xFFFF77FF).isDown {
-          loadPortal(editor, sprintf("advent%db", i+1))
-          editor.mode = 1
-        }
+
       } else {
         drawButtonInactive(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 70), sprintf("Reload\nthe page\nto access"), 0xFFFF77FF)
       }
