@@ -1809,7 +1809,7 @@ fn adventPutUi(editor: ^Editor) {
 
   editor.resources.mainFont.draw("SAVESCUM", {20+x, 20}, th.red, 5)
   available, hour := d_payload_trigger.adventDay()
-  playable := 13
+  playable := 18
 
   if putSimpleButton(editor, rect.mk(20, 130, 80, 40), "Tutorial").isDown {
     loadPortal(editor, "030")

@@ -90,6 +90,7 @@ type ChumState = struct {
   walkTime: real
   ent: Character
   toggleActiveStatic: bool
+  toggleActiveWater: bool
 }
 
 var (
@@ -106,7 +107,9 @@ var (
   jitterDir: real
   jitterTime: real
   jitterCounter: int
+  metaBoulders: bool
 
+  noSaveLoad: bool
   lockInput*: bool
   guides: []rect.Rect
   entities*: []Character
@@ -116,6 +119,7 @@ var (
   camera*: th.Vf2
   cameraScale*: real
   toggleActive: bool
+  toggleActiveWater: bool
   toggleActiveVal: real
   toggleActiveStatic: bool
   resetPoint: th.Vf2
@@ -499,8 +503,9 @@ fn start*(worldData: d_world_data.WorldData) {
   toPortal = ""
   lastUpdateTime = th.time
   toggleActive = false
-  toggleActiveStatic = false
+  toggleActiveWater = true
   lockInput = false
+  metaBoulders = false
 
   world = worldData.world
 
@@ -525,6 +530,9 @@ fn start*(worldData: d_world_data.WorldData) {
       }
       continue;
     }
+    if chr.tags.isSet("meta_boulders") {
+      metaBoulders = chr.tags.param("meta_boulders") == "on"
+    }
     if chr.tags.isSet("Guide") {
       guides = append(guides, chr.rect)
     } else {
@@ -532,6 +540,7 @@ fn start*(worldData: d_world_data.WorldData) {
     }
   }
 
+  toggleActiveStatic = metaBoulders
   saves = []ChumState{}
   camera = getCameraProperties().pos
   cameraScale = getCameraProperties().scale
@@ -615,6 +624,9 @@ const (
   cropLeverOff = rect.Rect{64, 0, 64, 64}
   cropLeverStaticOn  = rect.Rect{256, 64, 64, 64}
   cropLeverStaticOff = rect.Rect{256, 0, 64, 64}
+  cropLeverWaterOn = rect.Rect{320, 128, 64, 64}
+  cropLeverWaterOff = rect.Rect{320, 192, 64, 64}
+
   cropTele     = rect.Rect{128+64, 0, 64, 64}
   cropTeleOff  = rect.Rect{128+64, 64, 64, 64}
   cropResetV   = rect.Rect{256+64, 0, 64, 64}
@@ -641,6 +653,14 @@ fn drawEntity(ent: ^Character) {
     } else {
       d_util.drawImageRect(imgObj, cropLeverStaticOff, destRect)
     }
+  } else if ent.tags.isSet("lever_w") {
+    if toggleActiveWater {
+      d_util.drawImageRect(imgObj, cropLeverWaterOn, destRect)
+    } else {
+      d_util.drawImageRect(imgObj, cropLeverWaterOff, destRect)
+    }
+  } else if ent.tags.isSet("water") {
+    canvas.drawRect(0x0099FF66, d_util.rectShrink(destRect, -2*cameraScale))
   } else if ent.tags.isSet("boulder") {
     d_util.drawImageRect(imgObj, cropBoulder, destRect)
   } else if ent.tags.isSet("tele") {
@@ -671,6 +691,8 @@ fn drawEntity(ent: ^Character) {
     canvas.drawRect(0x000000FF, d_util.rectShrink(destRect, -cameraScale))
     canvas.drawRect(0x00FFFFFF, destRect)
     defaultFont.draw(ent.name, destRect.getPos(), 0x000000FF, cameraScale)
+  } else if ent.tags.isSet("resetfield") {
+ 
   } else {
     drawEntityCustomRect(ent, ent.rect)
   }
@@ -728,6 +750,7 @@ fn loadStateToChar(state: ChumState) {
   chumWalkTime = state.walkTime
   chumRotTime = state.rotTime
   toggleActiveStatic = state.toggleActiveStatic
+  toggleActiveWater = state.toggleActiveWater
 }
 
 fn getCharState(): ChumState {
@@ -736,7 +759,9 @@ fn getCharState(): ChumState {
     walkTime: chumWalkTime,
     rotTime: chumRotTime,
     ent: chara,
-    toggleActiveStatic: toggleActiveStatic}
+    toggleActiveStatic: toggleActiveStatic,
+    toggleActiveWater: toggleActiveWater
+  }
 }
 
 fn drawChum(state: int) {
@@ -801,9 +826,20 @@ fn canActivateStaticLever(): bool {
   return can
 }
 
+fn canActivateWaterLever(): bool {
+  can := true
+  toggleActiveWater = !toggleActiveWater
+
+  if (entCheckCollision(&chara)) {
+    can = false
+  }
+
+  toggleActiveWater = !toggleActiveWater
+  return can
+}
+
 fn update*() {
   chumFrown = jitterCounter > 300
-
 
   toPortal = ""
 
@@ -830,26 +866,30 @@ fn update*() {
   }
  
   if !lockInput {
-    if input.isJustPressedc('z') {
-      if len(saves) > 0 {
-        if !entCheckCollision(&saves[len(saves)-1].ent) {
-          loadStateToChar(saves[len(saves)-1])
-          saves = delete(saves, len(saves)-1)
+    if !noSaveLoad {
+      if input.isJustPressedc('z') {
+        if len(saves) > 0 {
+          if !entCheckCollision(&saves[len(saves)-1].ent) {
+            loadStateToChar(saves[len(saves)-1])
+            saves = delete(saves, len(saves)-1)
+          }
+        }
+      }
+
+      if input.isJustPressedc('x') {
+        if len(saves) < 1 {
+          saves = append(saves, getCharState())
         }
       }
     }
-
-    if input.isJustPressedc('x') {
-      if len(saves) < 1 {
-        saves = append(saves, getCharState())
-      }
-    }
+    noSaveLoad = false
  
     if input.isJustPressedc('r') {
       chara.rect.x = resetPoint.x
       chara.rect.y = resetPoint.y
       toggleActive = false
-      toggleActiveStatic = false
+      toggleActiveStatic = metaBoulders 
+      toggleActiveWater = true
       saves = {}
     }
 
@@ -921,9 +961,38 @@ fn update*() {
           } 
         }
       }
+      if ent.tags.isSet("water") {
+        if toggleActiveWater {
+          ent.rect.y = ent.originalRect.y
+        } else {
+          ent.rect.y = ent.originalRect.y+100000
+        }
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          noSaveLoad = true
+        }
+      }
+      if ent.tags.isSet("lever_w") {
+         if d_util.rectVsRect(ent.rect, chara.rect) && chara.onGround {
+          if input.isJustPressedc(' ') {
+            if canActivateWaterLever() {
+              toggleActiveWater = !toggleActiveWater
+            }
+          } 
+        }
+      }
       if ent.tags.isSet("exit") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
           end = true
+        }
+      }
+      if ent.tags.isSet("resetfield") {
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          chara.rect.x = resetPoint.x
+          chara.rect.y = resetPoint.y
+          toggleActive = false
+          toggleActiveStatic = metaBoulders
+          toggleActiveWater = true
+          saves = {}
         }
       }
       if ent.tags.isSet("tele") {
@@ -944,8 +1013,6 @@ fn update*() {
       }
     }
   }
-
-
 }
 
 fn drawGuideRects() {
