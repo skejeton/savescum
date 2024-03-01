@@ -772,44 +772,6 @@ fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   
   d_util.drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, tint)
   d_util.drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, tint)
-  // WELL SEYMORE, I MADE IT, DESPITE YOUR DIRECTIONS
-  // Ah, Superintendent Chalmers, welcome! I hope you're prepared for an unforgettable luncheon!
-  // Yeah...
-  // Oh, egads! My roast is ruined! But what if... I were to purchase fast food and disguise it as my own cooking? Delightfully devilish, Seymour.
-  // Ah- Skinner with his crazy explanations, the superintendent's gonna need his medication, when he hears Skinner's lame exaggerations, there'll be trouble in town tonight!
-  // SEYMOUR!
-  // Superintendent, I was just, uh, just stretching my calves on the windowsill. Isometric exercise. Care to join me?
-  // Why is there smoke coming out of your oven, Seymour?
-  // Uh- Oh! That isn't smoke, it's steam. Steam from the steamed clams we're having. Mmm, steamed clams.
-  // Whew.
-  // Superintendent, I hope you're ready for mouthwatering hamburgers.
-  // I thought we were having steamed clams.
-  // Oh, no, I said steamed hams. That's what I call hamburgers.
-  // You call hamburgers steamed hams?
-  // Yes. It's a regional dialect.
-  // Uh-huh. Uh, what region?
-  // Uh, upstate New York.
-  // Really. Well, I'm from Utica, and I've never heard anyone use the phrase "steamed hams."
-  // Oh, not in Utica, no. It's an Albany expression.
-  // I see. You know, these hamburgers are quite similar to the ones they have at Krusty Burger.
-  // Oh, no. Patented Skinner burgers. Old family recipe.
-  // For steamed hams.
-  // Yes.
-  // Yes, and you call them steamed hams despite the fact that they are obviously grilled.
-  // Ye- You know, the- One thing I should- - Excuse me for one second.
-  // Of course.
-  // Well, that was wonderful. A good time was had by all. I'm pooped.
-  // Yes, I should be- Good Lord! What is happening in there?
-  // Aurora borealis.
-  // Uh- Aurora borealis? At this time of year? At this time of day? In this part of the country? Localized entirely within your kitchen?
-  // Yes.
-  // May I see it?
-  // No.
-  // Seymour! The house is on fire!
-  // No, Mother, it's just the northern lights.
-  // Well, Seymour, you are an odd fellow, but I must say, you steam a good ham.
-  // Help! Help!
-
   if chumFrown {
     d_util.drawImageRect(imgChum, chumMouthRect, chumMouthDestRect, chum.rotTime, tint)
   }
