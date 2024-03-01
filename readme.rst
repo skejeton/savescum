@@ -80,3 +80,11 @@ Follow standard umka coding style:
 Use 2 spaces everywhere for indentation, except Makefiles.
 
 For more information, refer to ``.editorconfig``, make sure to follow the rules.
+
+Conventions
+===========
+
+Exit codes of the program within SAVESCUM code must be any of these:
+- 134 - Assertion/Programmer error
+- 551 - Test error
+- 552 - Script error

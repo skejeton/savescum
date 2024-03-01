@@ -1,0 +1,11 @@
+type Display* = struct {
+  name: str
+  value: any
+  mutable: bool
+}
+
+type DebugInfo* = struct {
+  displays: []Display
+}
+
+

@@ -1,9 +1,10 @@
 import ("rect.um")
 
 var (
-  version*: str = "0.3.0+5"
+  version*: str = "0.3.1"
   screen*: rect.Rect
   end*: bool
   skeDpiHack*: bool = false
+  caseSensetiveFS*: bool = true
 )
 

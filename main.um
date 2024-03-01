@@ -1,4 +1,4 @@
-import ("src/d_main.um")
+import ("src/d_main.um"; "src/d_dbg.um")
 
 fn init*() {
   d_main.init(false)

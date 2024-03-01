@@ -15,6 +15,7 @@ import (
   "d_global.um"
   "d_world_data.um"
   "font.um"
+  "std.um"
   "audio.um"
 )
 
@@ -26,9 +27,9 @@ const (
   shapeRightDownSlope = 4
 )
 
-// 125 updates per second
-const updateStep = 1/60.0; 
-const updateStepMs = 16;
+// TPS 250
+const updateStep = 1/250.0; 
+const updateStepMs* = 4;
 
 type (
   Shape* = struct {
@@ -103,11 +104,15 @@ var (
   imgChum: image.Image
   defaultFont: font.Font
   bgAudio: audio.Sound
+  palStep: audio.Sound
+  palJump: audio.Sound
+  palLand: audio.Sound
   end*: bool
   jitterDir: real
   jitterTime: real
   jitterCounter: int
   metaBoulders: bool
+  wasOnGround: bool
 
   fadeout: real = 0.0
   fadeoutTarget: real = 0.0
@@ -130,7 +135,7 @@ var (
   toPortal: str
 
   saves: []ChumState
-  showDebug: bool = false
+  showDebug*: bool = false
   lastUpdateTime: int = 0
   frameSkips*: int
 )
@@ -147,6 +152,17 @@ fn findGuideInPoint(p: th.Vf2): rect.Rect {
   }
 
   return getCameraRect()
+}
+
+fn reset*() {
+  chara.rect.x = resetPoint.x
+  chara.rect.y = resetPoint.y
+  toggleActive = false
+  toggleActiveStatic = metaBoulders 
+  toggleActiveWater = true
+  end = false 
+  fadeoutTarget = 0
+  saves = {}
 }
 
 fn getCameraTargetRect(): rect.Rect {
@@ -212,7 +228,11 @@ fn cameraOffsetRect(r: rect.Rect): rect.Rect {
 }
 
 fn playerControl() {
+  if !wasOnGround && chara.onGround {
+    palLand.start()
+  }
   if input.isPressed(input.key_up) && chara.onGround {
+    palJump.start()
     chara.vel.y = -3.65
   }
   if input.isPressed(input.key_left) {
@@ -230,12 +250,16 @@ fn playerControl() {
   }
 
   if chara.rect.y > 2e3 {
-    // NOTE: Respawn
-    chara.vel.x = 0
-    chara.vel.y = 0
-    chara.rect.x = world.playerSpawnPos.x * world.tileset.tileSizeX
-    chara.rect.y = world.playerSpawnPos.y * world.tileset.tileSizeY
+    reset()
   }
+
+  if round(chumWalkTime*6+0.1) % 2 == 1 && chara.onGround {
+    palStep.setVol(0.5)
+    palStep.setPitch(1.5+(std.rand()%10)/50.0)
+    palStep.play()
+  }
+
+  wasOnGround = chara.onGround
 }
 
 fn entPhysics(ent: ^Character) {
@@ -284,8 +308,7 @@ fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
 }
 
 fn collSortShapesByProximity(shapes: ^[]Shape, along: th.Vf2) {
-  for i := 0; i < len(shapes^); i++ {
-    closest := &shapes[i]
+  for i, closest^ in shapes {
     mindist := real(99999999)
     for j := i; j < len(shapes^); j++ {
       current := shapes[j].rect
@@ -310,6 +333,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
   if d_util.rectVsRect(ent.rect, r) == false {
     return
   }
+
   
   switch s.shape {
   case shapeLeftUpSlope:
@@ -392,7 +416,7 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
   solids := []Shape{}
   nonBlockSolids := []Shape{}
 
-  for i, entity in entities {
+  for i, entity^ in entities {
     if entity.id == ent.id {
       continue
     }
@@ -503,7 +527,7 @@ fn findEntity*(id: str): ^Character {
 
 fn start*(worldData: d_world_data.WorldData) {
   bgAudio.seekToFrame(0)
-  bgAudio.play()
+  // bgAudio.play()
   fadeout = 0
   fadeoutTarget = 0
   toPortal = ""
@@ -557,8 +581,12 @@ fn stop*() {
 }
 
 fn init*(rl: ^d_resources.ResourceLoader) {
-  bgAudio = d_resources.loadAudio(rl, "data/audio/soundtrack/background.mp3")
-  bgAudio.setLooping(true)
+  bgAudio = d_resources.loadAudio(rl, "data/audio/soundtrack/scene1.ogg")
+  palStep = d_resources.loadAudio(rl, "data/audio/sfx/pal_walk.ogg")
+  palJump = d_resources.loadAudio(rl, "data/audio/sfx/pal_jump.ogg")
+  palLand = d_resources.loadAudio(rl, "data/audio/sfx/pal_land.ogg")
+
+  // bgAudio.setLooping(true)
   defaultFont = d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 1)
   imgObj = d_resources.loadImage(rl, "data/img/obj_interactive.png")
   imgObj.setfilter(1)
@@ -678,7 +706,7 @@ fn drawEntity(ent: ^Character) {
       d_util.drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
     }
   } else if ent.tags.isSet("tele_off") {
-    if !entCheckCollision(ent) {
+  if !entCheckCollision(ent) {
       d_util.drawImageRect(imgObj, cropTeleOff, destRect)
     } else {
       d_util.drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
@@ -713,7 +741,7 @@ const (
   chumStateWalk = 3
   chumStateWalk2 = 4
   chumFaceRect = rect.Rect{0, 0, 128, 128}
-  chumMouthRect = rect.Rect{39, 48, 23, 8}
+  chumMouthRect = rect.Rect{41, 52, 22, 7}
 )
 
 fn drawChumState(state: int, chum: ChumState, tint: uint32) {
@@ -727,7 +755,7 @@ fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   }
   
   chumDestRect := cameraOffsetRect(rect.mk(at.x+offs, at.y-29, chumFaceRect.w/2, chumFaceRect.h/2))
-  chumMouthDestRect := cameraOffsetRect(rect.mk(at.x+offs+39/2.0, at.y-28+49/2.0+6/2.0, 23/2.0, -8/2.0))
+  chumMouthDestRect := cameraOffsetRect(rect.mk(at.x+offs+41-21, at.y-29+52-22.25, 22/2, -7.05/2))
 
   if chum.dir == 0 {
     // Mirror.
@@ -744,6 +772,44 @@ fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   
   d_util.drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, tint)
   d_util.drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, tint)
+  // WELL SEYMORE, I MADE IT, DESPITE YOUR DIRECTIONS
+  // Ah, Superintendent Chalmers, welcome! I hope you're prepared for an unforgettable luncheon!
+  // Yeah...
+  // Oh, egads! My roast is ruined! But what if... I were to purchase fast food and disguise it as my own cooking? Delightfully devilish, Seymour.
+  // Ah- Skinner with his crazy explanations, the superintendent's gonna need his medication, when he hears Skinner's lame exaggerations, there'll be trouble in town tonight!
+  // SEYMOUR!
+  // Superintendent, I was just, uh, just stretching my calves on the windowsill. Isometric exercise. Care to join me?
+  // Why is there smoke coming out of your oven, Seymour?
+  // Uh- Oh! That isn't smoke, it's steam. Steam from the steamed clams we're having. Mmm, steamed clams.
+  // Whew.
+  // Superintendent, I hope you're ready for mouthwatering hamburgers.
+  // I thought we were having steamed clams.
+  // Oh, no, I said steamed hams. That's what I call hamburgers.
+  // You call hamburgers steamed hams?
+  // Yes. It's a regional dialect.
+  // Uh-huh. Uh, what region?
+  // Uh, upstate New York.
+  // Really. Well, I'm from Utica, and I've never heard anyone use the phrase "steamed hams."
+  // Oh, not in Utica, no. It's an Albany expression.
+  // I see. You know, these hamburgers are quite similar to the ones they have at Krusty Burger.
+  // Oh, no. Patented Skinner burgers. Old family recipe.
+  // For steamed hams.
+  // Yes.
+  // Yes, and you call them steamed hams despite the fact that they are obviously grilled.
+  // Ye- You know, the- One thing I should- - Excuse me for one second.
+  // Of course.
+  // Well, that was wonderful. A good time was had by all. I'm pooped.
+  // Yes, I should be- Good Lord! What is happening in there?
+  // Aurora borealis.
+  // Uh- Aurora borealis? At this time of year? At this time of day? In this part of the country? Localized entirely within your kitchen?
+  // Yes.
+  // May I see it?
+  // No.
+  // Seymour! The house is on fire!
+  // No, Mother, it's just the northern lights.
+  // Well, Seymour, you are an odd fellow, but I must say, you steam a good ham.
+  // Help! Help!
+
   if chumFrown {
     d_util.drawImageRect(imgChum, chumMouthRect, chumMouthDestRect, chum.rotTime, tint)
   }
@@ -790,10 +856,9 @@ fn getChumSpriteState(chum: ChumState): int {
   } else if chum.walkTime == 0.0 {
     return chumStateStand
   } else {
-    switch trunc(chum.walkTime*8.0) % 3 {
+    switch trunc(chum.walkTime*6.0) % 2 {
       case 0: return chumStateJump
       case 1: return chumStateStand
-      case 2: return chumStateJump
     }
   }
   return -1
@@ -878,10 +943,6 @@ fn update*() {
     // UPDATE PLAYER & CAMERA //
     updateEntities()
     cameraControl()
-
-    if input.isPressed(input.key_alt) && input.isJustPressedc('d') {
-      showDebug = !showDebug
-    }
   }
  
   if !lockInput {
@@ -894,23 +955,16 @@ fn update*() {
           }
         }
       }
-
+      
       if input.isJustPressedc('x') {
-        if len(saves) < 1 {
-          saves = append(saves, getCharState())
-        }
+        saves = append(saves, getCharState())
       }
     }
     noSaveLoad = false
     insideStatic = false
  
     if input.isJustPressedc('r') {
-      chara.rect.x = resetPoint.x
-      chara.rect.y = resetPoint.y
-      toggleActive = false
-      toggleActiveStatic = metaBoulders 
-      toggleActiveWater = true
-      saves = {}
+      reset()
     }
 
 
@@ -992,6 +1046,12 @@ fn update*() {
         }
       }
 
+      if ent.tags.isSet("static") {
+        if d_util.rectVsRect(ent.rect, chara.rect) {
+          insideStatic = true
+        }
+      }
+
       if ent.tags.isSet("lever_w") {
          if d_util.rectVsRect(ent.rect, chara.rect) && chara.onGround {
           if input.isJustPressedc(' ') {
@@ -1008,12 +1068,7 @@ fn update*() {
       }
       if ent.tags.isSet("resetfield") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
-          chara.rect.x = resetPoint.x
-          chara.rect.y = resetPoint.y
-          toggleActive = false
-          toggleActiveStatic = metaBoulders
-          toggleActiveWater = true
-          saves = {}
+          reset()
         }
       }
       
@@ -1056,6 +1111,9 @@ fn drawOutlines() {
   renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
 
   for i, renderTile in renderTiles {
+    if renderTile.id == 29 {
+      canvas.drawRect(0x9999FFFF, d_util.rectShrink(renderTile.rect, (-3)*cameraScale))
+    }
     if (renderTile.id == 30) || (renderTile.id == 31) {
       radius := radiusPulsing
       canvas.drawRect(0x000000FF, d_util.rectShrink(renderTile.rect, (-radius-1)*cameraScale))

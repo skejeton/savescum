@@ -75,7 +75,7 @@ fn showResourceLoadingError*(loader: ^d_resources.ResourceLoader) {
     }
 
     restart()
-    pushText("Drat! I couldn't load some resources:")
+    pushText("The program softwares couldn't load some resources:")
     for i, error in loader.errors {
       pushText(" "+error, th.red)
     }

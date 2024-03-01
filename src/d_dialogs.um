@@ -248,8 +248,7 @@ fn (d: ^Dialogs) advance*(press: bool) {
  * @brief Updates all dialogs
  */
 fn (d: ^Dialogs) update*() {
-  for x in d.list {
-    dialog := &d.list[x]
+  for _, ^dialog in d.list {
 
     dialog.appearTimer += th.delta/1000.0;
     for dialog.appearTimer > dialog.speed {

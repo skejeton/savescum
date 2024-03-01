@@ -3,6 +3,7 @@ import (
   "../d_mouseinput.um"
   "../editor/d_drawcmd.um"
   "../d_util.um"
+  "../d_assert.um"
   "rect.um"
 )
 
@@ -143,7 +144,7 @@ fn initInputSinkSet*(): InputSink {
 
 fn (core: ^Core) endTool*(): Events {
   if core.currentTool.parent == null {
-    error("Parent node is null, beginTool/endTool mismatched!")
+    d_assert.assert(false, "Parent node is null, beginTool/endTool mismatched!")
   }
 
   mask := InputSink{}
@@ -184,7 +185,7 @@ fn (core: ^Core) getPropertyLazy*(name: str, getter: fn (): any): any {
 
 fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: int): bool {
   if event < 0 || event >= eventCount {
-    error(sprintf("Invalid event id: %d", event))
+    d_assert.assert(false, sprintf("Invalid event id: %d", event))
   }
  
   // This event is masked so we can't process it.
@@ -228,14 +229,14 @@ fn (events: ^Events) queryMouse*(btn: int, which: int): bool {
     case 0: mouseButton = events.mouseState.lmb
     case 1: mouseButton = events.mouseState.mmb
     case 2: mouseButton = events.mouseState.rmb
-    default: error(sprintf("Invalid mouse button index %d", btn))
+    default: d_assert.assert(false, sprintf("Invalid mouse button index %d", btn))
   }
 
   switch which {
     case d_mouseinput.down: return mouseButton.isDown
     case d_mouseinput.pressed: return mouseButton.isPressed
     case d_mouseinput.released: return mouseButton.isReleased
-    default: error(sprintf("Invalid mouse button property index %d", which))
+    default: d_assert.assert(false, sprintf("Invalid mouse button property index %d", which))
   }
   return false;
 

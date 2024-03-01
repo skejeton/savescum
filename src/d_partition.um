@@ -12,5 +12,6 @@ fn calculateTileSpanOnScreen*(tileSize: th.Vf2, screen: rect.Rect): TileSpan {
     y: floor(screen.y/tileSize.y),
     w: ceil(screen.w/tileSize.x+1), // Add one for tiles drawn in middle of scroll
     h: ceil(screen.h/tileSize.y+1),
-    pos: th.Vf2{-d_util.fmod(screen.x, tileSize.x), -d_util.fmod(screen.y, tileSize.y)}}
+    pos: th.Vf2{-d_util.fmod(screen.x, tileSize.x), -d_util.fmod(screen.y, tileSize.y)}
+  }
 }

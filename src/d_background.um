@@ -11,6 +11,7 @@ const (
   backgroundAdvent = 2
   backgroundJazz   = 3
   backgroundCave   = 4
+  backgroundBlack = 0
 )
 
 var (
@@ -146,6 +147,7 @@ fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
 
 fn drawBg*(screen: rect.Rect, which: int) {
   switch which {
+    case backgroundBlack: drawBackgroundSquare(d_global.screen, th.time/1000.0, 0x000000FF, 0x040408FF, d_global.screen.h/screen.h) 
     case backgroundDebug: drawClouds(screen, 0x99994400, 0x555555FF, d_global.screen.w/screen.w*0.5)
     case backgroundClouds: drawClouds(screen, 0x7777FF00, 0xEEEEEEFF, d_global.screen.w/screen.w*0.5)
     case backgroundAdvent: drawClouds(screen, 0x4444AA00, 0x000022FF, d_global.screen.w/screen.w*0.5); 
@@ -155,6 +157,6 @@ fn drawBg*(screen: rect.Rect, which: int) {
 }
 
 fn draw*(screen: rect.Rect) {
-  drawBg(screen, 2)
+  drawBg(screen, backgroundBlack)
 }
 

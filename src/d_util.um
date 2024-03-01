@@ -50,9 +50,9 @@ fn writeFileStr*(path: str, dataStr: str): bool {
   return true
 }
 
-fn drawRectLines*(color: uint32, r: rect.Rect, thicc: real = 1.0) {
+fn drawRectLines*(color: uint32, r: rect.Rect, thicc: real = 3.0) {
   // top
-  canvas.drawLine(color, th.Vf2{r.x-1, r.y}, th.Vf2{r.x+r.w, r.y}, thicc)
+  canvas.drawLine(color, th.Vf2{r.x, r.y}, th.Vf2{r.x+r.w, r.y}, thicc)
   // bottom
   canvas.drawLine(color, th.Vf2{r.x, r.y+r.h}, th.Vf2{r.x+r.w, r.y+r.h}, thicc)
   // left

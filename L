@@ -76,11 +76,11 @@ getarg() {
 
 engage() {
   if [ -z "$PROF" ]; then
-    $TOPHAT $SILENT $@
+    $TOPHAT -dpiaware $SILENT $@
   else
     # https://github.com/colrdavidson/spall
     # https://gravitymoth.com/spall/spall-web.html
-    $TOPHAT $PROF trace.json $SILENT $@
+    $TOPHAT -dpiaware $PROF trace.json $SILENT $@
   fi
 }
 

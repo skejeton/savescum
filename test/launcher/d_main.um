@@ -6,11 +6,11 @@ fn init*() {
   okgf, gf := d_util.readFileStr("data/misc/global.txt")
   
   if !oklf || lf != "I'm a local file!\n" {
-    error("Invalid local file")
+    exit(551, "Invalid local file")
   }
   
   if !okgf || gf != "I'm a global file!\n" {
-    error("Invalid global file")
+    exit(551, "Invalid global file")
   }
 
   printf("Ok\n")

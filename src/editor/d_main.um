@@ -30,6 +30,9 @@ import (
   "../d_payload_trigger.um"
   "../ui/d_core.um"
   "../d_extern.um"
+  "../d_assert.um"
+  debug_info = "../debugdraw/d_info.um"
+  render_debug_info = "../debugdraw/d_render.um"
 
   th_font = "font.um"
   th_color = "color.um"
@@ -111,9 +114,7 @@ type (
 
   Editor = struct {
     // Misc
-    isDebugOverlayShown: bool
-    mode: int
-    oldMode: int
+    showDebugInfo: bool
     completions: [25][2]bool
 
     // Visual data
@@ -155,10 +156,6 @@ const (
   entityListActionDuplicate = EntityListAction(3)
   entityListActionMoveUp = EntityListAction(4)
   entityListActionMoveDown = EntityListAction(5)
-
-  modeMenu = 0
-  modeGameplay = 1
-  modeEditor = 2
 )
 
 fn initWindowManager(): WindowManager {
@@ -317,7 +314,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
     return WindowInfo{}, false
   }
   if editor.currentWindow != "" {
-    error("BeginWindow is called before EndWindow")
+    d_assert.assert(false, "BeginWindow is called before EndWindow")
   }
 
   editor.currentWindow = title
@@ -389,7 +386,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
 
 fn uiEndWindow(editor: ^Editor) {
   if editor.currentWindow == "" {
-    error("EndWindow has no match with BeginWindow")
+    d_assert.assert(false, "EndWindow has no match with BeginWindow")
   }
 
   title := editor.currentWindow
@@ -700,7 +697,7 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (
 
   }
 
-  if editor.isDebugOverlayShown {
+  if editor.showDebugInfo {
     // Show where the content ends.
     editor.ui.ctx.moveLayer(1)
     editor.ui.ctx.drawRect(th.magenta, rect.mk(areaRect.x, areaRect.y+contentSize.y, contentSize.x, 1))
@@ -860,13 +857,6 @@ fn editorPutToolbar(editor: ^Editor) {
         if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Load").isReleased) {
           editorLoadWorld(editor, editor.currentPortal)
         }
-
-        position.x -= 80
-        if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Quit").isReleased) {
-	  editor.mode = 0
-	}
-
-        position.x -= 120
       }
     }
   }
@@ -1484,7 +1474,7 @@ fn preUiUpdate(editor: ^Editor) {
 
 fn postUiUpdate(editor: ^Editor) {
   // put debug overlays
-  if (editor.isDebugOverlayShown) {
+  if (editor.showDebugInfo) {
     d_debug.putDebugFrames(&editor.ui, editor.resources.mainFont, &editor.ui.ctx)
   }
 
@@ -1516,13 +1506,6 @@ fn editorPutUi(editor: ^Editor) {
     }
   }
 
-  if input.isPressed(input.key_shift) {
-    if input.isJustPressed(input.key_escape) {
-      input.clear(input.key_escape)
-      editor.isDebugOverlayShown = !editor.isDebugOverlayShown
-    }
-  } 
-
   if (input.isJustPressed(input.key_escape)) {
     deselectEntity(&editor.entities)
   }
@@ -1543,6 +1526,7 @@ fn editorPutUi(editor: ^Editor) {
       } 
     }
 
+    d_game.showDebug = editor.showDebugInfo
     d_game.update()
     d_script.update()
 
@@ -1761,21 +1745,6 @@ fn drawShadowText*(font: th_font.Font, text: str, pos: th.Vf2) {
 
 }
 
-fn showClosePopup(editor: ^Editor) {
-  if windowInfo, ok := uiBeginWindow(editor, "Confirm", {800/2-300/2, 600/2-120/2, 300, 120}); ok { 
-    position := th.Vf2{windowInfo.contentRect.x+5, windowInfo.contentRect.y+5}
-    putLabelY(editor, "Are you sure you want to exit?", th.black, &position)
-    if putSimpleButton(editor, rect.mk(windowInfo.contentRect.x+windowInfo.contentRect.w-100-5, windowInfo.contentRect.y+windowInfo.contentRect.h-30-5, 100, 30), "Yes").isReleased {
-      editor.mode = 0
-      editor.wm.setWindowVisible("Confirm", false)
-    }
-    if putSimpleButton(editor, rect.mk(windowInfo.contentRect.x+windowInfo.contentRect.w-200-5-5, windowInfo.contentRect.y+windowInfo.contentRect.h-30-5, 100, 30), "No").isReleased {
-      editor.wm.setWindowVisible("Confirm", false)
-    }
-    
-    uiEndWindow(editor)
-  }
-}
 
 fn showCreditsPopup(editor: ^Editor) {
   if windowInfo, ok := uiBeginWindow(editor, "Credits", {800/2-300/2, 600/2-120/2, 300, 120}); ok { 
@@ -1795,92 +1764,20 @@ fn showCreditsPopup(editor: ^Editor) {
   }
 }
 
-
-fn adventPutUi(editor: ^Editor) {
-  d_background.draw(d_global.screen)
-
-  x := 0.0
-  editor.resources.mainFont.draw("Advent", {20+x, 20}, th.yellow, 5)
-  x += editor.resources.mainFont.measure("Advent").x*5 + 20
-
-  editor.resources.mainFont.draw("of", {20+x, 20}, th.white, 5)
-  x += editor.resources.mainFont.measure("of").x*5 + 20
-
-  editor.resources.mainFont.draw("SAVESCUM", {20+x, 20}, th.red, 5)
-  available, hour := d_payload_trigger.adventDay()
-  
-  playable := 25
-  if available == 0 {
-      available = 25
-  }
-
-  if putSimpleButton(editor, rect.mk(20, 130, 80, 40), "Tutorial").isDown {
-    loadPortal(editor, "030")
-    editor.mode = 1
-  }
-  
-  if putSimpleButton(editor, rect.mk(120, 130, 80, 40), "Credits").isDown {
-    editor.wm.setWindowVisible("Credits", true)
-  }
-
-  if input.isPressed(input.key_alt) && input.isPressed(input.key_ctrl) && input.isPressed(input.key_shift) {
-    if putSimpleButton(editor, rect.mk(220, 130, 80, 40), "EDIT").isDown { editor.mode = 2 }
-  }
-
-  for i := 0; i < 25; i++ {
-    x := ((i+4)%7)*110
-    lv_available := i < available
-    lv_playable := i < playable 
-	
-    if lv_available {
-      editor.resources.mainFont.draw(sprintf("Day %d", i+1), {x+20, 110+(((i+4)/7)*95)}, th.white, 1)
-
-      if lv_playable {
-        //putSimpleButton(editor, rect.mk(x+70, 105+(((i+4)/7)*95), 25, 25), sprintf("★#%d", i))
-        compl := editor.completions[i]
-        if i == 24 {
-          if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 35+35), sprintf("Finish%s#%d", compl[0] ? "✓" : "", i), false, 0xFFFF00FF).isDown {
-            loadPortal(editor, sprintf("advent%da", i+1))
-            editor.mode = 1
-          }
-        } else {
-          if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 35), sprintf("Side A%s#%d", compl[0] ? "✓" : "", i)).isDown {
-            loadPortal(editor, sprintf("advent%da", i+1))
-            editor.mode = 1
-          }
-          if putSimpleButton(editor, rect.mk(x+20, 130+(((i+4)/7)*95)+35, 80, 35), sprintf("Side B%s#%d", compl[1] ? "✓" : "", i), false, 0xFFFF77FF).isDown {
-            loadPortal(editor, sprintf("advent%db", i+1))
-            editor.mode = 1
-          }
-        }
-
-      } else {
-        drawButtonInactive(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 70), sprintf("Reload\nthe page\nto access"), 0xFFFF77FF)
-      }
-      if i+1 == available {
-        editor.ui.ctx.drawRectLines(0xFF0000FF, d_util.rectShrink({x+20, 110+(((i+4)/7)*95), 80, 90}, -5), 2)
-      } 
-    } else {
-      if i > available {
-        editor.resources.mainFont.draw(sprintf("Day %d", i+1), {x+20, 110+(((i+4)/7)*95)}, 0xFFFFFF77, 1)
-      } else {
-        editor.resources.mainFont.draw(sprintf("Day %d in %dh", i+1, hour), {x+20, 110+(((i+4)/7)*95)}, 0xFFFFFF77, 1)
-      }
-      //drawButtonInactive(editor, rect.mk(x+70, 105+(((i+4)/7)*95), 25, 25), sprintf("★#%d", i), 0x99999977)
-      drawButtonInactive(editor, rect.mk(x+20, 130+(((i+4)/7)*95), 80, 35), sprintf("Side A#%d", i), 0x99999977)
-      drawButtonInactive(editor, rect.mk(x+20, 130+(((i+4)/7)*95)+35, 80, 35), sprintf("Side B#%d", i), 0xFFFF7777);
-    }
-  }
-
-}
-
 fn editorMain*(enabled: bool) {
+  {
+    ok, _ := d_util.readFileStr("data/misc/CheckFS")
+    d_global.caseSensetiveFS = !ok
+  }
+
   d_global.screen = rect.mk(0, 0, 800, 600)
   sf := window.getDpiScaleFactor()
+  wsf := sf
   if d_global.skeDpiHack {
-    sf = 1.2
+    wsf = 2
+    sf = 2
   }
-  window.setup("Editor", trunc(d_global.screen.w*sf), trunc(d_global.screen.h*sf))
+  window.setup("Editor", trunc(d_global.screen.w*wsf), trunc(d_global.screen.h*wsf))
   
   d_dbg.initConsole()
 
@@ -1913,12 +1810,12 @@ fn editorMain*(enabled: bool) {
   if ok, sessionFile := d_util.readFileStr("user/session.csv"); ok {
     editorLoadSession(editor, d_session.load(sessionFile))
   } else {
-    loadPortal(editor, "030")
+    loadPortal(editor, "test3")
   }
 
   editor.wm.setWindowVisible("Confirm", false)
 
-  window.onFrame.register(|sf, editor| {
+  window.onFrame.register(|sf, wsf, editor| {
     d_immcursor.setCursor(window.cursorDefault)
 
     std.srand(std.time())
@@ -1926,84 +1823,48 @@ fn editorMain*(enabled: bool) {
     d_shortcuts.fullscreen()
     
     if input.isPressed(input.key_fn25) {
-      error("The F25 key? What's that?")
+      d_assert.assert(false, "The F25 key? What's that?")
     }
 
     if input.isPressedc('1') {
       d_dbg.logt("Console log!")
     }
-    // d_global.screen = rect.mk(0, 0, window.w/sf, window.h/sf)
-    d_global.screen = rect.mk(0, 0, 800, 600)
+
+    if input.isJustPressed(input.key_fn3) {
+      editor.showDebugInfo = !editor.showDebugInfo
+    }
+
+    d_global.screen = rect.mk(0, 0, window.w/sf, window.h/sf)
     window.setViewport(d_global.screen.getDims())
 
     d_fps.update()
     
     preUiUpdate(editor)
-    switch editor.mode {
-      case 0: 
-        adventPutUi(editor)
-      case 1:
-        if input.isJustPressed(input.key_escape) {
-          editor.wm.setWindowVisible("Confirm", true)
-        }
-        d_game.update()
-        d_script.update()
-        editor.ui.ctx.drawCustom(GameCmd{})
-        if d_game.end {
-          for i := 0; i < 25; i++ {
-            adventA := sprintf("advent%da", i+1)
-            adventB := sprintf("advent%db", i+1)
-
-            if editor.currentPortal == adventA {
-              editor.completions[i][0] = true
-            }
-            if editor.currentPortal == adventB {
-              editor.completions[i][1] = true
-            }
-          }
-
-          d_game.end = false
-          editor.mode = 0
-        }
-      case 2:
-        editorPutUi(editor)
-        if d_game.end {
-          d_game.end = false
-          editorToggleGame(editor)
-        }
-    }
+    editorPutUi(editor)
     showCreditsPopup(editor)
-    showClosePopup(editor)
-
     postUiUpdate(editor)
 
-    if editor.mode == 1 && editor.mode != editor.oldMode {
-      d_game.start(d_world_data.WorldData{editor.world, editor.entities.list})
-      d_script.init()
-    }
-    if editor.oldMode == 1 && editor.mode != editor.oldMode {
-      d_game.stop()
-    }
-
-    editor.oldMode = editor.mode
-
-    /*
     d_dbg.drawConsole(editor.resources.mainFont)
 
     infoText := ""
 
-    if (d_payload_trigger.aprilFools()) {
-      infoText += sprintf("%.3fspf", 1/d_fps.getFps())+"\n"
-      drawShadowText(editor.resources.mainFont, infoText, th.Vf2{0, 1})
-    } else {
-      infoText += sprintf("%dfps", trunc(d_fps.getFps()))+"\n"
+    fpsNode := debug_info.Display{ "FPS", d_fps.getFps(), false }
+    if d_payload_trigger.aprilFools() {
+      fpsNode = debug_info.Display{ "SPF", 1/d_fps.getFps(), false }
     }
 
-    infoText += sprintf("%d frameskip", trunc(d_game.frameSkips))+"\n"
-    infoText += sprintf("%s", editor.dirty ? "Dirty" : "Not Dirty")+"\n"
-    infoText += d_global.version+"\n"
-    drawShadowText(editor.resources.mainFont, infoText, th.Vf2{0, 0})
-    */
+    if editor.showDebugInfo {
+      render_debug_info.renderDebugInfo(editor.resources.mainFont, {
+        displays: {
+          fpsNode,
+          { "TPS", 1000.0/d_game.updateStepMs, false },
+          { "Room", editor.currentPortal, false },
+          { "Frameskip", trunc(d_game.frameSkips), false },
+          { "Dirty?", editor.dirty, false },
+          { "Version", d_global.version, false }
+        }
+      })
+    }
   })
 
 
