@@ -8,7 +8,7 @@ import (
   th_color = "color.um"
   "../../src/d_test.um"
   "../../src/d_util.um"
-  "../../src/editor/e_drawcmd.um"
+  "../../src/editor/d_drawcmd.um"
   "signal.um"
 )
 
@@ -17,12 +17,12 @@ type OutlineRectCmd = struct {
   r: rect.Rect
 }
 
-fn (r: ^OutlineRectCmd) draw*(props: e_drawcmd.DrawProperties) {
+fn (r: ^OutlineRectCmd) draw*(props: d_drawcmd.DrawProperties) {
   d_util.drawRectLines(r.color, r.r)
 }
 
 var (
-  ctx: e_drawcmd.DrawContext
+  ctx: d_drawcmd.DrawContext
   font1: font.Font
   font2: font.Font
   image1: image.Image
@@ -35,7 +35,7 @@ fn init*() {
   d_test.isUnitTest(false)
 
   window.setup("Hello", 640, 480)
-  ctx = e_drawcmd.init()
+  ctx = d_drawcmd.init()
   font1 = font.load("data/font/monospace.ttf", 16, 1)
   font2 = font.load("data/font/sans.ttf", 16)
   image1 = image.load("data/img/test.png")

@@ -32,12 +32,12 @@ fn isUnitTest*(isUnitTest: bool) {
   if testType == "unit" {
     if !isUnitTest {
       printf("Is not a unit test - skipping\n")
-      exit()     
+      exit(0)     
     }
   } else if testType == "testbed" {
      if isUnitTest {
       printf("Is a unit test - skipping\n")
-      exit()     
+      exit(0)     
     }   
   }
 }

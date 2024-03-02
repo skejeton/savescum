@@ -18,7 +18,7 @@ fn init*() {
 
   if d_resources.hasErrors(&rl) {
     d_problem_screen.showResourceLoadingError(&rl)
-    exit()
+    exit(1)
   }
 
 

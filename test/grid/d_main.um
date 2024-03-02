@@ -1,7 +1,7 @@
 import (
   "../../src/d_test.um"
   "../../src/d_rerp.um" 
-  "../../src/editor/mgrid.um"
+  "../../src/editor/d_grid.um"
   "image.um"
   "window.um"
   "rect.um"
@@ -14,7 +14,7 @@ import (
 var lastMousePos: th.Vf2
 var targetScale: th.Vf2
 var tileset: image.Image
-var grid: mgrid.Grid
+var grid: d_grid.Grid
 var screen: rect.Rect
 
 fn init*() {
@@ -23,7 +23,7 @@ fn init*() {
   window.setup("title", 640, 480)
   screen = rect.mk(0, 0, 640, 480)
 
-  grid = mgrid.Grid{rect.mk(20, 20, 600, 440), th.Vf2{0.5, 0.5}, th.Vf2{64, 64}}
+  grid = d_grid.Grid{rect.mk(20, 20, 600, 440), th.Vf2{0.5, 0.5}, th.Vf2{64, 64}}
 
   lastMousePos = input.getMousePos()
   targetScale = grid.s
@@ -35,7 +35,7 @@ fn init*() {
 
     targetScale = targetScale.addf(input.getMouseScroll().y)
 
-		mgrid.gridZoomInto(&grid, d_rerp.iVf2(grid.s, targetScale, 0.2), input.getMousePos())
+		d_grid.gridZoomInto(&grid, d_rerp.iVf2(grid.s, targetScale, 0.2), input.getMousePos())
 
   	if input.isPressed(input.mouse2) {
   		mouseDelta := input.getMousePos().sub(lastMousePos)
@@ -49,8 +49,8 @@ fn init*() {
 
     tileset.draw(th.Transform{p: grid.toScreen(th.Vf2{0, 0}), s: grid.s.divf(64)})
 
-  	guide := mgrid.mkRenderGuideFromBoundingBox(grid)
-  	mgrid.drawRenderGuide(guide, th.white&0xFFFFFF55, 1)
+  	guide := d_grid.mkRenderGuideFromBoundingBox(grid)
+  	d_grid.drawRenderGuide(guide, th.white&0xFFFFFF55, 1)
     canvas.drawRect(th.red&0xFFFFFF55, rect.mk(p1.x, p1.y, p2.x-p1.x, p2.y-p1.y))
 
     if grid.s.x >= 64 {
