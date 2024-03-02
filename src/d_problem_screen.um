@@ -46,15 +46,15 @@ fn fontHeight(): th.fu {
 
 fn drawText(text: str, pos: th.Vf2, color: uint32) {
   if font.validate() {
-    font.draw(text, pos, color, 1)
+    font.draw(text, pos, color, 1*window.getDpiScaleFactor())
   } else {
-    canvas.drawText(makeUppercase(text), pos, color, 2)
+    canvas.drawText(makeUppercase(text), pos, color, 2*window.getDpiScaleFactor())
   }
 }
 
 fn pushText(text: str, color: uint32 = th.white) {
   drawText(text, th.Vf2{0, y}.add(scroll), color)
-  y += fontHeight() + 10.0
+  y += (fontHeight() + 10.0)*window.getDpiScaleFactor()
 }
 
 fn init() {
