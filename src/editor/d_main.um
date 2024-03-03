@@ -623,23 +623,27 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str): bo
     if (editor.ui.isCurrentToolActive()) {
       d_immcursor.setCursor(window.cursorIBeam)
       dirty = insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input.getStr())
-      if input.isJustPressed(input.key_backspace) {
+      if input.isPressed(input.key_backspace) {
         d_buffer.erase(&edit.buffer, &edit.cursor)
         dirty = true
+        input.clear(input.key_backspace)
       }
       // TODO: key_delete doesn't work, why
-      if input.isJustPressed(input.key_delete) {
+      if input.isPressedRepeat(input.key_delete) {
         cursorNext := edit.cursor
         cursorNext.column += 1
         cursorNext = d_buffer.sanitizeCursor(&edit.buffer, cursorNext)
         d_buffer.erase(&edit.buffer, &cursorNext)
         dirty = true
+        input.clear(input.key_delete)
       }
-      if input.isJustPressed(input.key_left) {
+      if input.isPressedRepeat(input.key_left) {
         edit.cursor = d_buffer.moveCursor(&edit.buffer, edit.cursor, -1, 0)
+        input.clear(input.key_left)
       }
-      if input.isJustPressed(input.key_right) {
+      if input.isPressedRepeat(input.key_right) {
         edit.cursor = d_buffer.moveCursor(&edit.buffer, edit.cursor, 1, 0)
+        input.clear(input.key_right)
       }
     }
 
@@ -1361,17 +1365,21 @@ fn putWorldEntities(editor: ^Editor) {
 
       if isEntitySelected(&editor.entities, i) {
         dx, dy := 0, 0
-        if input.isJustPressed(input.key_up) {
+        if input.isPressedRepeat(input.key_up) {
           dy += -1
+          input.clear(input.key_up)
         }
-        if input.isJustPressed(input.key_down) {
+        if input.isPressedRepeat(input.key_down) {
           dy += 1 
+          input.clear(input.key_down)
         }
-        if input.isJustPressed(input.key_right) {
+        if input.isPressedRepeat(input.key_right) {
           dx += 1
+          input.clear(input.key_right)
         }
-        if input.isJustPressed(input.key_left) {
+        if input.isPressedRepeat(input.key_left) {
           dx += -1 
+          input.clear(input.key_left)
         }
         if dx != 0 {
           ent.rect.x += dx*32
@@ -1662,7 +1670,7 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
     tilesetImage: d_resources.loadImage(rl, "data/img/ts_sky.png"),
     toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png"),
     superHotFire: d_resources.loadImage(rl, "data/img/SUPER HOT FIRE WTF.png"),
-    mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 0)}
+    mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 1)}
  
   //editorResources.bevelImage.setfilter(1)
   editorResources.superHotFire.setfilter(1)
@@ -1742,26 +1750,6 @@ fn drawShadowText*(font: th_font.Font, text: str, pos: th.Vf2) {
   font.draw(text, pos.add(th.Vf2{0, -1}), th.black)
   font.draw(text, pos.add(th.Vf2{-1, 0}), th.black)
   font.draw(text, pos.add(th.Vf2{0, 0}), th.white)
-
-}
-
-
-fn showCreditsPopup(editor: ^Editor) {
-  if windowInfo, ok := uiBeginWindow(editor, "Credits", {800/2-300/2, 600/2-120/2, 300, 120}); ok { 
-    position := th.Vf2{windowInfo.contentRect.x+5, windowInfo.contentRect.y+5}
-    if input.isPressed(input.key_alt) {
-      putLabelY(editor, "Tommy Tallarico - Savescum", th.black, &position)
-      putLabelY(editor, "Tommy Tallarico - Level help", th.black, &position)
-      putLabelY(editor, "Tommy Tallarico - Umka language", th.black, &position)
-      putLabelY(editor, "Tommy Tallarico - Tophat game framework", th.black, &position)
-    } else {
-      putLabelY(editor, "ske - Savescum", th.black, &position)
-      putLabelY(editor, "rari - Level help", th.black, &position)
-      putLabelY(editor, "vtereshkov - Umka language", th.black, &position)
-      putLabelY(editor, "mrms - Tophat game framework", th.black, &position)
-    }
-    uiEndWindow(editor)
-  }
 }
 
 fn editorMain*(enabled: bool) {
@@ -1841,7 +1829,6 @@ fn editorMain*(enabled: bool) {
     
     preUiUpdate(editor)
     editorPutUi(editor)
-    showCreditsPopup(editor)
     postUiUpdate(editor)
 
     d_dbg.drawConsole(editor.resources.mainFont)
