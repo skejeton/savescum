@@ -30,6 +30,7 @@ type Core* = struct {
   maybeActiveTool: ^d_atoms.ToolNode
   activeTool: ^d_atoms.ToolNode
   hoveredTool: ^d_atoms.ToolNode
+  focusedTool: ^d_atoms.ToolNode
 }
 
 type Events* = struct {
@@ -43,7 +44,8 @@ type Events* = struct {
 fn (core: ^Core) getToolState*(tool: ^d_atoms.ToolNode): d_atoms.ToolState {
   return d_atoms.ToolState{
     active: tool == core.activeTool,
-    hovered: tool == core.hoveredTool
+    hovered: tool == core.hoveredTool,
+    focused: tool == core.focusedTool
   }
 }
 
@@ -128,6 +130,10 @@ fn (core: ^Core) getCurrentToolState*(): d_atoms.ToolState {
 
 fn (core: ^Core) isCurrentToolActive*(): bool {
   return core.getCurrentToolState().active
+}
+
+fn (core: ^Core) isCurrentToolFocused*(): bool {
+  return core.getCurrentToolState().focused
 }
 
 // Creates an input sink with all inputs set to 1.

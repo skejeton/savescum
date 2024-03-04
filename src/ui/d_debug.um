@@ -33,7 +33,7 @@ fn makeToolDebugFrameFromTool(core: ^d_core.Core, name: str, tool: ^d_atoms.Tool
     color = 0x00   
 
     color |= int(toolState.hovered) * th.blue
-    color |= int(toolState.active) * th.green
+    color |= int(toolState.focused) * th.green
   }
 
   return ToolDebugFrame{title: name, color: color, showTitle: showTitle, rect: tool.rect, background: background}

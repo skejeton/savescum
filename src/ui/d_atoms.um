@@ -15,6 +15,7 @@ type ToolNode* = struct {
 type ToolState* = struct {
   active: bool
   hovered: bool
+  focused: bool
 }
 
 /// @return True if child is related to parent node. 

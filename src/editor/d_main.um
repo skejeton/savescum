@@ -620,10 +620,10 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str): bo
     edit.cursor = d_buffer.sanitizeCursor(&edit.buffer, edit.cursor)
 
     // Handle input.
-    if (editor.ui.isCurrentToolActive()) {
+    if (editor.ui.isCurrentToolFocused()) {
       d_immcursor.setCursor(window.cursorIBeam)
       dirty = insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input.getStr())
-      if input.isPressed(input.key_backspace) {
+      if input.isPressedRepeat(input.key_backspace) {
         d_buffer.erase(&edit.buffer, &edit.cursor)
         dirty = true
         input.clear(input.key_backspace)
@@ -655,7 +655,7 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str): bo
 
       fontHeight := editor.resources.mainFont.measure(" ").y
       textRect := rect.mk(r.x+5, r.y+(r.h-fontHeight)/2.0, r.w-10, fontHeight)
-      drawSingleLineEdit(editor, edit, textRect, editor.ui.isCurrentToolActive())
+      drawSingleLineEdit(editor, edit, textRect, editor.ui.isCurrentToolFocused())
     }
 
     // Sync buffer up with the value.
@@ -1363,7 +1363,7 @@ fn putWorldEntities(editor: ^Editor) {
         editor.ui.ctx.drawRectLines(th.blue, d_util.rectShrink(entVisRect, -1))
       }
 
-      if isEntitySelected(&editor.entities, i) {
+      if isEntitySelected(&editor.entities, i) && editor.ui.isCurrentToolFocused() {
         dx, dy := 0, 0
         if input.isPressedRepeat(input.key_up) {
           dy += -1
@@ -1478,6 +1478,11 @@ fn preUiUpdate(editor: ^Editor) {
   editor.ui.mouseState = editor.ui.mouseState.updated()
 
   editor.ui.frameNumber += 1
+
+  if input.isJustPressed(input.key_escape) && editor.ui.focusedTool != null {
+    editor.ui.focusedTool = null
+    input.clear(input.key_escape)
+  }
 }
 
 fn postUiUpdate(editor: ^Editor) {
@@ -1495,6 +1500,9 @@ fn postUiUpdate(editor: ^Editor) {
   }
   editor.keepActive = false
   editor.ui.hoveredTool = editor.ui.maybeActiveTool
+  if isAnyButtonHeld(&editor.ui.mouseState) {
+    editor.ui.focusedTool = editor.ui.activeTool
+  }
   editor.ui.maybeActiveTool = null
   editor.ui.pruneToolsRecursive(editor.ui.tools)
 }
