@@ -628,12 +628,13 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str): bo
         dirty = true
         input.clear(input.key_backspace)
       }
-      // TODO: key_delete doesn't work, why
       if input.isPressedRepeat(input.key_delete) {
         cursorNext := edit.cursor
         cursorNext.column += 1
-        cursorNext = d_buffer.sanitizeCursor(&edit.buffer, cursorNext)
-        d_buffer.erase(&edit.buffer, &cursorNext)
+        if cursorNext.column <= len(edit.buffer.lines[0]) {
+          cursorNext = d_buffer.sanitizeCursor(&edit.buffer, cursorNext)
+          d_buffer.erase(&edit.buffer, &cursorNext)
+        }
         dirty = true
         input.clear(input.key_delete)
       }
@@ -1527,10 +1528,10 @@ fn editorPutUi(editor: ^Editor) {
   }
 
   if (input.isJustPressed(input.key_delete)) {
-    input.clear(input.key_delete)
     if editor.entities.entitySelected > 0 {
       removeEntity(&editor.entities, editor.entities.entitySelected)
       editor.dirty = true
+      input.clear(input.key_delete)
     }
   }
 
