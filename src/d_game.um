@@ -717,10 +717,6 @@ fn drawEntity(ent: ^Character) {
     } else {
       d_util.drawImageRect(imgObj, cropResetH, destRect)
     }
-  } else if ent.tags.isSet("portal") {
-    canvas.drawRect(0xc2FFF633, d_util.rectShrink(destRect, -10*cameraScale))
-    d_background.drawBackgroundSquare(destRect, th.time/1000.0, 0xC2FFF655, 0x526c7aFF, {1, 1})
-
   } else if ent.tags.isSet("controls") {
     d_util.drawImageRect(imgObj, cropControls, destRect)
   } else if ent.tags.isSet("Comment") {
