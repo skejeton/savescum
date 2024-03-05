@@ -1,25 +1,3 @@
-import (
-  "../../src/ui/d_ui.um"
-  "window.um"
-  "canvas.um"
-  "th.um"
-)
-
-logs := ""
-
 fn init*() {
-  window.setup("UI Test", 800, 600)
-
-  stateVal := d_ui.create()
-  state := new(d_ui.UIState)
-  state ^= stateVal
-
-  window.onFrame.register(|state| {
-    state.pass({
-      if ui.button("Click me!") {
-        logs += "Button clicked!\n"
-      }
-      ui.text(logs)
-    })
-  })
+  // TODO
 }
