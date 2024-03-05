@@ -170,6 +170,10 @@ fn (world: ^World) drawRenderTiles*(renderTiles: []RenderTile, tint: uint32) {
 
   for i, renderTile in renderTiles {
     cr := world.tileset.getCroppingRectId(renderTile.id)
+    cr.x += 0.5
+    cr.y += 0.5
+    cr.w -= 1
+    cr.h -= 1
     if prevTileId != renderTile.id {
       d_util.imageCropRect(world.tileset.image, cr)
     }
