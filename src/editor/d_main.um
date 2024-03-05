@@ -242,6 +242,12 @@ fn drawButton(editor: ^Editor, r: rect.Rect, buttonState: ButtonState, revert: b
 }
 
 fn drawButtonInactive(editor: ^Editor, r: rect.Rect, text: str, color: uint32 = 0x999999FF) {
+  editor.ui.beginTool(text, r)
+  if (editor.ui.isCurrentToolActive()) {
+    d_immcursor.setCursor(window.cursorNo)
+  }
+  events := editor.ui.endTool()
+  events.queryMouse(0, d_mouseinput.pressed)
   text = d_strings.splitBy(text, '#')[0]
   editor.ui.ctx.drawRect(color, r)
   editor.ui.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), 0x000000FF)
@@ -518,11 +524,6 @@ fn putIconButton(editor: ^Editor, name: str, r: rect.Rect, img: image.Image, rev
 
 fn putRadioButton(editor: ^Editor, r: rect.Rect, text: str, revert: bool = false): ButtonState {
   if revert {
-    editor.ui.beginTool(text, r)
-    if (editor.ui.isCurrentToolActive()) {
-      d_immcursor.setCursor(window.cursorNo)
-    }
-    editor.ui.endTool()
     drawButtonInactive(editor, r, text)
   } else {
     bs := putButtonBase(editor, r, text, revert)
