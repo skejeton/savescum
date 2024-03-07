@@ -6,11 +6,9 @@ import (
 
 // Enables: alt+enter: Enter/Leave fullscreen
 fn fullscreen*() {
-	if input.isPressed(input.key_alt) {
-		if input.isJustPressed(input.key_enter) {
-			input.clear(input.key_enter)
-			window.setFullscreen(!window.isFullscreen())
-		}
+	if input.isPressed(input.key_alt) && input.isJustPressed(input.key_enter) {
+    input.clear(input.key_enter)
+    window.setFullscreen(!window.isFullscreen())
 	}
 }
 

@@ -125,13 +125,6 @@ fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
       tilePos := th.Vf2{x*tileSize.x, y*tileSize.y}.add(tileRepeat.pos).mul(scale).add(screen.getPos())
 
       imgRocks.draw(th.Transform{p: tilePos, s: scale})
-
-      // Debug 
-      if false {
-        tileSize := imgRocks.getDims().mul(scale)
-        d_util.drawRectLines(th.white, rect.mk(tilePos.x, tilePos.y, tileSize.x, tileSize.y))
-        canvas.drawText(sprintf("\n %d %d", tileRepeat.x+x, tileRepeat.y+y), tilePos, th.white, 1)
-      }
     }
   }
 }
