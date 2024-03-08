@@ -50,8 +50,6 @@ import (
   "std.um"
 )
 
-
-
 type (
   EditorGrid = struct {
     rect: rect.Rect
@@ -90,7 +88,14 @@ type (
     titlebarRect: rect.Rect
   }
 
-  EntityListAction = int
+  EntityListAction = enum {
+    none
+    remove
+    edit
+    duplicate
+    moveUp
+    moveDown
+  }
 
   EditorResources = struct {
     toolbarIcons: image.Image
@@ -147,15 +152,6 @@ type (
     // UI state
     ui: d_core.Core
   }
-)
-
-const (
-  entityListActionNone = EntityListAction(0)
-  entityListActionRemove = EntityListAction(1)
-  entityListActionEdit = EntityListAction(2)
-  entityListActionDuplicate = EntityListAction(3)
-  entityListActionMoveUp = EntityListAction(4)
-  entityListActionMoveDown = EntityListAction(5)
 )
 
 fn initWindowManager(): WindowManager {
@@ -1016,14 +1012,14 @@ fn putTilePicker(editor: ^Editor) {
   }
 }
 
-fn putEntityEntry(editor: ^Editor, ent: d_world_data.EntityDesc, r: rect.Rect, selected: bool): EntityListAction  {
+fn putEntityEntry(editor: ^Editor, ent: d_world_data.EntityDesc, r: rect.Rect, selected: bool): EntityListAction {
   r.w -= 60
-  action := entityListActionNone
+  action := EntityListAction.none
 
   editor.ui.beginTool(ent.id, r)
   {
     if (putSimpleButton(editor, r, ent.name).isReleased) {
-      action = entityListActionEdit
+      action = EntityListAction.edit
     }
     if selected {
       editor.ui.ctx.drawRectLines(th.yellow, d_util.rectShrink(r, 1))
@@ -1032,22 +1028,22 @@ fn putEntityEntry(editor: ^Editor, ent: d_world_data.EntityDesc, r: rect.Rect, s
     r.w = 30
     r.h = 15
     if putSimpleButton(editor, r, "▲").isReleased {
-      action = entityListActionMoveUp
+      action = EntityListAction.moveUp
     }
     r.y += 15
     if putSimpleButton(editor, r, "▼").isReleased {
-      action = entityListActionMoveDown
+      action = EntityListAction.moveDown
     }
     r.y -= 15
     r.h = 30
     r.x += 30
     if input.isPressed(input.key_shift) {
       if putSimpleButton(editor, r, "␡").isReleased {
-        action = entityListActionRemove
+        action = EntityListAction.remove
       }
     } else {
       if putSimpleButton(editor, r, "⎘").isReleased {
-        action = entityListActionDuplicate
+        action = EntityListAction.duplicate
       }
     }
   }
@@ -1152,22 +1148,22 @@ fn putEntityList(editor: ^Editor) {
         entryRect.h = 30
         for i, ent in editor.entities.list {
           switch putEntityEntry(editor, ent, entryRect, isEntitySelected(&editor.entities, i)) {
-            case entityListActionMoveUp:
+            case EntityListAction.moveUp:
               moveFrom = i
               moveTo = i-1
               editor.dirty = true
-            case entityListActionMoveDown:
+            case EntityListAction.moveDown:
               moveFrom = i
               moveTo = i+1
               editor.dirty = true
-            case entityListActionRemove:
+            case EntityListAction.remove:
               entryRemoveIndex = i
               editor.dirty = true
-            case entityListActionEdit:
+            case EntityListAction.edit:
               selectEntity(&editor.entities, i)
               editor.wm.setWindowVisible("Entity Editor", true)
               editor.wm.putWindowOnFront("Entity Editor")
-            case entityListActionDuplicate:
+            case EntityListAction.duplicate:
               appendEntity(&editor.entities, cloneEntity(editor.entities.list, ent))
               moveFrom = len(editor.entities.list)-1
               moveTo = i+1

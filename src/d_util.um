@@ -24,9 +24,9 @@ fn readFileStr*(path: str): (bool, str) {
   if file == null {
     return false, ""
   }
-  std.fseek(file, 0, std.seekEnd)
+  std.fseek(file, 0, std.SeekFrom.end)
   datasiz := std.ftell(file)
-  std.fseek(file, 0, std.seekBegin)
+  std.fseek(file, 0, std.SeekFrom.begin)
 
   data := make([]char, datasiz+1)
   std.fread(file, data)

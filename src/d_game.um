@@ -19,13 +19,14 @@ import (
   "audio.um"
 )
 
-const (
-  shapeBlock          = 0
-  shapeLeftUpSlope    = 1
-  shapeRightUpSlope   = 2
-  shapeLeftDownSlope  = 3
-  shapeRightDownSlope = 4
-)
+type ShapeType = enum {
+  none
+  block          
+  leftUpSlope    
+  rightUpSlope   
+  leftDownSlope  
+  rightDownSlope 
+}
 
 // TPS 250
 const updateStep = 1/250.0; 
@@ -34,7 +35,7 @@ const updateStepMs* = 4;
 type (
   Shape* = struct {
     rect: rect.Rect
-    shape: int
+    shape: ShapeType
   }
 
   Tag* = struct {
@@ -336,7 +337,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
 
   
   switch s.shape {
-  case shapeLeftUpSlope:
+  case ShapeType.leftUpSlope:
     cornerX := ent.rect.x + ent.rect.w - r.x;
     if cornerX > r.w {
       cornerX = r.w
@@ -354,7 +355,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
       ent.onSlope = true;
       ent.rect.y += hitY-cornerY;
     }
-  case shapeRightUpSlope:
+  case ShapeType.rightUpSlope:
     cornerX := ent.rect.x - r.x;
     if cornerX < 0 {
       cornerX = 0;
@@ -368,7 +369,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
       ent.onSlope = true;
       ent.rect.y += hitY-cornerY;
     }
-  case shapeLeftDownSlope:
+  case ShapeType.leftDownSlope:
     cornerX := ent.rect.x + ent.rect.w - r.x;
     if cornerX > r.w {
       cornerX = r.w
@@ -382,7 +383,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
       }
       ent.rect.y += hitY-cornerY;
     }
-  case shapeRightDownSlope:
+  case ShapeType.rightDownSlope:
     cornerX := ent.rect.x - r.x;
     if cornerX < 0 {
       cornerX = 0;
@@ -396,7 +397,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
       }
       ent.rect.y += hitY-cornerY;
     }
-  case shapeBlock:
+  case ShapeType.block:
     if snap.x != 0 {
       ent.vel.x = 0
     } else if (snap.y > 0 && ent.vel.y < 0) || (snap.y < 0 && ent.vel.y > 0) {
@@ -421,43 +422,43 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
       continue
     }
     if d_util.rectVsRect(ent.rect, entity.rect) && entity.tags.isSet("boulder") {
-      solids = append(solids, Shape{entity.rect, shapeBlock})
+      solids = append(solids, Shape{entity.rect, ShapeType.block})
     }
   }
 
   for i, tangent in tangents {
     shapeRect := rect.Rect{tangent.x*world.tileset.tileSizeX, tangent.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY} 
-    shapeType := -1
+    shapeType := ShapeType.none
 
     switch tangent.id {
       // slab
-      case 25: shapeType = shapeBlock
+      case 25: shapeType = ShapeType.block
         shapeRect.y += world.tileset.tileSizeY/2
         shapeRect.h /= 2
-      case 30: if toggleActive { shapeType = shapeBlock; }
-      case 31: if !toggleActive { shapeType = shapeBlock; }
-      case 1, 5, 7, 29:   shapeType = shapeBlock
-      case 9:   shapeType = shapeLeftUpSlope
-      case 10:  shapeType = shapeRightUpSlope
-      case 13:  shapeType = shapeLeftDownSlope
-      case 14:  shapeType = shapeRightDownSlope
-      case 15:  shapeType = shapeLeftUpSlope
+      case 30: if toggleActive { shapeType = ShapeType.block; }
+      case 31: if !toggleActive { shapeType = ShapeType.block; }
+      case 1, 5, 7, 29:   shapeType = ShapeType.block
+      case 9:   shapeType = ShapeType.leftUpSlope
+      case 10:  shapeType = ShapeType.rightUpSlope
+      case 13:  shapeType = ShapeType.leftDownSlope
+      case 14:  shapeType = ShapeType.rightDownSlope
+      case 15:  shapeType = ShapeType.leftUpSlope
         shapeRect.h /= 2;
-      case 16:  shapeType = shapeRightUpSlope
+      case 16:  shapeType = ShapeType.rightUpSlope
         shapeRect.h /= 2;
-      case 4:   shapeType = shapeLeftUpSlope
+      case 4:   shapeType = ShapeType.leftUpSlope
         shapeRect.y += world.tileset.tileSizeY/2;
         shapeRect.h /= 2;
-      case 8:   shapeType = shapeRightUpSlope
+      case 8:   shapeType = ShapeType.rightUpSlope
         shapeRect.y += world.tileset.tileSizeY/2;
         shapeRect.h /= 2;
-      case 11:  shapeType = shapeRightDownSlope
+      case 11:  shapeType = ShapeType.rightDownSlope
         shapeRect.h /= 2;
-      case 12:  shapeType = shapeLeftDownSlope
+      case 12:  shapeType = ShapeType.leftDownSlope
         shapeRect.h /= 2;
     }
     
-    if shapeType == shapeBlock {
+    if shapeType == ShapeType.block {
       solids = append(solids, Shape{shapeRect, shapeType})
     } else {
       nonBlockSolids = append(nonBlockSolids, Shape{shapeRect, shapeType})
@@ -475,7 +476,7 @@ fn entCheckCollision(ent: ^Character): bool {
 
   solids := entConstructCollidingSolids(ent)
   for i, shape in solids {
-    if shape.shape == shapeBlock {
+    if shape.shape == ShapeType.block {
       if d_util.rectVsRect(r, shape.rect) {
         return true
       }
@@ -500,11 +501,11 @@ fn _drawRectTangents(r: rect.Rect) {
   for i, solid in solids {
     rec := cameraOffsetRect(solid.rect)
     switch solid.shape {
-    case shapeBlock:
+    case ShapeType.block:
       canvas.drawRect(0x00FF0055, rec)
-    case shapeLeftUpSlope, shapeRightDownSlope:
+    case ShapeType.leftUpSlope, ShapeType.rightDownSlope:
       canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y+rec.h}, th.Vf2{rec.x+rec.w, rec.y}, 2)
-    case shapeRightUpSlope, shapeLeftDownSlope:
+    case ShapeType.rightUpSlope, ShapeType.leftDownSlope:
       canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y}, th.Vf2{rec.x+rec.w, rec.y+rec.h}, 2)
     }
     canvas.drawText(sprintf("%v", i), th.Vf2{rec.x, rec.y}, th.white, 1)
