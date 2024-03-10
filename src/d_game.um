@@ -271,7 +271,6 @@ fn entPhysics(ent: ^Character) {
   if ent.vel.y > 10 {
     ent.vel.y = 10
   }
-  
 
   ent.rect.x += ent.vel.x*updateStep*60.0
   ent.rect.y += ent.vel.y*updateStep*60.0

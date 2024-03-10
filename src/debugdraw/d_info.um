@@ -7,5 +7,3 @@ type Display* = struct {
 type DebugInfo* = struct {
   displays: []Display
 }
-
-

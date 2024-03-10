@@ -115,8 +115,6 @@ type (
     list: []d_world_data.EntityDesc
   }
 
-
-
   Editor = struct {
     // Misc
     showDebugInfo: bool
@@ -1748,14 +1746,6 @@ fn editorLoadSession(editor: ^Editor, session: d_session.Session) {
     editor.wm.setWindowVisible(win.name, win.visible)
     editor.wm.getWindowRect(win.name, win.rect)
   }
-}
-
-fn drawShadowText*(font: th_font.Font, text: str, pos: th.Vf2) {
-  font.draw(text, pos.add(th.Vf2{0, 1}), th.black)
-  font.draw(text, pos.add(th.Vf2{1, 0}), th.black)
-  font.draw(text, pos.add(th.Vf2{0, -1}), th.black)
-  font.draw(text, pos.add(th.Vf2{-1, 0}), th.black)
-  font.draw(text, pos.add(th.Vf2{0, 0}), th.white)
 }
 
 fn editorMain*(enabled: bool) {
