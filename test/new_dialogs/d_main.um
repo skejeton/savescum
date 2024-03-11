@@ -167,10 +167,10 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
 }
 
 fn controlTypingTime(typingTime: ^real) {
-  if input.isPressed(input.key_left) || input.isPressed(input.key_backspace) {
+  if input.isPressed(.left) || input.isPressed(.backspace) {
     typingTime^ -= th.delta/1000.0
   }
-  if input.isPressed(input.key_right) {
+  if input.isPressed(.right) {
     typingTime^ += th.delta/1000.0
   }  
   if typingTime^ < 0 {
@@ -230,7 +230,7 @@ fn booleanProperty(at: th.Vf2, name: str, isset: ^bool) {
   canvas.drawRect(color, rectangle)
 
   if d_util.isMouseInRect(rectangle) {
-    if input.isJustPressed(input.mouse1) {
+    if input.isJustPressed(.mouse1) {
       isset^ = !isset^
     }
     textSize := canvas.textSize(name, 2)
@@ -283,7 +283,7 @@ fn init*() {
     }
     if autoplay {
       multiplier := 1.0
-      if input.isPressed(input.key_shift) {
+      if input.isPressed(.shift) {
         multiplier = 2.0
       }
       if slow5x {
@@ -294,7 +294,7 @@ fn init*() {
     }
     controlTypingTime(&typingTime)
   
-    if input.isJustPressed(input.key_escape) {
+    if input.isJustPressed(.escape) {
       autoplay = false;
       typingTime = 0
     }

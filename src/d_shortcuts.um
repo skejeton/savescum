@@ -6,15 +6,15 @@ import (
 
 // Enables: alt+enter: Enter/Leave fullscreen
 fn fullscreen*() {
-	if input.isPressed(input.key_alt) && input.isJustPressed(input.key_enter) {
-    input.clear(input.key_enter)
+	if input.isPressed(.alt) && input.isJustPressed(.enter) {
+    input.clear(.enter)
     window.setFullscreen(!window.isFullscreen())
 	}
 }
 
 // handles input for a console. 
 fn console*() {
-	if input.isPressed(input.key_alt) && input.isJustPressedc('t') {
+	if input.isPressed(.alt) && input.isJustPressedc('t') {
 		input.clearc('t')
 		d_dbg.consolevis = !d_dbg.consolevis
 	}

@@ -232,21 +232,21 @@ fn playerControl() {
   if !wasOnGround && chara.onGround {
     palLand.start()
   }
-  if input.isPressed(input.key_up) && chara.onGround {
+  if input.isPressed(.up) && chara.onGround {
     palJump.start()
     chara.vel.y = -3.65
   }
-  if input.isPressed(input.key_left) {
+  if input.isPressed(.left) {
     chumDir = 0
     chumWalkTime += updateStep
     chara.vel.x = -2.5
   }
-  if input.isPressed(input.key_right) {
+  if input.isPressed(.right) {
     chumDir = 1
     chumWalkTime += updateStep
     chara.vel.x = 2.5
   } 
-  if !input.isPressed(input.key_left) && !input.isPressed(input.key_right) {
+  if !input.isPressed(.left) && !input.isPressed(.right) {
     chumWalkTime = 0
   }
 
@@ -587,7 +587,7 @@ fn init*(rl: ^d_resources.ResourceLoader) {
   palLand = d_resources.loadAudio(rl, "data/audio/sfx/pal_land.ogg")
 
   // bgAudio.setLooping(true)
-  defaultFont = d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 1)
+  defaultFont = d_resources.loadFont(rl, "data/font/monospace.ttf", 16, .linear)
   imgObj = d_resources.loadImage(rl, "data/img/obj_interactive.png")
   imgObj.setfilter(1)
   imgChum = d_resources.loadImage(rl, "data/img/chr_chum.png")

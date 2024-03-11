@@ -46,7 +46,7 @@ fn loadAudio*(loader: ^ResourceLoader, path: str): audio.Sound {
 }
 
 
-fn loadFont*(loader: ^ResourceLoader, path: str, size: real, filter: int): th_font.Font {
+fn loadFont*(loader: ^ResourceLoader, path: str, size: real, filter: th_font.Filter): th_font.Font {
   theFont := th_font.load(path, size, filter)
   
   if theFont.validate() == false {

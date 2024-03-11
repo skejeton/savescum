@@ -238,7 +238,7 @@ fn drawButton(editor: ^Editor, r: rect.Rect, buttonState: ButtonState, revert: b
 fn drawButtonInactive(editor: ^Editor, r: rect.Rect, text: str, color: uint32 = 0x999999FF) {
   editor.ui.beginTool(text, r)
   if (editor.ui.isCurrentToolActive()) {
-    d_immcursor.setCursor(window.cursorNo)
+    d_immcursor.setCursor(.no)
   }
   events := editor.ui.endTool()
   events.queryMouse(0, d_mouseinput.pressed)
@@ -260,7 +260,7 @@ fn putButton(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
     buttonState.isPressed = events.queryMouse(0, d_mouseinput.pressed)
     buttonState.isReleased = events.queryMouse(0, d_mouseinput.released) && toolState.hovered
     
-    d_immcursor.setCursor(window.cursorFinger)
+    d_immcursor.setCursor(.finger)
   }
 
   return buttonState
@@ -411,7 +411,7 @@ fn uiEndWindow(editor: ^Editor) {
       {
         editor.ui.beginTool("Grip", gripRect)
         if editor.ui.isCurrentToolActive() {
-          d_immcursor.setCursor(window.cursorSizeNWSE)
+          d_immcursor.setCursor(.sizeNWSE)
         }
         events := editor.ui.endTool()
         
@@ -476,7 +476,7 @@ fn (ge: ^EditorGrid) put(editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
   // Then I can use events.queryMouse()
   if editor.ui.isCurrentToolActive() {
     // Handle input
-    if editor.ui.mouseState.mmb.isDown || input.isPressed(input.key_space) {
+    if editor.ui.mouseState.mmb.isDown || input.isPressed(.space) {
       editor.keepActive = true
       ge.panning = ge.panning.add(editor.ui.mouseState.delta.divf(ge.scaling))
     }
@@ -616,14 +616,14 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str): bo
 
     // Handle input.
     if (editor.ui.isCurrentToolFocused()) {
-      d_immcursor.setCursor(window.cursorIBeam)
+      d_immcursor.setCursor(.iBeam)
       dirty = insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input.getStr())
-      if input.isPressedRepeat(input.key_backspace) {
+      if input.isPressedRepeat(.backspace) {
         d_buffer.erase(&edit.buffer, &edit.cursor)
         dirty = true
-        input.clear(input.key_backspace)
+        input.clear(.backspace)
       }
-      if input.isPressedRepeat(input.key_delete) {
+      if input.isPressedRepeat(.delete) {
         cursorNext := edit.cursor
         cursorNext.column += 1
         if cursorNext.column <= len(edit.buffer.lines[0]) {
@@ -631,15 +631,15 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str): bo
           d_buffer.erase(&edit.buffer, &cursorNext)
         }
         dirty = true
-        input.clear(input.key_delete)
+        input.clear(.delete)
       }
-      if input.isPressedRepeat(input.key_left) {
+      if input.isPressedRepeat(.left) {
         edit.cursor = d_buffer.moveCursor(&edit.buffer, edit.cursor, -1, 0)
-        input.clear(input.key_left)
+        input.clear(.left)
       }
-      if input.isPressedRepeat(input.key_right) {
+      if input.isPressedRepeat(.right) {
         edit.cursor = d_buffer.moveCursor(&edit.buffer, edit.cursor, 1, 0)
-        input.clear(input.key_right)
+        input.clear(.right)
       }
     }
 
@@ -1035,7 +1035,7 @@ fn putEntityEntry(editor: ^Editor, ent: d_world_data.EntityDesc, r: rect.Rect, s
     r.y -= 15
     r.h = 30
     r.x += 30
-    if input.isPressed(input.key_shift) {
+    if input.isPressed(.shift) {
       if putSimpleButton(editor, r, "␡").isReleased {
         action = EntityListAction.remove
       }
@@ -1261,12 +1261,12 @@ fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
     editor.ui.beginTool(sprintf("Grip%d", i), gripRect)
 
     if editor.ui.isCurrentToolActive() {
-      cursor := window.cursorSizeAll
+      cursor := window.Cursor.sizeAll
       switch i {
-      case 0, 7: cursor = window.cursorSizeNWSE
-      case 2, 5: cursor = window.cursorSizeSWNE
-      case 1, 6: cursor = window.cursorSizeNS
-      case 3, 4: cursor = window.cursorSizeEW
+      case 0, 7: cursor = .sizeNWSE
+      case 2, 5: cursor = .sizeSWNE
+      case 1, 6: cursor = .sizeNS
+      case 3, 4: cursor = .sizeEW
       }
       d_immcursor.setCursor(cursor)
     }
@@ -1352,7 +1352,7 @@ fn putWorldEntities(editor: ^Editor) {
       editor.ui.beginTool("Ent"+ent.id, entVisRect)
 
       if editor.ui.isCurrentToolActive() {
-        d_immcursor.setCursor(window.cursorSizeAll)
+        d_immcursor.setCursor(.sizeAll)
       }
 
       if editor.ui.isCurrentToolActive() {
@@ -1361,21 +1361,21 @@ fn putWorldEntities(editor: ^Editor) {
 
       if isEntitySelected(&editor.entities, i) && editor.ui.isCurrentToolFocused() {
         dx, dy := 0, 0
-        if input.isPressedRepeat(input.key_up) {
+        if input.isPressedRepeat(.up) {
           dy += -1
-          input.clear(input.key_up)
+          input.clear(.up)
         }
-        if input.isPressedRepeat(input.key_down) {
+        if input.isPressedRepeat(.down) {
           dy += 1 
-          input.clear(input.key_down)
+          input.clear(.down)
         }
-        if input.isPressedRepeat(input.key_right) {
+        if input.isPressedRepeat(.right) {
           dx += 1
-          input.clear(input.key_right)
+          input.clear(.right)
         }
-        if input.isPressedRepeat(input.key_left) {
+        if input.isPressedRepeat(.left) {
           dx += -1 
-          input.clear(input.key_left)
+          input.clear(.left)
         }
         if dx != 0 {
           ent.rect.x += dx*32
@@ -1438,7 +1438,7 @@ fn putPortalEditor(editor: ^Editor) {
     putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Portal name", &editor.potentialPortal)
 
     position.y += 40
-    if input.isPressed(input.key_shift) {
+    if input.isPressed(.shift) {
       if putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Load").isReleased {
         loadPortal(editor, editor.potentialPortal)
       }
@@ -1475,9 +1475,9 @@ fn preUiUpdate(editor: ^Editor) {
 
   editor.ui.frameNumber += 1
 
-  if input.isJustPressed(input.key_escape) && editor.ui.focusedTool != null {
+  if input.isJustPressed(.escape) && editor.ui.focusedTool != null {
     editor.ui.focusedTool = null
-    input.clear(input.key_escape)
+    input.clear(.escape)
   }
 }
 
@@ -1505,7 +1505,7 @@ fn postUiUpdate(editor: ^Editor) {
 
 fn editorPutUi(editor: ^Editor) {
 
-  if input.isPressed(input.key_ctrl) {
+  if input.isPressed(.ctrl) {
     if input.isJustPressedc('s') {
       input.clearc('s')
       editorSaveWorld(editor)
@@ -1518,22 +1518,22 @@ fn editorPutUi(editor: ^Editor) {
     }
   }
 
-  if (input.isJustPressed(input.key_escape)) {
+  if (input.isJustPressed(.escape)) {
     deselectEntity(&editor.entities)
   }
 
-  if (input.isJustPressed(input.key_delete)) {
+  if (input.isJustPressed(.delete)) {
     if editor.entities.entitySelected > 0 {
       removeEntity(&editor.entities, editor.entities.entitySelected)
       editor.dirty = true
-      input.clear(input.key_delete)
+      input.clear(.delete)
     }
   }
 
   // put ui
   if editor.isPlaying {
     if editor.enabled {
-      if input.isJustPressed(input.key_escape) {
+      if input.isJustPressed(.escape) {
         editor.isPlaying = !editor.isPlaying 
       } 
     }
@@ -1547,7 +1547,7 @@ fn editorPutUi(editor: ^Editor) {
     tool := editor.ui.beginTool("TileEditor", rect.mk(0, 0, d_global.screen.w, d_global.screen.h-38))
 
     if editor.ui.isCurrentToolActive() {
-      if input.isPressed(input.key_ctrl) && input.isJustPressedc('i') {
+      if input.isPressed(.ctrl) && input.isJustPressedc('i') {
         appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
       }
     }
@@ -1674,7 +1674,7 @@ fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
     tilesetImage: d_resources.loadImage(rl, "data/img/ts_sky.png"),
     toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png"),
     superHotFire: d_resources.loadImage(rl, "data/img/SUPER HOT FIRE WTF.png"),
-    mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, 1)}
+    mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, .linear)}
  
   //editorResources.bevelImage.setfilter(1)
   editorResources.superHotFire.setfilter(1)
@@ -1800,13 +1800,13 @@ fn editorMain*(enabled: bool) {
   editor.wm.setWindowVisible("Confirm", false)
 
   window.onFrame.register(|sf, wsf, editor| {
-    d_immcursor.setCursor(window.cursorDefault)
+    d_immcursor.setCursor(.system)
 
     std.srand(std.time())
     d_shortcuts.console()
     d_shortcuts.fullscreen()
     
-    if input.isPressed(input.key_fn25) {
+    if input.isPressed(.fn25) {
       d_assert.assert(false, "The F25 key? What's that?")
     }
 
@@ -1814,7 +1814,7 @@ fn editorMain*(enabled: bool) {
       d_dbg.logt("Console log!")
     }
 
-    if input.isJustPressed(input.key_fn3) {
+    if input.isJustPressed(.fn3) {
       editor.showDebugInfo = !editor.showDebugInfo
     }
 

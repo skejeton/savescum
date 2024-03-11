@@ -2,7 +2,7 @@ import (
   "window.um"
 )
 
-cursor := 0
+cursor := window.Cursor.system
 cursorSet := false
 
 /**
@@ -11,11 +11,11 @@ cursorSet := false
  * @note Refer to window.um for the cursor values. 0 represents the default 
  *       cursor. 
  */
-fn setCursor*(newCursor: int) {
-  if newCursor == 0 {
+fn setCursor*(newCursor: window.Cursor) {
+  if newCursor == .system {
     if !cursorSet {
-      cursor = 0
-      window.setCursor(0)
+      cursor = .system
+      window.setCursor(.system)
     }
     cursorSet = false
     return

@@ -28,7 +28,7 @@ const (
   released* = 2
 )
 
-fn (prev: ^MouseButtonState) updated*(button: int): MouseButtonState {
+fn (prev: ^MouseButtonState) updated*(button: input.Key): MouseButtonState {
   return MouseButtonState{
     isDown: input.isPressed(button),
     isPressed: input.isJustPressed(button),
@@ -38,9 +38,9 @@ fn (prev: ^MouseButtonState) updated*(button: int): MouseButtonState {
 
 fn (prev: ^MouseState) updated*(): MouseState {
   return MouseState {
-    lmb: prev.lmb.updated(input.mouse1),
-    mmb: prev.mmb.updated(input.mouse2),
-    rmb: prev.rmb.updated(input.mouse3), 
+    lmb: prev.lmb.updated(.mouse1),
+    mmb: prev.mmb.updated(.mouse2),
+    rmb: prev.rmb.updated(.mouse3), 
     scroll: input.getMouseScroll(),
     pos: input.getMousePos(),
     lastPos: prev.pos,

@@ -28,7 +28,7 @@ fn init*() {
   oldMousePos = input.getMousePos()
 
   window.onFrame.register(signal.Callback{
-    if input.isPressed(input.mouse2) {
+    if input.isPressed(.mouse2) {
       offset = offset.add(input.getMousePos().sub(oldMousePos))
     }
     if input.isPressedc('=') {

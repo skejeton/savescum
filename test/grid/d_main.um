@@ -37,7 +37,7 @@ fn init*() {
 
 		d_grid.gridZoomInto(&grid, d_rerp.iVf2(grid.s, targetScale, 0.2), input.getMousePos())
 
-  	if input.isPressed(input.mouse2) {
+  	if input.isPressed(.mouse2) {
   		mouseDelta := input.getMousePos().sub(lastMousePos)
   		grid.p = grid.p.add(mouseDelta.div(grid.s))
   	}
