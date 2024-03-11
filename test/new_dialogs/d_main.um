@@ -93,7 +93,7 @@ const poemBadId =
   "(Invalid poem ID)";
 
 fn loadPoemFromFile(file: str, poemId: int): str {
-  if ok, poems := d_util.readFileStr(file); ok {
+  if poems, err := d_util.readFileStr(file); err.code != 0 {
     if ok, poem := d_load_poems.getPoem(d_load_poems.loadPoems(poems), poemId); ok {
       return poem
     }

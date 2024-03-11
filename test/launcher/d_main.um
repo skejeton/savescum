@@ -2,14 +2,17 @@ import ("../../src/d_util.um"; "../../src/d_test.um")
 
 fn init*() {
   d_test.isUnitTest(true)
-  oklf, lf := d_util.readFileStr(d_test.pfx()+"local.txt")
-  okgf, gf := d_util.readFileStr("data/misc/global.txt")
+  lf, err1 := d_util.readFileStr(d_test.pfx()+"local.txt")
+  std.exitif(err1)
+
+  gf, err2 := d_util.readFileStr("data/misc/global.txt")
+  std.exitif(err2)
   
-  if !oklf || lf != "I'm a local file!\n" {
+  if lf != "I'm a local file!\n" {
     exit(551, "Invalid local file")
   }
   
-  if !okgf || gf != "I'm a global file!\n" {
+  if gf != "I'm a global file!\n" {
     exit(551, "Invalid global file")
   }
 
