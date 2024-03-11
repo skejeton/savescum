@@ -190,28 +190,30 @@ fn (core: ^Core) getPropertyLazy*(name: str, getter: fn (): any): any {
 
 
 fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: EventMouse): bool {
-  if int(event) < 0 || int(event) >= int(EventMouse.count) {
-    d_assert.assert(false, sprintf("Invalid event id: %d", event))
+  e := int(event)
+
+  if e < 0 || e >= int(EventMouse.count) {
+    d_assert.assert(false, sprintf("Invalid event id: %d", e))
   }
- 
+
   // This event is masked so we can't process it.
-  if mask.sunk[int(event)] {
+  if mask.sunk[e] {
     return false
   }
 
   // This event was acquired, so it's successful.
-  if acquire.sunk[int(event)] {
+  if acquire.sunk[e] {
     return true
   }
 
   // This event was already sunk. Can't sink it again.
-  if sink.sunk[int(event)] {
+  if sink.sunk[e] {
     return false
   }
 
   // Sink and acquire the event.
-  sink.sunk[int(event)] = true;
-  acquire.sunk[int(event)] = true;
+  sink.sunk[e] = true;
+  acquire.sunk[e] = true;
 
   return true
 }

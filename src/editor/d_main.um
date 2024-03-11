@@ -1010,7 +1010,7 @@ fn putEntityEntry(editor: ^Editor, ent: d_world_data.EntityDesc, r: rect.Rect, s
   editor.ui.beginTool(ent.id, r)
   {
     if (putSimpleButton(editor, r, ent.name).isReleased) {
-      action = EntityListAction.edit
+      action = .edit
     }
     if selected {
       editor.ui.ctx.drawRectLines(th.yellow, d_util.rectShrink(r, 1))
@@ -1019,22 +1019,22 @@ fn putEntityEntry(editor: ^Editor, ent: d_world_data.EntityDesc, r: rect.Rect, s
     r.w = 30
     r.h = 15
     if putSimpleButton(editor, r, "▲").isReleased {
-      action = EntityListAction.moveUp
+      action = .moveUp
     }
     r.y += 15
     if putSimpleButton(editor, r, "▼").isReleased {
-      action = EntityListAction.moveDown
+      action = .moveDown
     }
     r.y -= 15
     r.h = 30
     r.x += 30
     if input.isPressed(.shift) {
       if putSimpleButton(editor, r, "␡").isReleased {
-        action = EntityListAction.remove
+        action = .remove
       }
     } else {
       if putSimpleButton(editor, r, "⎘").isReleased {
-        action = EntityListAction.duplicate
+        action = .duplicate
       }
     }
   }
@@ -1132,22 +1132,22 @@ fn putEntityList(editor: ^Editor) {
         entryRect.h = 30
         for i, ent in editor.entities.list {
           switch putEntityEntry(editor, ent, entryRect, isEntitySelected(&editor.entities, i)) {
-            case EntityListAction.moveUp:
+            case .moveUp:
               moveFrom = i
               moveTo = i-1
               editor.dirty = true
-            case EntityListAction.moveDown:
+            case .moveDown:
               moveFrom = i
               moveTo = i+1
               editor.dirty = true
-            case EntityListAction.remove:
+            case .remove:
               entryRemoveIndex = i
               editor.dirty = true
-            case EntityListAction.edit:
+            case .edit:
               selectEntity(&editor.entities, i)
               editor.wm.setWindowVisible("Entity Editor", true)
               editor.wm.putWindowOnFront("Entity Editor")
-            case EntityListAction.duplicate:
+            case .duplicate:
               appendEntity(&editor.entities, cloneEntity(editor.entities.list, ent))
               moveFrom = len(editor.entities.list)-1
               moveTo = i+1

@@ -108,18 +108,18 @@ fn (ctx: ^DrawContext) flush*() {
       command.rect.x = floor(command.rect.x)
       command.rect.y = floor(command.rect.y)
       switch command.kind {
-        case CommandType.rect:
+        case .rect:
           canvas.drawRect(command.color, command.rect)
-        case CommandType.rectLines:
+        case .rectLines:
           d_util.drawRectLines(command.color, command.rect, command.attr)
-        case CommandType.beginScissorRect:
+        case .beginScissorRect:
           canvas.beginScissorRect(command.rect)
           scissorCounter += 1
-        case CommandType.endScissor:
+        case .endScissor:
           canvas.endScissor()
           scissorCounter -= 1
           d_assert.assert(scissorCounter >= 0, "Scissor mismatch.")
-        case CommandType.custom:
+        case .custom:
           command.custom.draw(DrawProperties{})
       }
     } 
@@ -145,20 +145,20 @@ fn (d: ^TextCmd) draw(props: DrawProperties) {
 }
 
 fn (ctx: ^DrawContext) drawText*(f: font.Font, text: str, position: th.Vf2, color: uint32, size: th.fu = 1.0) {
-  ctx.currentLayer.appendCommand(Command{kind: CommandType.custom, custom: TextCmd{f, text, position, color, size}})
+  ctx.currentLayer.appendCommand(Command{kind: .custom, custom: TextCmd{f, text, position, color, size}})
 }
 
 fn (ctx: ^DrawContext) drawRect*(color: uint32, r: rect.Rect) {
-  ctx.currentLayer.appendCommand(Command{kind: CommandType.rect, color: color, rect: r})
+  ctx.currentLayer.appendCommand(Command{kind: .rect, color: color, rect: r})
 }
 
 fn (ctx: ^DrawContext) drawRectLines*(color: uint32, r: rect.Rect, thicc: real = 1.0) {
-  ctx.currentLayer.appendCommand(Command{kind: CommandType.rectLines, color: color, rect: r, attr: thicc})
+  ctx.currentLayer.appendCommand(Command{kind: .rectLines, color: color, rect: r, attr: thicc})
 }
 
 fn (ctx: ^DrawContext) beginScissorRectRaw*(r: rect.Rect) {
   ctx.scissorRectStack = append(ctx.scissorRectStack, r)
-  ctx.currentLayer.appendCommand(Command{kind: CommandType.beginScissorRect, rect: r})
+  ctx.currentLayer.appendCommand(Command{kind: .beginScissorRect, rect: r})
 }
 
 fn mergeScissorRects(child, parent: rect.Rect): rect.Rect {
@@ -195,7 +195,7 @@ fn (ctx: ^DrawContext) endScissor*() {
 
   ctx.scissorRectStack = delete(ctx.scissorRectStack, len(ctx.scissorRectStack)-1)
 
-  ctx.currentLayer.appendCommand(Command{kind: CommandType.endScissor})
+  ctx.currentLayer.appendCommand(Command{kind: .endScissor})
 }
 
 type ImageCmd = struct {
@@ -211,7 +211,7 @@ fn (d: ^ImageCmd) draw(props: DrawProperties) {
 }
 
 fn (ctx: ^DrawContext) drawImage*(img: image.Image, transform: th.Transform, color: uint32 = 0xFFFFFFFF) {
-  ctx.currentLayer.appendCommand(Command{kind: CommandType.custom, custom: ImageCmd{img, transform, img.getCropQuad(), color}})
+  ctx.currentLayer.appendCommand(Command{kind: .custom, custom: ImageCmd{img, transform, img.getCropQuad(), color}})
 }
 
 type NinepatchCmd = struct {
@@ -227,9 +227,9 @@ fn (d: ^NinepatchCmd) draw(props: DrawProperties) {
 }
 
 fn (ctx: ^DrawContext) drawNinepatch*(img: image.Image, outer, inner, dest: rect.Rect, tint: uint32 = th.white) {
-  ctx.currentLayer.appendCommand(Command{kind: CommandType.custom, custom: NinepatchCmd{img, outer, inner, dest, img.getCropQuad(), tint}})
+  ctx.currentLayer.appendCommand(Command{kind: .custom, custom: NinepatchCmd{img, outer, inner, dest, img.getCropQuad(), tint}})
 }
 
 fn (ctx: ^DrawContext) drawCustom*(custom: CustomCommand) {
-  ctx.currentLayer.appendCommand(Command{kind: CommandType.custom, custom: custom})
+  ctx.currentLayer.appendCommand(Command{kind: .custom, custom: custom})
 }
