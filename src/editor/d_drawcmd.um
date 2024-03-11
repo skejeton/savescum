@@ -5,7 +5,6 @@
 
 import (
   "th.um"
-  "window.um"
   "rect.um"
   "image.um"
   "font.um"

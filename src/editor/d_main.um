@@ -29,7 +29,6 @@ import (
   "../d_immcursor.um"
   "../d_payload_trigger.um"
   "../ui/d_core.um"
-  "../d_extern.um"
   "../d_assert.um"
   debug_info = "../debugdraw/d_info.um"
   render_debug_info = "../debugdraw/d_render.um"
@@ -44,7 +43,6 @@ import (
   "image.um"
   "canvas.um"
   "input.um"
-  "signal.um"
 
   "utf8.um"
   "std.um"
@@ -103,11 +101,6 @@ type (
     tilesetImage: image.Image
     superHotFire: image.Image
     mainFont: th_font.Font
-  }
-
-  ToolState = struct {
-    active: bool
-    hovered: bool
   }
 
   EditorEntities = struct {
@@ -1091,13 +1084,6 @@ fn makeRandomEntity(id: str): d_world_data.EntityDesc {
   return d_world_data.EntityDesc{name: id, id: id, tags: ""}
 }
 
-/*
- * \brief Creates an entity with same name and id, empty tags
- */
-fn makeNamedEntity(name: str): d_world_data.EntityDesc {
-  return d_world_data.EntityDesc{name: name, id: name, tags: ""}
-}
-
 fn selectEntity(entities: ^EditorEntities, index: int) {
   entities.entitySelected = index
 }
@@ -1799,7 +1785,7 @@ fn editorMain*(enabled: bool) {
 
   editor.wm.setWindowVisible("Confirm", false)
 
-  window.onFrame.register(|sf, wsf, editor| {
+  window.onFrame.register(|sf, editor| {
     d_immcursor.setCursor(.system)
 
     std.srand(std.time())
@@ -1828,8 +1814,6 @@ fn editorMain*(enabled: bool) {
     postUiUpdate(editor)
 
     d_dbg.drawConsole(editor.resources.mainFont)
-
-    infoText := ""
 
     fpsNode := debug_info.Display{ "FPS", d_fps.getFps(), false }
     if d_payload_trigger.aprilFools() {

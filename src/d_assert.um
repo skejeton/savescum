@@ -1,5 +1,4 @@
 import (
-  "th.um"
   "std.um"
 )
 

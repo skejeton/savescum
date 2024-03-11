@@ -7,16 +7,16 @@ import (
   "rect.um"
 )
 
-const (
-  eventMouseLeft = 0
-  eventMouseMiddle = 1
-  eventMouseRight = 2
-  eventMouseScroll = 3
-  eventCount = 4
-)
+type EventMouse = enum {
+  left
+  middle
+  right
+  scroll
+  count
+}
 
 type InputSink* = struct {
-  sunk: [eventCount]bool
+  sunk: [int(EventMouse.count)]bool
 }
 
 type Core* = struct {
@@ -189,43 +189,39 @@ fn (core: ^Core) getPropertyLazy*(name: str, getter: fn (): any): any {
 }
 
 
-fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: int): bool {
-  if event < 0 || event >= eventCount {
+fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: EventMouse): bool {
+  if int(event) < 0 || int(event) >= int(EventMouse.count) {
     d_assert.assert(false, sprintf("Invalid event id: %d", event))
   }
  
   // This event is masked so we can't process it.
-  if mask.sunk[event] {
+  if mask.sunk[int(event)] {
     return false
   }
 
   // This event was acquired, so it's successful.
-  if acquire.sunk[event] {
+  if acquire.sunk[int(event)] {
     return true
   }
 
   // This event was already sunk. Can't sink it again.
-  if sink.sunk[event] {
+  if sink.sunk[int(event)] {
     return false
   }
 
   // Sink and acquire the event.
-  sink.sunk[event] = true;
-  acquire.sunk[event] = true;
+  sink.sunk[int(event)] = true;
+  acquire.sunk[int(event)] = true;
 
   return true
 }
 
-fn sinkEvent*(events: ^Events, event: int): bool {
+fn sinkEvent*(events: ^Events, event: EventMouse): bool {
   return sinkAcquireMaskEvent(events.sink, &events.acquired, events.mask, event)
 }
 
-fn convertButtonToEvent*(btn: int): int {
-  return btn
-}
-
 fn (events: ^Events) queryMouse*(btn: int, which: int): bool {
-  if sinkEvent(events, convertButtonToEvent(btn)) == false {
+  if sinkEvent(events, EventMouse(btn)) == false {
     return false
   }
 
@@ -249,7 +245,7 @@ fn (events: ^Events) queryMouse*(btn: int, which: int): bool {
 }
 
 fn (events: ^Events) queryScroll*(): real {
-  if sinkEvent(events, eventMouseScroll) == false {
+  if sinkEvent(events, .scroll) == false {
     return 0
   }
 

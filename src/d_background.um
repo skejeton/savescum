@@ -1,8 +1,13 @@
 import (
-  "rect.um"; "image.um"; "canvas.um"; "th.um"; th_color = "color.um";
-  "d_util.um"; "d_global.um"; "d_resources.um"; "d_partition.um";
-  "d_dbg.um"
-  "std.um"
+  "rect.um"
+  "image.um"
+  "canvas.um"
+  "th.um"
+  th_color = "color.um"
+  "d_util.um"
+  "d_global.um"
+  "d_resources.um"
+  "d_partition.um"
 )
 
 const (
@@ -57,10 +62,6 @@ fn drawClouds*(screen: rect.Rect, tint: uint32, bg: uint32, scale: real) {
 
     drawCloudStrip(scroll, yOffset, color, scale)
   }
-}
-
-fn drawImageScaled(img: image.Image, pos: th.Vf2, scale: th.Vf2) {
-  imgRocks.draw(th.Transform{p: th.Vf2{pos.x*scale.x, pos.y*scale.y}, s: scale})
 }
 
 fn jazzColor(time: real): uint32 {

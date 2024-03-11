@@ -1,7 +1,6 @@
 import (
   "console/d_console.um"
   "d_global.um"
-  "input.um"
   th_font = "font.um"
 )
 

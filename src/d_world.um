@@ -165,8 +165,6 @@ fn (world: ^World) collectLayerRenderTiles*(pan: th.Vf2, layerId: int, scale: re
 
 fn (world: ^World) drawRenderTiles*(renderTiles: []RenderTile, tint: uint32) {
   prevTileId := -1
-  tileSizeX := world.tileset.tileSizeX*world.tileset.scale
-  tileSizeY := world.tileset.tileSizeY*world.tileset.scale
 
   for i, renderTile in renderTiles {
     cr := world.tileset.getCroppingRectId(renderTile.id)

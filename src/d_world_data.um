@@ -5,7 +5,6 @@ import (
   "std.um"
   "csv.um"
   "th.um"
-  "d_dbg.um"
   "d_assert.um"
 )
 
