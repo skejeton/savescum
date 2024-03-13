@@ -12,11 +12,11 @@ type EventMouse = enum {
   middle
   right
   scroll
-  count
+  _count
 }
 
 type InputSink* = struct {
-  sunk: [int(EventMouse.count)]bool
+  sunk: [int(EventMouse._count)]bool
 }
 
 type Core* = struct {
@@ -192,7 +192,7 @@ fn (core: ^Core) getPropertyLazy*(name: str, getter: fn (): any): any {
 fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: EventMouse): bool {
   e := int(event)
 
-  if e < 0 || e >= int(EventMouse.count) {
+  if e < 0 || e >= int(EventMouse._count) {
     d_assert.assert(false, sprintf("Invalid event id: %d", e))
   }
 
