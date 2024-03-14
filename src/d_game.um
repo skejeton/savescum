@@ -588,10 +588,8 @@ fn init*(rl: ^d_resources.ResourceLoader) {
 
   // bgAudio.setLooping(true)
   defaultFont = d_resources.loadFont(rl, "data/font/monospace.ttf", 16, .linear)
-  imgObj = d_resources.loadImage(rl, "data/img/obj_interactive.png")
-  imgObj.setfilter(1)
-  imgChum = d_resources.loadImage(rl, "data/img/chr_chum.png")
-  imgChum.setfilter(1)
+  imgObj = d_resources.loadImage(rl, "data/img/obj_interactive.png", .linear)
+  imgChum = d_resources.loadImage(rl, "data/img/chr_chum.png", .linear)
 }
 
 fn updateEntities() {

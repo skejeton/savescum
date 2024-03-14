@@ -1652,22 +1652,15 @@ fn editorPutUi(editor: ^Editor) {
  
 }
 
-
 fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
 
   editorResources := EditorResources {
     bevelImage: d_resources.loadImage(rl, "data/img/ui_bevelbutton.png"),
-    tilesetImage: d_resources.loadImage(rl, "data/img/ts_sky.png"),
-    toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png"),
-    superHotFire: d_resources.loadImage(rl, "data/img/SUPER HOT FIRE WTF.png"),
+    tilesetImage: d_resources.loadImage(rl, "data/img/ts_sky.png", .linear),
+    toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png", .linear),
+    superHotFire: d_resources.loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
     mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, .linear)}
  
-  //editorResources.bevelImage.setfilter(1)
-  editorResources.superHotFire.setfilter(1)
-  editorResources.tilesetImage.setfilter(1)
-  editorResources.toolbarIcons.setfilter(1)
-  editorResources.superHotFire.setfilter(1)
-
   return editorResources
 }
 

@@ -25,21 +25,23 @@ fn loadingError*(loader: ^ResourceLoader, path, why: str) {
   loader.errors = append(loader.errors, sprintf("Error loading %s: %s", path, why))
 }
 
-fn loadImage*(loader: ^ResourceLoader, path: str): image.Image {
-  theImage := image.load(path)
+fn loadImage*(loader: ^ResourceLoader, path: str, filter: th_font.Filter = .linear): image.Image {
+  theImage, err := image.load(path)
   
-  if theImage.validate() == false {
-    loadingError(loader, path, "Could not load image.")
+  if err.code != 0 {
+    loadingError(loader, path, err.msg)
+  } else {
+    theImage.setfilter(int(filter))
   }
 
   return theImage
 }
 
 fn loadAudio*(loader: ^ResourceLoader, path: str): audio.Sound {
-  theAudio := audio.load(path)
+  theAudio, err := audio.load(path)
   
-  if theAudio.validate() == false {
-    loadingError(loader, path, "Could not load audio.")
+  if err.code != 0 {
+    loadingError(loader, path, err.msg)
   }
 
   return theAudio
@@ -47,10 +49,10 @@ fn loadAudio*(loader: ^ResourceLoader, path: str): audio.Sound {
 
 
 fn loadFont*(loader: ^ResourceLoader, path: str, size: real, filter: th_font.Filter): th_font.Font {
-  theFont := th_font.load(path, size, filter)
+  theFont, err := th_font.load(path, size, filter)
   
-  if theFont.validate() == false {
-    loadingError(loader, path, "Could not load font.")
+  if err.code != 0 {
+    loadingError(loader, path, err.msg)
   }
 
   return theFont

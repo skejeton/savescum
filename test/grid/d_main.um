@@ -27,7 +27,7 @@ fn init*() {
 
   lastMousePos = input.getMousePos()
   targetScale = grid.s
-  tileset = image.load("data/img/ts_sky.png")
+  tileset = image.load("data/img/ts_sky.png").item0
   tileset.setfilter(0)
 
   window.onFrame.register(signal.Callback{

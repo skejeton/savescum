@@ -6,9 +6,11 @@ import (
   "th.um"
   "input.um"
   th_font = "font.um"
+  "std.um"
 )
 
 var (
+  fonterr: std.Err
   font: th_font.Font
   scroll: th.Vf2
   y: th.fu
@@ -37,14 +39,14 @@ fn makeUppercase(text: str): str {
 }
 
 fn fontHeight(): th.fu {
-  if font.validate() {
+  if fonterr.code == 0 {
     return font.measure(" ").y
   }
   return 10.0
 }
 
 fn drawText(text: str, pos: th.Vf2, color: uint32) {
-  if font.validate() {
+  if fonterr.code == 0 {
     font.draw(text, pos, color, 1*window.getDpiScaleFactor())
   } else {
     canvas.drawText(makeUppercase(text), pos, color, 2*window.getDpiScaleFactor())
@@ -58,7 +60,7 @@ fn pushText(text: str, color: uint32 = th.white) {
 
 fn init() {
   // Try to load a better font, the fallback will be used otherwise.
-  font = th_font.load("data/font/monospace.ttf", 16)
+  font, fonterr = th_font.load("data/font/monospace.ttf", 16)
 }
 
 oldMousePos := th.Vf2{0, 0}

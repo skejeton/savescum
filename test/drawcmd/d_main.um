@@ -36,12 +36,12 @@ fn init*() {
 
   window.setup("Hello", 640, 480)
   ctx = d_drawcmd.init()
-  font1 = font.load("data/font/monospace.ttf", 16, .nearest)
-  font2 = font.load("data/font/sans.ttf", 16)
-  image1 = image.load("data/img/test.png")
-  image2 = image.load("data/img/test.png")
-  image3 = image.load("data/img/ui_bevelbutton.png")
+  font1 = font.load("data/font/monospace.ttf", 16, .nearest).item0
+  font2 = font.load("data/font/sans.ttf", 16).item0
+  image1 = image.load("data/img/test.png").item0
+  image2 = image.load("data/img/test.png").item0
   image2.setfilter(0)
+  image3 = image.load("data/img/ui_bevelbutton.png").item0
 
   for i in colors {
     colors[i][0] = th_color.hsv(i/7.0, 1.0, 1.0)
@@ -77,7 +77,7 @@ fn init*() {
     image2.crop(th.Vf2{0.0, 0.0}, th.Vf2{0.0, 0.0})
 
     ctx.setLayer(10)
-    ctx.drawNinepatch(image3, rect.mk(0, 0, 5, 5), rect.mk(2, 2, 1, 1), rect.mk(70, 250, 640-140, 70));
+    ctx.drawNinepatch(image3, rect.mk(0, 0, 10, 10), rect.mk(3, 3, 2, 2), rect.mk(70, 250, 640-140, 70));
 
     ctx.flush()
   })

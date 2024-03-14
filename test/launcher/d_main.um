@@ -1,4 +1,8 @@
-import ("../../src/d_util.um"; "../../src/d_test.um")
+import (
+  "../../src/d_util.um"
+  "../../src/d_test.um"
+  "std.um"
+)
 
 fn init*() {
   d_test.isUnitTest(true)
