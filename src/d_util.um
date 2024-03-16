@@ -19,37 +19,16 @@ fn isMouseInRect*(r: rect.Rect): bool {
   return p.x >= r.x && p.y >= r.y && p.x <= (r.x+r.w) && p.y <= (r.y+r.h)
 }
 
-fn readFileStr*(path: str): (str, std.Err) {
-  file := std.fopen(path, "rb")
-  
-  if file == null {
-    return "", std.error(1, "Failed to open file")
-  }
-  
-  std.fseek(file, 0, std.SeekFrom.end)
-  datasiz := std.ftell(file)
-  std.fseek(file, 0, std.SeekFrom.begin)
-
-  data := make([]char, datasiz+1)
-  std.fread(file, data)
-  
-  // FIXME: Really bad CRLF fix bruhhh 
-  // what this does is it replaces all \r\n with \n
-  data = d_strings.join(d_strings.splitBy(data, '\r'))
-
-  return data, {}
-}
-
-fn writeFileStr*(path: str, dataStr: str): bool {
-  file := std.fopen(path, "w")
-  if file == null {
-    return false
+fn writeFileStr*(path: str, dataStr: str): std.Err {
+  file, err := std.fopen(path, "wb")
+  if err.code != 0 {
+    return err
   }
 
   std.fwrite(file, &[]char(dataStr))
   std.fclose(file)
 
-  return true
+  return {}
 }
 
 fn drawRectLines*(color: uint32, r: rect.Rect, thicc: real = 3.0) {

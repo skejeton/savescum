@@ -2,14 +2,15 @@ import (
   "../../src/d_util.um"
   "../../src/d_test.um"
   "std.um"
+  "misc.um"
 )
 
 fn init*() {
   d_test.isUnitTest(true)
-  lf, err1 := d_util.readFileStr(d_test.pfx()+"local.txt")
+  lf, err1 := misc.readall(d_test.pfx()+"local.txt")
   std.exitif(err1)
 
-  gf, err2 := d_util.readFileStr("data/misc/global.txt")
+  gf, err2 := misc.readall("data/misc/global.txt")
   std.exitif(err2)
   
   if lf != "I'm a local file!\n" {
