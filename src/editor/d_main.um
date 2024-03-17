@@ -1657,7 +1657,7 @@ fn editorPutUi(editor: ^Editor) {
 fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
 
   editorResources := EditorResources {
-    bevelImage: d_resources.loadImage(rl, "data/img/ui_bevelbutton.png"),
+    bevelImage: d_resources.loadImage(rl, "data/img/ui_bevelbutton.png", .nearest),
     tilesetImage: d_resources.loadImage(rl, "data/img/ts_sky.png", .linear),
     toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png", .linear),
     superHotFire: d_resources.loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
