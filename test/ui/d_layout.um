@@ -1,0 +1,27 @@
+import (
+  "d_act.um"
+  "rect.um"
+  "th.um"
+)
+
+type Object* = struct {
+  size: th.Vf2
+  margin: real
+}
+
+fn resolve*(objects: []Object): []d_act.Tool {
+  var tools: []d_act.Tool
+
+  x := 0.0
+
+  for i, o in objects {
+    x += o.margin
+    r := rect.Rect{x, o.margin, o.size.x, o.size.y}
+    x += o.size.x
+    x += o.margin
+
+    tools = append(tools, d_act.Tool{r})
+  }
+
+  return tools
+}

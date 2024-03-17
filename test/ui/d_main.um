@@ -6,6 +6,7 @@ import (
   "input.um"
   "../../src/d_util.um"
   "d_act.um"
+  "d_layout.um"
 )
 
 actstatus := d_act.ActStatus{}
@@ -13,10 +14,12 @@ actstatus := d_act.ActStatus{}
 toollist := d_act.ToolList{}
 
 fn init*() {
-  toollist.tools = {
-    {{20, 20, 100, 100}},
-    {{50, 40, 100, 100}}
+  objects := []d_layout.Object{
+    {{666, 400}, 5},
+    {{412, 666}, 10}
   }
+
+  toollist.tools = d_layout.resolve(objects)
 
   window.setup("UI test", 1920, 1080)
 
