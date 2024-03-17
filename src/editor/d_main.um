@@ -1237,7 +1237,8 @@ fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
 
     EditGrip{th.Vf2{0.0, 1.0}, RectResizeCommand{th.Vf2{1, 0}, th.Vf2{-1,  1}}}, // x
     EditGrip{th.Vf2{0.5, 1.0}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 0,  1}}}, // x
-    EditGrip{th.Vf2{1.0, 1.0}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 1,  1}}}} // x
+    EditGrip{th.Vf2{1.0, 1.0}, RectResizeCommand{th.Vf2{0, 0}, th.Vf2{ 1,  1}}}  // x
+  } 
 
   activeGrip := -1
 
