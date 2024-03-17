@@ -5,73 +5,12 @@ import (
   "th.um"
   "input.um"
   "../../src/d_util.um"
+  "d_act.um"
 )
 
-type Tool = struct {
-  r: rect.Rect
-}
+actstatus := d_act.ActStatus{}
 
-type ToolList = struct {
-  tools: []Tool
-}
-
-type ActStatus = struct {
-  hover: ^Tool
-  press: ^Tool
-  active: ^Tool
-  focus: ^Tool
-}
-
-type ActViaMouse = struct {
-  mouse: th.Vf2
-  pressing: bool 
-}
-
-fn (a: ^ActStatus) update(toollist: ^ToolList, v: ActViaMouse) {
-  a.hover = null
-  a.press = null
-
-  if v.pressing == false {
-    a.active = null
-  } else {
-    a.focus = null
-  }
-
-  for i, tool^ in toollist.tools {
-    if d_util.rectVsPoint(tool.r, v.mouse) {
-      a.hover = tool
-
-      if v.pressing {
-        a.press = tool
-      }
-    }
-  }
-
-  if a.active == null {
-    a.active = a.press
-  } else {
-    a.focus = a.active
-  }
-}
-
-fn renderDebugInfo(actstatus: ^ActStatus) {
-  if actstatus.focus != null {
-    d_util.drawRectLines(0xFFFF00FF, actstatus.focus.r, 8)
-  }
-  if actstatus.active != null {
-    d_util.drawRectLines(0xFF0000FF, actstatus.active.r, 6)
-  }
-  if actstatus.press != null {
-    d_util.drawRectLines(0x00FF00FF, actstatus.press.r, 4)
-  }
-  if actstatus.hover != null {
-    d_util.drawRectLines(0x0000FFFF, actstatus.hover.r, 2)
-  }
-}
-
-actstatus := ActStatus{}
-
-toollist := ToolList{}
+toollist := d_act.ToolList{}
 
 fn init*() {
   toollist.tools = {
@@ -82,7 +21,7 @@ fn init*() {
   window.setup("UI test", 1920, 1080)
 
   window.onFrame.register({
-    mouseact := ActViaMouse{
+    mouseact := d_act.ActViaMouse{
       mouse: input.getMousePos(),
       pressing: input.isPressed(.mouse1)
     }
@@ -93,6 +32,6 @@ fn init*() {
       canvas.drawRect(0x00000022, tool.r)
     }
 
-    renderDebugInfo(&actstatus)
+    d_act.renderDebugInfo(&actstatus)
   })
 }
