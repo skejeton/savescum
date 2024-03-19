@@ -4,23 +4,33 @@ import (
   "th.um"
 )
 
+type Direction* = enum {
+  row
+  column
+}
+
 type Object* = struct {
   size: th.Vf2
   margin: real
 }
 
-fn resolve*(objects: []Object): []d_act.Tool {
+fn resolve*(objects: []Object, dir: Direction): []d_act.Tool {
   var tools: []d_act.Tool
 
-  x := 0.0
+  p := 0.0
 
   for i, o in objects {
-    x += o.margin
-    r := rect.Rect{x, o.margin, o.size.x, o.size.y}
-    x += o.size.x
-    x += o.margin
+    p += o.margin
+    switch dir {
+    case Direction.row:
+      tools = append(tools, d_act.Tool{{p, o.margin, o.size.x, o.size.y}})
+      p += o.size.x
+    case Direction.column:
+      tools = append(tools, d_act.Tool{{o.margin, p, o.size.x, o.size.y}})
+      p += o.size.y
+    }
 
-    tools = append(tools, d_act.Tool{r})
+    p += o.margin
   }
 
   return tools

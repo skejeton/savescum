@@ -16,10 +16,11 @@ toollist := d_act.ToolList{}
 fn init*() {
   objects := []d_layout.Object{
     {{666, 400}, 5},
-    {{412, 666}, 10}
+    {{412, 666}, 10},
+    {{200, 200}, 0}
   }
 
-  toollist.tools = d_layout.resolve(objects)
+  toollist.tools = d_layout.resolve(objects, .column)
 
   window.setup("UI test", 1920, 1080)
 
