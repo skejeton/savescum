@@ -13,18 +13,23 @@ actstatus := d_act.ActStatus{}
 
 toollist := d_act.ToolList{}
 
-fn init*() {
-  objects := []d_layout.Object{
-    {{666, 400}, 5},
-    {{412, 666}, 10},
-    {{200, 200}, 0}
-  }
+width := 0.0
 
-  toollist.tools = d_layout.resolve(objects, .column)
+fn init*() {
 
   window.setup("UI test", 1920, 1080)
 
   window.onFrame.register({
+    objects := []d_layout.Object{
+      {{666+width, 400}, 5},
+      {{412, 666}, 10+width},
+      {{200, 200}, 0}
+    }
+
+    toollist.tools = d_layout.resolve(objects, .row)
+
+    width += sin(th.time/1000.0)
+
     mouseact := d_act.ActViaMouse{
       mouse: input.getMousePos(),
       pressing: input.isPressed(.mouse1)
@@ -33,7 +38,7 @@ fn init*() {
     actstatus.update(&toollist, mouseact)
 
     for i, tool in toollist.tools {
-      canvas.drawRect(0x00000022, tool.r)
+      canvas.drawRect(0x00000044, tool.r)
     }
 
     d_act.renderDebugInfo(&actstatus)
