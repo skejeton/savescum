@@ -35,6 +35,7 @@ fn init*() {
       pressing: input.isPressed(.mouse1)
     }
 
+    // TODO: Fix stale tool pointers
     actstatus.update(&toollist, mouseact)
 
     for i, tool in toollist.tools {
