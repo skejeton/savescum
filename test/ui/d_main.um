@@ -26,7 +26,15 @@ fn init*() {
       {{200, 200}, 0}
     }
 
-    toollist.tools = d_layout.resolve(objects, .row)
+    resolved := d_layout.resolve(objects, .row)
+
+    if len(toollist.tools) != len(objects) {
+      toollist.tools = resolved
+    } else {
+      for i, tool^ in toollist.tools {
+        tool.r = resolved[i].r
+      }
+    }
 
     width += sin(th.time/1000.0)
 
@@ -35,7 +43,6 @@ fn init*() {
       pressing: input.isPressed(.mouse1)
     }
 
-    // TODO: Fix stale tool pointers
     actstatus.update(&toollist, mouseact)
 
     for i, tool in toollist.tools {
