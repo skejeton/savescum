@@ -23,7 +23,7 @@ fn init*() {
     objects := []d_layout.Object{
       {{666+width, 400}, 5},
       {{412, 666}, 10+width},
-      {{200, 200}, 0}
+      {{200, 200}, -10}
     }
 
     resolved := d_layout.resolve(objects, .row)
