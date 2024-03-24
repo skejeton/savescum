@@ -26,7 +26,7 @@ fn init*() {
       {{200, 200}, -10}
     }
 
-    resolved := d_layout.resolve(objects, .row)
+    resolved := d_layout.resolve(objects, .column)
 
     if len(toollist.tools) != len(objects) {
       toollist.tools = resolved
@@ -40,7 +40,8 @@ fn init*() {
 
     mouseact := d_act.ActViaMouse{
       mouse: input.getMousePos(),
-      pressing: input.isPressed(.mouse1)
+      pressing: input.isPressed(.mouse1),
+      tabbed: input.isPressedc('\t')
     }
 
     actstatus.update(&toollist, mouseact)

@@ -22,11 +22,14 @@ type ActStatus* = struct {
 type ActViaMouse* = struct {
   mouse: th.Vf2
   pressing: bool 
+  tabbed: bool
 }
 
 fn (a: ^ActStatus) update*(toollist: ^ToolList, v: ActViaMouse) {
   a.hover = null
   a.press = null
+
+  var next : ^Tool = null
 
   if v.pressing == false {
     a.active = null
