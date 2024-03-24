@@ -139,6 +139,8 @@ var (
   showDebug*: bool = false
   lastUpdateTime: int = 0
   frameSkips*: int
+
+  rumbling: real
 )
 
 fn getCameraRect(): rect.Rect {
@@ -230,23 +232,38 @@ fn cameraOffsetRect(r: rect.Rect): rect.Rect {
 
 fn playerControl() {
   if !wasOnGround && chara.onGround {
+    rumbling = 0.2
     palLand.start()
   }
-  if input.isPressed(.up) && chara.onGround {
+  if (input.isPressed(.up) || input.player().isPressed(.a)) && chara.onGround {
     palJump.start()
     chara.vel.y = -3.65
   }
+  if input.player().id != -1 {
+    stick := input.player().stick(.left)
+
+    if stick.x < -0.5 {
+      chumDir = 0
+      chumWalkTime += updateStep*fabs(stick.x)
+      chara.vel.x = 2.5*stick.x
+    } else if stick.x > 0.5 {
+      chumDir = 1
+      chumWalkTime += updateStep*fabs(stick.x)
+      chara.vel.x = 2.5*stick.x
+    }
+  }
   if input.isPressed(.left) {
     chumDir = 0
-    chumWalkTime += updateStep
     chara.vel.x = -2.5
+    chumWalkTime += updateStep
   }
   if input.isPressed(.right) {
     chumDir = 1
-    chumWalkTime += updateStep
     chara.vel.x = 2.5
+    chumWalkTime += updateStep
   } 
-  if !input.isPressed(.left) && !input.isPressed(.right) {
+
+  if fabs(chara.vel.x) < 0.1 {
     chumWalkTime = 0
   }
 
@@ -848,6 +865,10 @@ fn canActivateWaterLever(): bool {
   return can
 }
 
+fn isActivated(): bool {
+  return input.isJustPressedc(' ') || input.player().isJustPressed(.x)
+}
+
 fn update*() {
   chumFrown = jitterCounter > 300
 
@@ -880,7 +901,7 @@ fn update*() {
  
   if !lockInput {
     if !noSaveLoad {
-      if input.isJustPressedc('z') {
+      if input.isJustPressedc('z') || input.player().isJustPressed(.lb) {
         if len(saves) > 0 {
           if !entCheckCollision(&saves[len(saves)-1].ent) {
             loadStateToChar(saves[len(saves)-1])
@@ -889,14 +910,14 @@ fn update*() {
         }
       }
       
-      if input.isJustPressedc('x') {
+      if input.isJustPressedc('x') || input.player().isJustPressed(.rb) {
         saves = append(saves, getCharState())
       }
     }
     noSaveLoad = false
     insideStatic = false
  
-    if input.isJustPressedc('r') {
+    if input.isJustPressedc('r') || input.player().isJustPressed(.start) {
       reset()
     }
 
@@ -952,7 +973,7 @@ fn update*() {
       }
       if ent.tags.isSet("lever") {
         if d_util.rectVsRect(ent.rect, chara.rect) {
-          if input.isJustPressedc(' ') && chara.onGround {
+          if isActivated() && chara.onGround {
             if canActivateLever() {
               toggleActive = !toggleActive
             }
@@ -961,7 +982,7 @@ fn update*() {
       }
       if ent.tags.isSet("lever_s") {
         if d_util.rectVsRect(ent.rect, chara.rect) && chara.onGround {
-          if input.isJustPressedc(' ') {
+          if isActivated() {
             if canActivateStaticLever() {
               toggleActiveStatic = !toggleActiveStatic
             }
@@ -987,7 +1008,7 @@ fn update*() {
 
       if ent.tags.isSet("lever_w") {
          if d_util.rectVsRect(ent.rect, chara.rect) && chara.onGround {
-          if input.isJustPressedc(' ') {
+          if isActivated() {
             if canActivateWaterLever() {
               toggleActiveWater = !toggleActiveWater
             }
@@ -1019,11 +1040,10 @@ fn update*() {
           toPortal = dest
           if ent == null {
             d_dbg.logt("Error: Destination entity doesn't exist")
-          } else if input.isJustPressedc(' ') {
+          } else if isActivated() {
             if !entCheckCollision(ent) {
               chara.rect.x = ent.rect.x
               chara.rect.y = ent.rect.y
-              input.clearc(' ')
             } 
           }
         }
@@ -1071,9 +1091,11 @@ fn drawOverlays() {
 
 fn draw*() {
   // RENDER BG //
+  input.player().rumble(rumbling*5, rumbling*5)
   bgCam := rect.mk(camera.x, camera.y, d_global.screen.w/cameraScale, d_global.screen.h/cameraScale)
   bgCam.x /= 2
   bgCam.y /= 2
+  rumbling = d_rerp.iReal(rumbling, 0, th.delta/100.0)
   oldScale := cameraScale 
   oldPos := camera
   d_background.draw(bgCam)

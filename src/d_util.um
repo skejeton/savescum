@@ -19,6 +19,17 @@ fn isMouseInRect*(r: rect.Rect): bool {
   return p.x >= r.x && p.y >= r.y && p.x <= (r.x+r.w) && p.y <= (r.y+r.h)
 }
 
+fn readFileStr*(path: str): (str, std.Err) {
+  file, err := std.fopen(path, "rb")
+
+  if err.code != 0 {
+    return "", err
+  }
+
+  s, err := std.freadall(file)
+  return err.code == 0 ? s : "", err
+}
+
 fn writeFileStr*(path: str, dataStr: str): std.Err {
   file, err := std.fopen(path, "wb")
   if err.code != 0 {

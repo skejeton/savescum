@@ -94,8 +94,8 @@ const poemBadId =
   "(Invalid poem ID)";
 
 fn loadPoemFromFile(file: str, poemId: int): str {
-  if poems, err := misc.readall(file); err.code != 0 {
-    if ok, poem := d_load_poems.getPoem(d_load_poems.loadPoems(poems), poemId); ok {
+  if poems, err := std.freadall(file); err.code != 0 {
+    if ok, poem := d_load_poems.getPoem(d_load_poems.loadPoems(str(poems)), poemId); ok {
       return poem
     }
     return poemBadId

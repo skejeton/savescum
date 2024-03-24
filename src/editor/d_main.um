@@ -732,7 +732,7 @@ fn createEditorEntities(): EditorEntities {
 
 fn editorLoadWorld(editor: ^Editor, portal: str): bool {
   d_dbg.logt("ed: loading world")
-  if data, err := misc.readall(portalToPath(portal)); err.code == 0 {
+  if data, err := d_util.readFileStr(portalToPath(portal)); err.code == 0 {
     worldData := d_world_data.load(editor.world, data)
 
     editor.world = worldData.world
@@ -1732,7 +1732,7 @@ fn editorLoadSession(editor: ^Editor, session: d_session.Session) {
 
 fn editorMain*(enabled: bool) {
   {
-    _, err := misc.readall("data/misc/CheckFS")
+    _, err := d_util.readFileStr("data/misc/CheckFS")
     d_global.caseSensetiveFS = err.code != 0
   }
 
@@ -1773,7 +1773,7 @@ fn editorMain*(enabled: bool) {
   editor ^= editorInit(editorResources)
   editor.enabled = true
 
-  if sessionFile, err := misc.readall("user/session.csv"); err.code == 0 {
+  if sessionFile, err := d_util.readFileStr("user/session.csv"); err.code == 0 {
     editorLoadSession(editor, d_session.load(sessionFile))
   } else {
     loadPortal(editor, "test3")

@@ -7,17 +7,17 @@ import (
 
 fn init*() {
   d_test.isUnitTest(true)
-  lf, err1 := misc.readall(d_test.pfx()+"local.txt")
+  lf, err1 := std.freadall(d_test.pfx()+"local.txt")
   std.exitif(err1)
 
-  gf, err2 := misc.readall("data/misc/global.txt")
+  gf, err2 := std.freadall("data/misc/global.txt")
   std.exitif(err2)
   
-  if lf != "I'm a local file!\n" {
+  if str(lf) != "I'm a local file!\n" {
     exit(551, "Invalid local file")
   }
   
-  if gf != "I'm a global file!\n" {
+  if str(gf) != "I'm a global file!\n" {
     exit(551, "Invalid global file")
   }
 
