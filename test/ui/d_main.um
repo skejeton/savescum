@@ -21,12 +21,12 @@ fn init*() {
 
   window.onFrame.register({
     objects := []^d_layout.Object{
-      &d_layout.Object{{666+width, 400}, 5, {}},
-      &d_layout.Object{{412, 666}, 10+width, {&d_layout.Object{{200, 300}, 20, {}}, &d_layout.Object{{10, 40}, 5, {}}}},
-      &d_layout.Object{{200, 200}, -10, {}}
+      &d_layout.Object{.row, {666+width, 400}, 5, {}},
+      &d_layout.Object{.column, {412, 666}, 10+width, {&d_layout.Object{.row, {200, 300}, 20, {}}, &d_layout.Object{.row, {10, 40}, 5, {}}}},
+      &d_layout.Object{.row, {200, 200}, -10, {}}
     }
 
-    resolved := d_layout.resolve(objects, .row)
+    resolved := d_layout.resolve(objects)
 
     if len(toollist.tools) != len(resolved) {
       toollist.tools = resolved
