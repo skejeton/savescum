@@ -29,8 +29,6 @@ fn (a: ^ActStatus) update*(toollist: ^ToolList, v: ActViaMouse) {
   a.hover = null
   a.press = null
 
-  var next : ^Tool = null
-
   if v.pressing == false {
     a.active = null
   } else {
@@ -51,6 +49,18 @@ fn (a: ^ActStatus) update*(toollist: ^ToolList, v: ActViaMouse) {
     a.active = a.press
   } else {
     a.focus = a.active
+  }
+
+  if v.tabbed {
+    focusIndex := 0
+
+    for i, tool^ in toollist.tools {
+      if a.focus == tool {
+        focusIndex = i+1
+      }
+    }
+
+    a.focus = &toollist.tools[focusIndex%len(toollist.tools)]
   }
 }
 
