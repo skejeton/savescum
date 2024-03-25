@@ -39,4 +39,3 @@ fn iRect*(s, t: rect.Rect, f: real): rect.Rect {
   s.h += (t.h-s.h)*f
   return s
 }
-

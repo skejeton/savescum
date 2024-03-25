@@ -20,15 +20,15 @@ fn init*() {
   window.setup("UI test", 1920, 1080)
 
   window.onFrame.register({
-    objects := []d_layout.Object{
-      {{666+width, 400}, 5},
-      {{412, 666}, 10+width},
-      {{200, 200}, -10}
+    objects := []^d_layout.Object{
+      &d_layout.Object{{666+width, 400}, 5, {}},
+      &d_layout.Object{{412, 666}, 10+width, {&d_layout.Object{{200, 300}, 20, {}}, &d_layout.Object{{10, 40}, 5, {}}}},
+      &d_layout.Object{{200, 200}, -10, {}}
     }
 
     resolved := d_layout.resolve(objects, .row)
 
-    if len(toollist.tools) != len(objects) {
+    if len(toollist.tools) != len(resolved) {
       toollist.tools = resolved
     } else {
       for i, tool^ in toollist.tools {
