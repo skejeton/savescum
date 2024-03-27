@@ -20,10 +20,10 @@ fn init*() {
   window.setup("UI test", 1920, 1080)
 
   window.onFrame.register({
-    objects := []^d_layout.Object{
-      &d_layout.Object{.row, {666+width, 400}, 5, {}},
-      &d_layout.Object{.column, {412, 666}, 10+width, {&d_layout.Object{.row, {200, 300}, 20, {}}, &d_layout.Object{.row, {10, 40}, 5, {}}}},
-      &d_layout.Object{.row, {200, 200}, -10, {}}
+    objects := []d_layout.Object{
+      {.row, {666+width, 400}, 5, {}},
+      {.column, {412, 666}, 10+width, {{.row, {200, 300}, 20, {}}, {.row, {10, 40}, 5, {}}}},
+      {.row, {200, 200}, -10, {}}
     }
 
     resolved := d_layout.resolve(objects)

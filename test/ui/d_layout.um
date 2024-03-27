@@ -13,10 +13,10 @@ type Object* = struct {
   direction: Direction
   size: th.Vf2
   margin: real
-  children: []^Object
+  children: []Object
 }
 
-fn resolve*(objects: []^Object, p: th.Vf2 = {0.0, 0.0}): []d_act.Tool {
+fn resolve*(objects: []Object, p: th.Vf2 = {0.0, 0.0}): []d_act.Tool {
   var tools: []d_act.Tool
 
   for i, o in objects {
