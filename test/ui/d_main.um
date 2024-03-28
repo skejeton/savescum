@@ -1,10 +1,8 @@
 import (
   "window.um"
   "canvas.um"
-  "rect.um"
   "th.um"
   "input.um"
-  "../../src/d_util.um"
   "d_act.um"
   "d_layout.um"
 )
