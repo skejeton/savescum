@@ -6,7 +6,6 @@ import (
   "input.um"
   "canvas.um"
   "utf8.um"
-  "misc/d_strings.um"
   th_font = "font.um"
 )
 
@@ -43,14 +42,16 @@ fn writeFileStr*(path: str, dataStr: str): std.Err {
 }
 
 fn drawRectLines*(color: uint32, r: rect.Rect, thicc: real = 3.0) {
+  t2 := thicc/2
+
   // top
-  canvas.drawLine(color, th.Vf2{r.x, r.y}, th.Vf2{r.x+r.w, r.y}, thicc)
+  canvas.drawLine(color, th.Vf2{r.x-t2, r.y}, th.Vf2{r.x+r.w+t2, r.y}, thicc)
   // bottom
-  canvas.drawLine(color, th.Vf2{r.x, r.y+r.h}, th.Vf2{r.x+r.w, r.y+r.h}, thicc)
+  canvas.drawLine(color, th.Vf2{r.x-t2, r.y+r.h}, th.Vf2{r.x+r.w+t2, r.y+r.h}, thicc)
   // left
-  canvas.drawLine(color, th.Vf2{r.x, r.y}, th.Vf2{r.x, r.y+r.h}, thicc)
+  canvas.drawLine(color, th.Vf2{r.x, r.y-t2}, th.Vf2{r.x, r.y+r.h+t2}, thicc)
   // right
-  canvas.drawLine(color, th.Vf2{r.x+r.w, r.y}, th.Vf2{r.x+r.w, r.y+r.h}, thicc)
+  canvas.drawLine(color, th.Vf2{r.x+r.w, r.y-t2}, th.Vf2{r.x+r.w, r.y+r.h+t2}, thicc)
 }
 
 fn rectChopRight*(r: ^rect.Rect, by: int): rect.Rect {
@@ -248,7 +249,7 @@ fn clamp*(a, b, c: real): real {
 
 fn isprint*(c: uint32): bool {
   // ASCII 0..31 (inclusive), are control characters
-  // ASCII 125 is a control character (DEL)
+  // ASCII 127 is a control character (DEL)
   // we want to skip these 
   return c >= 32 && c != 127
 }
