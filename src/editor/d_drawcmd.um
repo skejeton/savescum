@@ -10,7 +10,6 @@ import (
   "font.um"
   "canvas.um"
   "../d_util.um"
-  "../d_assert.um"
 )
 
 
@@ -118,7 +117,7 @@ fn (ctx: ^DrawContext) flush*() {
         case .endScissor:
           canvas.endScissor()
           scissorCounter -= 1
-          d_assert.assert(scissorCounter >= 0, "Scissor mismatch.")
+          std.assert(scissorCounter >= 0, "Scissor mismatch.")
         case .custom:
           command.custom.draw(DrawProperties{})
       }
@@ -126,7 +125,7 @@ fn (ctx: ^DrawContext) flush*() {
   }
 
   if scissorCounter != 0 {
-    d_assert.assert(false, "Scissor mismatch.")
+    std.assert(false, "Scissor mismatch.")
   }
 
   ctx ^= init()
@@ -190,7 +189,7 @@ fn (ctx: ^DrawContext) beginScissorRect*(r: rect.Rect) {
 
 fn (ctx: ^DrawContext) endScissor*() {
   if len(ctx.scissorRectStack) == 0 {
-    d_assert.assert(false, "Mismatched beginScissor/endScissor")
+    std.assert(false, "Mismatched beginScissor/endScissor")
   }
 
   ctx.scissorRectStack = delete(ctx.scissorRectStack, len(ctx.scissorRectStack)-1)

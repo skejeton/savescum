@@ -3,7 +3,6 @@ import (
   "../d_mouseinput.um"
   "../editor/d_drawcmd.um"
   "../d_util.um"
-  "../d_assert.um"
   "rect.um"
 )
 
@@ -150,7 +149,7 @@ fn initInputSinkSet*(): InputSink {
 
 fn (core: ^Core) endTool*(): Events {
   if core.currentTool.parent == null {
-    d_assert.assert(false, "Parent node is null, beginTool/endTool mismatched!")
+    std.assert(false, "Parent node is null, beginTool/endTool mismatched!")
   }
 
   mask := InputSink{}
@@ -193,7 +192,7 @@ fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: Even
   e := int(event)
 
   if e < 0 || e >= int(EventMouse._count) {
-    d_assert.assert(false, sprintf("Invalid event id: %d", e))
+    std.assert(false, sprintf("Invalid event id: %d", e))
   }
 
   // This event is masked so we can't process it.
@@ -233,14 +232,14 @@ fn (events: ^Events) queryMouse*(btn: int, which: int): bool {
     case 0: mouseButton = events.mouseState.lmb
     case 1: mouseButton = events.mouseState.mmb
     case 2: mouseButton = events.mouseState.rmb
-    default: d_assert.assert(false, sprintf("Invalid mouse button index %d", btn))
+    default: std.assert(false, sprintf("Invalid mouse button index %d", btn))
   }
 
   switch which {
     case d_mouseinput.down: return mouseButton.isDown
     case d_mouseinput.pressed: return mouseButton.isPressed
     case d_mouseinput.released: return mouseButton.isReleased
-    default: d_assert.assert(false, sprintf("Invalid mouse button property index %d", which))
+    default: std.assert(false, sprintf("Invalid mouse button property index %d", which))
   }
   return false;
 

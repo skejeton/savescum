@@ -5,7 +5,6 @@ import (
   "std.um"
   "csv.um"
   "th.um"
-  "d_assert.um"
 )
 
 type (
@@ -81,7 +80,7 @@ fn load*(world: d_world.World, data: str): WorldData {
 
   world.tilemap = [3]map[d_world.ChunkPos]d_world.Chunk{map[d_world.ChunkPos]d_world.Chunk{}, map[d_world.ChunkPos]d_world.Chunk{}, map[d_world.ChunkPos]d_world.Chunk{}}
 
-  d_assert.assert(csvData[0][0] == lastVersion, "Scene version mismatch.")
+  std.assert(csvData[0][0] == lastVersion, "Scene version mismatch.")
 
   row := 1
   entityCount := std.atoi(csvData[1][0])
@@ -103,7 +102,7 @@ fn load*(world: d_world.World, data: str): WorldData {
     layer := std.atoi(csvData[row][2]) + 1
     row += 1
 
-    d_assert.assert(layer >= 0 && layer <= 2, "Bad layer number.")
+    std.assert(layer >= 0 && layer <= 2, "Bad layer number.")
 
     var chunk: d_world.Chunk
     for y := 0; y < d_world.chunkH; y++ {

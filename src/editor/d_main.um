@@ -29,7 +29,6 @@ import (
   "../d_immcursor.um"
   "../d_payload_trigger.um"
   "../ui/d_core.um"
-  "../d_assert.um"
   debug_info = "../debugdraw/d_info.um"
   render_debug_info = "../debugdraw/d_render.um"
 
@@ -308,7 +307,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
     return WindowInfo{}, false
   }
   if editor.currentWindow != "" {
-    d_assert.assert(false, "BeginWindow is called before EndWindow")
+    std.assert(false, "BeginWindow is called before EndWindow")
   }
 
   editor.currentWindow = title
@@ -380,7 +379,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
 
 fn uiEndWindow(editor: ^Editor) {
   if editor.currentWindow == "" {
-    d_assert.assert(false, "EndWindow has no match with BeginWindow")
+    std.assert(false, "EndWindow has no match with BeginWindow")
   }
 
   title := editor.currentWindow
@@ -1789,7 +1788,7 @@ fn editorMain*(enabled: bool) {
     d_shortcuts.fullscreen()
     
     if input.isPressed(.fn25) {
-      d_assert.assert(false, "The F25 key? What's that?")
+      std.assert(false, "The F25 key? What's that?")
     }
 
     if input.isPressedc('1') {
