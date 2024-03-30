@@ -15,26 +15,26 @@ type Object* = struct {
   children: []Object
 }
 
-fn resolve*(objects: []Object, p: th.Vf2 = {0.0, 0.0}): []d_act.Tool {
+fn resolve*(o: Object, p: th.Vf2 = {0.0, 0.0}): []d_act.Tool {
   var tools: []d_act.Tool
 
-  for i, o in objects {
+  for c in o.children {
     switch o.direction {
     case Direction.row:
       p.x += o.margin
       tools = append(tools, d_act.Tool{{p.x, p.y+o.margin, o.size.x, o.size.y}})
-      tools = append(tools, resolve(o.children, {p.x, p.y+o.margin}))
+      tools = append(tools, resolve(c, {p.x, p.y+o.margin}))
       p.x += o.size.x
       p.x += o.margin
     case Direction.column:
       p.y += o.margin
       tools = append(tools, d_act.Tool{{p.x+o.margin, p.y, o.size.x, o.size.y}})
-      tools = append(tools, resolve(o.children, {p.x+o.margin, p.y}))
+      tools = append(tools, resolve(c, {p.x+o.margin, p.y}))
       p.y += o.size.y
       p.y += o.margin
     }
-
   }
+  
 
   return tools
 }
