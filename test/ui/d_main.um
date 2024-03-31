@@ -1,51 +1,38 @@
 import (
   "window.um"
-  "canvas.um"
-  "th.um"
-  "input.um"
-  "d_act.um"
-  "d_layout.um"
+  "d_ui.um"
+  "../../src/d_mouseinput.um"
 )
 
-actstatus := d_act.ActStatus{}
+var ui: d_ui.Ui
+var x: real
+var y: real
+var mi: d_mouseinput.MouseState
 
-toollist := d_act.ToolList{}
+fn widgetWindow(title: str) {
+  ui.beginTool(title+" (Window)", {200+x, 200+y, 400, 400})
+    ui.beginTool(title+" (Titlebar)", {205+x, 205+y, 390, 40})
+      if (ui.active()) {
+        x += mi.delta.x
+        y += mi.delta.y
+      }
+    ui.endTool()
+    ui.beginTool(title+" (Content)", {205+x, 250+y, 390, 345})
+    ui.endTool()
+  ui.endTool()
+}
 
 fn init*() {
 
   window.setup("UI test", 1920, 1080)
 
+  ui = d_ui.create()
+
   window.onFrame.register({
-    object := d_layout.Object{
-      .row, {0, 0}, 0, {
-        {.row, {666, 400}, 5, {}},
-        {.column, {412, 666}, 10, {{.row, {200, 300}, 20, {}}, {.row, {10, 40}, 5, {}}}},
-        {.row, {200, 200}, -10, {}}
-      }
-    }
+    mi = mi.updated()
 
-    resolved := d_layout.resolve(object)
-
-    if len(toollist.tools) != len(resolved) {
-      toollist.tools = resolved
-    } else {
-      for i, tool^ in toollist.tools {
-        tool.r = resolved[i].r
-      }
-    }
-
-    mouseact := d_act.ActViaMouse{
-      mouse: input.getMousePos(),
-      pressing: input.isPressed(.mouse1),
-      tabbed: input.isPressedRepeat(.tab)
-    }
-
-    actstatus.update(&toollist, mouseact)
-
-    for i, tool in toollist.tools {
-      canvas.drawRect(0x00000044, tool.r)
-    }
-
-    d_act.renderDebugInfo(&actstatus)
+    ui.begin()
+    widgetWindow("Test")
+    ui.end()
   })
 }
