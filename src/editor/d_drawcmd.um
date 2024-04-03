@@ -9,6 +9,7 @@ import (
   "image.um"
   "font.um"
   "canvas.um"
+  "std.um"
   "../d_util.um"
 )
 

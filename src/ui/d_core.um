@@ -3,6 +3,7 @@ import (
   "../d_mouseinput.um"
   "../editor/d_drawcmd.um"
   "../d_util.um"
+  "std.um"
   "rect.um"
 )
 

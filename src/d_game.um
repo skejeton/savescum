@@ -235,12 +235,12 @@ fn playerControl() {
     rumbling = 0.2
     palLand.start()
   }
-  if (input.isPressed(.up) || input.player().isPressed(.a)) && chara.onGround {
+  if (input.isPressed(.up) || input.gamepad().isPressed(.a)) && chara.onGround {
     palJump.start()
     chara.vel.y = -3.65
   }
-  if input.player().id != -1 {
-    stick := input.player().stick(.left)
+  if input.gamepad().id != -1 {
+    stick := input.gamepad().stick(.left)
 
     if stick.x < -0.5 {
       chumDir = 0
@@ -866,7 +866,7 @@ fn canActivateWaterLever(): bool {
 }
 
 fn isActivated(): bool {
-  return input.isJustPressedc(' ') || input.player().isJustPressed(.x)
+  return input.isJustPressedc(' ') || input.gamepad().isJustPressed(.x)
 }
 
 fn update*() {
@@ -901,7 +901,7 @@ fn update*() {
  
   if !lockInput {
     if !noSaveLoad {
-      if input.isJustPressedc('z') || input.player().isJustPressed(.lb) {
+      if input.isJustPressedc('z') || input.gamepad().isJustPressed(.lb) {
         if len(saves) > 0 {
           if !entCheckCollision(&saves[len(saves)-1].ent) {
             loadStateToChar(saves[len(saves)-1])
@@ -910,14 +910,14 @@ fn update*() {
         }
       }
       
-      if input.isJustPressedc('x') || input.player().isJustPressed(.rb) {
+      if input.isJustPressedc('x') || input.gamepad().isJustPressed(.rb) {
         saves = append(saves, getCharState())
       }
     }
     noSaveLoad = false
     insideStatic = false
  
-    if input.isJustPressedc('r') || input.player().isJustPressed(.start) {
+    if input.isJustPressedc('r') || input.gamepad().isJustPressed(.start) {
       reset()
     }
 
@@ -1091,7 +1091,7 @@ fn drawOverlays() {
 
 fn draw*() {
   // RENDER BG //
-  input.player().rumble(rumbling*5, rumbling*5)
+  input.gamepad().rumble(rumbling*5, rumbling*5)
   bgCam := rect.mk(camera.x, camera.y, d_global.screen.w/cameraScale, d_global.screen.h/cameraScale)
   bgCam.x /= 2
   bgCam.y /= 2
