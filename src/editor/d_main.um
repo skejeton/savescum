@@ -42,7 +42,6 @@ import (
   "image.um"
   "canvas.um"
   "input.um"
-  "misc.um"
 
   "utf8.um"
   "std.um"
@@ -1656,13 +1655,13 @@ fn editorPutUi(editor: ^Editor) {
 }
 
 fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources {
-
   editorResources := EditorResources {
     bevelImage: d_resources.loadImage(rl, "data/img/ui_bevelbutton.png", .nearest),
     tilesetImage: d_resources.loadImage(rl, "data/img/ts_sky.png", .linear),
     toolbarIcons: d_resources.loadImage(rl, "data/img/ui_trayicons.png", .linear),
     superHotFire: d_resources.loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
-    mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, .linear)}
+    mainFont: d_resources.loadFont(rl, "data/font/monospace.ttf", 16, .linear)
+  }
  
   return editorResources
 }
@@ -1672,8 +1671,6 @@ fn editorInit(resources: EditorResources): Editor {
   rootNode ^= d_atoms.ToolNode{children: map[str]^d_atoms.ToolNode{}}
 
   tileset := d_tileset.fromImage(resources.tilesetImage, 32, 32, 2)
-  //tileset.setTileProperties(30, {invisible: true})
-  //tileset.setTileProperties(31, {invisible: true})
 
   world := d_world.fromTileset(tileset)
 

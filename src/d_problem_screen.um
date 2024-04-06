@@ -2,7 +2,6 @@ import (
   "d_resources.um"
   "canvas.um"
   "window.um"
-  "rect.um"
   "th.um"
   "input.um"
   th_font = "font.um"

@@ -8,7 +8,6 @@ import (
   "th.um"
   "canvas.um"
   "input.um"
-  "signal.um"
 )
 
 var lastMousePos: th.Vf2
@@ -30,7 +29,7 @@ fn init*() {
   tileset = image.load("data/img/ts_sky.png").item0
   tileset.setfilter(0)
 
-  window.onFrame.register(signal.Callback{
+  window.onFrame.register({
     window.setViewport(screen.getDims())
 
     targetScale = targetScale.addf(input.getMouseScroll().y)

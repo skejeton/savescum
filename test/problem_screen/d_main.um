@@ -3,7 +3,6 @@ import (
   "../../src/d_resources.um"
   "../../src/d_test.um"
   "window.um"
-  "signal.um"
 )
 
 fn generateResourceLoadingErrors(): ^d_resources.ResourceLoader {

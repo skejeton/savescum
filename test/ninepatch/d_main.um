@@ -5,7 +5,6 @@ import (
   "rect.um"
   "image.um"
   "../../src/d_test.um"
-  "signal.um"
 )
 
 var (

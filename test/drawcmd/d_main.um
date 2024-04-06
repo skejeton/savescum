@@ -9,7 +9,6 @@ import (
   "../../src/d_test.um"
   "../../src/d_util.um"
   "../../src/editor/d_drawcmd.um"
-  "signal.um"
 )
 
 type OutlineRectCmd = struct {
@@ -48,7 +47,7 @@ fn init*() {
     colors[i][1] = th_color.hsv(i/7.0, 1.0, 0.5)
   }
 
-  window.onFrame.register(signal.Callback{
+  window.onFrame.register({
     std.srand(th.time/200)
     for k := 0; k < 7; k++ {
       for j := 0; j < 7; j++ {
