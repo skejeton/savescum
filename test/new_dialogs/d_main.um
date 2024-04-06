@@ -147,7 +147,7 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
       d_draw_dialog.drawAppearingText(word, font, pos.add(th.Vf2{0, -scrollY}), colour)
     } else if obj := ^ForeignObject(words[i]); obj != null {
       pos := layout.push(obj.size)
-      canvas.drawRect(colour, rect.mk(pos.x, pos.y, obj.size.x, obj.size.y)) 
+      canvas.drawRect(colour, {pos.x, pos.y, obj.size.x, obj.size.y}) 
     }
   }
 
@@ -156,7 +156,7 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
     cursorSize := blockCursorSizeFromFont(font)
     cursorPos := layout.push(cursorSize).add(boundingBox.getPos()).add(th.Vf2{0, -scrollY})
     pulse := sin(th.time/300.0)
-    rectangle := d_util.rectShrink(rect.mk(cursorPos.x, cursorPos.y, cursorSize.x, cursorSize.y), pulse*2)
+    rectangle := d_util.rectShrink({cursorPos.x, cursorPos.y, cursorSize.x, cursorSize.y}, pulse*2)
 
     canvas.drawRect(th_color.alpha(th.white, (pulse/2.0+1.0)/2.0+0.5), rectangle)
   }
@@ -235,7 +235,7 @@ fn booleanProperty(at: th.Vf2, name: str, isset: ^bool) {
       isset^ = !isset^
     }
     textSize := canvas.textSize(name, 2)
-    canvas.drawRect(th.black, rect.mk(at.x, at.y+20, textSize.x, textSize.y))
+    canvas.drawRect(th.black, {at.x, at.y+20, textSize.x, textSize.y})
     canvas.drawText(name, at.add(th.Vf2{0, 20}), th.white, 2)
   }
 }
@@ -262,11 +262,11 @@ fn init*() {
   window.setup("New dialogs", 800, 600)
 
   font = th_font.load(d_test.pfx()+"FuzzyBubbles-Bold.ttf", 24).item0
-  screen = rect.mk(0, 0, 800, 600)
+  screen = {0, 0, 800, 600}
   sampleText = loadPoemFromFile(d_test.pfx()+"poems.txt", 0)
 
   boundingBoxContactPoint = ContactPoint{}
-  boundingBox = rect.mk(30, 30, 400, 300)
+  boundingBox = {30, 30, 400, 300}
   mouseInput = d_mouseinput.MouseState{}
 
   typingTime = 0.0

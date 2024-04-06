@@ -144,7 +144,7 @@ var (
 )
 
 fn getCameraRect(): rect.Rect {
-  return rect.mk(chara.rect.x+chara.rect.w/2-d_global.screen.w/2, chara.rect.y+chara.rect.h/2-d_global.screen.h/2, d_global.screen.w, d_global.screen.h)
+  return {chara.rect.x+chara.rect.w/2-d_global.screen.w/2, chara.rect.y+chara.rect.h/2-d_global.screen.h/2, d_global.screen.w, d_global.screen.h}
 }
 
 fn findGuideInPoint(p: th.Vf2): rect.Rect {
@@ -734,7 +734,7 @@ const (
 
 fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   at := chum.ent.rect.getPos()
-  bodyRect := rect.mk(chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h)
+  bodyRect := rect.Rect{chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h}
   offs := 0.0
   if chum.dir == 0 {
     offs -= 24.5
@@ -742,8 +742,8 @@ fn drawChumState(state: int, chum: ChumState, tint: uint32) {
     offs -= 12.5
   }
   
-  chumDestRect := cameraOffsetRect(rect.mk(at.x+offs, at.y-29, chumFaceRect.w/2, chumFaceRect.h/2))
-  chumMouthDestRect := cameraOffsetRect(rect.mk(at.x+offs+41-21, at.y-29+52-22.25, 22/2, -7.05/2))
+  chumDestRect := cameraOffsetRect({at.x+offs, at.y-29, chumFaceRect.w/2, chumFaceRect.h/2})
+  chumMouthDestRect := cameraOffsetRect({at.x+offs+41-21, at.y-29+52-22.25, 22/2, -7.05/2})
 
   if chum.dir == 0 {
     // Mirror.
@@ -1092,7 +1092,7 @@ fn drawOverlays() {
 fn draw*() {
   // RENDER BG //
   input.gamepad().rumble(rumbling*5, rumbling*5)
-  bgCam := rect.mk(camera.x, camera.y, d_global.screen.w/cameraScale, d_global.screen.h/cameraScale)
+  bgCam := rect.Rect{camera.x, camera.y, d_global.screen.w/cameraScale, d_global.screen.h/cameraScale}
   bgCam.x /= 2
   bgCam.y /= 2
   rumbling = d_rerp.iReal(rumbling, 0, th.delta/100.0)

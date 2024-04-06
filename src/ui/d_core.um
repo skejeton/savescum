@@ -166,7 +166,7 @@ fn (core: ^Core) endTool*(): Events {
 
 fn (core: ^Core) getProperty*(name: str, def: interface{}): interface{} {
   // Create a dummy tool where we'll store the data.
-  tool := core.beginTool(name, rect.mk(-100000, -100000, 0, 0))
+  tool := core.beginTool(name, {-100000, -100000, 0, 0})
   core.endTool()
 
   if !valid(tool.userdata) {
@@ -178,7 +178,7 @@ fn (core: ^Core) getProperty*(name: str, def: interface{}): interface{} {
 
 fn (core: ^Core) getPropertyLazy*(name: str, getter: fn (): any): any {
   // Create a dummy tool where we'll store the data.
-  tool := core.beginTool(name, rect.mk(-100000, -100000, 0, 0))
+  tool := core.beginTool(name, {-100000, -100000, 0, 0})
   core.endTool()
 
   if !valid(tool.userdata) {

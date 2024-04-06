@@ -13,7 +13,7 @@ fn init*() {
   d_test.isUnitTest(false)
   
   window.setup("title", 640, 480)
-  screen = rect.mk(0, 0, 640, 480)
+  screen = {0, 0, 640, 480}
   tileset = d_tileset.fromImage(image.load(d_test.pfx()+"medium.png").item0, 32, 32, 1)
   ts = []T{T{0, 0}, T{2, 2}, T{1, 0}, T{5, 5}, T{0, 4}}
   

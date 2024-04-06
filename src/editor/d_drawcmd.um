@@ -167,7 +167,7 @@ fn mergeScissorRects(child, parent: rect.Rect): rect.Rect {
     //  so it shouldn't be visible. 
     //
     // In this case I return a scissor rect that will remove all rendering for once.
-    return rect.mk(0, 0, 0, 0)
+    return {0, 0, 0, 0}
   }
 
   // Otherwise return the intersection rect.

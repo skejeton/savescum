@@ -70,7 +70,7 @@ fn allocBlock*(pass: ^RenderPass, block: str): rect.Rect {
 fn renderBlock*(pass: ^RenderPass, vc: ^VisualConsole, r: rect.Rect, block: str, bg, fg: uint32) {
   pos := r.getPos().add(th.Vf2{0, vc.visualScroll})
   if pos.y > pass.rect.y-r.h && pos.y < pass.rect.y+pass.rect.h {
-    canvas.drawRect(bg, rect.mk(pos.x, pos.y, r.w, r.h))
+    canvas.drawRect(bg, {pos.x, pos.y, r.w, r.h})
     pass.font.draw(block, pos, fg)
   }
 }

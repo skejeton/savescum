@@ -325,20 +325,20 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
     drawBackdropRect(editor, windowRect^)
 
     buttonSize := th.Vf2{titlebarHeight, titlebarHeight}
-    buttonRect := rect.mk(position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y)
+    buttonRect := rect.Rect{position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y}
 
     {
       if (putButtonBase(editor, buttonRect, "Close").isReleased) {
         editor.wm.setWindowVisible(title, false)
       }
   
-      editor.ui.ctx.drawRect(th.black, rect.mk(position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-1, buttonSize.x-10, 2))
+      editor.ui.ctx.drawRect(th.black, {position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-1, buttonSize.x-10, 2})
       position.x += buttonSize.x + padding
     }
     
     {
       handleSize := th.Vf2{windowRect.w - position.x - padding, titlebarHeight}
-      titlebarRect = rect.mk(position.x+windowRect.x, position.y+windowRect.y, handleSize.x-1, handleSize.y)
+      titlebarRect = {position.x+windowRect.x, position.y+windowRect.y, handleSize.x-1, handleSize.y}
 
       // Titlebar tool.
       {
@@ -367,7 +367,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
     position.y += titlebarHeight
 
     contentSize := th.Vf2{windowRect.w - position.x - padding, windowRect.h - position.y - padding}
-    contentRect = rect.mk(position.x+windowRect.x, position.y+windowRect.y, contentSize.x-1, contentSize.y-1)
+    contentRect = {position.x+windowRect.x, position.y+windowRect.y, contentSize.x-1, contentSize.y-1}
 
     editor.ui.beginTool("Body", contentRect)
   }
@@ -385,7 +385,7 @@ fn uiEndWindow(editor: ^Editor) {
   title := editor.currentWindow
   movement := th.Vf2{0, 0} // Same as movement but changes the window size
   squishing := th.Vf2{0, 0} // Same as movement but changes the window size
-  windowRect := editor.wm.getWindowRect(title, rect.mk(0, 0, 0, 0))
+  windowRect := editor.wm.getWindowRect(title, {0, 0, 0, 0})
 
   // Finish ui tools.
   {
@@ -399,7 +399,7 @@ fn uiEndWindow(editor: ^Editor) {
       }
 
       gripSize := th.Vf2{10, 10}
-      gripRect := rect.mk(windowRect.x+windowRect.w-gripSize.x, windowRect.y+windowRect.h-gripSize.y, gripSize.x, gripSize.y)
+      gripRect := rect.Rect{windowRect.x+windowRect.w-gripSize.x, windowRect.y+windowRect.h-gripSize.y, gripSize.x, gripSize.y}
 
       {
         editor.ui.beginTool("Grip", gripRect)
@@ -492,7 +492,7 @@ fn (ge: ^EditorGrid) put(editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
 
     if editor.ui.isCurrentToolActive() {
       p1, p2 := grid.toScreen(highlightedTile), grid.toScreen(highlightedTile.addf(1))
-      editor.ui.ctx.drawRect(0xFFFFFF33, rect.mk(p1.x, p1.y, p2.x-p1.x, p2.y-p1.y))
+      editor.ui.ctx.drawRect(0xFFFFFF33, {p1.x, p1.y, p2.x-p1.x, p2.y-p1.y})
       // Draw highlighted tile
     }
 
@@ -581,7 +581,7 @@ fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect.Rect, draw
   firstLine := getFirstLineOfBuffer(&edit.buffer)
   precursor := d_strings.uniSlice(firstLine, 0, edit.cursor.column)
   precursorMeasured := editor.resources.mainFont.measure(precursor)
-  cursorRect := rect.mk(precursorMeasured.x, 0, 1, precursorMeasured.y)
+  cursorRect := rect.Rect{precursorMeasured.x, 0, 1, precursorMeasured.y}
  
   // Make sure the cursor is visible on the screen
   // NOTE: Maybe I shouldn't modify the editor state while drawing eh?
@@ -650,7 +650,7 @@ fn putTextEditOneLine(editor: ^Editor, r: rect.Rect, name: str, value: ^str): bo
       editor.ui.ctx.drawRect(th.white, d_util.rectShrink(r, 2))
 
       fontHeight := editor.resources.mainFont.measure(" ").y
-      textRect := rect.mk(r.x+5, r.y+(r.h-fontHeight)/2.0, r.w-10, fontHeight)
+      textRect := rect.Rect{r.x+5, r.y+(r.h-fontHeight)/2.0, r.w-10, fontHeight}
       drawSingleLineEdit(editor, edit, textRect, editor.ui.isCurrentToolFocused())
     }
 
@@ -700,7 +700,7 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect.Rect, contentSize: th.Vf2): (
   if editor.showDebugInfo {
     // Show where the content ends.
     editor.ui.ctx.moveLayer(1)
-    editor.ui.ctx.drawRect(th.magenta, rect.mk(areaRect.x, areaRect.y+contentSize.y, contentSize.x, 1))
+    editor.ui.ctx.drawRect(th.magenta, {areaRect.x, areaRect.y+contentSize.y, contentSize.x, 1})
     editor.ui.ctx.moveLayer(-1)
   }
 
@@ -816,7 +816,7 @@ fn editorPutToolbar(editor: ^Editor) {
     x := 0
     y := rectangle.y - 32
 
-    d_util.imageCropRect(editor.resources.superHotFire, rect.mk(0, (th.time/100%3)*32, 32, 32))
+    d_util.imageCropRect(editor.resources.superHotFire, {0, (th.time/100%3)*32, 32, 32})
 
     for i := 0; i < d_global.screen.w/32+1; i++ {
       editor.ui.ctx.drawImage(editor.resources.superHotFire, th.Transform{p: th.Vf2{x+i*32, y}, s: th.Vf2{1, 1}})
@@ -829,7 +829,7 @@ fn editorPutToolbar(editor: ^Editor) {
       drawBackdropRect(editor, rectangle, editor.dirty ? 0xFF0000FF : 0xFFFFFFFF)
     }
 
-    buttonRectangle := rect.mk(rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2)
+    buttonRectangle := rect.Rect{rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2}
 
     if putToolbarIconButton(editor, "Play", &buttonRectangle, 1, 1, editor.isPlaying) {
       editorToggleGame(editor)
@@ -850,12 +850,12 @@ fn editorPutToolbar(editor: ^Editor) {
         position.y -= rectangle.h
         
         position.x -= 80
-        if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Save").isReleased) {
+        if (putSimpleButton(editor, {position.x, position.y, 80, rectangle.h}, "Save").isReleased) {
           editorSaveWorld(editor)
         }
 
         position.x -= 80
-        if (putSimpleButton(editor, rect.mk(position.x, position.y, 80, rectangle.h), "Load").isReleased) {
+        if (putSimpleButton(editor, {position.x, position.y, 80, rectangle.h}, "Load").isReleased) {
           editorLoadWorld(editor, editor.currentPortal)
         }
       }
@@ -952,7 +952,7 @@ fn putPlayerPlacer(editor: ^Editor) {
       putLabelY(editor, sprintf("x %d y %d", trunc(playerPos.x), trunc(playerPos.y)), th.black, &position)
       position.y += 10
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Relocate", editor.isRelocatingPlayer).isReleased) {
+      if (putSimpleButton(editor, {position.x, position.y, contentRect.w, 30}, "Relocate", editor.isRelocatingPlayer).isReleased) {
         editor.isRelocatingPlayer = !editor.isRelocatingPlayer
       }
       position.y += 30+10
@@ -989,7 +989,7 @@ fn putTilePicker(editor: ^Editor) {
         selectedTilePos := editor.tilesetGrid.mapPos(editor.tileSelected)
         
         editor.ui.ctx.beginScissorRect(contentRect)
-        editor.ui.ctx.drawRectLines(th_color.alpha(th.green, 0.6), rect.mk(selectedTilePos.x, selectedTilePos.y, 32, 32), 1)
+        editor.ui.ctx.drawRectLines(th_color.alpha(th.green, 0.6), {selectedTilePos.x, selectedTilePos.y, 32, 32}, 1)
         editor.ui.ctx.endScissor()
       }
       editor.ui.ctx.moveLayer(-1)
@@ -1193,22 +1193,22 @@ fn putEntityEditor(editor: ^Editor) {
   entitySelected := getEntitySelected(&editor.entities)
 
   if entitySelected != null {
-    widget_window(editor, "Entity Editor", rect.mk(595, 210, 200, 220), |editor, entitySelected| {
+    widget_window(editor, "Entity Editor", {595, 210, 200, 220}, |editor, entitySelected| {
       contentRect := d_util.rectShrink(winfo.contentRect, 5)
 
       editor.ui.ctx.beginScissorRect(contentRect)
       position := contentRect.getPos()
       putLabelY(editor, "Name", th.black, &position)
-      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Name", &entitySelected.name) || editor.dirty
+      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 30}, "Name", &entitySelected.name) || editor.dirty
       position.y += 30
       putLabelY(editor, "Id", th.black, &position)
-      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Id", &entitySelected.id) || editor.dirty
+      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 30}, "Id", &entitySelected.id) || editor.dirty
       position.y += 30
       putLabelY(editor, "Tags", th.black, &position)
-      editor.dirty = putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Tags", &entitySelected.tags) || editor.dirty
+      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 30}, "Tags", &entitySelected.tags) || editor.dirty
       position.y += 30
       position.y += 10
-      if putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Delete").isReleased {
+      if putSimpleButton(editor, {position.x, position.y, contentRect.w, 30}, "Delete").isReleased {
         removeEntity(&editor.entities, getEntitySelectedIndex(&editor.entities))
         editor.dirty = true
       } 
@@ -1247,7 +1247,7 @@ fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
 
   for i, grip in eightGrips {
     gripPos := r.getDims().mul(grip.position).add(r.getPos())
-    gripRect := rect.mk(gripPos.x-6, gripPos.y-6, 12, 12)
+    gripRect := rect.Rect{gripPos.x-6, gripPos.y-6, 12, 12}
     gripDrawRect := d_util.rectShrink(gripRect, 2)
 
     editor.ui.beginTool(sprintf("Grip%d", i), gripRect)
@@ -1427,15 +1427,15 @@ fn putPortalEditor(editor: ^Editor) {
     contentRect := d_util.rectShrink(winfo.contentRect, 5)
     position := contentRect.getPos()
 
-    putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Portal name", &editor.potentialPortal)
+    putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 30}, "Portal name", &editor.potentialPortal)
 
     position.y += 40
     if input.isPressed(.shift) {
-      if putSimpleButton(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Load").isReleased {
+      if putSimpleButton(editor, {position.x, position.y, contentRect.w, 30}, "Load").isReleased {
         loadPortal(editor, editor.potentialPortal)
       }
     } else {
-      drawButtonInactive(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Hold shift!")
+      drawButtonInactive(editor, {position.x, position.y, contentRect.w, 30}, "Hold shift!")
     }
   })
 }
@@ -1533,7 +1533,7 @@ fn editorPutUi(editor: ^Editor) {
 
     editor.ui.ctx.drawCustom(GameCmd{})
   } else {
-    tool := editor.ui.beginTool("TileEditor", rect.mk(0, 0, d_global.screen.w, d_global.screen.h-38))
+    tool := editor.ui.beginTool("TileEditor", {0, 0, d_global.screen.w, d_global.screen.h-38})
 
     if editor.ui.isCurrentToolActive() {
       if input.isPressed(.ctrl) && input.isJustPressedc('i') {
@@ -1554,44 +1554,44 @@ fn editorPutUi(editor: ^Editor) {
       putWorldEntities(editor)
 
       position := tool.rect.getEnd().subf(padding).subf(elementSize)
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "R/U").isReleased) {
+      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "R/U").isReleased) {
         editor.wm.windows = {}
       }
       position.x -= elementSize
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "> <").isReleased) {
+      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "> <").isReleased) {
         editor.tilemapGrid.panning = th.Vf2{0, 0}
       }
       position.x -= elementSize
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "1:1").isReleased) {
+      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "1:1").isReleased) {
         editor.tilemapGrid.zoomInto(1.0, d_util.rectCenter(editor.tilemapGrid.rect))
       }
       position.x -= elementSize
 
-      if (putRadioButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "BG", editor.tilemapLayer == -1).isReleased) {
+      if (putRadioButton(editor, {position.x, position.y, elementSize, elementSize}, "BG", editor.tilemapLayer == -1).isReleased) {
         editor.tilemapLayer = -1
       }
       position.x -= elementSize
 
-      if (putRadioButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "MG", editor.tilemapLayer == 0).isReleased) {
+      if (putRadioButton(editor, {position.x, position.y, elementSize, elementSize}, "MG", editor.tilemapLayer == 0).isReleased) {
         editor.tilemapLayer = 0
       }
       position.x -= elementSize
 
-      if (putRadioButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "FG", editor.tilemapLayer == 1).isReleased) {
+      if (putRadioButton(editor, {position.x, position.y, elementSize, elementSize}, "FG", editor.tilemapLayer == 1).isReleased) {
         editor.tilemapLayer = 1
       }
       position.x -= elementSize
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "#Layer Select", editor.tilemapShowAllLayers).isReleased) {
+      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "#Layer Select", editor.tilemapShowAllLayers).isReleased) {
         editor.tilemapShowAllLayers = !editor.tilemapShowAllLayers
       }
 
       drawLayerIcon(&editor.ui.ctx, position.add(th.Vf2{1, 5}), editor.tilemapLayer, editor.tilemapShowAllLayers)
       position.x -= elementSize
 
-      if (putSimpleButton(editor, rect.mk(position.x, position.y, elementSize, elementSize), "✋", editor.entityBypass).isReleased) {
+      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "✋", editor.entityBypass).isReleased) {
         editor.entityBypass = !editor.entityBypass
       }
     }
@@ -1736,7 +1736,7 @@ fn editorMain*(enabled: bool) {
     d_global.caseSensetiveFS = err.code != 0
   }
 
-  d_global.screen = rect.mk(0, 0, 800, 600)
+  d_global.screen = {0, 0, 800, 600}
   sf := window.getDpiScaleFactor()
   wsf := sf
   if d_global.skeDpiHack {
@@ -1800,7 +1800,7 @@ fn editorMain*(enabled: bool) {
       editor.showDebugInfo = !editor.showDebugInfo
     }
 
-    d_global.screen = rect.mk(0, 0, window.w/sf, window.h/sf)
+    d_global.screen = rect.Rect{0, 0, window.w/sf, window.h/sf}
     window.setViewport(d_global.screen.getDims())
 
     d_fps.update()

@@ -155,7 +155,7 @@ fn rectVsPoint*(r: rect.Rect, p: th.Vf2): bool {
 // 
 // Returns rectangle shrinked by amount `by` from all left, right, top, bottom sides
 fn rectShrink*(r: rect.Rect, by: real): rect.Rect {
-  return rect.mk(r.x+by, r.y+by, r.w-by*2, r.h-by*2)
+  return {r.x+by, r.y+by, r.w-by*2, r.h-by*2}
 }
 
 // Rect move(
@@ -213,7 +213,7 @@ fn rectCutRight*(r: rect.Rect, by: real): rect.Rect {
 }
 
 fn rectScale*(r: rect.Rect, by: real): rect.Rect {
-  return rect.mk(r.x*by, r.y*by, r.w*by, r.h*by)
+  return {r.x*by, r.y*by, r.w*by, r.h*by}
 }
 
 fn min*(a, b: real): real {

@@ -41,8 +41,8 @@ fn (ts: ^Tileset) setTileProperties*(pos: int, props: TileProperties) {
 }
 
 fn (ts: ^Tileset) getCroppingRect*(x, y: int): rect.Rect {
-  return rect.mk(x*ts.tileSizeX*ts.scale, y*ts.tileSizeY*ts.scale,
-                 ts.tileSizeX*ts.scale, ts.tileSizeY*ts.scale)
+  return {x*ts.tileSizeX*ts.scale, y*ts.tileSizeY*ts.scale,
+          ts.tileSizeX*ts.scale, ts.tileSizeY*ts.scale}
 }
 
 fn (ts: ^Tileset) getCroppingRectId*(id: int): rect.Rect {

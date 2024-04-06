@@ -116,7 +116,7 @@ fn collectChunkRenderTiles(world: ^World, chunk: ^Chunk, offset: th.Vf2, pan: th
   offset = offset.mulf(scale).add(pan)
   tileSize := getTileSizeInPixels(world).mulf(scale)
   chunkSize := tileSize.mul(th.Vf2{chunkW, chunkH})
-  chunkRect := rect.mk(offset.x, offset.y, chunkSize.x, chunkSize.y)
+  chunkRect := rect.Rect{offset.x, offset.y, chunkSize.x, chunkSize.y}
 
   intersectionRect := d_util.rectUnion(chunkRect, d_global.screen)
 
@@ -136,7 +136,7 @@ fn collectChunkRenderTiles(world: ^World, chunk: ^Chunk, offset: th.Vf2, pan: th
         tile := chunk[cx][cy]
         
         pos := th.Vf2{cx*tileSize.x+offset.x, cy*tileSize.y+offset.y}
-        renderTiles = append(renderTiles, RenderTile{rect.mk(pos.x, pos.y, tileSize.x, tileSize.y), tile})
+        renderTiles = append(renderTiles, RenderTile{{pos.x, pos.y, tileSize.x, tileSize.y}, tile})
       }
     }
   }

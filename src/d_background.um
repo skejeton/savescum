@@ -118,7 +118,7 @@ fn drawJazz*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
 
 fn drawCave*(screen: rect.Rect, position: th.Vf2, scale: th.Vf2) {
   tileSize := imgRocks.getDims()
-  scr := rect.mk(position.x, position.y, screen.w/scale.x, screen.h/scale.y)
+  scr := rect.Rect{position.x, position.y, screen.w/scale.x, screen.h/scale.y}
   tileRepeat := d_partition.calculateTileSpanOnScreen(tileSize, scr)
 
   for x := 0; x < tileRepeat.w; x++ {
