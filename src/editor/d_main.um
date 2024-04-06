@@ -49,12 +49,6 @@ import (
 )
 
 type (
-  EditorGrid = struct {
-    rect: rect.Rect
-    scaling: real
-    panning: th.Vf2
-  }
-
   ButtonState = struct {
     isOver: bool
     isDown: bool
@@ -103,8 +97,8 @@ type (
     resources: EditorResources
 
     // Editors
-    tilemapGrid: EditorGrid
-    tilesetGrid: EditorGrid
+    tilemapGrid: d_grid.Grid
+    tilesetGrid: d_grid.Grid
     tilemapLayer: int
     tilemapShowAllLayers: bool
     tileSelected: th.Vf2
@@ -181,7 +175,7 @@ fn drawButtonInactive(editor: ^Editor, r: rect.Rect, text: str, color: uint32 = 
     d_immcursor.setCursor(.no)
   }
   events := editor.ui.endTool()
-  events.queryMouse(0, d_mouseinput.pressed)
+  events.queryMouse(.left, d_mouseinput.pressed)
   text = d_strings.splitBy(text, '#')[0]
   editor.ui.ctx.drawRect(color, r)
   editor.ui.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), 0x000000FF)
@@ -196,9 +190,9 @@ fn putButton(editor: ^Editor, r: rect.Rect, name: str): ButtonState {
 
   if (toolState.active) {
     buttonState.isOver = true
-    buttonState.isDown = events.queryMouse(0, d_mouseinput.down) || events.queryMouse(0, d_mouseinput.released)
-    buttonState.isPressed = events.queryMouse(0, d_mouseinput.pressed)
-    buttonState.isReleased = events.queryMouse(0, d_mouseinput.released) && toolState.hovered
+    buttonState.isDown = events.queryMouse(.left, d_mouseinput.down) || events.queryMouse(.left, d_mouseinput.released)
+    buttonState.isPressed = events.queryMouse(.left, d_mouseinput.pressed)
+    buttonState.isReleased = events.queryMouse(.left, d_mouseinput.released) && toolState.hovered
     
     d_immcursor.setCursor(.finger)
   }
@@ -292,10 +286,10 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect.Rect): (WindowInfo, bool) 
         editor.ui.beginTool("Titlebar", titlebarRect)
         events := editor.ui.endTool()
 
-        if (events.queryMouse(0, d_mouseinput.pressed)) {
+        if (events.queryMouse(.left, d_mouseinput.pressed)) {
           editor.wm.putWindowOnFront(title)
         }
-        if (events.queryMouse(0, d_mouseinput.down)) {
+        if (events.queryMouse(.left, d_mouseinput.down)) {
           movement = events.mouseState.delta
         }
       }
@@ -338,10 +332,10 @@ fn uiEndWindow(editor: ^Editor) {
   {
       events := editor.ui.endTool()
 
-      if (events.queryMouse(0, d_mouseinput.pressed)) {
+      if (events.queryMouse(.left, d_mouseinput.pressed)) {
         editor.wm.putWindowOnFront(title)
       }
-      if (events.queryMouse(0, d_mouseinput.down)) {
+      if (events.queryMouse(.left, d_mouseinput.down)) {
         movement = events.mouseState.delta
       }
 
@@ -355,7 +349,7 @@ fn uiEndWindow(editor: ^Editor) {
         }
         events := editor.ui.endTool()
         
-        if events.queryMouse(0, d_mouseinput.down) {
+        if events.queryMouse(.left, d_mouseinput.down) {
           squishing = editor.ui.mouseState.delta
         }
       }
@@ -384,18 +378,6 @@ fn widget_window(editor: ^Editor, title: str, rect: rect.Rect, handler: fn (winf
   }
 }
 
-fn makeGrid(ge: ^EditorGrid): d_grid.Grid {
-  return d_grid.Grid{p: ge.panning.add(ge.rect.getDims().divf(2*ge.scaling)).divf(32.0), s: th.Vf2{ge.scaling*32, ge.scaling*32}, bb: ge.rect}
-}
-
-fn (ge: ^EditorGrid) mapGrid(pos: th.Vf2): th.Vf2 {
-  return makeGrid(ge).toGrid(pos).mulf(32)
-}
-
-fn (ge: ^EditorGrid) mapPos(pos: th.Vf2): th.Vf2 {
-  return makeGrid(ge).toScreen(pos)
-}
-
 type DrawGridRenderGuideCommand = struct {
   guide: d_grid.RenderGuide
   color: uint32
@@ -406,35 +388,23 @@ fn (cmd: ^DrawGridRenderGuideCommand) draw(_: d_drawcmd.DrawProperties) {
   d_grid.drawRenderGuide(cmd.guide, cmd.color, cmd.thickness)
 }
 
-fn (ge: ^EditorGrid) zoomInto(newScale: real, point: th.Vf2) {
-  start := ge.mapGrid(point)
-  ge.scaling = newScale
-  end := ge.mapGrid(point)
+fn updateZoom(init: real, plus: real): th.Vf2 {
+  zoom := d_util.clamp(init+(init*plus), 8, 128)
 
-  ge.panning = ge.panning.add(end.sub(start))
+  return {zoom, zoom}
 }
 
 // Puts editor grid spanning the entire screen
 // TODO: Fix scaling
-fn (ge: ^EditorGrid) put(editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
-  ge.rect = rectangle
+fn putGrid(grid: ^d_grid.Grid, editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
+  grid.bb = rectangle
 
-  // TODO: Create a new tool instead of quering the state of existing tool. 
-  // Then I can use events.queryMouse()
-  if editor.ui.isCurrentToolActive() {
-    // Handle input
-    if editor.ui.mouseState.mmb.isDown || input.isPressed(.space) {
-      editor.keepActive = true
-      ge.panning = ge.panning.add(editor.ui.mouseState.delta.divf(ge.scaling))
-    }
-  }
+  editor.ui.beginTool("Grid", rectangle)
 
-  grid := makeGrid(ge)
   var highlightedTile: th.Vf2
-
   editor.ui.ctx.beginScissorRect(rectangle)
   {
-    editor.ui.ctx.drawCustom(DrawGridRenderGuideCommand{d_grid.mkRenderGuideFromBoundingBox(grid), 0xFFFFFF11, 1})
+    editor.ui.ctx.drawCustom(DrawGridRenderGuideCommand{d_grid.mkRenderGuideFromBoundingBox(grid^), 0xFFFFFF11, 1})
     highlightedTile = grid.toGrid(editor.ui.mouseState.pos).floor()
 
     if editor.ui.isCurrentToolActive() {
@@ -452,7 +422,23 @@ fn (ge: ^EditorGrid) put(editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
     editor.ui.ctx.drawText(editor.resources.mainFont, coordinateString, bottomLeft, th.white)
     editor.ui.ctx.moveLayer(-1)
   }
+
   editor.ui.ctx.endScissor()
+
+  if editor.ui.isCurrentToolActive() &&  input.isPressed(.space) {
+    d_grid.gridPan(grid, editor.ui.mouseState.delta)
+  }
+
+  events := editor.ui.endTool()
+
+  if events.queryMouse(.middle, d_mouseinput.down) {
+    d_grid.gridPan(grid, editor.ui.mouseState.delta)
+  }
+
+  scroll := events.queryScroll()
+  if scroll != 0 {
+    d_grid.gridZoomInto(grid, updateZoom(grid.s.x, scroll/10.0), events.mouseState.pos)
+  }
 
   return highlightedTile
 }
@@ -819,7 +805,7 @@ type WorldEditCmd = struct {
   showLayers: uint // 3 bits
   toolbarIcons: image.Image
   rect: rect.Rect
-  grid: EditorGrid
+  grid: d_grid.Grid
   world: ^d_world.World
 }
 
@@ -835,16 +821,16 @@ fn (d: ^WorldEditCmd) draw(props: d_drawcmd.DrawProperties) {
   canvas.drawRect(0x777777FF, d_global.screen)
   colors := []uint32{getcolor(d.showLayers&1>0), getcolor(d.showLayers&2>0), getcolor(d.showLayers&4>0)}
 
-  offset := d.grid.mapPos(th.Vf2{0, 0})
+  offset := d.grid.toScreen(th.Vf2{0, 0})
 
-  d.world.drawLayer(offset, -1, d.grid.scaling, colors[0])
-  d.world.drawLayer(offset, 0, d.grid.scaling, colors[1])
-  d.world.drawLayer(offset, 1, d.grid.scaling, colors[2])
+  // TODO: 2D scaling?
+  d.world.drawLayer(offset, -1, d.grid.s.x/32.0, colors[0])
+  d.world.drawLayer(offset, 0, d.grid.s.x/32.0, colors[1])
+  d.world.drawLayer(offset, 1, d.grid.s.x/32.0, colors[2])
 
   d.toolbarIcons.crop(th.Vf2{2.0/4.0, 0.0/4.0}, th.Vf2{3.0/4.0, 1.0/4.0})
-  pos := d.grid.mapPos(d.world.playerSpawnPos)
-  scale := d.grid.scaling
-  d.toolbarIcons.draw(th.Transform{p: th.Vf2{pos.x, pos.y}, s: th.Vf2{scale, scale}})
+  pos := d.grid.toScreen(d.world.playerSpawnPos)
+  d.toolbarIcons.draw(th.Transform{p: th.Vf2{pos.x, pos.y}, s: d.grid.s.divf(32)})
 }
 
 fn getShownLayersBitmap(layerSelected: int, showAllLayers: bool): uint {
@@ -925,7 +911,7 @@ fn putTilePicker(editor: ^Editor) {
       editor.ui.ctx.moveLayer(1)
       {
         imgDims := editor.tileset.image.getDims()
-        newSelectedTile := editor.tilesetGrid.put(editor, contentRect)
+        newSelectedTile := putGrid(&editor.tilesetGrid, editor, contentRect)
         if !(newSelectedTile.x < 0 || newSelectedTile.y < 0 ||
            newSelectedTile.x >= imgDims.x/(imgDims.x/4) || newSelectedTile.y >= imgDims.y/(imgDims.x/4)) {
           selectedTile = newSelectedTile
@@ -933,22 +919,22 @@ fn putTilePicker(editor: ^Editor) {
           selectedTile = editor.tileSelected
         }
 
-        selectedTilePos := editor.tilesetGrid.mapPos(editor.tileSelected)
+        selectedTilePos := editor.tilesetGrid.toScreen(editor.tileSelected)
         
         editor.ui.ctx.beginScissorRect(contentRect)
-        editor.ui.ctx.drawRectLines(th_color.alpha(th.green, 0.6), {selectedTilePos.x, selectedTilePos.y, 32, 32}, 1)
+        editor.ui.ctx.drawRectLines(th_color.alpha(th.green, 0.6), {selectedTilePos.x, selectedTilePos.y, editor.tilesetGrid.s.x, editor.tilesetGrid.s.y}, 1)
         editor.ui.ctx.endScissor()
       }
       editor.ui.ctx.moveLayer(-1)
       editor.ui.ctx.beginScissorRect(contentRect)
 
       editor.tileset.image.crop(th.Vf2{0, 0}, th.Vf2{1, 1})
-      editor.ui.ctx.drawImage(editor.tileset.image, th.Transform{s: th.Vf2{0.5, 0.5}, p: editor.tilesetGrid.mapPos(th.Vf2{0, 0})})
+      editor.ui.ctx.drawImage(editor.tileset.image, th.Transform{s: editor.tilesetGrid.s.divf(64), p: editor.tilesetGrid.toScreen(th.Vf2{0, 0})})
       editor.ui.ctx.endScissor()
     }
     events := editor.ui.endTool()
 
-    if events.queryMouse(0, d_mouseinput.down) {
+    if events.queryMouse(.left, d_mouseinput.down) {
       editor.tileSelected = selectedTile
     }
   })
@@ -1044,7 +1030,7 @@ fn isEntitySelected(entities: ^EditorEntities, index: int): bool {
 }
 
 fn initEntityAtCenter(editor: ^Editor, ent: d_world_data.EntityDesc): d_world_data.EntityDesc {
-  ent.rect = rect.Rect{-editor.tilemapGrid.panning.x-16, -editor.tilemapGrid.panning.y-16, 32, 32}
+  ent.rect = rect.Rect{-editor.tilemapGrid.p.x-16, -editor.tilemapGrid.p.y-16, 32, 32}
   return ent
 }
 
@@ -1221,7 +1207,7 @@ fn putRectGrips(editor: ^Editor, r: rect.Rect): RectResizeCommand {
 
     events := editor.ui.endTool()
 
-    if events.queryMouse(0, d_mouseinput.down) {
+    if events.queryMouse(.left, d_mouseinput.down) {
       activeGrip = i
     }
   }
@@ -1252,7 +1238,7 @@ fn drawTaggedEntityRect(editor: ^Editor, entity: ^d_world_data.EntityDesc, r: re
     size := editor.resources.mainFont.measure(entity.name)
     entity.rect.w = size.x
     entity.rect.h = size.y
-    editor.ui.ctx.drawText(editor.resources.mainFont, entity.name, th.Vf2{r.x, r.y}, th.white, editor.tilemapGrid.scaling)
+    editor.ui.ctx.drawText(editor.resources.mainFont, entity.name, th.Vf2{r.x, r.y}, th.white, editor.tilemapGrid.s.x)
   }
 }
 
@@ -1279,7 +1265,7 @@ fn putWorldEntities(editor: ^Editor) {
   for i in editor.entities.list {
     ent := &editor.entities.list[i]
 
-    entVisRect := d_util.rectMove(d_util.rectScale(ent.rect, editor.tilemapGrid.scaling), editor.tilemapGrid.mapPos(th.Vf2{0, 0}))
+    entVisRect := d_util.rectMove(d_util.rectScale(ent.rect, editor.tilemapGrid.s.x/32), editor.tilemapGrid.toScreen(th.Vf2{0, 0}))
 
     // FIXME: Initializing tag set every time we render an entity is not efficent at all.
     tags := d_game.initTagSetFromString(ent.tags)
@@ -1298,7 +1284,7 @@ fn putWorldEntities(editor: ^Editor) {
         editor.ui.ctx.drawRectLines(th.blue, d_util.rectShrink(entVisRect, -1))
       }
 
-      if isEntitySelected(&editor.entities, i) && editor.ui.isCurrentToolFocused() {
+      if isEntitySelected(&editor.entities, i) {
         dx, dy := 0, 0
         if input.isPressedRepeat(.up) {
           dy += -1
@@ -1330,7 +1316,7 @@ fn putWorldEntities(editor: ^Editor) {
         editor.ui.ctx.drawRectLines(th.yellow, d_util.rectShrink(entVisRect, 0))
 
         rectCmd := putRectGrips(editor, entVisRect)
-        delta := editor.ui.mouseState.delta.divf(editor.tilemapGrid.scaling)
+        delta := editor.ui.mouseState.delta.div(editor.tilemapGrid.s).mulf(32)
 
         ent.rect = applyRectResizeCommand(rectCmd, ent.rect, delta)
 
@@ -1344,14 +1330,14 @@ fn putWorldEntities(editor: ^Editor) {
 
       events := editor.ui.endTool()
 
-      if events.queryMouse(0, d_mouseinput.pressed) {
+      if events.queryMouse(.left, d_mouseinput.pressed) {
         selectEntity(&editor.entities, i)
         editor.wm.setWindowVisible("Entity Editor", true)
         editor.wm.putWindowOnFront("Entity Editor")
       }
-      if events.queryMouse(0, d_mouseinput.down) {
-        ent.rect.x += events.mouseState.delta.x/editor.tilemapGrid.scaling
-        ent.rect.y += events.mouseState.delta.y/editor.tilemapGrid.scaling
+      if events.queryMouse(.left, d_mouseinput.down) {
+        ent.rect.x += events.mouseState.delta.x/editor.tilemapGrid.s.x*32
+        ent.rect.y += events.mouseState.delta.y/editor.tilemapGrid.s.y*32
         editor.dirty = true
       }
     }
@@ -1366,7 +1352,7 @@ fn loadPortal(editor: ^Editor, portal: str) {
   editor.currentPortal = portal
   editor.potentialPortal = portal
   editorLoadWorld(editor, portal)
-  editor.tilemapGrid.panning = editor.world.playerSpawnPos.mulf(-32)
+  editor.tilemapGrid.p = editor.world.playerSpawnPos.mulf(-32)
 }
 
 fn putPortalEditor(editor: ^Editor) {
@@ -1395,12 +1381,6 @@ fn showErrorScreenIfResourcesFailedToLoad(rl: ^d_resources.ResourceLoader): bool
     return true
   }
   return false
-}
-
-fn updateZoom(init: real, plus: real): real {
-  zoom := init+(init*plus)
-
-  return d_util.clamp(zoom, 0.5, 10)
 }
 
 fn preUiUpdate(editor: ^Editor) {
@@ -1482,13 +1462,11 @@ fn editorPutUi(editor: ^Editor) {
   } else {
     tool := editor.ui.beginTool("TileEditor", {0, 0, d_global.screen.w, d_global.screen.h-38})
 
-    if editor.ui.isCurrentToolActive() {
-      if input.isPressed(.ctrl) && input.isJustPressedc('i') {
-        appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
-      }
+    if input.isPressed(.ctrl) && input.isJustPressedc('i') {
+      appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
     }
 
-    selectedTile := editor.tilemapGrid.put(editor, tool.rect)
+    selectedTile := putGrid(&editor.tilemapGrid, editor, tool.rect)
 
     // Draw ToggleAll/FG/MG/BG buttons.
     {
@@ -1507,12 +1485,12 @@ fn editorPutUi(editor: ^Editor) {
       position.x -= elementSize
 
       if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "> <").isReleased) {
-        editor.tilemapGrid.panning = th.Vf2{0, 0}
+        editor.tilemapGrid.p = th.Vf2{0, 0}
       }
       position.x -= elementSize
 
       if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "1:1").isReleased) {
-        editor.tilemapGrid.zoomInto(1.0, d_util.rectCenter(editor.tilemapGrid.rect))
+        d_grid.gridZoomInto(&editor.tilemapGrid, {32.0, 32.0}, d_util.rectCenter(editor.tilemapGrid.bb))
       }
       position.x -= elementSize
 
@@ -1543,28 +1521,22 @@ fn editorPutUi(editor: ^Editor) {
       }
     }
 
-
     events := editor.ui.endTool()
-    
-    scroll := events.queryScroll()
-    if scroll != 0 {
-      editor.tilemapGrid.zoomInto(updateZoom(editor.tilemapGrid.scaling, scroll/10.0), events.mouseState.pos)
-    }
 
     if editor.isRelocatingPlayer {
-      if (events.queryMouse(0, d_mouseinput.down)) {
+      if (events.queryMouse(.left, d_mouseinput.down)) {
         editor.world.playerSpawnPos = selectedTile
         editor.dirty = true
       }
-      if (events.queryMouse(0, d_mouseinput.released)) {
+      if (events.queryMouse(.left, d_mouseinput.released)) {
         editor.isRelocatingPlayer = false
       }
     } else {
-      if events.queryMouse(0, d_mouseinput.down) {
+      if events.queryMouse(.left, d_mouseinput.down) {
         editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), editor.tileset.tileToPos(trunc(editor.tileSelected.x), trunc(editor.tileSelected.y)))
         editor.dirty = true
       }
-      if events.queryMouse(2, d_mouseinput.down) {
+      if events.queryMouse(.right, d_mouseinput.down) {
         editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), 0)
         editor.dirty = true
       }
@@ -1629,8 +1601,8 @@ fn editorInit(resources: EditorResources): Editor {
 
   return Editor{
     ui: ui,
-    tilemapGrid: EditorGrid{scaling: 1.0},
-    tilesetGrid: EditorGrid{scaling: 1.0},
+    tilemapGrid: d_grid.Grid{s: {32, 32}},
+    tilesetGrid: d_grid.Grid{s: {32, 32}},
     tilemapShowAllLayers: false,
     entityBypass: true,
     tileset: tileset,
@@ -1643,8 +1615,8 @@ fn editorInit(resources: EditorResources): Editor {
 
 fn editorSaveSession(editor: ^Editor): d_session.Session {
   session := d_session.Session{}
-  session.pan = editor.tilemapGrid.panning
-  session.scale = editor.tilemapGrid.scaling
+  session.pan = editor.tilemapGrid.p
+  session.scale = editor.tilemapGrid.s.x
   session.portal = editor.currentPortal
   session.allLayers = editor.tilemapShowAllLayers
   session.entityBypass = editor.entityBypass
@@ -1662,8 +1634,9 @@ fn editorSaveSession(editor: ^Editor): d_session.Session {
 
 fn editorLoadSession(editor: ^Editor, session: d_session.Session) {
   loadPortal(editor, session.portal)
-  editor.tilemapGrid.panning = session.pan
-  editor.tilemapGrid.scaling = session.scale
+  editor.tilemapGrid.p = session.pan
+  editor.tilemapGrid.s.x = session.scale
+  editor.tilemapGrid.s.y = session.scale
   editor.tilemapShowAllLayers = session.allLayers
   editor.entityBypass = session.entityBypass
   editor.tilemapLayer = session.layerSelected
@@ -1769,7 +1742,8 @@ fn editorMain*(enabled: bool) {
           { "Room", editor.currentPortal, false },
           { "Frameskip", trunc(d_game.frameSkips), false },
           { "Dirty?", editor.dirty, false },
-          { "Version", d_global.version, false }
+          { "Version", d_global.version, false },
+          { "Scale", editor.tilemapGrid.s, false }
         }
       })
     }

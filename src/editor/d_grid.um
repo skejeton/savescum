@@ -34,6 +34,10 @@ fn (grid: ^Grid) toScreen*(gridp: th.Vf2): th.Vf2 {
 	return gridp.add(grid.p).mul(grid.s).add(grid.bb.getPos())
 }
 
+fn gridPan*(grid: ^Grid, delta: th.Vf2) {
+  grid.p = grid.p.add(delta.div(grid.s))
+}
+
 // NOTE: into is a screen coordiante
 fn gridZoomInto*(grid: ^Grid, newScale: th.Vf2, into: th.Vf2) {
 	before := grid.toGrid(into)

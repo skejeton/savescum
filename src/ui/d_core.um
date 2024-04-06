@@ -124,6 +124,19 @@ fn (core: ^Core) beginTool*(name: str, toolRect: rect.Rect): ^d_atoms.ToolNode {
   return core.currentTool
 }
 
+fn (core: ^Core) getCurrentToolName*(): str {
+  p := core.currentTool.parent
+  if p == null {
+    return ""
+  }
+  for key in p.children {
+    if p.children[key] == core.currentTool {
+      return key
+    }
+  }
+  return ""
+}
+
 fn (core: ^Core) getCurrentToolState*(): d_atoms.ToolState {
   return core.getToolState(core.currentTool)
 }
@@ -222,17 +235,17 @@ fn sinkEvent*(events: ^Events, event: EventMouse): bool {
   return sinkAcquireMaskEvent(events.sink, &events.acquired, events.mask, event)
 }
 
-fn (events: ^Events) queryMouse*(btn: int, which: int): bool {
-  if sinkEvent(events, EventMouse(btn)) == false {
+fn (events: ^Events) queryMouse*(btn: EventMouse, which: int): bool {
+  if sinkEvent(events, btn) == false {
     return false
   }
 
   var mouseButton: d_mouseinput.MouseButtonState
 
   switch btn {
-    case 0: mouseButton = events.mouseState.lmb
-    case 1: mouseButton = events.mouseState.mmb
-    case 2: mouseButton = events.mouseState.rmb
+    case .left: mouseButton = events.mouseState.lmb
+    case .middle: mouseButton = events.mouseState.mmb
+    case .right: mouseButton = events.mouseState.rmb
     default: std.assert(false, sprintf("Invalid mouse button index %d", btn))
   }
 
