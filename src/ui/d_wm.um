@@ -1,0 +1,57 @@
+import "rect.um"
+
+type (
+  Window* = struct {
+    lastFrameTouched: int
+    rect: rect.Rect
+    layer: int
+  }
+
+  WM* = struct {
+    topmostWindowLayer: int
+    frameNumber: int
+    windowCount: int
+    windowVisibility: map[str]bool
+    windows: map[str]Window
+  }
+)
+
+fn create*(): WM {
+  return {}
+}
+
+fn (wm: ^WM) isWindowVisible*(name: str): bool {
+  return validkey(wm.windows, name) && wm.windows[name].lastFrameTouched == wm.frameNumber && wm.windowVisibility[name]
+}
+
+fn (wm: ^WM) getWindowRect*(name: str, fallback: rect.Rect): ^rect.Rect {
+  if validkey(wm.windows, name) {
+    wm.windows[name].lastFrameTouched = wm.frameNumber
+    return &wm.windows[name].rect
+  }
+  
+  // Create window.
+  wm.windowCount += 1
+  wm.windows[name] = Window{layer: wm.topmostWindowLayer, rect: fallback, lastFrameTouched: wm.frameNumber}
+  wm.topmostWindowLayer++
+  return &wm.windows[name].rect
+}
+
+fn (wm: ^WM) getWindowLayer*(name: str): int {
+  if validkey(wm.windows, name) {
+    return wm.windows[name].layer 
+  } 
+  return -1
+}
+
+fn (wm: ^WM) putWindowOnFront*(name: str) {
+  if validkey(wm.windows, name) {
+    wm.topmostWindowLayer += 1
+    wm.windows[name].layer = wm.topmostWindowLayer
+  }
+}
+
+fn (wm: ^WM) setWindowVisible*(name: str, to: bool) {
+  wm.windowVisibility[name] = to
+}
+

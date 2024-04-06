@@ -9,6 +9,7 @@ import (
   "d_grid.um"
   "../ui/d_debug.um"
   "../ui/d_atoms.um"
+  "../ui/d_wm.um"
   "d_session.um"
 
   "../d_dbg.um"
@@ -60,29 +61,15 @@ type (
     isPressed: bool
     isReleased: bool
   }
-
-  Window = struct {
-    lastFrameTouched: int
-    rect: rect.Rect
-    layer: int
-  }
-
-  WindowManager = struct {
-    topmostWindowLayer: int
-    frameNumber: int
-    windowCount: int
-    windowVisibility: map[str]bool
-    windows: map[str]Window
+ 
+  WindowInfo = struct {
+    contentRect: rect.Rect
+    titlebarRect: rect.Rect
   }
 
   ScrollAreaInfo = struct {
     areaRect: rect.Rect
     contentRect: rect.Rect
-  }
-
-  WindowInfo = struct {
-    contentRect: rect.Rect
-    titlebarRect: rect.Rect
   }
 
   EntityListAction = enum {
@@ -136,52 +123,13 @@ type (
     // UI misc.
     currentWindow: str
     currentWindowLayer: int
-    wm: WindowManager
+    wm: d_wm.WM
     keepActive: bool
 
     // UI state
     ui: d_core.Core
   }
 )
-
-fn initWindowManager(): WindowManager {
-  return WindowManager{windows: map[str]Window{}}
-}
-
-fn (wm: ^WindowManager) isWindowVisible(name: str): bool {
-  return validkey(wm.windows, name) && wm.windows[name].lastFrameTouched == wm.frameNumber && wm.windowVisibility[name]
-}
-
-fn (wm: ^WindowManager) getWindowRect(name: str, fallback: rect.Rect): ^rect.Rect {
-  if validkey(wm.windows, name) {
-    wm.windows[name].lastFrameTouched = wm.frameNumber
-    return &wm.windows[name].rect
-  }
-  
-  // Create window.
-  wm.windowCount += 1
-  wm.windows[name] = Window{layer: wm.topmostWindowLayer, rect: fallback, lastFrameTouched: wm.frameNumber}
-  wm.topmostWindowLayer++
-  return &wm.windows[name].rect
-}
-
-fn (wm: ^WindowManager) getWindowLayer(name: str): int {
-  if validkey(wm.windows, name) {
-    return wm.windows[name].layer 
-  } 
-  return -1
-}
-
-fn (wm: ^WindowManager) putWindowOnFront(name: str) {
-  if validkey(wm.windows, name) {
-    wm.topmostWindowLayer += 1
-    wm.windows[name].layer = wm.topmostWindowLayer
-  }
-}
-
-fn (wm: ^WindowManager) setWindowVisible(name: str, to: bool) {
-  wm.windowVisibility[name] = to
-}
 
 // Draws a beveled rectangle in Windows 3.11 style.
 // It may have a problem with displaying colors somewhat incorrectly,
@@ -1689,7 +1637,7 @@ fn editorInit(resources: EditorResources): Editor {
     world: world,
     resources: resources,
     entities: createEditorEntities(),
-    wm: initWindowManager()
+    wm: d_wm.create()
   }
 }
 
