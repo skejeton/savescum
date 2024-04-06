@@ -212,8 +212,8 @@ fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: Even
   }
 
   // Sink and acquire the event.
-  sink.sunk[e] = true;
-  acquire.sunk[e] = true;
+  sink.sunk[e] = true
+  acquire.sunk[e] = true
 
   return true
 }
@@ -242,8 +242,8 @@ fn (events: ^Events) queryMouse*(btn: int, which: int): bool {
     case d_mouseinput.released: return mouseButton.isReleased
     default: std.assert(false, sprintf("Invalid mouse button property index %d", which))
   }
-  return false;
 
+  return false
 }
 
 fn (events: ^Events) queryScroll*(): real {

@@ -1,4 +1,8 @@
-import ("th.um"; "rect.um"; "d_util.um")
+import (
+  "th.um"
+  "rect.um"
+  "d_util.um"
+)
 
 type TileSpan* = struct {
   pos: th.Vf2

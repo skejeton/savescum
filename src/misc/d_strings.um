@@ -1,6 +1,4 @@
-import (
-  "utf8.um"
-)
+import "utf8.um"
 
 /**
  * @param texts The strings to join.

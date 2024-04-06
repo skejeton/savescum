@@ -1755,9 +1755,9 @@ fn editorMain*(enabled: bool) {
     " _|  (  | (  |\n"+
     "/__.-'|_|--|_|\n"
   )
-  d_dbg.logt("SAVESCUM");
-  d_dbg.logt(sprintf("DPI aware: %v\nDPI scale factor: %g", window.isDpiEnabled(), sf));
-  d_dbg.logt("-*-");
+  d_dbg.logt("SAVESCUM")
+  d_dbg.logt(sprintf("DPI aware: %v\nDPI scale factor: %g", window.isDpiEnabled(), sf))
+  d_dbg.logt("-*-")
 
   // init data
   rl := new(d_resources.ResourceLoader)

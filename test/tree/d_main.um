@@ -1,4 +1,7 @@
-import ("d_tree.um"; "../../src/d_test.um")
+import (
+  "d_tree.um"
+  "../../src/d_test.um"
+)
 
 fn printElem(elem: ^d_tree.Elem, depth: int = 0) {
   for i := 0; i < depth; i++ {

@@ -54,7 +54,7 @@ fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, contact: ^Conta
 
   if d_util.rectVsPoint(rectangle^, mouseInput.lastPos) && !contact.isContact {
     contact.size = rectangle.getDims()
-    contact.isContact = true;
+    contact.isContact = true
     contact.at = mouseInput.lastPos
   }
 
@@ -68,7 +68,7 @@ fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, contact: ^Conta
       rectangle.h = newSize.y
     } else {
       // no key pressed, means no contact anymore
-      contact.isContact = false;
+      contact.isContact = false
     }
   }
 
@@ -84,14 +84,14 @@ fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, contact: ^Conta
 const poemNoFile = 
   "After error and trial\n"+
   "I couldn't find your poem file\n"+
-  "(No poem file found)";
+  "(No poem file found)"
 
 const poemBadId = 
   "Searching far and above\n"+
   "Poem up and below\n"+
   "I've came to realise\n"+
   "It will not materialise\n"+
-  "(Invalid poem ID)";
+  "(Invalid poem ID)"
 
 fn loadPoemFromFile(file: str, poemId: int): str {
   if poems, err := std.freadall(file); err.code != 0 {
@@ -288,7 +288,7 @@ fn init*() {
         multiplier = 2.0
       }
       if slow5x {
-        multiplier /= 5;
+        multiplier /= 5
       }
 
       typingTime += th.delta/1000.0*multiplier
@@ -296,7 +296,7 @@ fn init*() {
     controlTypingTime(&typingTime)
   
     if input.isJustPressed(.escape) {
-      autoplay = false;
+      autoplay = false
       typingTime = 0
     }
     transformedText := transformTextNodesIntoObjectArray(lines, tt)

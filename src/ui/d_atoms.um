@@ -1,6 +1,4 @@
-import (
-	"rect.um"
-)
+import "rect.um"
 
 type ToolNode* = struct {
   children: map[str]^ToolNode

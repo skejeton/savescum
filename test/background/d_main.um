@@ -1,7 +1,15 @@
 import (
-  "window.um"; "rect.um"; "th.um"; "canvas.um"; "input.um"; "signal.um"
-  "../../src/d_test.um"; "../../src/d_background.um"
-  "../../src/d_util.um"; "../../src/d_resources.um"; "../../src/d_problem_screen.um";)
+  "window.um"
+  "rect.um"
+  "th.um"
+  "canvas.um"
+  "input.um"
+  "../../src/d_test.um"
+  "../../src/d_background.um"
+  "../../src/d_util.um"
+  "../../src/d_resources.um"
+  "../../src/d_problem_screen.um"
+)
 
 var screen: rect.Rect
 var scale: real
@@ -27,7 +35,7 @@ fn init*() {
   offset = th.Vf2{0, 0}
   oldMousePos = input.getMousePos()
 
-  window.onFrame.register(signal.Callback{
+  window.onFrame.register({
     if input.isPressed(.mouse2) {
       offset = offset.add(input.getMousePos().sub(oldMousePos))
     }

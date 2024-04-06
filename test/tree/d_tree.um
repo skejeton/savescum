@@ -1,4 +1,4 @@
-import ("std.um")
+import "std.um"
 
 type (
   Elem* = struct {

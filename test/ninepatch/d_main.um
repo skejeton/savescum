@@ -1,7 +1,9 @@
 // Outdated. Ninepatch is now in the engine.
 
 import (
-  "window.um"; "rect.um"; "image.um";
+  "window.um"
+  "rect.um"
+  "image.um"
   "../../src/d_test.um"
   "signal.um"
 )

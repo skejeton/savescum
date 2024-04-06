@@ -256,12 +256,12 @@ fn isprint*(c: uint32): bool {
 
 
 fn rectUnion*(a, b: rect.Rect): rect.Rect {
-  x := max(a.x, b.x);
-  y := max(a.y, b.y);
+  x := max(a.x, b.x)
+  y := max(a.y, b.y)
   return rect.Rect{
     x,y, 
     min(a.x + a.w, b.x + b.w) - x,
-    min(a.y + a.h, b.y + b.h) - y};
+    min(a.y + a.h, b.y + b.h) - y}
 }
 
 fn wrapText*(font: ^th_font.Font, text: str, boundary: real): []str {

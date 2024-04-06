@@ -2,7 +2,7 @@
 // Names for hashes
 //
 
-import ("std.um")
+import "std.um"
 
 const (
   prefixes = [21]str{"MO", "NO", "NE", "BRE", "BOR", "BU", "BO", "RU", "DAL", "PER",
@@ -14,7 +14,7 @@ const (
 fn xorshift(x: uint): uint {
   x = x ~ (x << 13)
   x = x ~ (x >> 7)
-  x = x ~ (x << 17);
+  x = x ~ (x << 17)
   return x + 1
 }
 

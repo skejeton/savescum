@@ -1,7 +1,7 @@
 import (
-  "../../src/d_problem_screen.um";
-  "../../src/d_resources.um";
-  "../../src/d_test.um";
+  "../../src/d_problem_screen.um"
+  "../../src/d_resources.um"
+  "../../src/d_test.um"
   "window.um"
   "signal.um"
 )

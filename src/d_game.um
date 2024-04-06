@@ -29,8 +29,8 @@ type ShapeType = enum {
 }
 
 // TPS 250
-const updateStep = 1/250.0; 
-const updateStepMs* = 4;
+const updateStep = 1/250.0 
+const updateStepMs* = 4
 
 type (
   Shape* = struct {
@@ -354,11 +354,11 @@ fn entVsShape(ent: ^Character, s: Shape) {
   
   switch s.shape {
   case ShapeType.leftUpSlope:
-    cornerX := ent.rect.x + ent.rect.w - r.x;
+    cornerX := ent.rect.x + ent.rect.w - r.x
     if cornerX > r.w {
       cornerX = r.w
     }
-    cornerY := ent.rect.y + ent.rect.h - r.y;
+    cornerY := ent.rect.y + ent.rect.h - r.y
     hitY := r.h - ((r.h/r.w) * (cornerX))
     if hitY > r.h {
       hitY = r.h
@@ -366,52 +366,52 @@ fn entVsShape(ent: ^Character, s: Shape) {
 
     
     if cornerY > hitY {
-      ent.vel.y = 0;
-      ent.onGround = true;
-      ent.onSlope = true;
-      ent.rect.y += hitY-cornerY;
+      ent.vel.y = 0
+      ent.onGround = true
+      ent.onSlope = true
+      ent.rect.y += hitY-cornerY
     }
   case ShapeType.rightUpSlope:
-    cornerX := ent.rect.x - r.x;
+    cornerX := ent.rect.x - r.x
     if cornerX < 0 {
-      cornerX = 0;
+      cornerX = 0
     }
-    cornerY := ent.rect.y + ent.rect.h - r.y;
+    cornerY := ent.rect.y + ent.rect.h - r.y
     hitY := (r.h/r.w) * (cornerX)
 
     if cornerY > hitY {
-      ent.vel.y = 0;
-      ent.onGround = true;
-      ent.onSlope = true;
-      ent.rect.y += hitY-cornerY;
+      ent.vel.y = 0
+      ent.onGround = true
+      ent.onSlope = true
+      ent.rect.y += hitY-cornerY
     }
   case ShapeType.leftDownSlope:
-    cornerX := ent.rect.x + ent.rect.w - r.x;
+    cornerX := ent.rect.x + ent.rect.w - r.x
     if cornerX > r.w {
       cornerX = r.w
     }
-    cornerY := ent.rect.y - r.y;
+    cornerY := ent.rect.y - r.y
     hitY := (r.h/r.w) * (cornerX)
 
     if cornerY < hitY {
       if ent.vel.y < 0 {
-        ent.vel.y = 0;
+        ent.vel.y = 0
       }
-      ent.rect.y += hitY-cornerY;
+      ent.rect.y += hitY-cornerY
     }
   case ShapeType.rightDownSlope:
-    cornerX := ent.rect.x - r.x;
+    cornerX := ent.rect.x - r.x
     if cornerX < 0 {
-      cornerX = 0;
+      cornerX = 0
     }
-    cornerY := ent.rect.y - r.y;
+    cornerY := ent.rect.y - r.y
     hitY := r.h - ((r.h/r.w) * (cornerX))
 
     if cornerY < hitY {
       if ent.vel.y < 0 {
-        ent.vel.y = 0;
+        ent.vel.y = 0
       }
-      ent.rect.y += hitY-cornerY;
+      ent.rect.y += hitY-cornerY
     }
   case ShapeType.block:
     if snap.x != 0 {
@@ -451,27 +451,27 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
       case 25: shapeType = ShapeType.block
         shapeRect.y += world.tileset.tileSizeY/2
         shapeRect.h /= 2
-      case 30: if toggleActive { shapeType = ShapeType.block; }
-      case 31: if !toggleActive { shapeType = ShapeType.block; }
+      case 30: if toggleActive { shapeType = ShapeType.block }
+      case 31: if !toggleActive { shapeType = ShapeType.block }
       case 1, 5, 7, 29:   shapeType = ShapeType.block
       case 9:   shapeType = ShapeType.leftUpSlope
       case 10:  shapeType = ShapeType.rightUpSlope
       case 13:  shapeType = ShapeType.leftDownSlope
       case 14:  shapeType = ShapeType.rightDownSlope
       case 15:  shapeType = ShapeType.leftUpSlope
-        shapeRect.h /= 2;
+        shapeRect.h /= 2
       case 16:  shapeType = ShapeType.rightUpSlope
-        shapeRect.h /= 2;
+        shapeRect.h /= 2
       case 4:   shapeType = ShapeType.leftUpSlope
-        shapeRect.y += world.tileset.tileSizeY/2;
-        shapeRect.h /= 2;
+        shapeRect.y += world.tileset.tileSizeY/2
+        shapeRect.h /= 2
       case 8:   shapeType = ShapeType.rightUpSlope
-        shapeRect.y += world.tileset.tileSizeY/2;
-        shapeRect.h /= 2;
+        shapeRect.y += world.tileset.tileSizeY/2
+        shapeRect.h /= 2
       case 11:  shapeType = ShapeType.rightDownSlope
-        shapeRect.h /= 2;
+        shapeRect.h /= 2
       case 12:  shapeType = ShapeType.leftDownSlope
-        shapeRect.h /= 2;
+        shapeRect.h /= 2
     }
     
     if shapeType == ShapeType.block {
@@ -575,7 +575,7 @@ fn start*(worldData: d_world_data.WorldData) {
         d_dbg.logt(sprintf("Comment: %v", chr.name))
         entities = append(entities, chr)
       }
-      continue;
+      continue
     }
     if chr.tags.isSet("meta_boulders") {
       metaBoulders = chr.tags.param("meta_boulders") == "on"
@@ -747,16 +747,16 @@ fn drawChumState(state: int, chum: ChumState, tint: uint32) {
 
   if chum.dir == 0 {
     // Mirror.
-    chumDestRect.x += chumDestRect.w;
-    chumDestRect.w *= -1;
+    chumDestRect.x += chumDestRect.w
+    chumDestRect.w *= -1
 
-    chumMouthDestRect.x += chumMouthDestRect.w+1.5*cameraScale;
+    chumMouthDestRect.x += chumMouthDestRect.w+1.5*cameraScale
   }
 
-  chumMouthDestRect.x -= 0.5;
-  chumMouthDestRect.y += 0.5;
-  chumMouthDestRect.h -= 1;
-  chumMouthDestRect.w += 1;
+  chumMouthDestRect.x -= 0.5
+  chumMouthDestRect.y += 0.5
+  chumMouthDestRect.h -= 1
+  chumMouthDestRect.w += 1
   
   d_util.drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, tint)
   d_util.drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, tint)

@@ -7,8 +7,11 @@
 //    1: the foreground layer, this is drawn over the character, no collision checks
 
 import (
-  "th.um"; "rect.um"
-  "d_util.um"; "d_tileset.um"; "d_global.um";
+  "th.um"
+  "rect.um"
+  "d_util.um"
+  "d_tileset.um"
+  "d_global.um"
 )
 
 const (

@@ -1,5 +1,14 @@
-import ("window.um"; "canvas.um"; "rect.um"; "image.um"; "th.um"; "std.um";
-  "../../src/d_tileset.um"; "../../src/d_util.um"; "../../src/d_test.um"; "signal.um")
+import (
+  "window.um"
+  "canvas.um"
+  "rect.um"
+  "image.um"
+  "th.um"
+  "std.um"
+  "../../src/d_tileset.um"
+  "../../src/d_util.um"
+  "../../src/d_test.um"
+)
 
 type T = struct {x, y: int}
 
@@ -17,7 +26,7 @@ fn init*() {
   tileset = d_tileset.fromImage(image.load(d_test.pfx()+"medium.png").item0, 32, 32, 1)
   ts = []T{T{0, 0}, T{2, 2}, T{1, 0}, T{5, 5}, T{0, 4}}
   
-  window.onFrame.register(signal.Callback{
+  window.onFrame.register({
     for _, t in ts {
       tileset.selectTile(t.x, t.y)
       tileset.image.draw(d_util.posTrans(t.x*32, t.y*32))

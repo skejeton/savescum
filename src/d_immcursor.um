@@ -1,6 +1,4 @@
-import (
-  "window.um"
-)
+import "window.um"
 
 cursor := window.Cursor.system
 cursorSet := false

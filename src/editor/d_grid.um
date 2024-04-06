@@ -1,4 +1,9 @@
-import ("th.um"; "rect.um"; "../d_util.um"; "canvas.um")
+import (
+  "th.um"
+  "rect.um"
+  "../d_util.um"
+  "canvas.um"
+)
 
 // NODE: by default each grid cell is exactly 1 unit, you can fix that by simply scaling it
 type Grid* = struct {

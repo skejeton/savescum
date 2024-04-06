@@ -1,4 +1,4 @@
-import ("utf8.um")
+import "utf8.um"
 
 type (
   Typer* = struct {
@@ -21,7 +21,7 @@ const (
   typerCommand* = Event(2)
 )
 
-fn (t: ^Typer) advance*(): (Event, Command);
+fn (t: ^Typer) advance*(): (Event, Command)
 
 fn init*(sequence: str): Typer {
   typer := Typer{sequence: sequence, message: ""}
