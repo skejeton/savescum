@@ -430,6 +430,13 @@ fn uiEndWindow(editor: ^Editor) {
   editor.currentWindow = ""
 }
 
+fn widget_window(editor: ^Editor, title: str, rect: rect.Rect, handler: fn (winfo: WindowInfo): void) {
+  if info, ok := uiBeginWindow(editor, title, rect); ok {
+    handler(info)
+    uiEndWindow(editor)
+  }
+}
+
 fn makeGrid(ge: ^EditorGrid): d_grid.Grid {
   return d_grid.Grid{p: ge.panning.add(ge.rect.getDims().divf(2*ge.scaling)).divf(32.0), s: th.Vf2{ge.scaling*32, ge.scaling*32}, bb: ge.rect}
 }
@@ -935,9 +942,8 @@ fn putLabelY(editor: ^Editor, text: str, color: uint32, position: ^th.Vf2) {
 }
 
 fn putPlayerPlacer(editor: ^Editor) {
-  if windowInfo, ok := uiBeginWindow(editor, "Player Placer", rect.mk(5, 5+32*7+20, 32*5, 32*7)); ok { 
-
-    contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
+  widget_window(editor, "Player Placer", {5, 249, 160, 224}, |editor| {
+    contentRect := d_util.rectShrink(winfo.contentRect, 5)
     position := contentRect.getPos()
     playerPos := editor.world.playerSpawnPos
 
@@ -956,15 +962,14 @@ fn putPlayerPlacer(editor: ^Editor) {
       }
     }
     editor.ui.ctx.endScissor()
-    uiEndWindow(editor)
-  }
+  })
 }
 
 fn putTilePicker(editor: ^Editor) {
-  if windowInfo, ok := uiBeginWindow(editor, "Tile Picker", rect.mk(5, 5, 32*5, 32*7)); ok { 
+  widget_window(editor, "Tile Picker", {5, 5, 160, 224}, |editor| {
     // NOTE: This is to cancel the window-body dragging thing.
     //       Probably not the best way to do it.
-    contentRect := windowInfo.contentRect
+    contentRect := winfo.contentRect
     var selectedTile: th.Vf2
 
     editor.ui.beginTool("Picker", contentRect)
@@ -999,9 +1004,7 @@ fn putTilePicker(editor: ^Editor) {
     if events.queryMouse(0, d_mouseinput.down) {
       editor.tileSelected = selectedTile
     }
-
-    uiEndWindow(editor)
-  }
+  })
 }
 
 fn putEntityEntry(editor: ^Editor, ent: d_world_data.EntityDesc, r: rect.Rect, selected: bool): EntityListAction {
@@ -1108,13 +1111,18 @@ fn putEntityList(editor: ^Editor) {
   moveFrom := -1
   moveTo := -1
 
-  if windowInfo, ok := uiBeginWindow(editor, "Entity List", rect.mk(800-200-5, 5, 200, 200)); ok {
+  pmoveFrom := &moveFrom
+  pmoveTo := &moveTo
+  pentryRemoveIndex := &entryRemoveIndex
+
+
+  widget_window(editor, "Entity List", {595, 5, 200, 200}, |editor, pmoveFrom, pmoveTo, pentryRemoveIndex| {
     // Apply padding.
-    contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
+    contentRect := d_util.rectShrink(winfo.contentRect, 5)
 
     // Put add button.
     {
-      buttonRect := d_util.rectCutRight(windowInfo.titlebarRect, 20)
+      buttonRect := d_util.rectCutRight(winfo.titlebarRect, 20)
 
       if (putSimpleButton(editor, buttonRect, "+").isReleased) {
         appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
@@ -1134,15 +1142,15 @@ fn putEntityList(editor: ^Editor) {
         for i, ent in editor.entities.list {
           switch putEntityEntry(editor, ent, entryRect, isEntitySelected(&editor.entities, i)) {
             case .moveUp:
-              moveFrom = i
-              moveTo = i-1
+              pmoveFrom ^= i
+              pmoveTo ^= i-1
               editor.dirty = true
             case .moveDown:
-              moveFrom = i
-              moveTo = i+1
+              pmoveFrom ^= i
+              pmoveTo ^= i+1
               editor.dirty = true
             case .remove:
-              entryRemoveIndex = i
+              pentryRemoveIndex ^= i
               editor.dirty = true
             case .edit:
               selectEntity(&editor.entities, i)
@@ -1150,9 +1158,9 @@ fn putEntityList(editor: ^Editor) {
               editor.wm.putWindowOnFront("Entity Editor")
             case .duplicate:
               appendEntity(&editor.entities, cloneEntity(editor.entities.list, ent))
-              moveFrom = len(editor.entities.list)-1
-              moveTo = i+1
-              selectEntity(&editor.entities, moveFrom)
+              pmoveFrom ^= len(editor.entities.list)-1
+              pmoveTo ^= i+1
+              selectEntity(&editor.entities, pmoveFrom^)
               editor.dirty = true
           }
           entryRect.y += 30
@@ -1163,9 +1171,7 @@ fn putEntityList(editor: ^Editor) {
         endScrollArea(editor)
       }
     }
-
-    uiEndWindow(editor)
-  }
+  })
 
   if moveFrom != -1 && moveTo != -1 && moveFrom < len(editor.entities.list) && moveTo < len(editor.entities.list) {
     if getEntitySelectedIndex(&editor.entities) == moveFrom {
@@ -1187,8 +1193,8 @@ fn putEntityEditor(editor: ^Editor) {
   entitySelected := getEntitySelected(&editor.entities)
 
   if entitySelected != null {
-    if windowInfo, ok := uiBeginWindow(editor, "Entity Editor", rect.mk(800-200-5, 5+200+5, 200, 220)); ok {
-      contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
+    widget_window(editor, "Entity Editor", rect.mk(595, 210, 200, 220), |editor, entitySelected| {
+      contentRect := d_util.rectShrink(winfo.contentRect, 5)
 
       editor.ui.ctx.beginScissorRect(contentRect)
       position := contentRect.getPos()
@@ -1207,9 +1213,7 @@ fn putEntityEditor(editor: ^Editor) {
         editor.dirty = true
       } 
       editor.ui.ctx.endScissor()
-
-      uiEndWindow(editor)
-    }
+    })
   }
 }
 
@@ -1419,8 +1423,8 @@ fn loadPortal(editor: ^Editor, portal: str) {
 }
 
 fn putPortalEditor(editor: ^Editor) {
-  if windowInfo, ok := uiBeginWindow(editor, "Portal", rect.mk(180, 5, 200, 300)); ok {
-    contentRect := d_util.rectShrink(windowInfo.contentRect, 5)
+  widget_window(editor, "Portal", {180, 5, 200, 300}, |editor| {
+    contentRect := d_util.rectShrink(winfo.contentRect, 5)
     position := contentRect.getPos()
 
     putTextEditOneLine(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Portal name", &editor.potentialPortal)
@@ -1433,9 +1437,7 @@ fn putPortalEditor(editor: ^Editor) {
     } else {
       drawButtonInactive(editor, rect.mk(position.x, position.y, contentRect.w, 30), "Hold shift!")
     }
-
-    uiEndWindow(editor)
-  }
+  })
 }
 
 fn loadEditorResources(rl: ^d_resources.ResourceLoader): EditorResources
@@ -1447,7 +1449,6 @@ fn showErrorScreenIfResourcesFailedToLoad(rl: ^d_resources.ResourceLoader): bool
   }
   return false
 }
-
 
 fn updateZoom(init: real, plus: real): real {
   zoom := init+(init*plus)
