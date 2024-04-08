@@ -1,6 +1,3 @@
-// Entry point for the editor.
-// TODO: UI HiDPI support
-// TODO: Refactor
 // (C) skejeton
 
 import (
@@ -425,7 +422,7 @@ fn putGrid(grid: ^d_grid.Grid, editor: ^Editor, rectangle: rect.Rect): th.Vf2 {
 
   editor.ui.ctx.endScissor()
 
-  if editor.ui.isCurrentToolActive() &&  input.isPressed(.space) {
+  if editor.ui.isCurrentToolActive() && input.isPressed(.space) {
     d_grid.gridPan(grid, editor.ui.mouseState.delta)
   }
 
