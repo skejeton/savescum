@@ -482,8 +482,9 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
   }
 
 
-  solids = append(solids, nonBlockSolids)
   collSortShapesByProximity(&solids, d_util.rectCenter(ent.rect))
+  collSortShapesByProximity(&nonBlockSolids, d_util.rectCenter(ent.rect))
+  solids = append(solids, nonBlockSolids)
   return solids
 }
 
