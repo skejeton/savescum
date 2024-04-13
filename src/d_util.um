@@ -7,56 +7,59 @@ import (
   "canvas.um"
   "utf8.um"
   th_font = "font.um"
+  
+  "misc/d_strings.um"
 )
 
-fn posTrans*(x, y: th.fu): th.Transform {
-  return th.Transform{p: th.Vf2{x, y}, s: th.Vf2{1, 1}}
+fn posTrans*(x, y: th::fu): th::Transform {
+  return th::Transform{p: th::Vf2{x, y}, s: th::Vf2{1, 1}}
 }
 
-fn isMouseInRect*(r: rect.Rect): bool {
-  p := input.getMousePos()
+fn isMouseInRect*(r: rect::Rect): bool {
+  p := input::getMousePos()
   return p.x >= r.x && p.y >= r.y && p.x <= (r.x+r.w) && p.y <= (r.y+r.h)
 }
 
-fn readFileStr*(path: str): (str, std.Err) {
-  file, err := std.fopen(path, "rb")
+fn readFileStr*(path: str): (str, std::Err) {
+  file, err := std::fopen(path, "rb")
 
   if err.code != 0 {
     return "", err
   }
 
-  s, err := std.freadall(file)
-  return err.code == 0 ? s : "", err
+  s, err := std::freadall(file)
+
+  return err.code == 0 ? d_strings::windows2unix(s) : "", err
 }
 
-fn writeFileStr*(path: str, dataStr: str): std.Err {
-  file, err := std.fopen(path, "wb")
+fn writeFileStr*(path: str, dataStr: str): std::Err {
+  file, err := std::fopen(path, "wb")
   if err.code != 0 {
     return err
   }
 
-  std.fwrite(file, &[]char(dataStr))
-  std.fclose(file)
+  std::fwrite(file, &[]char(dataStr))
+  std::fclose(file)
 
   return {}
 }
 
-fn drawRectLines*(color: uint32, r: rect.Rect, thicc: real = 3.0) {
+fn drawRectLines*(color: uint32, r: rect::Rect, thicc: real = 3.0) {
   t2 := thicc/2
 
   // top
-  canvas.drawLine(color, th.Vf2{r.x-t2, r.y}, th.Vf2{r.x+r.w+t2, r.y}, thicc)
+  canvas::drawLine(color, th::Vf2{r.x-t2, r.y}, th::Vf2{r.x+r.w+t2, r.y}, thicc)
   // bottom
-  canvas.drawLine(color, th.Vf2{r.x-t2, r.y+r.h}, th.Vf2{r.x+r.w+t2, r.y+r.h}, thicc)
+  canvas::drawLine(color, th::Vf2{r.x-t2, r.y+r.h}, th::Vf2{r.x+r.w+t2, r.y+r.h}, thicc)
   // left
-  canvas.drawLine(color, th.Vf2{r.x, r.y-t2}, th.Vf2{r.x, r.y+r.h+t2}, thicc)
+  canvas::drawLine(color, th::Vf2{r.x, r.y-t2}, th::Vf2{r.x, r.y+r.h+t2}, thicc)
   // right
-  canvas.drawLine(color, th.Vf2{r.x+r.w, r.y-t2}, th.Vf2{r.x+r.w, r.y+r.h+t2}, thicc)
+  canvas::drawLine(color, th::Vf2{r.x+r.w, r.y-t2}, th::Vf2{r.x+r.w, r.y+r.h+t2}, thicc)
 }
 
-fn rectChopRight*(r: ^rect.Rect, by: int): rect.Rect {
+fn rectChopRight*(r: ^rect::Rect, by: int): rect::Rect {
   r.w -= by
-  return rect.Rect{r.x+r.w, r.y, by, r.h}
+  return rect::Rect{r.x+r.w, r.y, by, r.h}
 }
 
 // Crops the input image by specified rectangle in pixels
@@ -64,19 +67,19 @@ fn rectChopRight*(r: ^rect.Rect, by: int): rect.Rect {
 // img: Input image
 // rec: Cropping rectangle, in pixels
 //
-fn imageCropRect*(img: image.Image, rec: rect.Rect) {
+fn imageCropRect*(img: image::Image, rec: rect::Rect) {
   size := img.getDims()
-  img.crop(th.Vf2{rec.x/size.x, rec.y/size.y}, th.Vf2{(rec.x + rec.w)/size.x, (rec.y + rec.h)/size.y})
+  img.crop(th::Vf2{rec.x/size.x, rec.y/size.y}, th::Vf2{(rec.x + rec.w)/size.x, (rec.y + rec.h)/size.y})
 }
 
-fn drawImageRect*(img: image.Image, src: rect.Rect, dst: rect.Rect, rot: real = 0, tint: uint32 = 0xFFFFFFFF) {
+fn drawImageRect*(img: image::Image, src: rect::Rect, dst: rect::Rect, rot: real = 0, tint: uint32 = 0xFFFFFFFF) {
   dims := img.getDims()
   src.x += 0.5
   src.y += 0.5
   src.w -= 1
   src.h -= 1
-  img.crop(th.Vf2{src.x/dims.x, src.y/dims.y}, th.Vf2{(src.x + src.w)/dims.x, (src.y + src.h)/dims.y})
-  img.draw({p: th.Vf2{dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}, tint)
+  img.crop(th::Vf2{src.x/dims.x, src.y/dims.y}, th::Vf2{(src.x + src.w)/dims.x, (src.y + src.h)/dims.y})
+  img.draw({p: th::Vf2{dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}, tint)
 }
 
 //
@@ -121,7 +124,7 @@ fn fmod*(a, b: real): real {
 fn chopUtf8*(s: str, size: int): str {
   ofs := 0
   for size > 0 && ofs < len(s) {
-    rune := utf8.decodeRune(s, ofs)
+    rune := utf8::decodeRune(s, ofs)
     ofs += rune.size()
     size -= 1
   }
@@ -134,7 +137,7 @@ fn chopUtf8*(s: str, size: int): str {
 // )
 //
 // Returns true if both rects collide
-fn rectVsRect*(r1, r2: rect.Rect): bool {
+fn rectVsRect*(r1, r2: rect::Rect): bool {
   return (r1.x + r1.w) > (r2.x) && (r1.y + r1.h) > (r2.y) && (r1.x) < (r2.x + r2.w) && (r1.y) < (r2.y + r2.h)
 }
 
@@ -144,7 +147,7 @@ fn rectVsRect*(r1, r2: rect.Rect): bool {
 // )
 //
 // Returns true if point p is in rectangle r
-fn rectVsPoint*(r: rect.Rect, p: th.Vf2): bool {
+fn rectVsPoint*(r: rect::Rect, p: th::Vf2): bool {
   return p.x >= r.x && p.y >= r.y && p.x < (r.x + r.w) && p.y < (r.y + r.h)
 }
 
@@ -154,7 +157,7 @@ fn rectVsPoint*(r: rect.Rect, p: th.Vf2): bool {
 // )
 // 
 // Returns rectangle shrinked by amount `by` from all left, right, top, bottom sides
-fn rectShrink*(r: rect.Rect, by: real): rect.Rect {
+fn rectShrink*(r: rect::Rect, by: real): rect::Rect {
   return {r.x+by, r.y+by, r.w-by*2, r.h-by*2}
 }
 
@@ -164,15 +167,15 @@ fn rectShrink*(r: rect.Rect, by: real): rect.Rect {
 // ) 
 //
 // Returns rectangle moved by amount `by`
-fn rectMove*(r: rect.Rect, by: th.Vf2): rect.Rect {
-  return rect.Rect{r.x+by.x, r.y+by.y, r.w, r.h}
+fn rectMove*(r: rect::Rect, by: th::Vf2): rect::Rect {
+  return rect::Rect{r.x+by.x, r.y+by.y, r.w, r.h}
 }
 
-fn rectCenter*(r: rect.Rect): th.Vf2 {
-  return th.Vf2{r.x+r.w/2, r.y+r.h/2}
+fn rectCenter*(r: rect::Rect): th::Vf2 {
+  return th::Vf2{r.x+r.w/2, r.y+r.h/2}
 }
 
-fn rectCenterWithinRect*(child, parent: rect.Rect): rect.Rect {
+fn rectCenterWithinRect*(child, parent: rect::Rect): rect::Rect {
   child.x = parent.x+(parent.w-child.w)/2
   child.y = parent.y+(parent.h-child.h)/2
   return child
@@ -185,7 +188,7 @@ fn rectCenterWithinRect*(child, parent: rect.Rect): rect.Rect {
 //
 // Pushes the child rect into the parent rect. 
 // Won't work if child rectangle dimensions are bigger than parents rectangle. 
-fn rectKeepInBounds*(child, parent: rect.Rect): rect.Rect {
+fn rectKeepInBounds*(child, parent: rect::Rect): rect::Rect {
   if child.x < parent.x {
     child.x = parent.x
   }
@@ -205,14 +208,14 @@ fn rectKeepInBounds*(child, parent: rect.Rect): rect.Rect {
 /*
  * \brief Creates a split of rect `r` at `by` starting from the right side.
  */
-fn rectCutRight*(r: rect.Rect, by: real): rect.Rect {
+fn rectCutRight*(r: rect::Rect, by: real): rect::Rect {
   result := r
   result.x += r.w-by
   result.w = by
   return result
 }
 
-fn rectScale*(r: rect.Rect, by: real): rect.Rect {
+fn rectScale*(r: rect::Rect, by: real): rect::Rect {
   return {r.x*by, r.y*by, r.w*by, r.h*by}
 }
 
@@ -255,16 +258,16 @@ fn isprint*(c: uint32): bool {
 }
 
 
-fn rectUnion*(a, b: rect.Rect): rect.Rect {
+fn rectUnion*(a, b: rect::Rect): rect::Rect {
   x := max(a.x, b.x)
   y := max(a.y, b.y)
-  return rect.Rect{
+  return rect::Rect{
     x,y, 
     min(a.x + a.w, b.x + b.w) - x,
     min(a.y + a.h, b.y + b.h) - y}
 }
 
-fn wrapText*(font: ^th_font.Font, text: str, boundary: real): []str {
+fn wrapText*(font: ^th_font::Font, text: str, boundary: real): []str {
   result := []str{}
   lastIndex := 0
   shift := 0.0

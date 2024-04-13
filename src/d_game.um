@@ -34,7 +34,7 @@ const updateStepMs* = 4
 
 type (
   Shape* = struct {
-    rect: rect.Rect
+    rect: rect::Rect
     shape: ShapeType
   }
 
@@ -51,16 +51,16 @@ type (
     name: str
     id: str
     tags: TagSet
-    originalRect: rect.Rect
-    rect: rect.Rect
-    vel: th.Vf2
+    originalRect: rect::Rect
+    rect: rect::Rect
+    vel: th::Vf2
     onGround: bool
     onSlope: bool
   }
 )
 
 fn (t: ^TagSet) set*(tag: str) {
-  params := d_strings.splitBy(tag, ':')
+  params := d_strings::splitBy(tag, ':')
   if len(params) > 1 {
     t.tags[params[0]].param = params[1]
   }
@@ -78,7 +78,7 @@ fn (t: ^TagSet) isSet*(tag: str): bool {
 fn initTagSetFromString*(s: str): TagSet {
 
   tagSet := TagSet{map[str]Tag{}}
-  tags := d_strings.splitBy(s, ';')
+  tags := d_strings::splitBy(s, ';')
   for i, tag in tags {
     tagSet.set(tag)
   }
@@ -101,13 +101,13 @@ var (
   chumRotTime: real
   chumWalkTime: real
   chumFrown: bool = false
-  imgObj: image.Image
-  imgChum: image.Image
-  defaultFont: font.Font
-  bgAudio: audio.Sound
-  palStep: audio.Sound
-  palJump: audio.Sound
-  palLand: audio.Sound
+  imgObj: image::Image
+  imgChum: image::Image
+  defaultFont: font::Font
+  bgAudio: audio::Sound
+  palStep: audio::Sound
+  palJump: audio::Sound
+  palLand: audio::Sound
   end*: bool
   jitterDir: real
   jitterTime: real
@@ -121,18 +121,18 @@ var (
   noSaveLoad: bool
   insideStatic: bool
   lockInput*: bool
-  guides: []rect.Rect
+  guides: []rect::Rect
   entities*: []Character
   sceneId*: int
-  world*: d_world.World
+  world*: d_world::World
   chara*: Character
-  camera*: th.Vf2
+  camera*: th::Vf2
   cameraScale*: real
   toggleActive: bool
   toggleActiveWater: bool
   toggleActiveVal: real
   toggleActiveStatic: bool
-  resetPoint: th.Vf2
+  resetPoint: th::Vf2
   toPortal: str
 
   saves: []ChumState
@@ -143,13 +143,13 @@ var (
   rumbling: real
 )
 
-fn getCameraRect(): rect.Rect {
-  return {chara.rect.x+chara.rect.w/2-d_global.screen.w/2, chara.rect.y+chara.rect.h/2-d_global.screen.h/2, d_global.screen.w, d_global.screen.h}
+fn getCameraRect(): rect::Rect {
+  return {chara.rect.x+chara.rect.w/2-d_global::screen.w/2, chara.rect.y+chara.rect.h/2-d_global::screen.h/2, d_global::screen.w, d_global::screen.h}
 }
 
-fn findGuideInPoint(p: th.Vf2): rect.Rect {
+fn findGuideInPoint(p: th::Vf2): rect::Rect {
   for i, guide in guides {
-    if d_util.rectVsPoint(guide, p) {
+    if d_util::rectVsPoint(guide, p) {
       return guide
     }
   }
@@ -168,15 +168,15 @@ fn reset*() {
   saves = {}
 }
 
-fn getCameraTargetRect(): rect.Rect {
+fn getCameraTargetRect(): rect::Rect {
 
   guide := findGuideInPoint(chara.rect.getPos())
-  if input.isPressedc('z') && len(saves) > 0 {
+  if input::isPressedc('z') && len(saves) > 0 {
     guide = findGuideInPoint(saves[len(saves)-1].ent.rect.getPos())
   }
   cameraRect := getCameraRect()
-  scale := d_util.min(guide.w/cameraRect.w, guide.h/cameraRect.h)
-  maxScale := 1.0/(d_global.screen.w/640)
+  scale := d_util::min(guide.w/cameraRect.w, guide.h/cameraRect.h)
+  maxScale := 1.0/(d_global::screen.w/640)
   if scale > maxScale {
     scale = maxScale
   }
@@ -184,7 +184,7 @@ fn getCameraTargetRect(): rect.Rect {
   // put at center
   cameraRect.w *= scale
   cameraRect.h *= scale
-  if input.isPressedc('z') && len(saves) > 0 {
+  if input::isPressedc('z') && len(saves) > 0 {
     cameraRect.x = saves[len(saves)-1].ent.rect.x+saves[len(saves)-1].ent.rect.w/2-cameraRect.w/2
     cameraRect.y = saves[len(saves)-1].ent.rect.y+saves[len(saves)-1].ent.rect.h/2-cameraRect.h/2
   } else {
@@ -192,27 +192,27 @@ fn getCameraTargetRect(): rect.Rect {
     cameraRect.y = chara.rect.y+chara.rect.h/2-cameraRect.h/2
   }
   
-  return d_util.rectKeepInBounds(cameraRect, guide)
+  return d_util::rectKeepInBounds(cameraRect, guide)
 }
 
 type CameraProperties = struct {
-  pos: th.Vf2
+  pos: th::Vf2
   scale: real
 }
 
 fn getCameraProperties*(): CameraProperties {
   targetRect := getCameraTargetRect()
-  return CameraProperties{targetRect.getPos(), d_util.min(d_global.screen.w/targetRect.w, d_global.screen.h/targetRect.h)}
+  return CameraProperties{targetRect.getPos(), d_util::min(d_global::screen.w/targetRect.w, d_global::screen.h/targetRect.h)}
 }
 
 fn cameraControl() {
   props := getCameraProperties()
 
-  camera = d_rerp.iVf2(camera, props.pos, updateStep*10.0)
-  cameraScale = d_rerp.iReal(cameraScale, props.scale, updateStep*10.0)
+  camera = d_rerp::iVf2(camera, props.pos, updateStep*10.0)
+  cameraScale = d_rerp::iReal(cameraScale, props.scale, updateStep*10.0)
 }
 
-fn cameraOffsetPoint(p: th.Vf2): th.Vf2 {
+fn cameraOffsetPoint(p: th::Vf2): th::Vf2 {
   p.x -= camera.x
   p.y -= camera.y
   p.x *= cameraScale
@@ -220,7 +220,7 @@ fn cameraOffsetPoint(p: th.Vf2): th.Vf2 {
   return p
 }
 
-fn cameraOffsetRect(r: rect.Rect): rect.Rect {
+fn cameraOffsetRect(r: rect::Rect): rect::Rect {
   r.x -= camera.x
   r.y -= camera.y
   r.x *= cameraScale
@@ -235,12 +235,12 @@ fn playerControl() {
     rumbling = 0.2
     palLand.start()
   }
-  if (input.isPressed(.up) || input.gamepad().isPressed(.a)) && chara.onGround {
+  if (input::isPressed(.up) || input::gamepad().isPressed(.a)) && chara.onGround {
     palJump.start()
     chara.vel.y = -3.65
   }
-  if input.gamepad().id != -1 {
-    stick := input.gamepad().stick(.left)
+  if input::gamepad().id != -1 {
+    stick := input::gamepad().stick(.left)
 
     if stick.x < -0.5 {
       chumDir = 0
@@ -252,12 +252,12 @@ fn playerControl() {
       chara.vel.x = 2.5*stick.x
     }
   }
-  if input.isPressed(.left) {
+  if input::isPressed(.left) {
     chumDir = 0
     chara.vel.x = -2.5
     chumWalkTime += updateStep
   }
-  if input.isPressed(.right) {
+  if input::isPressed(.right) {
     chumDir = 1
     chara.vel.x = 2.5
     chumWalkTime += updateStep
@@ -273,7 +273,7 @@ fn playerControl() {
 
   if round(chumWalkTime*6+0.1) % 2 == 1 && chara.onGround {
     palStep.setVol(0.5)
-    palStep.setPitch(1.5+(std.rand()%10)/50.0)
+    palStep.setPitch(1.5+(std::rand()%10)/50.0)
     palStep.play()
   }
 
@@ -297,7 +297,7 @@ fn entPhysics(ent: ^Character) {
   ent.vel.x = 0
 }
 
-fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
+fn collCalcRectSnap(r, along: rect::Rect): th::Vf2 {
   x_left := r.x + r.w - along.x
   y_up := r.y + r.h - along.y
 
@@ -319,17 +319,17 @@ fn collCalcRectSnap(r, along: rect.Rect): th.Vf2 {
   }
 
   if fabs(min_x) < fabs(min_y) {
-    return th.Vf2{min_x, 0}
+    return th::Vf2{min_x, 0}
   } 
-  return th.Vf2{0, min_y}
+  return th::Vf2{0, min_y}
 }
 
-fn collSortShapesByProximity(shapes: ^[]Shape, along: th.Vf2) {
+fn collSortShapesByProximity(shapes: ^[]Shape, along: th::Vf2) {
   for i, closest^ in shapes {
     mindist := real(99999999)
     for j := i; j < len(shapes^); j++ {
       current := shapes[j].rect
-      point := th.Vf2{current.x + current.w / 2, current.y + current.h / 2}
+      point := th::Vf2{current.x + current.w / 2, current.y + current.h / 2}
       dist := point.distanceTo(along)
       if dist < mindist {
         mindist = dist
@@ -347,7 +347,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
   snap := collCalcRectSnap(ent.rect, r)
 
   // Not a valid collision (probably pushed back by other blocks?)
-  if d_util.rectVsRect(ent.rect, r) == false {
+  if d_util::rectVsRect(ent.rect, r) == false {
     return
   }
 
@@ -429,7 +429,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
 }
 
 fn entConstructCollidingSolids(ent: ^Character): []Shape {
-  tangents := world.getTangentTiles(rect.Rect{ent.rect.x-1, ent.rect.y-1, ent.rect.w+1, ent.rect.h+1})
+  tangents := world.getTangentTiles(rect::Rect{ent.rect.x-1, ent.rect.y-1, ent.rect.w+1, ent.rect.h+1})
   solids := []Shape{}
   nonBlockSolids := []Shape{}
 
@@ -437,13 +437,13 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
     if entity.id == ent.id {
       continue
     }
-    if d_util.rectVsRect(ent.rect, entity.rect) && entity.tags.isSet("boulder") {
+    if d_util::rectVsRect(ent.rect, entity.rect) && entity.tags.isSet("boulder") {
       solids = append(solids, Shape{entity.rect, ShapeType.block})
     }
   }
 
   for i, tangent in tangents {
-    shapeRect := rect.Rect{tangent.x*world.tileset.tileSizeX, tangent.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY} 
+    shapeRect := rect::Rect{tangent.x*world.tileset.tileSizeX, tangent.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY} 
     shapeType := ShapeType.none
 
     switch tangent.id {
@@ -482,19 +482,19 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
   }
 
 
-  collSortShapesByProximity(&solids, d_util.rectCenter(ent.rect))
-  collSortShapesByProximity(&nonBlockSolids, d_util.rectCenter(ent.rect))
+  collSortShapesByProximity(&solids, d_util::rectCenter(ent.rect))
+  collSortShapesByProximity(&nonBlockSolids, d_util::rectCenter(ent.rect))
   solids = append(solids, nonBlockSolids)
   return solids
 }
 
 fn entCheckCollision(ent: ^Character): bool {
-  r := d_util.rectShrink(ent.rect, 1)
+  r := d_util::rectShrink(ent.rect, 1)
 
   solids := entConstructCollidingSolids(ent)
   for i, shape in solids {
     if shape.shape == ShapeType.block {
-      if d_util.rectVsRect(r, shape.rect) {
+      if d_util::rectVsRect(r, shape.rect) {
         return true
       }
     }
@@ -512,24 +512,24 @@ fn entSolveCollision(ent: ^Character) {
   }
 }
 
-fn _drawRectTangents(r: rect.Rect) {
+fn _drawRectTangents(r: rect::Rect) {
   solids := entConstructCollidingSolids(&chara)
 
   for i, solid in solids {
     rec := cameraOffsetRect(solid.rect)
     switch solid.shape {
     case ShapeType.block:
-      canvas.drawRect(0x00FF0055, rec)
+      canvas::drawRect(0x00FF0055, rec)
     case ShapeType.leftUpSlope, ShapeType.rightDownSlope:
-      canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y+rec.h}, th.Vf2{rec.x+rec.w, rec.y}, 2)
+      canvas::drawLine(0x00FF0055, th::Vf2{rec.x, rec.y+rec.h}, th::Vf2{rec.x+rec.w, rec.y}, 2)
     case ShapeType.rightUpSlope, ShapeType.leftDownSlope:
-      canvas.drawLine(0x00FF0055, th.Vf2{rec.x, rec.y}, th.Vf2{rec.x+rec.w, rec.y+rec.h}, 2)
+      canvas::drawLine(0x00FF0055, th::Vf2{rec.x, rec.y}, th::Vf2{rec.x+rec.w, rec.y+rec.h}, 2)
     }
-    canvas.drawText(sprintf("%v", i), th.Vf2{rec.x, rec.y}, th.white, cameraScale)
+    canvas::drawText(sprintf("%v", i), th::Vf2{rec.x, rec.y}, th::white, cameraScale)
   }
 }
 
-fn convertEntityDescToCharacter(ent: d_world_data.EntityDesc): Character {
+fn convertEntityDescToCharacter(ent: d_world_data::EntityDesc): Character {
   return Character{name: ent.name, id: ent.id, tags: initTagSetFromString(ent.tags), rect: ent.rect}
 }
 
@@ -543,13 +543,13 @@ fn findEntity*(id: str): ^Character {
   return null
 }
 
-fn start*(worldData: d_world_data.WorldData) {
+fn start*(worldData: d_world_data::WorldData) {
   bgAudio.seekToFrame(0)
   // bgAudio.play()
   fadeout = 0
   fadeoutTarget = 0
   toPortal = ""
-  lastUpdateTime = th.time
+  lastUpdateTime = th::time
   toggleActive = false
   toggleActiveWater = true
   lockInput = false
@@ -557,7 +557,7 @@ fn start*(worldData: d_world_data.WorldData) {
 
   world = worldData.world
 
-  chara = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect.Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX/1.2, world.tileset.tileSizeY}}
+  chara = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect::Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX/1.2, world.tileset.tileSizeY}}
 
   resetPoint.x = chara.rect.x
   resetPoint.y = chara.rect.y
@@ -566,14 +566,14 @@ fn start*(worldData: d_world_data.WorldData) {
   chumDir = 0
 
   entities = make([]Character, 0)
-  guides = make([]rect.Rect, 0)
+  guides = make([]rect::Rect, 0)
 
   for i, ent in worldData.entities {
     chr := convertEntityDescToCharacter(ent)
     chr.originalRect = chr.rect
     if chr.tags.isSet("Comment") {
       if chr.tags.isSet("Show") {
-        d_dbg.logt(sprintf("Comment: %v", chr.name))
+        d_dbg::logt(sprintf("Comment: %v", chr.name))
         entities = append(entities, chr)
       }
       continue
@@ -598,16 +598,16 @@ fn stop*() {
   bgAudio.stop()
 }
 
-fn init*(rl: ^d_resources.ResourceLoader) {
-  bgAudio = d_resources.loadAudio(rl, "data/audio/soundtrack/scene1.ogg")
-  palStep = d_resources.loadAudio(rl, "data/audio/sfx/pal_walk.ogg")
-  palJump = d_resources.loadAudio(rl, "data/audio/sfx/pal_jump.ogg")
-  palLand = d_resources.loadAudio(rl, "data/audio/sfx/pal_land.ogg")
+fn init*(rl: ^d_resources::ResourceLoader) {
+  bgAudio = d_resources::loadAudio(rl, "data/audio/soundtrack/scene1.ogg")
+  palStep = d_resources::loadAudio(rl, "data/audio/sfx/pal_walk.ogg")
+  palJump = d_resources::loadAudio(rl, "data/audio/sfx/pal_jump.ogg")
+  palLand = d_resources::loadAudio(rl, "data/audio/sfx/pal_land.ogg")
 
   // bgAudio.setLooping(true)
-  defaultFont = d_resources.loadFont(rl, "data/font/monospace.ttf", 16, .linear)
-  imgObj = d_resources.loadImage(rl, "data/img/obj_interactive.png", .linear)
-  imgChum = d_resources.loadImage(rl, "data/img/chr_chum.png", .linear)
+  defaultFont = d_resources::loadFont(rl, "data/font/monospace.ttf", 16, .linear)
+  imgObj = d_resources::loadImage(rl, "data/img/obj_interactive.png", .linear)
+  imgChum = d_resources::loadImage(rl, "data/img/chr_chum.png", .linear)
 }
 
 fn updateEntities() {
@@ -638,85 +638,85 @@ fn updateEntities() {
   }
 }
 
-fn drawEntityCustomRect(ent: ^Character, r: rect.Rect) {
-  color := th.blue
+fn drawEntityCustomRect(ent: ^Character, r: rect::Rect) {
+  color := th::blue
   if ent.onGround {
-    color = th.red
+    color = th::red
   }
 
-  canvas.drawRect(color, cameraOffsetRect(ent.rect))
+  canvas::drawRect(color, cameraOffsetRect(ent.rect))
 }
 
 const (
-  cropBoulder = rect.Rect{0, 0, 64, 128}
-  cropLeverOn  = rect.Rect{64, 64, 64, 64}
-  cropLeverOff = rect.Rect{64, 0, 64, 64}
-  cropLeverStaticOn  = rect.Rect{256, 64, 64, 64}
-  cropLeverStaticOff = rect.Rect{256, 0, 64, 64}
-  cropLeverWaterOn = rect.Rect{320, 128, 64, 64}
-  cropLeverWaterOff = rect.Rect{320, 192, 64, 64}
+  cropBoulder = rect::Rect{0, 0, 64, 128}
+  cropLeverOn  = rect::Rect{64, 64, 64, 64}
+  cropLeverOff = rect::Rect{64, 0, 64, 64}
+  cropLeverStaticOn  = rect::Rect{256, 64, 64, 64}
+  cropLeverStaticOff = rect::Rect{256, 0, 64, 64}
+  cropLeverWaterOn = rect::Rect{320, 128, 64, 64}
+  cropLeverWaterOff = rect::Rect{320, 192, 64, 64}
 
-  cropTele     = rect.Rect{128+64, 0, 64, 64}
-  cropTeleOff  = rect.Rect{128+64, 64, 64, 64}
-  cropResetV   = rect.Rect{256+64, 0, 64, 64}
-  cropResetH   = rect.Rect{256+64, 64, 64, 64}
-  cropControls = rect.Rect{0, 128, 256, 256}
+  cropTele     = rect::Rect{128+64, 0, 64, 64}
+  cropTeleOff  = rect::Rect{128+64, 64, 64, 64}
+  cropResetV   = rect::Rect{256+64, 0, 64, 64}
+  cropResetH   = rect::Rect{256+64, 64, 64, 64}
+  cropControls = rect::Rect{0, 128, 256, 256}
 )
 
 fn drawEntity(ent: ^Character) {
-  destRect := d_util.rectShrink(cameraOffsetRect(ent.rect), -1*cameraScale)
+  destRect := d_util::rectShrink(cameraOffsetRect(ent.rect), -1*cameraScale)
   if toPortal == ent.id {
-    destRect.x += cos(th.time/1000.0*6)*5*cameraScale
-    destRect.y += sin(th.time/1000.0*6)*5*cameraScale
+    destRect.x += cos(th::time/1000.0*6)*5*cameraScale
+    destRect.y += sin(th::time/1000.0*6)*5*cameraScale
   }
 
   if ent.tags.isSet("lever") {
     if toggleActive {
-      d_util.drawImageRect(imgObj, cropLeverOn, destRect)
+      d_util::drawImageRect(imgObj, cropLeverOn, destRect)
     } else {
-      d_util.drawImageRect(imgObj, cropLeverOff, destRect)
+      d_util::drawImageRect(imgObj, cropLeverOff, destRect)
     }
   } else if ent.tags.isSet("lever_s") {
     if toggleActiveStatic {
-      d_util.drawImageRect(imgObj, cropLeverStaticOn, destRect)
+      d_util::drawImageRect(imgObj, cropLeverStaticOn, destRect)
     } else {
-      d_util.drawImageRect(imgObj, cropLeverStaticOff, destRect)
+      d_util::drawImageRect(imgObj, cropLeverStaticOff, destRect)
     }
   } else if ent.tags.isSet("lever_w") {
     if toggleActiveWater {
-      d_util.drawImageRect(imgObj, cropLeverWaterOn, destRect)
+      d_util::drawImageRect(imgObj, cropLeverWaterOn, destRect)
     } else {
-      d_util.drawImageRect(imgObj, cropLeverWaterOff, destRect)
+      d_util::drawImageRect(imgObj, cropLeverWaterOff, destRect)
     }
   } else if ent.tags.isSet("water") {
-    canvas.drawRect(0x0099FF66, d_util.rectShrink(destRect, -2*cameraScale))
+    canvas::drawRect(0x0099FF66, d_util::rectShrink(destRect, -2*cameraScale))
   } else if ent.tags.isSet("static") {
-    canvas.drawRect(0xFFFF0066, d_util.rectShrink(destRect, -2*cameraScale))
+    canvas::drawRect(0xFFFF0066, d_util::rectShrink(destRect, -2*cameraScale))
   } else if ent.tags.isSet("boulder") {
-    d_util.drawImageRect(imgObj, cropBoulder, destRect)
+    d_util::drawImageRect(imgObj, cropBoulder, destRect)
   } else if ent.tags.isSet("tele") {
     if !entCheckCollision(ent) {
-      d_util.drawImageRect(imgObj, cropTele, destRect)
+      d_util::drawImageRect(imgObj, cropTele, destRect)
     } else {
-      d_util.drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
+      d_util::drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
     }
   } else if ent.tags.isSet("tele_off") {
   if !entCheckCollision(ent) {
-      d_util.drawImageRect(imgObj, cropTeleOff, destRect)
+      d_util::drawImageRect(imgObj, cropTeleOff, destRect)
     } else {
-      d_util.drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
+      d_util::drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
     }
   } else if ent.tags.isSet("reset") {
     if (destRect.w < destRect.h) {
-      d_util.drawImageRect(imgObj, cropResetV, destRect)
+      d_util::drawImageRect(imgObj, cropResetV, destRect)
     } else {
-      d_util.drawImageRect(imgObj, cropResetH, destRect)
+      d_util::drawImageRect(imgObj, cropResetH, destRect)
     }
   } else if ent.tags.isSet("controls") {
-    d_util.drawImageRect(imgObj, cropControls, destRect)
+    d_util::drawImageRect(imgObj, cropControls, destRect)
   } else if ent.tags.isSet("Comment") {
-    canvas.drawRect(0x000000FF, d_util.rectShrink(destRect, -cameraScale))
-    canvas.drawRect(0x00FFFFFF, destRect)
+    canvas::drawRect(0x000000FF, d_util::rectShrink(destRect, -cameraScale))
+    canvas::drawRect(0x00FFFFFF, destRect)
     defaultFont.draw(ent.name, destRect.getPos(), 0x000000FF, cameraScale)
   } else if ent.tags.isSet("resetfield") || ent.tags.isSet("fadeout") {
  
@@ -729,13 +729,13 @@ const (
   chumStateStand = 0
   chumStateJump = 1
   chumStateFall = 2
-  chumFaceRect = rect.Rect{0, 0, 128, 128}
-  chumMouthRect = rect.Rect{41, 52, 22, 7}
+  chumFaceRect = rect::Rect{0, 0, 128, 128}
+  chumMouthRect = rect::Rect{41, 52, 22, 7}
 )
 
 fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   at := chum.ent.rect.getPos()
-  bodyRect := rect.Rect{chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h}
+  bodyRect := rect::Rect{chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h}
   offs := 0.0
   if chum.dir == 0 {
     offs -= 24.5
@@ -759,13 +759,13 @@ fn drawChumState(state: int, chum: ChumState, tint: uint32) {
   chumMouthDestRect.h -= 1
   chumMouthDestRect.w += 1
   
-  d_util.drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, tint)
-  d_util.drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, tint)
+  d_util::drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, tint)
+  d_util::drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, tint)
   if chumFrown {
-    d_util.drawImageRect(imgChum, chumMouthRect, chumMouthDestRect, chum.rotTime, tint)
+    d_util::drawImageRect(imgChum, chumMouthRect, chumMouthDestRect, chum.rotTime, tint)
   }
   if showDebug {
-    canvas.drawText(sprintf("%d %d", trunc(at.x/32), trunc(at.y/32)), chumDestRect.getPos(), th.red, 1)
+    canvas::drawText(sprintf("%d %d", trunc(at.x/32), trunc(at.y/32)), chumDestRect.getPos(), th::red, 1)
   }
 }
 
@@ -825,9 +825,9 @@ fn drawEntities() {
 
 fn drawEntityDebugRects() {
   for i, entity in entities {
-    canvas.drawRect(th_color.alpha(th.blue, 0.4), cameraOffsetRect(entity.rect)) 
+    canvas::drawRect(th_color::alpha(th::blue, 0.4), cameraOffsetRect(entity.rect)) 
   }
-  canvas.drawRect(th_color.alpha(th.blue, 0.4), cameraOffsetRect(chara.rect)) 
+  canvas::drawRect(th_color::alpha(th::blue, 0.4), cameraOffsetRect(chara.rect)) 
 }
 
 fn canActivateLever(): bool {
@@ -867,7 +867,7 @@ fn canActivateWaterLever(): bool {
 }
 
 fn isActivated(): bool {
-  return input.isJustPressedc(' ') || input.gamepad().isJustPressed(.x)
+  return input::isJustPressedc(' ') || input::gamepad().isJustPressed(.x)
 }
 
 fn update*() {
@@ -875,9 +875,9 @@ fn update*() {
 
   toPortal = ""
 
-  toggleActiveVal = d_rerp.iReal(toggleActiveVal, real(int(toggleActive)), th.delta/100.0)
+  toggleActiveVal = d_rerp::iReal(toggleActiveVal, real(int(toggleActive)), th::delta/100.0)
 
-  iterations := (th.time - lastUpdateTime) / updateStepMs
+  iterations := (th::time - lastUpdateTime) / updateStepMs
   lastUpdateTime += iterations * updateStepMs
 
   if iterations > 120 {
@@ -886,7 +886,7 @@ fn update*() {
   } 
 
   for d := 0; d < iterations; d++ {
-    fadeout = d_rerp.iReal(fadeout, fadeoutTarget, updateStep*1.0)
+    fadeout = d_rerp::iReal(fadeout, fadeoutTarget, updateStep*1.0)
     if fadeout < 0 {
       fadeout = 0
     }
@@ -902,7 +902,7 @@ fn update*() {
  
   if !lockInput {
     if !noSaveLoad {
-      if input.isJustPressedc('z') || input.gamepad().isJustPressed(.lb) {
+      if input::isJustPressedc('z') || input::gamepad().isJustPressed(.lb) {
         if len(saves) > 0 {
           if !entCheckCollision(&saves[len(saves)-1].ent) {
             loadStateToChar(saves[len(saves)-1])
@@ -911,14 +911,14 @@ fn update*() {
         }
       }
       
-      if input.isJustPressedc('x') || input.gamepad().isJustPressed(.rb) {
+      if input::isJustPressedc('x') || input::gamepad().isJustPressed(.rb) {
         saves = append(saves, getCharState())
       }
     }
     noSaveLoad = false
     insideStatic = false
  
-    if input.isJustPressedc('r') || input.gamepad().isJustPressed(.start) {
+    if input::isJustPressedc('r') || input::gamepad().isJustPressed(.start) {
       reset()
     }
 
@@ -934,7 +934,7 @@ fn update*() {
           toggleActiveStatic = false
         }
         */
-        if d_util.rectVsRect(ent.rect, chara.rect) {
+        if d_util::rectVsRect(ent.rect, chara.rect) {
           entShape := Shape{rect: ent.rect}
           if (ent.rect.w > ent.rect.h) {
             if ((chara.rect.y + chara.rect.h) < (ent.rect.y+ent.rect.h))  {
@@ -969,11 +969,11 @@ fn update*() {
       }
       if ent.tags.isSet("boulder") {
         power := real(int(toggleActiveStatic))
-        boulderTargetRect := d_util.rectMove(ent.originalRect, th.Vf2{0, -ent.originalRect.h*power})
-        ent.rect = d_rerp.iRect(ent.rect, boulderTargetRect, th.delta/50.0)
+        boulderTargetRect := d_util::rectMove(ent.originalRect, th::Vf2{0, -ent.originalRect.h*power})
+        ent.rect = d_rerp::iRect(ent.rect, boulderTargetRect, th::delta/50.0)
       }
       if ent.tags.isSet("lever") {
-        if d_util.rectVsRect(ent.rect, chara.rect) {
+        if d_util::rectVsRect(ent.rect, chara.rect) {
           if isActivated() && chara.onGround {
             if canActivateLever() {
               toggleActive = !toggleActive
@@ -982,7 +982,7 @@ fn update*() {
         }
       }
       if ent.tags.isSet("lever_s") {
-        if d_util.rectVsRect(ent.rect, chara.rect) && chara.onGround {
+        if d_util::rectVsRect(ent.rect, chara.rect) && chara.onGround {
           if isActivated() {
             if canActivateStaticLever() {
               toggleActiveStatic = !toggleActiveStatic
@@ -996,19 +996,19 @@ fn update*() {
         } else {
           ent.rect.y = ent.originalRect.y+100000
         }
-        if d_util.rectVsRect(ent.rect, chara.rect) {
+        if d_util::rectVsRect(ent.rect, chara.rect) {
           noSaveLoad = true
         }
       }
 
       if ent.tags.isSet("static") {
-        if d_util.rectVsRect(ent.rect, chara.rect) {
+        if d_util::rectVsRect(ent.rect, chara.rect) {
           insideStatic = true
         }
       }
 
       if ent.tags.isSet("lever_w") {
-         if d_util.rectVsRect(ent.rect, chara.rect) && chara.onGround {
+         if d_util::rectVsRect(ent.rect, chara.rect) && chara.onGround {
           if isActivated() {
             if canActivateWaterLever() {
               toggleActiveWater = !toggleActiveWater
@@ -1017,30 +1017,30 @@ fn update*() {
         }
       }
       if ent.tags.isSet("exit") {
-        if d_util.rectVsRect(ent.rect, chara.rect) {
+        if d_util::rectVsRect(ent.rect, chara.rect) {
           end = true
         }
       }
       if ent.tags.isSet("resetfield") {
-        if d_util.rectVsRect(ent.rect, chara.rect) {
+        if d_util::rectVsRect(ent.rect, chara.rect) {
           reset()
         }
       }
       
       if ent.tags.isSet("fadeout") {
-        if d_util.rectVsRect(ent.rect, chara.rect) {
+        if d_util::rectVsRect(ent.rect, chara.rect) {
           fadeoutTarget = 1
           saves = {}
         }
       }
 
       if ent.tags.isSet("tele") {
-        if d_util.rectVsRect(ent.rect, chara.rect) {
+        if d_util::rectVsRect(ent.rect, chara.rect) {
           dest := ent.tags.param("tele")
           ent := findEntity(dest)
           toPortal = dest
           if ent == null {
-            d_dbg.logt("Error: Destination entity doesn't exist")
+            d_dbg::logt("Error: Destination entity doesn't exist")
           } else if isActivated() {
             if !entCheckCollision(ent) {
               chara.rect.x = ent.rect.x
@@ -1055,7 +1055,7 @@ fn update*() {
 
 fn drawGuideRects() {
   for i, guide in guides {
-    d_util.drawRectLines(th.yellow, cameraOffsetRect(guide))
+    d_util::drawRectLines(th::yellow, cameraOffsetRect(guide))
   }
 }
 
@@ -1066,12 +1066,12 @@ fn drawOutlines() {
 
   for i, renderTile in renderTiles {
     if renderTile.id == 29 {
-      canvas.drawRect(0x9999FFFF, d_util.rectShrink(renderTile.rect, (-3)*cameraScale))
+      canvas::drawRect(0x9999FFFF, d_util::rectShrink(renderTile.rect, (-3)*cameraScale))
     }
     if (renderTile.id == 30) || (renderTile.id == 31) {
       radius := radiusPulsing
-      canvas.drawRect(0x000000FF, d_util.rectShrink(renderTile.rect, (-radius-1)*cameraScale))
-      canvas.drawRect(0xFFFF00FF, d_util.rectShrink(renderTile.rect, -radius*cameraScale))
+      canvas::drawRect(0x000000FF, d_util::rectShrink(renderTile.rect, (-radius-1)*cameraScale))
+      canvas::drawRect(0xFFFF00FF, d_util::rectShrink(renderTile.rect, -radius*cameraScale))
     }
   }
 }
@@ -1082,9 +1082,9 @@ fn drawOverlays() {
   for i, renderTile in renderTiles {
     switch renderTile.id {
       case 31: 
-        d_util.drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 30 : 31), renderTile.rect)
+        d_util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 30 : 31), renderTile.rect)
       case 30: 
-        d_util.drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 31 : 30), renderTile.rect)
+        d_util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 31 : 30), renderTile.rect)
       default:
     }
   }
@@ -1092,14 +1092,14 @@ fn drawOverlays() {
 
 fn draw*() {
   // RENDER BG //
-  input.gamepad().rumble(rumbling*5, rumbling*5)
-  bgCam := rect.Rect{camera.x, camera.y, d_global.screen.w/cameraScale, d_global.screen.h/cameraScale}
+  input::gamepad().rumble(rumbling*5, rumbling*5)
+  bgCam := rect::Rect{camera.x, camera.y, d_global::screen.w/cameraScale, d_global::screen.h/cameraScale}
   bgCam.x /= 2
   bgCam.y /= 2
-  rumbling = d_rerp.iReal(rumbling, 0, th.delta/100.0)
+  rumbling = d_rerp::iReal(rumbling, 0, th::delta/100.0)
   oldScale := cameraScale 
   oldPos := camera
-  d_background.draw(bgCam)
+  d_background::draw(bgCam)
 
 
   bgAudio.setVol(1.0-fadeout)
@@ -1108,7 +1108,7 @@ fn draw*() {
   drawOutlines()
   world.drawLayer(cameraOffsetPoint({0, 0}), 0, cameraScale)
   drawOverlays()
-  canvas.drawRect(th.black*trunc((1.0-fadeout)*real(0xFF)), d_global.screen)
+  canvas::drawRect(th::black*trunc((1.0-fadeout)*real(0xFF)), d_global::screen)
   drawEntities()
     
   for i, state in saves {
@@ -1125,7 +1125,7 @@ fn draw*() {
   if showDebug {
     _drawRectTangents(chara.rect)
     drawGuideRects()
-    d_util.drawRectLines(th.green, cameraOffsetRect(getCameraTargetRect()))
+    d_util::drawRectLines(th::green, cameraOffsetRect(getCameraTargetRect()))
     drawEntityDebugRects()
   }
 

@@ -1,6 +1,6 @@
 import "window.um"
 
-cursor := window.Cursor.system
+cursor := window::Cursor.system
 cursorSet := false
 
 /**
@@ -9,11 +9,11 @@ cursorSet := false
  * @note Refer to window.um for the cursor values. 0 represents the default 
  *       cursor. 
  */
-fn setCursor*(newCursor: window.Cursor) {
+fn setCursor*(newCursor: window::Cursor) {
   if newCursor == .system {
     if !cursorSet {
       cursor = .system
-      window.setCursor(.system)
+      window::setCursor(.system)
     }
     cursorSet = false
     return
@@ -22,6 +22,6 @@ fn setCursor*(newCursor: window.Cursor) {
   cursorSet = true
   if cursor != newCursor {
     cursor = newCursor
-    window.setCursor(cursor)
+    window::setCursor(cursor)
   }
 }

@@ -3,7 +3,7 @@ import "rect.um"
 type (
   Window* = struct {
     lastFrameTouched: int
-    rect: rect.Rect
+    rect: rect::Rect
     layer: int
   }
 
@@ -24,7 +24,7 @@ fn (wm: ^WM) isWindowVisible*(name: str): bool {
   return validkey(wm.windows, name) && wm.windows[name].lastFrameTouched == wm.frameNumber && wm.windowVisibility[name]
 }
 
-fn (wm: ^WM) getWindowRect*(name: str, fallback: rect.Rect): ^rect.Rect {
+fn (wm: ^WM) getWindowRect*(name: str, fallback: rect::Rect): ^rect::Rect {
   if validkey(wm.windows, name) {
     wm.windows[name].lastFrameTouched = wm.frameNumber
     return &wm.windows[name].rect

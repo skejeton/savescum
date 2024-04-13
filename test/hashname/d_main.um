@@ -4,9 +4,9 @@ import (
 )
 
 fn init*() {
-  d_test.isUnitTest(true)
+  d_test::isUnitTest(true)
 
   for i := 0; i < 100; i++ {
-    printf("%2d %s\n", i, d_hashname.name(i))
+    printf("%2d %s\n", i, d_hashname::name(i))
   }
 }

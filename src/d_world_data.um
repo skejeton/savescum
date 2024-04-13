@@ -12,11 +12,11 @@ type (
     id: str
     name: str
     tags: str
-    rect: rect.Rect
+    rect: rect::Rect
   }
 
   WorldData* = struct {
-    world: d_world.World
+    world: d_world::World
     entities: []EntityDesc
   }
 )
@@ -26,7 +26,7 @@ const (
 )
 
 fn saveEntityDesc(ent: EntityDesc): []str {
-  return append([]str{ent.id, ent.name, ent.tags}, d_csvutil.saveRect(ent.rect))
+  return append([]str{ent.id, ent.name, ent.tags}, d_csvutil::saveRect(ent.rect))
 } 
 
 fn save*(wd: WorldData): str {
@@ -42,19 +42,19 @@ fn save*(wd: WorldData): str {
   }
 
   // player pos
-  data = append(data, []str{std.itoa(trunc(world.playerSpawnPos.x)), std.itoa(trunc(world.playerSpawnPos.y))})
+  data = append(data, []str{std::itoa(trunc(world.playerSpawnPos.x)), std::itoa(trunc(world.playerSpawnPos.y))})
 
   // Start from -1, because that's the background layer, which maps to index 0
   layerNo := -1
   for i in world.tilemap {
     layer := &world.tilemap[i]
     for pos, chunk in layer { 
-      data = append(data, []str{std.itoa(pos.x), std.itoa(pos.y), std.itoa(layerNo)})
+      data = append(data, []str{std::itoa(pos.x), std::itoa(pos.y), std::itoa(layerNo)})
       
-      grid := make([][]str, d_world.chunkH)
-      for ty := 0; ty < d_world.chunkH; ty++ {
-        grid[ty] = make([]str, d_world.chunkW)
-        for tx := 0; tx < d_world.chunkW; tx++ {
+      grid := make([][]str, d_world::chunkH)
+      for ty := 0; ty < d_world::chunkH; ty++ {
+        grid[ty] = make([]str, d_world::chunkW)
+        for tx := 0; tx < d_world::chunkW; tx++ {
           grid[ty][tx] = sprintf("%d", chunk[tx][ty])
         }
       }
@@ -64,26 +64,26 @@ fn save*(wd: WorldData): str {
     layerNo++
   }
 
-  return csv.encode(data)
+  return csv::encode(data)
 }
 
 fn loadEntityDesc(s: []str): EntityDesc {
-  return EntityDesc{id: s[0], name: s[1], tags: s[2], rect: d_csvutil.loadRect(slice(s, 3, 7))}
+  return EntityDesc{id: s[0], name: s[1], tags: s[2], rect: d_csvutil::loadRect(slice(s, 3, 7))}
 }
 
-fn load*(world: d_world.World, data: str): WorldData {
-  csvData := csv.parse(data)
+fn load*(world: d_world::World, data: str): WorldData {
+  csvData := csv::parse(data)
 
   var (
     entities: []EntityDesc = make([]EntityDesc, 0)
   )
 
-  world.tilemap = [3]map[d_world.ChunkPos]d_world.Chunk{map[d_world.ChunkPos]d_world.Chunk{}, map[d_world.ChunkPos]d_world.Chunk{}, map[d_world.ChunkPos]d_world.Chunk{}}
+  world.tilemap = [3]map[d_world::ChunkPos]d_world::Chunk{map[d_world::ChunkPos]d_world::Chunk{}, map[d_world::ChunkPos]d_world::Chunk{}, map[d_world::ChunkPos]d_world::Chunk{}}
 
-  std.assert(csvData[0][0] == lastVersion, "Scene version mismatch.")
+  std::assert(csvData[0][0] == lastVersion, "Scene version mismatch.")
 
   row := 1
-  entityCount := std.atoi(csvData[1][0])
+  entityCount := std::atoi(csvData[1][0])
   row += 1
 
   for i := 0; i < entityCount; i++ {
@@ -91,27 +91,27 @@ fn load*(world: d_world.World, data: str): WorldData {
   }
   row += entityCount
 
-  world.playerSpawnPos = th.Vf2{real(std.atoi(csvData[row][0])), real(std.atoi(csvData[row][1]))}
+  world.playerSpawnPos = th::Vf2{real(std::atoi(csvData[row][0])), real(std::atoi(csvData[row][1]))}
 
   row += 1
 
   length := len(csvData)
   // NOTE: I check first column of the csv data because csv parser adds bogus row with empty string
   for row < length && csvData[row][0] != "" {
-    chunkPos := d_world.ChunkPos{std.atoi(csvData[row][0]), std.atoi(csvData[row][1])}
-    layer := std.atoi(csvData[row][2]) + 1
+    chunkPos := d_world::ChunkPos{std::atoi(csvData[row][0]), std::atoi(csvData[row][1])}
+    layer := std::atoi(csvData[row][2]) + 1
     row += 1
 
-    std.assert(layer >= 0 && layer <= 2, "Bad layer number.")
+    std::assert(layer >= 0 && layer <= 2, "Bad layer number.")
 
-    var chunk: d_world.Chunk
-    for y := 0; y < d_world.chunkH; y++ {
-      for x := 0; x < d_world.chunkW; x++ {
-        tileId := std.atoi(csvData[row+y][x])
+    var chunk: d_world::Chunk
+    for y := 0; y < d_world::chunkH; y++ {
+      for x := 0; x < d_world::chunkW; x++ {
+        tileId := std::atoi(csvData[row+y][x])
         chunk[x][y] = tileId        
       }
     }
-    row += d_world.chunkH
+    row += d_world::chunkH
 
     world.tilemap[layer][chunkPos] = chunk
   }

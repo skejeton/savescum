@@ -3,7 +3,7 @@ import (
   "../../src/d_test.um"
 )
 
-fn printElem(elem: ^d_tree.Elem, depth: int = 0) {
+fn printElem(elem: ^d_tree::Elem, depth: int = 0) {
   for i := 0; i < depth; i++ {
     printf("  ")
   }
@@ -14,8 +14,8 @@ fn printElem(elem: ^d_tree.Elem, depth: int = 0) {
 }
 
 fn init*() {
-  d_test.isUnitTest(true)
-  theTree := d_tree.init()
+  d_test::isUnitTest(true)
+  theTree := d_tree::init()
 
   for i := 0; i < 100; i++ {
     theTree.pushElement("Root")

@@ -39,29 +39,29 @@ fn constructAppearingTextFromUnit*(text: str, trustedUnit: real): AppearingText 
 //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
 
 type VisualTextCursor* = struct {
-  position: th.Vf2
+  position: th::Vf2
   height: real
 }
 
-fn visualTextCursorFromEnd*(font: th_font.Font, text: str): VisualTextCursor {
-  lines := strings.splitBy(text, '\n')
+fn visualTextCursorFromEnd*(font: th_font::Font, text: str): VisualTextCursor {
+  lines := strings::splitBy(text, '\n')
   fontHeight := font.measure(" ").y
 
   return VisualTextCursor{
-    position: th.Vf2{font.measure(lines[len(lines)-1]).x, (len(lines)-1) * fontHeight},
+    position: th::Vf2{font.measure(lines[len(lines)-1]).x, (len(lines)-1) * fontHeight},
     height: fontHeight}
 }
 
-fn drawAppearingText*(subject: ^AppearingText, font: th_font.Font, at: th.Vf2, color: uint32) {
+fn drawAppearingText*(subject: ^AppearingText, font: th_font::Font, at: th::Vf2, color: uint32) {
   // Draw previous text
   font.draw(subject.text, at, color)
   
   // Draw appearing letter
   appearingLetterPosition := visualTextCursorFromEnd(font, subject.text).position
-  font.draw(subject.next, at.add(appearingLetterPosition), th_color.alpha(color, subject.t), subject.t)
+  font.draw(subject.next, at.add(appearingLetterPosition), th_color::alpha(color, subject.t), subject.t)
 }
 
-fn measureAppearingText*(subject: ^AppearingText, font: th_font.Font): th.Vf2 {
+fn measureAppearingText*(subject: ^AppearingText, font: th_font::Font): th::Vf2 {
   size := font.measure(subject.text)
   
   // NOTE(skejeton): Kind of a hack, but we don't really want spaces to go into the size eh?

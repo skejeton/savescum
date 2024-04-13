@@ -4,7 +4,7 @@ import (
 
 type WrappingLayout* = struct {
   boundary: real
-  position: th.Vf2
+  position: th::Vf2
   lineHeight: real
 }
 
@@ -12,7 +12,7 @@ fn makeWrappingLayoutFromBoundary*(boundary: real): WrappingLayout {
   return WrappingLayout{boundary: boundary}
 }
 
-fn (l: ^WrappingLayout) push*(size: th.Vf2): th.Vf2 {
+fn (l: ^WrappingLayout) push*(size: th::Vf2): th::Vf2 {
   if l.lineHeight < size.y {
     l.lineHeight = size.y
   }
@@ -25,17 +25,17 @@ fn (l: ^WrappingLayout) push*(size: th.Vf2): th.Vf2 {
     l.lineHeight = size.y
   }
   
-  return th.Vf2{l.position.x - size.x, l.position.y}
+  return th::Vf2{l.position.x - size.x, l.position.y}
 }
 
-fn (l: ^WrappingLayout) wrap*(): th.Vf2 {
+fn (l: ^WrappingLayout) wrap*(): th::Vf2 {
   l.position.x = 0
   l.position.y += l.lineHeight
   l.lineHeight = 0
   return l.position
 }
 
-fn (l: ^WrappingLayout) wrapAtMin*(height: real): th.Vf2 {
+fn (l: ^WrappingLayout) wrapAtMin*(height: real): th::Vf2 {
   l.position.x = 0
   if l.lineHeight > height {
     l.position.y += l.lineHeight
@@ -79,7 +79,7 @@ fn (l: ^WrappingLayout) wrapAtMin*(height: real): th.Vf2 {
 // that's where partialPush() is needed, in essence, `full` is just a width to
 // wrap by, and size is the actual width we are going to push
 // 
-fn (l: ^WrappingLayout) pushPartial*(size: th.Vf2, full: real): th.Vf2 {
+fn (l: ^WrappingLayout) pushPartial*(size: th::Vf2, full: real): th::Vf2 {
   if l.position.x != 0 && full + l.position.x > l.boundary {
     l.wrapAtMin(size.y)
   }

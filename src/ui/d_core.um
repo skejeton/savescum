@@ -20,17 +20,17 @@ type InputSink* = struct {
 }
 
 type Core* = struct {
-  mouseState: d_mouseinput.MouseState
+  mouseState: d_mouseinput::MouseState
   frameNumber: uint
   inputSink: InputSink
 
-  ctx: d_drawcmd.DrawContext
-  tools: ^d_atoms.ToolNode
-  currentTool: ^d_atoms.ToolNode
-  maybeActiveTool: ^d_atoms.ToolNode
-  activeTool: ^d_atoms.ToolNode
-  hoveredTool: ^d_atoms.ToolNode
-  focusedTool: ^d_atoms.ToolNode
+  ctx: d_drawcmd::DrawContext
+  tools: ^d_atoms::ToolNode
+  currentTool: ^d_atoms::ToolNode
+  maybeActiveTool: ^d_atoms::ToolNode
+  activeTool: ^d_atoms::ToolNode
+  hoveredTool: ^d_atoms::ToolNode
+  focusedTool: ^d_atoms::ToolNode
 }
 
 type Events* = struct {
@@ -38,18 +38,18 @@ type Events* = struct {
   // The events the element itself has sunk, so we can return true if the event were to be queried again.
   acquired: InputSink
   mask: InputSink
-  mouseState: d_mouseinput.MouseState
+  mouseState: d_mouseinput::MouseState
 }
 
-fn (core: ^Core) getToolState*(tool: ^d_atoms.ToolNode): d_atoms.ToolState {
-  return d_atoms.ToolState{
+fn (core: ^Core) getToolState*(tool: ^d_atoms::ToolNode): d_atoms::ToolState {
+  return d_atoms::ToolState{
     active: tool == core.activeTool,
     hovered: tool == core.hoveredTool,
     focused: tool == core.focusedTool
   }
 }
 
-fn (core: ^Core) maybeAcquireToolNode(name: str): ^d_atoms.ToolNode {
+fn (core: ^Core) maybeAcquireToolNode(name: str): ^d_atoms::ToolNode {
   if core.currentTool == null {
     core.currentTool = core.tools
   }
@@ -61,12 +61,12 @@ fn (core: ^Core) maybeAcquireToolNode(name: str): ^d_atoms.ToolNode {
   return core.currentTool.children[name]
 }
 
-fn (core: ^Core) acquireToolNode*(name: str): ^d_atoms.ToolNode {
+fn (core: ^Core) acquireToolNode*(name: str): ^d_atoms::ToolNode {
   node := core.maybeAcquireToolNode(name)
 
   if node == null {
-    tool := new(d_atoms.ToolNode)
-    tool ^= d_atoms.ToolNode{children: map[str]^d_atoms.ToolNode{}, parent: core.currentTool}
+    tool := new(d_atoms::ToolNode)
+    tool ^= d_atoms::ToolNode{children: map[str]^d_atoms::ToolNode{}, parent: core.currentTool}
     node = tool
     core.currentTool.children[name] = node    
   }
@@ -75,7 +75,7 @@ fn (core: ^Core) acquireToolNode*(name: str): ^d_atoms.ToolNode {
 }
 
 // Prunes all tools untouched last frame
-fn (core: ^Core) pruneToolsRecursive*(node: ^d_atoms.ToolNode) {
+fn (core: ^Core) pruneToolsRecursive*(node: ^d_atoms::ToolNode) {
   if node.lastFrameTouched == -1 {
     // Nodes with last frame -1 are not candidates to pruning (just a hardcoded value).
     // Here we automatically unfreeze the node because you need to freeze it every time.
@@ -101,7 +101,7 @@ fn (core: ^Core) freezeTool*(name: str) {
   }
 }
 
-fn (core: ^Core) beginTool*(name: str, toolRect: rect.Rect): ^d_atoms.ToolNode {
+fn (core: ^Core) beginTool*(name: str, toolRect: rect::Rect): ^d_atoms::ToolNode {
   node := core.acquireToolNode(name)
   node.lastFrameTouched = core.frameNumber
   node.rect = toolRect
@@ -114,10 +114,10 @@ fn (core: ^Core) beginTool*(name: str, toolRect: rect.Rect): ^d_atoms.ToolNode {
   }
  
   if ok, scissorRect := core.ctx.getCurrentScissorRect(); ok {
-    isOverMaybeActiveTool = isOverMaybeActiveTool && d_util.rectVsPoint(scissorRect, core.mouseState.pos)
+    isOverMaybeActiveTool = isOverMaybeActiveTool && d_util::rectVsPoint(scissorRect, core.mouseState.pos)
   }
 
-  if isOverMaybeActiveTool && d_util.rectVsPoint(node.rect, core.mouseState.pos) {
+  if isOverMaybeActiveTool && d_util::rectVsPoint(node.rect, core.mouseState.pos) {
     core.maybeActiveTool = node
   }
 
@@ -137,7 +137,7 @@ fn (core: ^Core) getCurrentToolName*(): str {
   return ""
 }
 
-fn (core: ^Core) getCurrentToolState*(): d_atoms.ToolState {
+fn (core: ^Core) getCurrentToolState*(): d_atoms::ToolState {
   return core.getToolState(core.currentTool)
 }
 
@@ -163,11 +163,11 @@ fn initInputSinkSet*(): InputSink {
 
 fn (core: ^Core) endTool*(): Events {
   if core.currentTool.parent == null {
-    std.assert(false, "Parent node is null, beginTool/endTool mismatched!")
+    std::assert(false, "Parent node is null, beginTool/endTool mismatched!")
   }
 
   mask := InputSink{}
-  if !d_atoms.areToolsRelated(core.currentTool, core.activeTool) {
+  if !d_atoms::areToolsRelated(core.currentTool, core.activeTool) {
     // Block all events if the current tool isn't hovered.
     mask = initInputSinkSet()
   }
@@ -206,7 +206,7 @@ fn sinkAcquireMaskEvent*(sink, acquire: ^InputSink, mask: InputSink, event: Even
   e := int(event)
 
   if e < 0 || e >= int(EventMouse._count) {
-    std.assert(false, sprintf("Invalid event id: %d", e))
+    std::assert(false, sprintf("Invalid event id: %d", e))
   }
 
   // This event is masked so we can't process it.
@@ -240,20 +240,20 @@ fn (events: ^Events) queryMouse*(btn: EventMouse, which: int): bool {
     return false
   }
 
-  var mouseButton: d_mouseinput.MouseButtonState
+  var mouseButton: d_mouseinput::MouseButtonState
 
   switch btn {
     case .left: mouseButton = events.mouseState.lmb
     case .middle: mouseButton = events.mouseState.mmb
     case .right: mouseButton = events.mouseState.rmb
-    default: std.assert(false, sprintf("Invalid mouse button index %d", btn))
+    default: std::assert(false, sprintf("Invalid mouse button index %d", btn))
   }
 
   switch which {
-    case d_mouseinput.down: return mouseButton.isDown
-    case d_mouseinput.pressed: return mouseButton.isPressed
-    case d_mouseinput.released: return mouseButton.isReleased
-    default: std.assert(false, sprintf("Invalid mouse button property index %d", which))
+    case d_mouseinput::down: return mouseButton.isDown
+    case d_mouseinput::pressed: return mouseButton.isPressed
+    case d_mouseinput::released: return mouseButton.isReleased
+    default: std::assert(false, sprintf("Invalid mouse button property index %d", which))
   }
 
   return false

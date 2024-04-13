@@ -13,39 +13,39 @@ import (
 type T = struct {x, y: int}
 
 var (
-  screen: rect.Rect
-  tileset: d_tileset.Tileset
+  screen: rect::Rect
+  tileset: d_tileset::Tileset
   ts: []T
 )
 
 fn init*() {
-  d_test.isUnitTest(false)
+  d_test::isUnitTest(false)
   
-  window.setup("title", 640, 480)
+  window::setup("title", 640, 480)
   screen = {0, 0, 640, 480}
-  tileset = d_tileset.fromImage(image.load(d_test.pfx()+"medium.png").item0, 32, 32, 1)
+  tileset = d_tileset::fromImage(image::load(d_test::pfx()+"medium.png").item0, 32, 32, 1)
   ts = []T{T{0, 0}, T{2, 2}, T{1, 0}, T{5, 5}, T{0, 4}}
   
-  window.onFrame.register({
+  window::onFrame.register({
     for _, t in ts {
       tileset.selectTile(t.x, t.y)
-      tileset.image.draw(d_util.posTrans(t.x*32, t.y*32))
-      d_util.drawRectLines(th.red, rect.Rect{t.x*32, t.y*32, 32, 32})
+      tileset.image.draw(d_util::posTrans(t.x*32, t.y*32))
+      d_util::drawRectLines(th::red, rect::Rect{t.x*32, t.y*32, 32, 32})
     }
     
     for i := 1; tileset.isTileValid(i); i++ {
       p := tileset.posToTile(i)
-      t := p.add(th.Vf2{5, 0}).mul(th.Vf2{32, 32})
-      idStr := std.itoa(tileset.tileToPos(trunc(p.x), trunc(p.y)))
+      t := p.add(th::Vf2{5, 0}).mul(th::Vf2{32, 32})
+      idStr := std::itoa(tileset.tileToPos(trunc(p.x), trunc(p.y)))
       tileset.selectTilePos(i)
-      tileset.image.draw(d_util.posTrans(t.x, t.y))
-      d_util.drawRectLines(th.blue, rect.Rect{t.x, t.y, 32, 32})
+      tileset.image.draw(d_util::posTrans(t.x, t.y))
+      d_util::drawRectLines(th::blue, rect::Rect{t.x, t.y, 32, 32})
       
-      canvas.drawText(idStr, t.sub(th.Vf2{-1, 0}), th.white, 1)
-      canvas.drawText(idStr, t.sub(th.Vf2{1, 0}), th.white, 1)
-      canvas.drawText(idStr, t.sub(th.Vf2{0, 1}), th.white, 1)
-      canvas.drawText(idStr, t.sub(th.Vf2{0, -1}), th.white, 1)
-      canvas.drawText(idStr, t, th.black, 1)
+      canvas::drawText(idStr, t.sub(th::Vf2{-1, 0}), th::white, 1)
+      canvas::drawText(idStr, t.sub(th::Vf2{1, 0}), th::white, 1)
+      canvas::drawText(idStr, t.sub(th::Vf2{0, 1}), th::white, 1)
+      canvas::drawText(idStr, t.sub(th::Vf2{0, -1}), th::white, 1)
+      canvas::drawText(idStr, t, th::black, 1)
     }
   })
 }

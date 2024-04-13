@@ -11,46 +11,46 @@ import (
   "../../src/d_problem_screen.um"
 )
 
-var screen: rect.Rect
+var screen: rect::Rect
 var scale: real
-var offset: th.Vf2
-var oldMousePos: th.Vf2
+var offset: th::Vf2
+var oldMousePos: th::Vf2
 
 fn init*() {
-  d_test.isUnitTest(false)
+  d_test::isUnitTest(false)
 
-  window.setup("Bg test", 800, 600)
+  window::setup("Bg test", 800, 600)
 
-  rl := d_resources.initResourceLoader()
-  d_background.init(&rl)
+  rl := d_resources::initResourceLoader()
+  d_background::init(&rl)
 
-  if d_resources.hasErrors(&rl) {
-    d_problem_screen.showResourceLoadingError(&rl)
+  if d_resources::hasErrors(&rl) {
+    d_problem_screen::showResourceLoadingError(&rl)
     exit(1)
   }
 
 
   screen = {0, 0, 800, 600}
   scale = 1.0
-  offset = th.Vf2{0, 0}
-  oldMousePos = input.getMousePos()
+  offset = th::Vf2{0, 0}
+  oldMousePos = input::getMousePos()
 
-  window.onFrame.register({
-    if input.isPressed(.mouse2) {
-      offset = offset.add(input.getMousePos().sub(oldMousePos))
+  window::onFrame.register({
+    if input::isPressed(.mouse2) {
+      offset = offset.add(input::getMousePos().sub(oldMousePos))
     }
-    if input.isPressedc('=') {
-      scale += th.delta/1000.0
+    if input::isPressedc('=') {
+      scale += th::delta/1000.0
     } 
-    if input.isPressedc('-') {
-      scale -= th.delta/1000.0
+    if input::isPressedc('-') {
+      scale -= th::delta/1000.0
     }
 
-    oldMousePos = input.getMousePos()
+    oldMousePos = input::getMousePos()
 
-    canvas.drawRect(th.black, screen)
-    content := d_util.rectCenterWithinRect({0, 0, 640, 480}, screen)
-    d_background.drawCave(content, offset.mulf(-1), th.Vf2{scale, scale})
-    d_util.drawRectLines(th.red, content)
+    canvas::drawRect(th::black, screen)
+    content := d_util::rectCenterWithinRect({0, 0, 640, 480}, screen)
+    d_background::drawCave(content, offset.mulf(-1), th::Vf2{scale, scale})
+    d_util::drawRectLines(th::red, content)
   })
  }

@@ -4,10 +4,10 @@ import (
   "../../src/d_mouseinput.um"
 )
 
-var ui: d_ui.Ui
+var ui: d_ui::Ui
 var x: real
 var y: real
-var mi: d_mouseinput.MouseState
+var mi: d_mouseinput::MouseState
 
 fn widgetWindow(title: str) {
   _x := x
@@ -26,11 +26,11 @@ fn widgetWindow(title: str) {
 }
 
 fn init*() {
-  window.setup("UI test", 1920, 1080)
+  window::setup("UI test", 1920, 1080)
 
-  ui = d_ui.create()
+  ui = d_ui::create()
 
-  window.onFrame.register({
+  window::onFrame.register({
     mi = mi.updated()
 
     ui.begin()

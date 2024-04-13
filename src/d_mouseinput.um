@@ -14,10 +14,10 @@ type (
     lmb: MouseButtonState
     mmb: MouseButtonState
     rmb: MouseButtonState
-    scroll: th.Vf2
-    pos: th.Vf2
-    lastPos: th.Vf2 
-    delta: th.Vf2 // mousePos - lastMousePos
+    scroll: th::Vf2
+    pos: th::Vf2
+    lastPos: th::Vf2 
+    delta: th::Vf2 // mousePos - lastMousePos
   }
 )
 
@@ -28,11 +28,11 @@ const (
   released* = 2
 )
 
-fn (prev: ^MouseButtonState) updated*(button: input.Key): MouseButtonState {
+fn (prev: ^MouseButtonState) updated*(button: input::Key): MouseButtonState {
   return MouseButtonState{
-    isDown: input.isPressed(button),
-    isPressed: input.isJustPressed(button),
-    isReleased: input.isJustReleased(button)
+    isDown: input::isPressed(button),
+    isPressed: input::isJustPressed(button),
+    isReleased: input::isJustReleased(button)
   }
 }
 
@@ -41,9 +41,9 @@ fn (prev: ^MouseState) updated*(): MouseState {
     lmb: prev.lmb.updated(.mouse1),
     mmb: prev.mmb.updated(.mouse2),
     rmb: prev.rmb.updated(.mouse3), 
-    scroll: input.getMouseScroll(),
-    pos: input.getMousePos(),
+    scroll: input::getMouseScroll(),
+    pos: input::getMousePos(),
     lastPos: prev.pos,
-    delta: input.getMousePos().sub(prev.pos)
+    delta: input::getMousePos().sub(prev.pos)
   }
 }

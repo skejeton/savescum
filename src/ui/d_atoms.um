@@ -7,7 +7,7 @@ type ToolNode* = struct {
   // If set to -1, the node is frozen and not pruned therefore.
   lastFrameTouched: int
   layer: int
-  rect: rect.Rect
+  rect: rect::Rect
 }
 
 type ToolState* = struct {

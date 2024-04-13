@@ -48,29 +48,29 @@ type VisualConsole* = struct {
 }
 
 type RenderPass = struct {
-  rect: rect.Rect
-  pos: th.Vf2
-  font: th_font.Font
+  rect: rect::Rect
+  pos: th::Vf2
+  font: th_font::Font
 }
 
-fn blockRect*(pass: ^RenderPass, block: str): rect.Rect {
+fn blockRect*(pass: ^RenderPass, block: str): rect::Rect {
   height := pass.font.measure(block).y
 
-  return rect.Rect{pass.rect.x, pass.pos.y-height, pass.rect.w, height}
+  return rect::Rect{pass.rect.x, pass.pos.y-height, pass.rect.w, height}
 }
 
 // renders a single block and moves upwards
 
-fn allocBlock*(pass: ^RenderPass, block: str): rect.Rect {
+fn allocBlock*(pass: ^RenderPass, block: str): rect::Rect {
   r := blockRect(pass, block)
   pass.pos.y -= r.h
   return r
 }
 
-fn renderBlock*(pass: ^RenderPass, vc: ^VisualConsole, r: rect.Rect, block: str, bg, fg: uint32) {
-  pos := r.getPos().add(th.Vf2{0, vc.visualScroll})
+fn renderBlock*(pass: ^RenderPass, vc: ^VisualConsole, r: rect::Rect, block: str, bg, fg: uint32) {
+  pos := r.getPos().add(th::Vf2{0, vc.visualScroll})
   if pos.y > pass.rect.y-r.h && pos.y < pass.rect.y+pass.rect.h {
-    canvas.drawRect(bg, {pos.x, pos.y, r.w, r.h})
+    canvas::drawRect(bg, {pos.x, pos.y, r.w, r.h})
     pass.font.draw(block, pos, fg)
   }
 }
@@ -80,18 +80,18 @@ fn (vc: ^VisualConsole) scrollBy*(delta: real) {
 }
 
 // NOTE: this function does not clip
-fn render*(con: ^Console, vc: ^VisualConsole, font: th_font.Font, r: rect.Rect) { 
-  pass := RenderPass{r, th.Vf2{r.x, r.y+r.h}, font}
+fn render*(con: ^Console, vc: ^VisualConsole, font: th_font::Font, r: rect::Rect) { 
+  pass := RenderPass{r, th::Vf2{r.x, r.y+r.h}, font}
   startY := pass.pos.y
 
-  canvas.drawRect(th_color.alpha(th.black, 0.95), r)
+  canvas::drawRect(th_color::alpha(th::black, 0.95), r)
   
   // FIXME: Inefficent
   //        right now size calculation and layouting of this console is done at the same time,
   //        so we cant spatially optimize its rendering
   for i in con.blocks {
     block := con.blocks[len(con.blocks)-i-1]
-    block = d_strings.joinBy(d_util.wrapText(&font, block, r.w), "\n")
+    block = d_strings::joinBy(d_util::wrapText(&font, block, r.w), "\n")
 
     alpha := (pass.pos.y+vc.visualScroll)/r.h+0.4
     if alpha > 1.0 { alpha = 1.0; }
@@ -103,12 +103,12 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: th_font.Font, r: rect.Rect) 
 
     blockRect := allocBlock(&pass, block)
     
-    renderBlock(&pass, vc, blockRect, block, th_color.alpha(bg, alpha*0.05), th_color.alpha(th.white, alpha))
+    renderBlock(&pass, vc, blockRect, block, th_color::alpha(bg, alpha*0.05), th_color::alpha(th::white, alpha))
   }
 
   vc.scrolley.clientsz = r.h
   vc.scrolley.contentsz = startY-pass.pos.y
 
   // TODO: use delta
-  vc.visualScroll = d_rerp.iReal(vc.visualScroll, vc.scrolley.scroll, 0.2)
+  vc.visualScroll = d_rerp::iReal(vc.visualScroll, vc.scrolley.scroll, 0.2)
 }

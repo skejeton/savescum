@@ -9,15 +9,15 @@ import (
 )
 
 var (
-  fonterr: std.Err
-  font: th_font.Font
-  scroll: th.Vf2
-  y: th.fu
+  fonterr: std::Err
+  font: th_font::Font
+  scroll: th::Vf2
+  y: th::fu
 )
 
 fn restart() {
   y = 0
-  canvas.drawRect(th.black, {0, 0, window.w, window.h})
+  canvas::drawRect(th::black, {0, 0, window::w, window::h})
 }
 
 fn charToUpper(c: char): char {
@@ -37,47 +37,47 @@ fn makeUppercase(text: str): str {
   return newText
 }
 
-fn fontHeight(): th.fu {
+fn fontHeight(): th::fu {
   if fonterr.code == 0 {
     return font.measure(" ").y
   }
   return 10.0
 }
 
-fn drawText(text: str, pos: th.Vf2, color: uint32) {
+fn drawText(text: str, pos: th::Vf2, color: uint32) {
   if fonterr.code == 0 {
-    font.draw(text, pos, color, 1*window.getDpiScaleFactor())
+    font.draw(text, pos, color, 1*window::getDpiScaleFactor())
   } else {
-    canvas.drawText(makeUppercase(text), pos, color, 2*window.getDpiScaleFactor())
+    canvas::drawText(makeUppercase(text), pos, color, 2*window::getDpiScaleFactor())
   }
 }
 
-fn pushText(text: str, color: uint32 = th.white) {
-  drawText(text, th.Vf2{0, y}.add(scroll), color)
-  y += (fontHeight() + 10.0)*window.getDpiScaleFactor()
+fn pushText(text: str, color: uint32 = th::white) {
+  drawText(text, th::Vf2{0, y}.add(scroll), color)
+  y += (fontHeight() + 10.0)*window::getDpiScaleFactor()
 }
 
 fn init() {
   // Try to load a better font, the fallback will be used otherwise.
-  font, fonterr = th_font.load("data/font/monospace.ttf", 16)
+  font, fonterr = th_font::load("data/font/monospace.ttf", 16)
 }
 
-oldMousePos := th.Vf2{0, 0}
+oldMousePos := th::Vf2{0, 0}
 
-fn showResourceLoadingError*(loader: ^d_resources.ResourceLoader) {
+fn showResourceLoadingError*(loader: ^d_resources::ResourceLoader) {
   init()
-  window.onFrame.clear()
-  window.onFrame.register(|loader| {
-    newMousePos := input.getMousePos()
+  window::onFrame.clear()
+  window::onFrame.register(|loader| {
+    newMousePos := input::getMousePos()
 
-    if input.isPressed(.mouse2) {
+    if input::isPressed(.mouse2) {
       scroll = scroll.add(newMousePos.sub(oldMousePos))
     }
 
     restart()
     pushText("The program couldn't load some resources:")
     for i, error in loader.errors {
-      pushText(" "+error, th.red)
+      pushText(" "+error, th::red)
     }
     oldMousePos = newMousePos
   })

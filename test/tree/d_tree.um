@@ -23,9 +23,9 @@ fn init*(): Tree {
 }
 
 fn (t: ^Tree) getFullKey*(key: str): str {
-  out := std.itoa(len(key))+key
+  out := std::itoa(len(key))+key
   for el := t.current; el != null; el = el.parent {
-    out = std.itoa(len(el.key))+el.key+"::"+out
+    out = std::itoa(len(el.key))+el.key+"::"+out
   }
   return out
 }

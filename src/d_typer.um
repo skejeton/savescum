@@ -63,7 +63,7 @@ fn (t: ^Typer) advance*(): (Event, Command) {
 
     return typerCommand, Command{verb, noun}
   } else {
-    rune := utf8.decodeRune(t.sequence, t.sequenceCursor)
+    rune := utf8::decodeRune(t.sequence, t.sequenceCursor)
     size := rune.size()
     t.message += slice(t.sequence, t.sequenceCursor, t.sequenceCursor+size)
     t.sequenceCursor += size

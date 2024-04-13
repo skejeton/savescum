@@ -20,17 +20,17 @@ type RenderCommand = struct {
   btn: bool
   text: str
   color: uint32
-  position: th.Vf2
+  position: th::Vf2
 }
 
 type WrapLayout = struct {
-  box: rect.Rect
-  position: th.Vf2
+  box: rect::Rect
+  position: th::Vf2
   maxY: real
 }
 
-fn (wl: ^WrapLayout) pushNode(size: th.Vf2): rect.Rect {
-  r := rect.Rect{x: wl.position.x, y: wl.position.y, w: size.x, h: size.y}
+fn (wl: ^WrapLayout) pushNode(size: th::Vf2): rect::Rect {
+  r := rect::Rect{x: wl.position.x, y: wl.position.y, w: size.x, h: size.y}
 
   wl.position.x += size.x
   wl.maxY = size.y > wl.maxY ? size.y : wl.maxY
@@ -74,7 +74,7 @@ fn valueToDisplay*(value: any): DisplayToLayout {
   return {text: sprintf("%v", value), color: 0xFF99FFFF}
 }
 
-fn renderDebugInfo*(font: font.Font, debugInfo: d_info.DebugInfo): rect.Rect {
+fn renderDebugInfo*(font: font::Font, debugInfo: d_info::DebugInfo): rect::Rect {
   displaysToLayout := []DisplayToLayout{}
 
   for _, display in debugInfo.displays {
@@ -92,7 +92,7 @@ fn renderDebugInfo*(font: font.Font, debugInfo: d_info.DebugInfo): rect.Rect {
     displaysToLayout = append(displaysToLayout, elements)
   }
 
-  wl := WrapLayout{box: rect.Rect{x: 0, y: 0}}
+  wl := WrapLayout{box: rect::Rect{x: 0, y: 0}}
   renderCommands := []RenderCommand{}
 
   alignment := [32]real([]real{})
@@ -126,12 +126,12 @@ fn renderDebugInfo*(font: font.Font, debugInfo: d_info.DebugInfo): rect.Rect {
     }
   }
 
-  canvas.drawRect(0x00000077, wl.box)
+  canvas::drawRect(0x00000077, wl.box)
 
   for _, command in renderCommands {
     size := font.measure(command.text)
     if command.btn {
-      canvas.drawRect(command.color&0xFFFFFF77, {command.position.x, command.position.y, size.x, size.y})
+      canvas::drawRect(command.color&0xFFFFFF77, {command.position.x, command.position.y, size.x, size.y})
     }
     font.draw(command.text, command.position, command.color)
   }

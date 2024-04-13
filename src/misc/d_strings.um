@@ -74,7 +74,7 @@ fn separateChar*(words: []str, c: char): []str {
 fn uniSliceFrom*(text: str, start: uint): str {
   startPos := 0
   for i := 0; i < start; i++ {
-    rune := utf8.decodeRune(text, startPos)
+    rune := utf8::decodeRune(text, startPos)
     startPos += rune.size()
   }
 
@@ -84,13 +84,13 @@ fn uniSliceFrom*(text: str, start: uint): str {
 fn uniSlice*(text: str, start, size: uint): str {
   startPos := 0
   for i := 0; i < start; i++ {
-    rune := utf8.decodeRune(text, startPos)
+    rune := utf8::decodeRune(text, startPos)
     startPos += rune.size()
   }
 
   endPos := startPos
   for i := 0; i < size; i++ {
-    rune := utf8.decodeRune(text, endPos)
+    rune := utf8::decodeRune(text, endPos)
     endPos += rune.size()
   }
 
@@ -104,3 +104,7 @@ fn uniRemove*(text: str, start, size: uint): str {
 fn uniInsert*(text: str, at: uint, other: str): str {
   return uniSlice(text, 0, at)+other+uniSliceFrom(text, at)
 }  
+
+fn windows2unix*(text: str): str {
+  return joinBy(splitBy(text, '\r'), "")
+}

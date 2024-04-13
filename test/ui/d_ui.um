@@ -7,16 +7,16 @@ import (
 
 
 type Ui* = struct {
-  tools: d_act.ToolList
-  actstatus: d_act.ActStatus
-  toolstack: []^d_act.Tool
+  tools: d_act::ToolList
+  actstatus: d_act::ActStatus
+  toolstack: []^d_act::Tool
 }
 
 fn create*(): Ui {
   return {}
 }
 
-fn (ui: ^Ui) beginTool*(id: str, r: rect.Rect) {
+fn (ui: ^Ui) beginTool*(id: str, r: rect::Rect) {
   tool := ui.tools.get(id)
   tool.r = r
   ui.toolstack = append(ui.toolstack, tool)
@@ -43,17 +43,17 @@ fn (ui: ^Ui) begin*() {
 }
 
 fn (ui: ^Ui) end*() {
-  mouseact := d_act.ActViaMouse{
-    mouse: input.getMousePos(),
-    pressing: input.isPressed(.mouse1),
-    tabbed: input.isPressedRepeat(.tab)
+  mouseact := d_act::ActViaMouse{
+    mouse: input::getMousePos(),
+    pressing: input::isPressed(.mouse1),
+    tabbed: input::isPressedRepeat(.tab)
   }
 
   ui.actstatus.update(&ui.tools, mouseact)
 
   for i, tool in ui.tools.tools {
-    canvas.drawRect(0x00000044, tool.r)
+    canvas::drawRect(0x00000044, tool.r)
   }
 
-  d_act.renderDebugInfo(&ui.actstatus)
+  d_act::renderDebugInfo(&ui.actstatus)
 }

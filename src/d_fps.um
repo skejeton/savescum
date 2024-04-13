@@ -18,12 +18,12 @@ fn avgFps() {
 }
 
 fn limit*(to: int) {
-  window.setTargetFps(to)
+  window::setTargetFps(to)
 }
 
 fn update*() {
-  if th.delta > 0 {
-    record[recordP] = 1000.0/th.delta
+  if th::delta > 0 {
+    record[recordP] = 1000.0/th::delta
     recordP++
     if recordP >= 60 {
       recordP = 0

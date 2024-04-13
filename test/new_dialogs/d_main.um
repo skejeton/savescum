@@ -16,7 +16,6 @@
 //  Allow foreign objects on screen, start with rectangles for example
 
 import (
-  "std.um"
   "window.um"
   "rect.um"
   "th.um"
@@ -25,7 +24,6 @@ import (
   "d_load_poems.um"
   "d_speech.um"
   "d_construct.um"
-  "misc.um"
   strings = "../../src/misc/d_strings.um"
   m_layout = "d_layout.um"
   "d_draw_dialog.um"
@@ -36,22 +34,22 @@ import (
   th_color = "color.um"
 )
 
-fn blockCursorSizeFromFont(font: th_font.Font): th.Vf2 {
+fn blockCursorSizeFromFont(font: th_font::Font): th::Vf2 {
   return font.measure(" ")
 }
 
 //wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
 
 type ContactPoint = struct {
-  at: th.Vf2
-  size: th.Vf2
+  at: th::Vf2
+  size: th::Vf2
   isContact: bool
 }
 
-fn handleResizableRectangle(mouseInput: d_mouseinput.MouseState, contact: ^ContactPoint, rectangle: ^rect.Rect) {
+fn handleResizableRectangle(mouseInput: d_mouseinput::MouseState, contact: ^ContactPoint, rectangle: ^rect::Rect) {
   motion := mouseInput.delta
 
-  if d_util.rectVsPoint(rectangle^, mouseInput.lastPos) && !contact.isContact {
+  if d_util::rectVsPoint(rectangle^, mouseInput.lastPos) && !contact.isContact {
     contact.size = rectangle.getDims()
     contact.isContact = true
     contact.at = mouseInput.lastPos
@@ -93,8 +91,8 @@ const poemBadId =
   "(Invalid poem ID)"
 
 fn loadPoemFromFile(file: str, poemId: int): str {
-  if poems, err := std.freadall(file); err.code != 0 {
-    if ok, poem := d_load_poems.getPoem(d_load_poems.loadPoems(str(poems)), poemId); ok {
+  if poems, err := d_util::readFileStr(file); err.code == 0 {
+    if ok, poem := d_load_poems::getPoem(d_load_poems::loadPoems(str(poems)), poemId); ok {
       return poem
     }
     return poemBadId
@@ -103,61 +101,61 @@ fn loadPoemFromFile(file: str, poemId: int): str {
 }
 
 type PushObj = interface{}
-type ForeignObject = struct{size: th.Vf2}
+type ForeignObject = struct{size: th::Vf2}
 type NewLine = struct{}
 type SwitchColor = struct{color: uint32}
 
-fn makeObjectArrayFromSpeechNodes(nodes: []d_speech.SpeechNode): []PushObj {
+fn makeObjectArrayFromSpeechNodes(nodes: []d_speech::SpeechNode): []PushObj {
   appearingTexts := []PushObj{}
 
   for i, node in nodes {
     if node.word == "\n" {
       appearingTexts = append(appearingTexts, NewLine{})
     } else {
-      appearingTexts = append(appearingTexts, d_draw_dialog.constructAppearingTextFromUnit(node.word, node.unit))
+      appearingTexts = append(appearingTexts, d_draw_dialog::constructAppearingTextFromUnit(node.word, node.unit))
     }
   }
 
   return appearingTexts
 }
 
-fn drawTempDialogBackdrop(boundingBox: rect.Rect) {
-  canvas.drawRect(th.black, d_util.rectShrink(boundingBox, -5))
-  d_util.drawRectLines(th.white, d_util.rectShrink(boundingBox, -4), 1)
-  canvas.drawRect(0xFF8888FF, d_util.rectShrink(boundingBox, -3))
+fn drawTempDialogBackdrop(boundingBox: rect::Rect) {
+  canvas::drawRect(th::black, d_util::rectShrink(boundingBox, -5))
+  d_util::drawRectLines(th::white, d_util::rectShrink(boundingBox, -4), 1)
+  canvas::drawRect(0xFF8888FF, d_util::rectShrink(boundingBox, -3))
 }
 
-fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, scrollY: real): real {
+fn drawTempDialog(words: []PushObj, font: th_font::Font, boundingBox: rect::Rect, scrollY: real): real {
   drawTempDialogBackdrop(boundingBox)
-  canvas.beginScissorRect(boundingBox)
-  layout := m_layout.makeWrappingLayoutFromBoundary(boundingBox.w)
-  colour := th.black
+  canvas::beginScissorRect(boundingBox)
+  layout := m_layout::makeWrappingLayoutFromBoundary(boundingBox.w)
+  colour := th::black
   
   for i in words {
     if sc := ^SwitchColor(words[i]); sc != null {
       colour = sc.color
     } else if nl := ^NewLine(words[i]); nl != null {
       layout.wrapAtMin(font.measure(" ").y)
-    } else if word := ^d_draw_dialog.AppearingText(words[i]); word != null {
-      size := d_draw_dialog.measureAppearingText(word, font)
+    } else if word := ^d_draw_dialog::AppearingText(words[i]); word != null {
+      size := d_draw_dialog::measureAppearingText(word, font)
       full := font.measure(word.orig).x
       pos := layout.pushPartial(size, full).add(boundingBox.getPos())
 
-      d_draw_dialog.drawAppearingText(word, font, pos.add(th.Vf2{0, -scrollY}), colour)
+      d_draw_dialog::drawAppearingText(word, font, pos.add(th::Vf2{0, -scrollY}), colour)
     } else if obj := ^ForeignObject(words[i]); obj != null {
       pos := layout.push(obj.size)
-      canvas.drawRect(colour, {pos.x, pos.y, obj.size.x, obj.size.y}) 
+      canvas::drawRect(colour, {pos.x, pos.y, obj.size.x, obj.size.y}) 
     }
   }
 
-  canvas.endScissor()
+  canvas::endScissor()
   {
     cursorSize := blockCursorSizeFromFont(font)
-    cursorPos := layout.push(cursorSize).add(boundingBox.getPos()).add(th.Vf2{0, -scrollY})
-    pulse := sin(th.time/300.0)
-    rectangle := d_util.rectShrink({cursorPos.x, cursorPos.y, cursorSize.x, cursorSize.y}, pulse*2)
+    cursorPos := layout.push(cursorSize).add(boundingBox.getPos()).add(th::Vf2{0, -scrollY})
+    pulse := sin(th::time/300.0)
+    rectangle := d_util::rectShrink({cursorPos.x, cursorPos.y, cursorSize.x, cursorSize.y}, pulse*2)
 
-    canvas.drawRect(th_color.alpha(th.white, (pulse/2.0+1.0)/2.0+0.5), rectangle)
+    canvas::drawRect(th_color::alpha(th::white, (pulse/2.0+1.0)/2.0+0.5), rectangle)
   }
   scrollY = layout.position.y+layout.lineHeight-boundingBox.h
   if scrollY < 0 {
@@ -167,11 +165,11 @@ fn drawTempDialog(words: []PushObj, font: th_font.Font, boundingBox: rect.Rect, 
 }
 
 fn controlTypingTime(typingTime: ^real) {
-  if input.isPressed(.left) || input.isPressed(.backspace) {
-    typingTime^ -= th.delta/1000.0
+  if input::isPressed(.left) || input::isPressed(.backspace) {
+    typingTime^ -= th::delta/1000.0
   }
-  if input.isPressed(.right) {
-    typingTime^ += th.delta/1000.0
+  if input::isPressed(.right) {
+    typingTime^ += th::delta/1000.0
   }  
   if typingTime^ < 0 {
     typingTime^ = 0
@@ -183,7 +181,7 @@ type TransformedText = struct {
   seconds: real
 }
 
-fn transformTextNodesIntoObjectArray(textNodes: []d_construct.TextNode, typingTimeSeconds: real): TransformedText {
+fn transformTextNodesIntoObjectArray(textNodes: []d_construct::TextNode, typingTimeSeconds: real): TransformedText {
   objects := []PushObj{}
   offsetSeconds := 0.0
   speed := 1.0
@@ -196,7 +194,7 @@ fn transformTextNodesIntoObjectArray(textNodes: []d_construct.TextNode, typingTi
   //                 text and return us the index at which we are typing as well as the unit value for the next letter.
   //                 that's much simplier to analyze but I don't know the implications yet.
   for i, node in textNodes {
-    spokenText := d_speech.makeSpokenText(node.text, typingTimeSeconds - offsetSeconds, speed)
+    spokenText := d_speech::makeSpokenText(node.text, typingTimeSeconds - offsetSeconds, speed)
     offsetSeconds += spokenText.seconds
 
     speed = node.speed
@@ -207,94 +205,94 @@ fn transformTextNodesIntoObjectArray(textNodes: []d_construct.TextNode, typingTi
   return TransformedText{objects, offsetSeconds}
 }
 
-fn rainbowInTextNodes(text: str): []d_construct.TextNode {
+fn rainbowInTextNodes(text: str): []d_construct::TextNode {
   // ngl tophat's deafult green is too hard to see
-  colorCycle := []uint32{th.red, 0x55FF55FF, th.blue, th.yellow}
-  nodes := []d_construct.TextNode{}
-  lines := strings.intersperse(strings.splitBy(text, ' '), ' ')
+  colorCycle := []uint32{th::red, 0x55FF55FF, th::blue, th::yellow}
+  nodes := []d_construct::TextNode{}
+  lines := strings::intersperse(strings::splitBy(text, ' '), ' ')
   for i, line in lines {
-    nodes = append(nodes, d_construct.TextNode{color: colorCycle[i%len(colorCycle)], text: line, speed: real(i/3.0+1)})
+    nodes = append(nodes, d_construct::TextNode{color: colorCycle[i%len(colorCycle)], text: line, speed: real(i/3.0+1)})
   }
 
   return nodes
 }
 
-fn booleanProperty(at: th.Vf2, name: str, isset: ^bool) {
-  rectangle := rect.Rect{at.x, at.y, 10, 10}
+fn booleanProperty(at: th::Vf2, name: str, isset: ^bool) {
+  rectangle := rect::Rect{at.x, at.y, 10, 10}
 
-  color := th.red
+  color := th::red
   if isset^ {
-    color = th.green
+    color = th::green
   }
 
-  canvas.drawRect(color, rectangle)
+  canvas::drawRect(color, rectangle)
 
-  if d_util.isMouseInRect(rectangle) {
-    if input.isJustPressed(.mouse1) {
+  if d_util::isMouseInRect(rectangle) {
+    if input::isJustPressed(.mouse1) {
       isset^ = !isset^
     }
-    textSize := canvas.textSize(name, 2)
-    canvas.drawRect(th.black, {at.x, at.y+20, textSize.x, textSize.y})
-    canvas.drawText(name, at.add(th.Vf2{0, 20}), th.white, 2)
+    textSize := canvas::textSize(name, 2)
+    canvas::drawRect(th::black, {at.x, at.y+20, textSize.x, textSize.y})
+    canvas::drawText(name, at.add(th::Vf2{0, 20}), th::white, 2)
   }
 }
 
 var (
   autoplay: bool = false
   slow5x: bool = false
-  font: th_font.Font
-  screen: rect.Rect
+  font: th_font::Font
+  screen: rect::Rect
   sampleText: str
   boundingBoxContactPoint: ContactPoint
-  boundingBox: rect.Rect
-  mouseInput: d_mouseinput.MouseState
+  boundingBox: rect::Rect
+  mouseInput: d_mouseinput::MouseState
   typingTime: real
   scrollY: real
-  lines: []d_construct.TextNode
+  lines: []d_construct::TextNode
 )
 
 fn init*() {
   autoplay = false
   slow5x = false
 
-  d_test.isUnitTest(false)
-  window.setup("New dialogs", 800, 600)
+  d_test::isUnitTest(false)
+  window::setup("New dialogs", 800, 600)
 
-  font = th_font.load(d_test.pfx()+"FuzzyBubbles-Bold.ttf", 24).item0
+  font = th_font::load(d_test::pfx()+"FuzzyBubbles-Bold.ttf", 24).item0
   screen = {0, 0, 800, 600}
-  sampleText = loadPoemFromFile(d_test.pfx()+"poems.txt", 0)
+  sampleText = loadPoemFromFile(d_test::pfx()+"poems.txt", 0)
 
   boundingBoxContactPoint = ContactPoint{}
   boundingBox = {30, 30, 400, 300}
-  mouseInput = d_mouseinput.MouseState{}
+  mouseInput = d_mouseinput::MouseState{}
 
   typingTime = 0.0
   scrollY = 0.0
   
   lines = rainbowInTextNodes(sampleText)
 
-  window.onFrame.register({
+  window::onFrame.register({
     tt := typingTime
-    screen.w = window.w
-    screen.h = window.h
+    screen.w = window::w
+    screen.h = window::h
     mouseInput = mouseInput.updated()
-    if input.isJustPressedc(' ') {
+    if input::isJustPressedc(' ') {
       autoplay = !autoplay
     }
     if autoplay {
       multiplier := 1.0
-      if input.isPressed(.shift) {
+      if input::isPressed(.shift) {
         multiplier = 2.0
       }
       if slow5x {
         multiplier /= 5
       }
 
-      typingTime += th.delta/1000.0*multiplier
+      typingTime += th::delta/1000.0*multiplier
     }
     controlTypingTime(&typingTime)
   
-    if input.isJustPressed(.escape) {
+    if input::isJustPressed(.escape) {
       autoplay = false
       typingTime = 0
     }
@@ -309,7 +307,7 @@ fn init*() {
 
     scrollY += (drawTempDialog(transformedText.objects, font, boundingBox, scrollY)-scrollY)/2
     
-    booleanProperty(th.Vf2{0, 0}, "autoplay (space)", &autoplay)
-    booleanProperty(th.Vf2{10, 0}, "5x slower", &slow5x)
+    booleanProperty(th::Vf2{0, 0}, "autoplay (space)", &autoplay)
+    booleanProperty(th::Vf2{10, 0}, "5x slower", &slow5x)
   })
 }

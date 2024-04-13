@@ -14,13 +14,13 @@ type ToolDebugFrame = struct {
   color: uint32
   showTitle: bool
   background: bool
-  rect: rect.Rect
+  rect: rect::Rect
 }
 
-fn makeToolDebugFrameFromTool(core: ^d_core.Core, name: str, tool: ^d_atoms.ToolNode): ToolDebugFrame {
+fn makeToolDebugFrameFromTool(core: ^d_core::Core, name: str, tool: ^d_atoms::ToolNode): ToolDebugFrame {
   toolState := core.getToolState(tool)
 
-  color := th.red
+  color := th::red
   background := false
   showTitle := false
 
@@ -32,8 +32,8 @@ fn makeToolDebugFrameFromTool(core: ^d_core.Core, name: str, tool: ^d_atoms.Tool
     showTitle = true
     color = 0x00   
 
-    color |= int(toolState.hovered) * th.blue
-    color |= int(toolState.focused) * th.green
+    color |= int(toolState.hovered) * th::blue
+    color |= int(toolState.focused) * th::green
   }
 
   return ToolDebugFrame{title: name, color: color, showTitle: showTitle, rect: tool.rect, background: background}
@@ -56,20 +56,20 @@ fn isWhiteForeground(color: uint32): bool {
   return sum >= 1.5
 }
 
-fn drawToolDebugFrame(ctx: ^d_drawcmd.DrawContext, frame: ToolDebugFrame, font: th_font.Font) {
-  textColor := th.white
+fn drawToolDebugFrame(ctx: ^d_drawcmd::DrawContext, frame: ToolDebugFrame, font: th_font::Font) {
+  textColor := th::white
   if isWhiteForeground(frame.color) {
-    textColor = th.black
+    textColor = th::black
   }
 
   if frame.showTitle {
     // Draw the title.
     planeSize := font.measure(frame.title)
-    r := rect.Rect{frame.rect.x, frame.rect.y-planeSize.y, planeSize.x, planeSize.y}
-    r = d_util.rectKeepInBounds(r, {0, 0, d_global.screen.w, d_global.screen.h})
+    r := rect::Rect{frame.rect.x, frame.rect.y-planeSize.y, planeSize.x, planeSize.y}
+    r = d_util::rectKeepInBounds(r, {0, 0, d_global::screen.w, d_global::screen.h})
 
     if frame.background {
-      ctx.drawRect(textColor, d_util.rectShrink(r, -1))
+      ctx.drawRect(textColor, d_util::rectShrink(r, -1))
     }
     ctx.drawRect(frame.color, r)
     ctx.drawText(font, frame.title, r.getPos(), textColor)
@@ -80,7 +80,7 @@ fn drawToolDebugFrame(ctx: ^d_drawcmd.DrawContext, frame: ToolDebugFrame, font: 
   ctx.drawRectLines(frame.color, frame.rect)
 }
 
-fn putDebugFramesRecursive(core: ^d_core.Core, font: th_font.Font, ctx: ^d_drawcmd.DrawContext, tool: ^d_atoms.ToolNode, prefix: str = "") {
+fn putDebugFramesRecursive(core: ^d_core::Core, font: th_font::Font, ctx: ^d_drawcmd::DrawContext, tool: ^d_atoms::ToolNode, prefix: str = "") {
   for toolName, toolChild in tool.children {
     ctx.setLayer(toolChild.layer)
     if toolChild.lastFrameTouched == -1 {
@@ -92,6 +92,6 @@ fn putDebugFramesRecursive(core: ^d_core.Core, font: th_font.Font, ctx: ^d_drawc
   }
 }
 
-fn putDebugFrames*(core: ^d_core.Core, font: th_font.Font, ctx: ^d_drawcmd.DrawContext) {
+fn putDebugFrames*(core: ^d_core::Core, font: th_font::Font, ctx: ^d_drawcmd::DrawContext) {
   putDebugFramesRecursive(core, font, ctx, core.tools)
 }

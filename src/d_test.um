@@ -12,7 +12,7 @@ import (
 //   of course you can use it for any kinda file.
 // This is useful so you don't jam the assets folder with useless junk.
 fn pfx*(): str {
-  pfx := std.getenv("TEST_PFX")
+  pfx := std::getenv("TEST_PFX")
   if len(pfx) < 5 || slice(pfx, 0, 5) != "test/" || pfx[len(pfx)-1] != "/" {
     exit(551, "Invalid test prefix")
   }
@@ -26,7 +26,7 @@ fn pfx*(): str {
 //   automatically ignore any test that has windows,
 //   but currently this is all I have.
 fn isUnitTest*(isUnitTest: bool) {
-  testType := std.getenv("testType")
+  testType := std::getenv("testType")
   
   // Here test types are either unit, testbed. Any other value will be ignored
   if testType == "unit" {

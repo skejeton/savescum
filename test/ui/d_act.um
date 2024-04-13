@@ -7,7 +7,7 @@ import (
 
 type Tool* = struct {
   id: str
-  r: rect.Rect
+  r: rect::Rect
 }
 
 type ToolList* = struct {
@@ -22,7 +22,7 @@ type ActStatus* = struct {
 }
 
 type ActViaMouse* = struct {
-  mouse: th.Vf2
+  mouse: th::Vf2
   pressing: bool 
   tabbed: bool
 }
@@ -49,7 +49,7 @@ fn (a: ^ActStatus) update*(toollist: ^ToolList, v: ActViaMouse) {
   }
 
   for i, tool^ in toollist.tools {
-    if d_util.rectVsPoint(tool.r, v.mouse) {
+    if d_util::rectVsPoint(tool.r, v.mouse) {
       a.hover = tool
 
       if v.pressing {
@@ -78,28 +78,28 @@ fn (a: ^ActStatus) update*(toollist: ^ToolList, v: ActViaMouse) {
 }
 
 fn renderHint(tool: ^Tool) {
-  dims := canvas.textSize(tool.id, 2)
+  dims := canvas::textSize(tool.id, 2)
   pos := tool.r.getPos()
   pos.y -= dims.y
 
-  r := rect.fromVf2(pos, dims).shrink({-2, -2})
+  r := rect::fromVf2(pos, dims).shrink({-2, -2})
 
-  canvas.drawRect(0x0000FFFF, r)
-  canvas.drawText(tool.id, pos, 0xffffffff, 2)
+  canvas::drawRect(0x0000FFFF, r)
+  canvas::drawText(tool.id, pos, 0xffffffff, 2)
 }
 
 fn renderDebugInfo*(actstatus: ^ActStatus) {
   if actstatus.focus != null {
-    d_util.drawRectLines(0xFFFF00FF, actstatus.focus.r, 8)
+    d_util::drawRectLines(0xFFFF00FF, actstatus.focus.r, 8)
   }
   if actstatus.active != null {
-    d_util.drawRectLines(0xFF0000FF, actstatus.active.r, 6)
+    d_util::drawRectLines(0xFF0000FF, actstatus.active.r, 6)
   }
   if actstatus.press != null {
-    d_util.drawRectLines(0x00FF00FF, actstatus.press.r, 4)
+    d_util::drawRectLines(0x00FF00FF, actstatus.press.r, 4)
   }
   if actstatus.hover != null {
-    d_util.drawRectLines(0x0000FFFF, actstatus.hover.r, 2)
+    d_util::drawRectLines(0x0000FFFF, actstatus.hover.r, 2)
     renderHint(actstatus.hover)
   }
 }

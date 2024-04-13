@@ -5,14 +5,14 @@ import (
 )
 
 var (
-  console: d_console.Console
-  visualConsole: d_console.VisualConsole
+  console: d_console::Console
+  visualConsole: d_console::VisualConsole
   consolevis*: bool
 )
 
 
 fn initConsole*() {
-  console = d_console.Console{}
+  console = d_console::Console{}
 }
 
 fn logt*(text: str) {
@@ -21,7 +21,7 @@ fn logt*(text: str) {
 
 // don't use it unless you want to render the console in a special 
 // way or something.
-fn getConsole*(): ^d_console.Console {
+fn getConsole*(): ^d_console::Console {
   return &console
 }
 
@@ -30,8 +30,8 @@ fn scrollConsole*(by: real) {
 }
 
 // draws fullscreen console.
-fn drawConsole*(font: th_font.Font) {
+fn drawConsole*(font: th_font::Font) {
   if consolevis {
-    d_console.render(&console, &visualConsole, font, d_global.screen) 
+    d_console::render(&console, &visualConsole, font, d_global::screen) 
   }
 }

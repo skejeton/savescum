@@ -3,5 +3,5 @@ import (
 )
 
 fn init*(editor: bool = true) {
-  editor_main.editorMain(editor)
+  editor_main::editorMain(editor)
 }

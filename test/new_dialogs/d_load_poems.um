@@ -8,11 +8,11 @@ import (
 )
 
 fn loadPoems*(poemsSource: str): []str {
-  poemsUnprocessed := strings.splitBy(poemsSource, '~')
+  poemsUnprocessed := strings::splitBy(poemsSource, '~')
   poems := []str{}
   
   for _, unprocessedPoem in poemsUnprocessed {
-    poems = append(poems, std.trim(unprocessedPoem))
+    poems = append(poems, std::trim(unprocessedPoem))
   }
 
   return poems

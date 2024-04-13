@@ -32,7 +32,7 @@ type (
   Command = struct {
     attr: real
     kind: CommandType
-    rect: rect.Rect
+    rect: rect::Rect
     color: uint32
     custom: CustomCommand
   }
@@ -40,7 +40,7 @@ type (
   Layer = []Command
 
   DrawContext* = struct {
-    scissorRectStack: []rect.Rect
+    scissorRectStack: []rect::Rect
     currentLayerId: int
     currentLayer: ^Layer
     layerOrder: []int
@@ -91,11 +91,11 @@ fn (ctx: ^DrawContext) moveLayer*(layerBy: int) {
   ctx.setLayer(ctx.currentLayerId+layerBy)
 }
 
-fn (ctx: ^DrawContext) getCurrentScissorRect*(): (bool, rect.Rect) {
+fn (ctx: ^DrawContext) getCurrentScissorRect*(): (bool, rect::Rect) {
   if len(ctx.scissorRectStack) > 0 {
     return true, ctx.scissorRectStack[len(ctx.scissorRectStack)-1]
   }
-  return false, rect.Rect{}
+  return false, rect::Rect{}
 }
 
 fn (ctx: ^DrawContext) flush*() {
@@ -109,16 +109,16 @@ fn (ctx: ^DrawContext) flush*() {
       command.rect.y = floor(command.rect.y)
       switch command.kind {
         case .rect:
-          canvas.drawRect(command.color, command.rect)
+          canvas::drawRect(command.color, command.rect)
         case .rectLines:
-          d_util.drawRectLines(command.color, command.rect, command.attr)
+          d_util::drawRectLines(command.color, command.rect, command.attr)
         case .beginScissorRect:
-          canvas.beginScissorRect(command.rect)
+          canvas::beginScissorRect(command.rect)
           scissorCounter += 1
         case .endScissor:
-          canvas.endScissor()
+          canvas::endScissor()
           scissorCounter -= 1
-          std.assert(scissorCounter >= 0, "Scissor mismatch.")
+          std::assert(scissorCounter >= 0, "Scissor mismatch.")
         case .custom:
           command.custom.draw(DrawProperties{})
       }
@@ -126,16 +126,16 @@ fn (ctx: ^DrawContext) flush*() {
   }
 
   if scissorCounter != 0 {
-    std.assert(false, "Scissor mismatch.")
+    std::assert(false, "Scissor mismatch.")
   }
 
   ctx ^= init()
 }
 
 type TextCmd = struct {
-  font: font.Font
+  font: font::Font
   text: str
-  pos: th.Vf2
+  pos: th::Vf2
   color: uint32
   size: real
 }
@@ -144,25 +144,25 @@ fn (d: ^TextCmd) draw(props: DrawProperties) {
   d.font.draw(d.text, d.pos, d.color, d.size)
 }
 
-fn (ctx: ^DrawContext) drawText*(f: font.Font, text: str, position: th.Vf2, color: uint32, size: th.fu = 1.0) {
+fn (ctx: ^DrawContext) drawText*(f: font::Font, text: str, position: th::Vf2, color: uint32, size: th::fu = 1.0) {
   ctx.currentLayer.appendCommand(Command{kind: .custom, custom: TextCmd{f, text, position, color, size}})
 }
 
-fn (ctx: ^DrawContext) drawRect*(color: uint32, r: rect.Rect) {
+fn (ctx: ^DrawContext) drawRect*(color: uint32, r: rect::Rect) {
   ctx.currentLayer.appendCommand(Command{kind: .rect, color: color, rect: r})
 }
 
-fn (ctx: ^DrawContext) drawRectLines*(color: uint32, r: rect.Rect, thicc: real = 1.0) {
+fn (ctx: ^DrawContext) drawRectLines*(color: uint32, r: rect::Rect, thicc: real = 1.0) {
   ctx.currentLayer.appendCommand(Command{kind: .rectLines, color: color, rect: r, attr: thicc})
 }
 
-fn (ctx: ^DrawContext) beginScissorRectRaw*(r: rect.Rect) {
+fn (ctx: ^DrawContext) beginScissorRectRaw*(r: rect::Rect) {
   ctx.scissorRectStack = append(ctx.scissorRectStack, r)
   ctx.currentLayer.appendCommand(Command{kind: .beginScissorRect, rect: r})
 }
 
-fn mergeScissorRects(child, parent: rect.Rect): rect.Rect {
-  if d_util.rectVsRect(child, parent) == false {
+fn mergeScissorRects(child, parent: rect::Rect): rect::Rect {
+  if d_util::rectVsRect(child, parent) == false {
     // At this point we just need to disable rendering since child isn't even inside the parent,
     //  so it shouldn't be visible. 
     //
@@ -171,10 +171,10 @@ fn mergeScissorRects(child, parent: rect.Rect): rect.Rect {
   }
 
   // Otherwise return the intersection rect.
-  return d_util.rectUnion(child, parent)
+  return d_util::rectUnion(child, parent)
 }
 
-fn (ctx: ^DrawContext) beginScissorRect*(r: rect.Rect) {
+fn (ctx: ^DrawContext) beginScissorRect*(r: rect::Rect) {
   // Merge scissor rects to make sure the rect `r` doesn't show content
   // outside of the parent scissor rect too. 
   // 
@@ -190,7 +190,7 @@ fn (ctx: ^DrawContext) beginScissorRect*(r: rect.Rect) {
 
 fn (ctx: ^DrawContext) endScissor*() {
   if len(ctx.scissorRectStack) == 0 {
-    std.assert(false, "Mismatched beginScissor/endScissor")
+    std::assert(false, "Mismatched beginScissor/endScissor")
   }
 
   ctx.scissorRectStack = delete(ctx.scissorRectStack, len(ctx.scissorRectStack)-1)
@@ -199,9 +199,9 @@ fn (ctx: ^DrawContext) endScissor*() {
 }
 
 type ImageCmd = struct {
-  image: image.Image
-  transform: th.Transform
-  quadCrop: th.Quad
+  image: image::Image
+  transform: th::Transform
+  quadCrop: th::Quad
   tint: uint32
 }
 
@@ -210,14 +210,14 @@ fn (d: ^ImageCmd) draw(props: DrawProperties) {
   d.image.draw(d.transform, d.tint)
 }
 
-fn (ctx: ^DrawContext) drawImage*(img: image.Image, transform: th.Transform, color: uint32 = 0xFFFFFFFF) {
+fn (ctx: ^DrawContext) drawImage*(img: image::Image, transform: th::Transform, color: uint32 = 0xFFFFFFFF) {
   ctx.currentLayer.appendCommand(Command{kind: .custom, custom: ImageCmd{img, transform, img.getCropQuad(), color}})
 }
 
 type NinepatchCmd = struct {
-  image: image.Image
-  outer, inner, dest: rect.Rect
-  quadCrop: th.Quad
+  image: image::Image
+  outer, inner, dest: rect::Rect
+  quadCrop: th::Quad
   tint: uint32
 }
 
@@ -226,7 +226,7 @@ fn (d: ^NinepatchCmd) draw(props: DrawProperties) {
   d.image.drawNinepatch(d.outer, d.inner, d.dest, d.tint)
 }
 
-fn (ctx: ^DrawContext) drawNinepatch*(img: image.Image, outer, inner, dest: rect.Rect, tint: uint32 = th.white) {
+fn (ctx: ^DrawContext) drawNinepatch*(img: image::Image, outer, inner, dest: rect::Rect, tint: uint32 = th::white) {
   ctx.currentLayer.appendCommand(Command{kind: .custom, custom: NinepatchCmd{img, outer, inner, dest, img.getCropQuad(), tint}})
 }
 
