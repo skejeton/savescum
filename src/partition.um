@@ -1,0 +1,21 @@
+import (
+  "th.um"
+  "rect.um"
+  "util.um"
+)
+
+type TileSpan* = struct {
+  pos: th::Vf2
+  // X&Y are coords of top left visbile tile.
+  x, y, w, h: uint
+}
+
+fn calculateTileSpanOnScreen*(tileSize: th::Vf2, screen: rect::Rect): TileSpan {
+  return TileSpan{
+    x: floor(screen.x/tileSize.x),
+    y: floor(screen.y/tileSize.y),
+    w: ceil(screen.w/tileSize.x+1), // Add one for tiles drawn in middle of scroll
+    h: ceil(screen.h/tileSize.y+1),
+    pos: th::Vf2{-util::fmod(screen.x, tileSize.x), -util::fmod(screen.y, tileSize.y)}
+  }
+}

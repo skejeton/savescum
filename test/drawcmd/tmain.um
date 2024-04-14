@@ -1,0 +1,83 @@
+import (
+  "std.um"
+  "window.um"
+  "th.um"
+  "rect.um"
+  "font.um"
+  "image.um"
+  "color.um"
+  "../../src/test.um"
+  "../../src/util.um"
+  "../../src/editor/drawcmd.um"
+)
+
+type OutlineRectCmd = struct {
+  color: uint32
+  r: rect::Rect
+}
+
+fn (r: ^OutlineRectCmd) draw*(props: drawcmd::DrawProperties) {
+  util::drawRectLines(r.color, r.r)
+}
+
+var (
+  ctx: drawcmd::DrawContext
+  font1: font::Font
+  font2: font::Font
+  image1: image::Image
+  image2: image::Image
+  image3: image::Image
+  colors: [7][2]uint32
+)
+
+fn init*() {
+  test::isUnitTest(false)
+
+  window::setup("Hello", 640, 480)
+  ctx = drawcmd::init()
+  font1 = font::load("data/font/monospace.ttf", 16, .nearest).item0
+  font2 = font::load("data/font/sans.ttf", 16).item0
+  image1 = image::load("data/img/test.png").item0
+  image2 = image::load("data/img/test.png").item0
+  image2.setfilter(0)
+  image3 = image::load("data/img/ui_bevelbutton.png").item0
+
+  for i in colors {
+    colors[i][0] = color::hsv(i/7.0, 1.0, 1.0)
+    colors[i][1] = color::hsv(i/7.0, 1.0, 0.5)
+  }
+
+  window::onFrame.register({
+    std::srand(th::time/200)
+    for k := 0; k < 7; k++ {
+      for j := 0; j < 7; j++ {
+        for i, color in colors {
+          ctx.setLayer(std::rand()%7)
+          ctx.drawRect(color[0], {30+i*20+j*60, 30+i*20+k*50, 50, 50})
+          ctx.setLayer(10)
+          ctx.drawCustom(OutlineRectCmd{color[1], {30+i*20+j*60, 30+i*20+k*50, 50, 50}})
+        }
+      }
+    }
+
+    for i := 0; i < 50; i++ {
+      ctx.drawRect(0x00000014, {0, 0, 640, 480*(i/50.0)})
+    }
+
+    ctx.drawText(font1, "The quick brown fox jumps over the lazy dog.", th::Vf2{70, 70}, th::white)
+    ctx.drawText(font1, "The quick brown fox jumps\nover the lazy dog.", th::Vf2{70, 90}, th::green, 2.0)
+    ctx.drawText(font2, "The quick brown fox jumps over the lazy dog.", th::Vf2{70, 165}, th::white)
+    ctx.drawText(font2, "The quick brown fox jumps over the\nlazy dog.", th::Vf2{70, 185}, 0xFF9922FF, 2.0)
+
+    ctx.setLayer(300)
+    ctx.drawImage(image1, th::Transform{p: th::Vf2{70+30, 250-10}, s: th::Vf2{1, 1}, r: 45})
+    image2.crop(th::Vf2{0.1, 0.1}, th::Vf2{0.95, 0.9})
+    ctx.drawImage(image2, th::Transform{p: th::Vf2{70+64+30, 250-10}, s: th::Vf2{1, 1}, r: 45})
+    image2.crop(th::Vf2{0.0, 0.0}, th::Vf2{0.0, 0.0})
+
+    ctx.setLayer(10)
+    ctx.drawNinepatch(image3, {0, 0, 10, 10}, {3, 3, 2, 2}, {70, 250, 640-140, 70})
+
+    ctx.flush()
+  })
+}

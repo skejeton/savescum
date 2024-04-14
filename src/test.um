@@ -1,0 +1,43 @@
+// Utilities for testing
+import (
+  "std.um"
+)
+
+// Gives you the path prefix to the current test directory.
+// For example if you have test located at /home/snork/flying-ship/test/takeoff
+//   or if you are a Windows pal, maybe C:/Users/snork/flying-ship/test/takeoff
+//   then it will return you that exact path.
+// I think you'll use it to load stuff like images that are nearby your test directory,
+//   like this: `image.load(test.pfx()+"YourImageNearTestFile.png")`,
+//   of course you can use it for any kinda file.
+// This is useful so you don't jam the assets folder with useless junk.
+fn pfx*(): str {
+  pfx := std::getenv("TEST_PFX")
+  if len(pfx) < 5 || slice(pfx, 0, 5) != "test/" || pfx[len(pfx)-1] != "/" {
+    exit(551, "Invalid test prefix")
+  }
+  return pfx
+}
+
+// When you choose to run unit tests, testbeds (interactive tests)
+//  are gonna be ignored if you call this function.
+// Having windows appear in unit tests is really wack,
+//   I wish I could monkey-patch the window setup to
+//   automatically ignore any test that has windows,
+//   but currently this is all I have.
+fn isUnitTest*(isUnitTest: bool) {
+  testType := std::getenv("testType")
+  
+  // Here test types are either unit, testbed. Any other value will be ignored
+  if testType == "unit" {
+    if !isUnitTest {
+      printf("Is not a unit test - skipping\n")
+      exit(0)     
+    }
+  } else if testType == "testbed" {
+     if isUnitTest {
+      printf("Is a unit test - skipping\n")
+      exit(0)     
+    }   
+  }
+}

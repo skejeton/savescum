@@ -1,0 +1,37 @@
+import (
+  "console/console.um"
+  "global.um"
+  "font.um"
+)
+
+var (
+  console: console::Console
+  visualConsole: console::VisualConsole
+  consolevis*: bool
+)
+
+
+fn initConsole*() {
+  console = console::Console{}
+}
+
+fn logt*(text: str) {
+  console.write(text)
+}
+
+// don't use it unless you want to render the console in a special 
+// way or something.
+fn getConsole*(): ^console::Console {
+  return &console
+}
+
+fn scrollConsole*(by: real) {
+  visualConsole.scrollBy(by*64)
+}
+
+// draws fullscreen console.
+fn drawConsole*(font: font::Font) {
+  if consolevis {
+    console::render(&console, &visualConsole, font, global::screen) 
+  }
+}

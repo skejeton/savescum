@@ -1,0 +1,30 @@
+// NOTE: this is no longer relevant as I'm not using a custom font renderer anymore
+
+import (
+  "../../src/test.um"
+  font = "font.um"
+  "window.um"
+  "rect.um"
+  "th.um"
+  "canvas.um"
+)
+
+var (
+  screen: rect::Rect
+  font: font::Font
+)
+
+fn init*() {
+  test::isUnitTest(false)
+
+  window::setup("title", 640, 480)
+  screen = {0, 0, 640, 480}
+  font = font::load("data/font/monospace.ttf", 16, .nearest).item0
+
+  window::onFrame.register({
+    txt := "古池や蛙飛び込む水の音\nふるいけやかわずとびこむみずのおと\nold pond\nfrog leaps in\nwater's sound\n\n初しぐれ猿も小蓑をほしげ也\nはつしぐれさるもこみのをほしげなり\nthe first cold shower\neven the monkey seems to want\na little coat of straw"
+    size := font.measure(txt)
+    canvas::drawRect(th::black, rect::Rect{0, 0, size.x, size.y})
+    font.draw(txt, th::Vf2{0, 0}, th::white)
+  })
+}

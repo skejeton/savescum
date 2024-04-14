@@ -1,0 +1,28 @@
+// Outdated. Ninepatch is now in the engine.
+
+import (
+  "window.um"
+  "rect.um"
+  "image.um"
+  "../../src/test.um"
+)
+
+var (
+  screen: rect::Rect
+  img: image::Image
+  img2: image::Image
+)
+
+fn init*() {
+  test::isUnitTest(false)
+  
+  window::setup("title", 640, 480)
+  screen = {0, 0, 640, 480}
+  img = image::load(test::pfx()+"medium.png").item0
+
+  window::onFrame.register({
+    img.drawNinepatch(rect::Rect{0, 0, 24, 24}, rect::Rect{8, 8, 8, 8}, rect::Rect{220, 10, 200, 200})
+    img.drawNinepatch(rect::Rect{24, 0, 24, 24}, rect::Rect{8, 8, 8, 8}, rect::Rect{10, 220, 200, 200})
+    img.drawNinepatch(rect::Rect{24*2, 0, 24, 24}, rect::Rect{8, 8, 8, 8}, rect::Rect{10, 10, 200, 200})
+  })
+}

@@ -1,0 +1,22 @@
+import (
+  "../../src/problem_screen.um"
+  "../../src/resources.um"
+  "../../src/test.um"
+  "window.um"
+)
+
+fn generateResourceLoadingErrors(): ^resources::ResourceLoader {
+  loader := new(resources::ResourceLoader)
+  loader ^= resources::initResourceLoader()
+  resources::loadingError(loader, "/home/bubsy/plok.txt", "Couldn't load document")
+  resources::loadingError(loader, "/home/plok/bubsy.txt", "Couldn't load document")
+
+  return loader
+}
+
+fn init*() {
+  test::isUnitTest(false)
+  window::setup("Problem screen test", 800, 600)
+
+  problem_screen::showResourceLoadingError(generateResourceLoadingErrors())
+}

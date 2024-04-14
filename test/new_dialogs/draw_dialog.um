@@ -1,0 +1,73 @@
+import (
+  // shame
+  "th.um"
+  strings = "../../src/misc/strings.um"
+  "color.um"
+  font = "font.um"
+)
+
+type AppearingText* = struct {
+  // shame {
+  orig: str
+  // }
+  text: str
+  // NOTE(skejeton): Making "next" a string is gonna be useful for unicode later
+  next: str
+  t: real
+}
+
+fn constructAppearingTextFromUnit*(text: str, trustedUnit: real): AppearingText {
+  position := len(text)*trustedUnit
+  at := trunc(position)
+  
+  // NOTE(skejeton): Check if there's anything more to type
+  if at >= len(text) {
+    return AppearingText{
+      orig: text,
+      text: text,
+      next: '\0',
+      t:    0}
+  }
+
+  return AppearingText{
+    orig: text,
+    text: slice(text, 0, at),
+    next: text[at]+"",
+    t:    position-real(at)}
+}
+
+//wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+type VisualTextCursor* = struct {
+  position: th::Vf2
+  height: real
+}
+
+fn visualTextCursorFromEnd*(font: font::Font, text: str): VisualTextCursor {
+  lines := strings::splitBy(text, '\n')
+  fontHeight := font.measure(" ").y
+
+  return VisualTextCursor{
+    position: th::Vf2{font.measure(lines[len(lines)-1]).x, (len(lines)-1) * fontHeight},
+    height: fontHeight}
+}
+
+fn drawAppearingText*(subject: ^AppearingText, font: font::Font, at: th::Vf2, color: uint32) {
+  // Draw previous text
+  font.draw(subject.text, at, color)
+  
+  // Draw appearing letter
+  appearingLetterPosition := visualTextCursorFromEnd(font, subject.text).position
+  font.draw(subject.next, at.add(appearingLetterPosition), color::alpha(color, subject.t), subject.t)
+}
+
+fn measureAppearingText*(subject: ^AppearingText, font: font::Font): th::Vf2 {
+  size := font.measure(subject.text)
+  
+  // NOTE(skejeton): Kind of a hack, but we don't really want spaces to go into the size eh?
+  if subject.next != " " {
+    size.x += font.measure(subject.next).x*subject.t
+  }
+  return size
+}
+

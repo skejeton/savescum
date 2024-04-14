@@ -1,0 +1,51 @@
+import (
+  "window.um"
+  "canvas.um"
+  "rect.um"
+  "image.um"
+  "th.um"
+  "std.um"
+  "../../src/tileset.um"
+  "../../src/util.um"
+  "../../src/test.um"
+)
+
+type T = struct {x, y: int}
+
+var (
+  screen: rect::Rect
+  tileset: tileset::Tileset
+  ts: []T
+)
+
+fn init*() {
+  test::isUnitTest(false)
+  
+  window::setup("title", 640, 480)
+  screen = {0, 0, 640, 480}
+  tileset = tileset::fromImage(image::load(test::pfx()+"medium.png").item0, 32, 32, 1)
+  ts = []T{T{0, 0}, T{2, 2}, T{1, 0}, T{5, 5}, T{0, 4}}
+  
+  window::onFrame.register({
+    for _, t in ts {
+      tileset.selectTile(t.x, t.y)
+      tileset.image.draw(util::posTrans(t.x*32, t.y*32))
+      util::drawRectLines(th::red, rect::Rect{t.x*32, t.y*32, 32, 32})
+    }
+    
+    for i := 1; tileset.isTileValid(i); i++ {
+      p := tileset.posToTile(i)
+      t := p.add(th::Vf2{5, 0}).mul(th::Vf2{32, 32})
+      idStr := std::itoa(tileset.tileToPos(trunc(p.x), trunc(p.y)))
+      tileset.selectTilePos(i)
+      tileset.image.draw(util::posTrans(t.x, t.y))
+      util::drawRectLines(th::blue, rect::Rect{t.x, t.y, 32, 32})
+      
+      canvas::drawText(idStr, t.sub(th::Vf2{-1, 0}), th::white, 1)
+      canvas::drawText(idStr, t.sub(th::Vf2{1, 0}), th::white, 1)
+      canvas::drawText(idStr, t.sub(th::Vf2{0, 1}), th::white, 1)
+      canvas::drawText(idStr, t.sub(th::Vf2{0, -1}), th::white, 1)
+      canvas::drawText(idStr, t, th::black, 1)
+    }
+  })
+}

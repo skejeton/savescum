@@ -1,0 +1,21 @@
+import (
+	"input.um"
+	"window.um"
+	"dbg.um"
+)
+
+// Enables: alt+enter: Enter/Leave fullscreen
+fn fullscreen*() {
+	if input::isPressed(.alt) && input::isJustPressed(.enter) {
+    input::clear(.enter)
+    window::setFullscreen(!window::isFullscreen())
+	}
+}
+
+// handles input for a console. 
+fn console*() {
+	if input::isPressed(.alt) && input::isJustPressedc('t') {
+		input::clearc('t')
+		dbg::consolevis = !dbg::consolevis
+	}
+}

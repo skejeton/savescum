@@ -1,0 +1,21 @@
+import (
+  "../../src/typer.um"
+  "../../src/test.um"
+)
+
+fn init*() {
+  test::isUnitTest(true)
+  typer := typer::init("Ohh hey... #{emote:smirk}Another one bites the dust?")
+
+  for true {
+    switch s, c := typer.advance(); s {
+    case typer::typerLetter:
+      printf("Letter\n")
+    case typer::typerCommand:
+      printf("Command %s %s\n", c.noun, c.verb)
+    case typer::typerFinished:
+      break
+    }
+  }
+  printf("%s\n", typer.message)
+}

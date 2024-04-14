@@ -1,0 +1,114 @@
+// console 
+//
+// terms:
+//  block: block of text. similar to line in console, but can have multiple lines inside it
+
+import (
+  "rect.um"
+  "th.um"
+  "canvas.um"
+  "../rerp.um"
+  "color.um"
+  "font.um"
+  strings = "../misc/strings.um"
+  "../util.um"
+)
+
+type Console* = struct {
+  blocks: []str
+}
+
+fn (con: ^Console) write*(block: str) {
+  con.blocks = append(con.blocks, block)
+  if len(con.blocks) > 10000 {
+    con.blocks = slice(con.blocks, 1)
+  }
+}
+
+type Scrolley* = struct {
+  contentsz: real
+  clientsz: real
+  scroll: real
+}
+
+fn (s: ^Scrolley) scrollTo(scroll: real) {
+  if scroll > (s.contentsz-s.clientsz) {
+    scroll = (s.contentsz-s.clientsz)
+  }
+  if scroll < 0 {
+    scroll = 0
+  }
+  s.scroll = scroll
+}
+
+type VisualConsole* = struct {
+  // interpolated
+  visualScroll: real
+  scrolley: Scrolley
+}
+
+type RenderPass = struct {
+  rect: rect::Rect
+  pos: th::Vf2
+  font: font::Font
+}
+
+fn blockRect*(pass: ^RenderPass, block: str): rect::Rect {
+  height := pass.font.measure(block).y
+
+  return rect::Rect{pass.rect.x, pass.pos.y-height, pass.rect.w, height}
+}
+
+// renders a single block and moves upwards
+
+fn allocBlock*(pass: ^RenderPass, block: str): rect::Rect {
+  r := blockRect(pass, block)
+  pass.pos.y -= r.h
+  return r
+}
+
+fn renderBlock*(pass: ^RenderPass, vc: ^VisualConsole, r: rect::Rect, block: str, bg, fg: uint32) {
+  pos := r.getPos().add(th::Vf2{0, vc.visualScroll})
+  if pos.y > pass.rect.y-r.h && pos.y < pass.rect.y+pass.rect.h {
+    canvas::drawRect(bg, {pos.x, pos.y, r.w, r.h})
+    pass.font.draw(block, pos, fg)
+  }
+}
+
+fn (vc: ^VisualConsole) scrollBy*(delta: real) {
+  vc.scrolley.scrollTo(vc.scrolley.scroll+delta)
+}
+
+// NOTE: this function does not clip
+fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect) { 
+  pass := RenderPass{r, th::Vf2{r.x, r.y+r.h}, font}
+  startY := pass.pos.y
+
+  canvas::drawRect(color::alpha(th::black, 0.95), r)
+  
+  // FIXME: Inefficent
+  //        right now size calculation and layouting of this console is done at the same time,
+  //        so we cant spatially optimize its rendering
+  for i in con.blocks {
+    block := con.blocks[len(con.blocks)-i-1]
+    block = strings::joinBy(util::wrapText(&font, block, r.w), "\n")
+
+    alpha := (pass.pos.y+vc.visualScroll)/r.h+0.4
+    if alpha > 1.0 { alpha = 1.0; }
+
+    bg := 0xFFFFFFFF
+    if i % 2 == 0 {
+      bg = 0x000000FF
+    }
+
+    blockRect := allocBlock(&pass, block)
+    
+    renderBlock(&pass, vc, blockRect, block, color::alpha(bg, alpha*0.05), color::alpha(th::white, alpha))
+  }
+
+  vc.scrolley.clientsz = r.h
+  vc.scrolley.contentsz = startY-pass.pos.y
+
+  // TODO: use delta
+  vc.visualScroll = rerp::iReal(vc.visualScroll, vc.scrolley.scroll, 0.2)
+}

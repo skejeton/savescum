@@ -1,0 +1,20 @@
+import (
+  "../../src/util.um"
+  "../../src/test.um"
+  "std.um"
+)
+
+fn init*() {
+  test::isUnitTest(true)
+
+  lf, err1 := util::readFileStr(test::pfx()+"local.txt")
+  std::exitif(err1)
+
+  gf, err2 := util::readFileStr("data/misc/global.txt")
+  std::exitif(err2)
+  
+  std::assert(str(lf) == "I'm a local file!\n", "Invalid local file")
+  std::assert(str(gf) == "I'm a global file!\n", "Invalid global file")
+
+  printf("Ok\n")
+}

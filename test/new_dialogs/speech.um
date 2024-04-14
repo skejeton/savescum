@@ -1,0 +1,44 @@
+import (
+  "sequence.um"
+  strings = "../../src/misc/strings.um"
+)
+
+type SpeechNode* = struct {
+  word: str
+  unit: real
+}
+
+type SpokenText* = struct {
+  nodes: []SpeechNode
+  seconds: real
+}
+
+fn speechHeuristic(word: str, unit: real): real {
+  return unit/2+(unit*unit)/2
+}
+
+fn makeSpokenText*(text: str, time: real, speed: real): SpokenText {
+  // FIXME(skejeton): separating newlines here is a hack to work around 
+  //                  newlines being a separate type during display.
+  //                  so we separate them here so it'll be "easier" later.
+  words := strings::separateChar(strings::intersperse(strings::splitBy(text, ' '), ' '), '\n')
+
+  seq := sequence::Sequence{}  
+
+  for i, word in words {
+    seq.pushNext(len(word)/20.0/speed+0.0001)
+  }
+
+  nodes := []SpeechNode{}
+  playbacks := seq.playbacksAt(time)
+
+  for i, playback in playbacks {
+    node := SpeechNode{words[playback.id], sequence::sanitize(speechHeuristic(words[playback.id], playback.unit))}
+    nodes = append(nodes, node)
+  }
+
+  return SpokenText{
+    nodes: nodes,
+    seconds: sequence::fastTotalLength(&seq)
+  }
+}

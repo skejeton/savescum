@@ -1,0 +1,121 @@
+import (
+  "world.um"
+  "csvutil.um"
+  "rect.um"
+  "std.um"
+  "csv.um"
+  "th.um"
+)
+
+type (
+  EntityDesc* = struct {
+    id: str
+    name: str
+    tags: str
+    rect: rect::Rect
+  }
+
+  WorldData* = struct {
+    world: world::World
+    entities: []EntityDesc
+  }
+)
+
+const (
+  lastVersion* = "000"
+)
+
+fn saveEntityDesc(ent: EntityDesc): []str {
+  return append([]str{ent.id, ent.name, ent.tags}, csvutil::saveRect(ent.rect))
+} 
+
+fn save*(wd: WorldData): str {
+  world := wd.world
+  entities := wd.entities
+
+  data := make([][]str, 0)
+  // ver
+  data = append(data, []str{lastVersion})
+  data = append(data, []str{sprintf("%d", len(entities))})
+  for i, ent in entities {
+    data = append(data, saveEntityDesc(ent))
+  }
+
+  // player pos
+  data = append(data, []str{std::itoa(trunc(world.playerSpawnPos.x)), std::itoa(trunc(world.playerSpawnPos.y))})
+
+  // Start from -1, because that's the background layer, which maps to index 0
+  layerNo := -1
+  for i in world.tilemap {
+    layer := &world.tilemap[i]
+    for pos, chunk in layer { 
+      data = append(data, []str{std::itoa(pos.x), std::itoa(pos.y), std::itoa(layerNo)})
+      
+      grid := make([][]str, world::chunkH)
+      for ty := 0; ty < world::chunkH; ty++ {
+        grid[ty] = make([]str, world::chunkW)
+        for tx := 0; tx < world::chunkW; tx++ {
+          grid[ty][tx] = sprintf("%d", chunk[tx][ty])
+        }
+      }
+
+      data = append(data, grid)
+    }
+    layerNo++
+  }
+
+  return csv::encode(data)
+}
+
+fn loadEntityDesc(s: []str): EntityDesc {
+  return EntityDesc{id: s[0], name: s[1], tags: s[2], rect: csvutil::loadRect(slice(s, 3, 7))}
+}
+
+fn load*(world: world::World, data: str): WorldData {
+  csvData := csv::parse(data)
+
+  var (
+    entities: []EntityDesc = make([]EntityDesc, 0)
+  )
+
+  world.tilemap = [3]map[world::ChunkPos]world::Chunk{map[world::ChunkPos]world::Chunk{}, map[world::ChunkPos]world::Chunk{}, map[world::ChunkPos]world::Chunk{}}
+
+  std::assert(csvData[0][0] == lastVersion, "Scene version mismatch.")
+
+  row := 1
+  entityCount := std::atoi(csvData[1][0])
+  row += 1
+
+  for i := 0; i < entityCount; i++ {
+    entities = append(entities, loadEntityDesc(csvData[i+row]))
+  }
+  row += entityCount
+
+  world.playerSpawnPos = th::Vf2{real(std::atoi(csvData[row][0])), real(std::atoi(csvData[row][1]))}
+
+  row += 1
+
+  length := len(csvData)
+  // NOTE: I check first column of the csv data because csv parser adds bogus row with empty string
+  for row < length && csvData[row][0] != "" {
+    chunkPos := world::ChunkPos{std::atoi(csvData[row][0]), std::atoi(csvData[row][1])}
+    layer := std::atoi(csvData[row][2]) + 1
+    row += 1
+
+    std::assert(layer >= 0 && layer <= 2, "Bad layer number.")
+
+    var chunk: world::Chunk
+    for y := 0; y < world::chunkH; y++ {
+      for x := 0; x < world::chunkW; x++ {
+        tileId := std::atoi(csvData[row+y][x])
+        chunk[x][y] = tileId        
+      }
+    }
+    row += world::chunkH
+
+    world.tilemap[layer][chunkPos] = chunk
+  }
+
+  return WorldData{world, entities}
+}
+
