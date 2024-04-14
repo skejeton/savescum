@@ -175,7 +175,7 @@ fn getCameraTargetRect(): rect::Rect {
     guide = findGuideInPoint(saves[len(saves)-1].ent.rect.getPos())
   }
   cameraRect := getCameraRect()
-  scale := util::min(guide.w/cameraRect.w, guide.h/cameraRect.h)
+  scale := util::max(guide.w/cameraRect.w, guide.h/cameraRect.h)
   maxScale := 1.0/(global::screen.w/640)
   if scale > maxScale {
     scale = maxScale
@@ -1060,18 +1060,29 @@ fn drawGuideRects() {
 }
 
 fn drawOutlines() {
-  radiusPulsing := 3//((sin(th.time/1000.0*2.0)+2)/2.0)*3
+  radiusPulsing := 3
 
   renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
 
   for i, renderTile in renderTiles {
+    distance := renderTile.rect.getPos().distanceTo(chara.rect.getPos())
+    actualProximity := util::clamp(1.0-(distance/256.0), 0.0, 1.0)
+    proximityMultiplier := util::clamp(1.0-(distance/512.0), 0.0, 1.0)
+    if distance > 256 {
+      proximityMultiplier = 0
+    }
+
     if renderTile.id == 29 {
-      canvas::drawRect(0x9999FFFF, util::rectShrink(renderTile.rect, (-3)*cameraScale))
+      canvas::drawRect(color::hsv(0.3, proximityMultiplier, util::max(proximityMultiplier, 0.05)), cameraOffsetRect(util::rectShrink(renderTile.rect, -3)))
     }
     if (renderTile.id == 30) || (renderTile.id == 31) {
       radius := radiusPulsing
-      canvas::drawRect(0x000000FF, util::rectShrink(renderTile.rect, (-radius-1)*cameraScale))
-      canvas::drawRect(0xFFFF00FF, util::rectShrink(renderTile.rect, -radius*cameraScale))
+      canvas::drawRect(0x000000FF, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius-1)))
+      if renderTile.id == (toggleActive ? 31 : 30) {
+        canvas::drawRect(0xFFFF0077, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius)))
+      } else {
+        canvas::drawRect(0xFFFF00FF, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius)))
+      }
     }
   }
 }
@@ -1082,9 +1093,9 @@ fn drawOverlays() {
   for i, renderTile in renderTiles {
     switch renderTile.id {
       case 31: 
-        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 30 : 31), renderTile.rect)
+        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 30 : 31), cameraOffsetRect(renderTile.rect))
       case 30: 
-        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 31 : 30), renderTile.rect)
+        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 31 : 30), cameraOffsetRect(renderTile.rect))
       default:
     }
   }
@@ -1119,7 +1130,7 @@ fn draw*() {
     }
   }
 
-  world.drawLayer(camera.mulf(-cameraScale), 1, cameraScale)
+  world.drawLayer(cameraOffsetPoint({0, 0}), 1, cameraScale)
 
   // DEBUG OVERYALS //
   if showDebug {
