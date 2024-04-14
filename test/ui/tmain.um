@@ -1,6 +1,6 @@
 import (
   "window.um"
-  ui = "myui.um"
+  "../ui/ui.um"
   "../../src/mouseinput.um"
 )
 

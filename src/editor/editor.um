@@ -1027,7 +1027,7 @@ fn isEntitySelected(entities: ^EditorEntities, index: int): bool {
 }
 
 fn initEntityAtCenter(editor: ^Editor, ent: world_data::EntityDesc): world_data::EntityDesc {
-  ent.rect = rect::Rect{-editor.tilemapGrid.p.x-16, -editor.tilemapGrid.p.y-16, 32, 32}
+  ent.rect = rect::Rect{-editor.tilemapGrid.p.x*32-16, -editor.tilemapGrid.p.y*32-16, 32, 32}
   return ent
 }
 
