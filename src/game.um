@@ -133,7 +133,6 @@ var (
   toggleActiveVal: real
   toggleActiveStatic: bool
   resetPoint: th::Vf2
-  toPortal: str
 
   saves: []ChumState
   showDebug*: bool = false
@@ -548,7 +547,6 @@ fn start*(worldData: world_data::WorldData) {
   // bgAudio.play()
   fadeout = 0
   fadeoutTarget = 0
-  toPortal = ""
   lastUpdateTime = th::time
   toggleActive = false
   toggleActiveWater = true
@@ -656,8 +654,6 @@ const (
   cropLeverWaterOn = rect::Rect{320, 128, 64, 64}
   cropLeverWaterOff = rect::Rect{320, 192, 64, 64}
 
-  cropTele     = rect::Rect{128+64, 0, 64, 64}
-  cropTeleOff  = rect::Rect{128+64, 64, 64, 64}
   cropResetV   = rect::Rect{256+64, 0, 64, 64}
   cropResetH   = rect::Rect{256+64, 64, 64, 64}
   cropControls = rect::Rect{0, 128, 256, 256}
@@ -665,10 +661,6 @@ const (
 
 fn drawEntity(ent: ^Character) {
   destRect := util::rectShrink(cameraOffsetRect(ent.rect), -1*cameraScale)
-  if toPortal == ent.id {
-    destRect.x += cos(th::time/1000.0*6)*5*cameraScale
-    destRect.y += sin(th::time/1000.0*6)*5*cameraScale
-  }
 
   if ent.tags.isSet("lever") {
     if toggleActive {
@@ -695,17 +687,11 @@ fn drawEntity(ent: ^Character) {
   } else if ent.tags.isSet("boulder") {
     util::drawImageRect(imgObj, cropBoulder, destRect)
   } else if ent.tags.isSet("tele") {
-    if !entCheckCollision(ent) {
-      util::drawImageRect(imgObj, cropTele, destRect)
-    } else {
-      util::drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
-    }
+    destRect = util::rectShrink(destRect, 5*cameraScale)
+    background::drawBackgroundSquare(destRect, th::time/1000.0, 0x111144FF, 0x222277FF, {0.5, 0.5})
   } else if ent.tags.isSet("tele_off") {
-  if !entCheckCollision(ent) {
-      util::drawImageRect(imgObj, cropTeleOff, destRect)
-    } else {
-      util::drawImageRect(imgObj, cropTeleOff, destRect, 0, 0xFF0000FF)
-    }
+    destRect = util::rectShrink(destRect, 5*cameraScale)
+    background::drawBackgroundSquare(destRect, th::time/1000.0, 0x111111FF, 0x222222FF, {0.5, 0.5})
   } else if ent.tags.isSet("reset") {
     if (destRect.w < destRect.h) {
       util::drawImageRect(imgObj, cropResetV, destRect)
@@ -873,8 +859,6 @@ fn isActivated(): bool {
 fn update*() {
   chumFrown = jitterCounter > 300
 
-  toPortal = ""
-
   toggleActiveVal = rerp::iReal(toggleActiveVal, real(int(toggleActive)), th::delta/100.0)
 
   iterations := (th::time - lastUpdateTime) / updateStepMs
@@ -1038,13 +1022,12 @@ fn update*() {
         if util::rectVsRect(ent.rect, chara.rect) {
           dest := ent.tags.param("tele")
           ent := findEntity(dest)
-          toPortal = dest
           if ent == null {
             dbg::logt("Error: Destination entity doesn't exist")
           } else if isActivated() {
             if !entCheckCollision(ent) {
-              chara.rect.x = ent.rect.x
-              chara.rect.y = ent.rect.y
+              chara.rect.x = ent.rect.x+(ent.rect.w-chara.rect.w)/2
+              chara.rect.y = ent.rect.y+(ent.rect.h-chara.rect.h)/2
             } 
           }
         }
@@ -1069,19 +1052,23 @@ fn drawOutlines() {
     actualProximity := util::clamp(1.0-(distance/256.0), 0.0, 1.0)
     proximityMultiplier := util::clamp(1.0-(distance/512.0), 0.0, 1.0)
     if distance > 256 {
-      proximityMultiplier = 0
+      proximityMultiplier /= 2
     }
 
+    green := color::hsv(0.3, proximityMultiplier, util::max(proximityMultiplier, 0.05))
+    yellow := color::hsv(0.15, proximityMultiplier, util::max(proximityMultiplier, 0.05))
+    darkyellow := color::hsv(0.15, proximityMultiplier, util::max(proximityMultiplier, 0.05)/2.0)
+
     if renderTile.id == 29 {
-      canvas::drawRect(color::hsv(0.3, proximityMultiplier, util::max(proximityMultiplier, 0.05)), cameraOffsetRect(util::rectShrink(renderTile.rect, -3)))
+      canvas::drawRect(green, cameraOffsetRect(util::rectShrink(renderTile.rect, -3)))
     }
     if (renderTile.id == 30) || (renderTile.id == 31) {
       radius := radiusPulsing
       canvas::drawRect(0x000000FF, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius-1)))
       if renderTile.id == (toggleActive ? 31 : 30) {
-        canvas::drawRect(0xFFFF0077, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius)))
+        canvas::drawRect(darkyellow, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius)))
       } else {
-        canvas::drawRect(0xFFFF00FF, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius)))
+        canvas::drawRect(yellow, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius)))
       }
     }
   }
