@@ -156,15 +156,19 @@ fn findGuideInPoint(p: th::Vf2): rect::Rect {
   return getCameraRect()
 }
 
-fn reset*() {
-  chara.rect.x = resetPoint.x
-  chara.rect.y = resetPoint.y
+fn resetStates*() {
   toggleActive = false
   toggleActiveStatic = metaBoulders 
   toggleActiveWater = true
   end = false 
   fadeoutTarget = 0
   saves = {}
+}
+
+fn reset*() {
+  chara.rect.x = resetPoint.x
+  chara.rect.y = resetPoint.y
+  resetStates()
 }
 
 fn getCameraTargetRect(): rect::Rect {
@@ -1026,6 +1030,7 @@ fn update*() {
             dbg::logt("Error: Destination entity doesn't exist")
           } else if isActivated() {
             if !entCheckCollision(ent) {
+              resetStates()
               chara.rect.x = ent.rect.x+(ent.rect.w-chara.rect.w)/2
               chara.rect.y = ent.rect.y+(ent.rect.h-chara.rect.h)/2
             } 
@@ -1049,7 +1054,6 @@ fn drawOutlines() {
 
   for i, renderTile in renderTiles {
     distance := renderTile.rect.getPos().distanceTo(chara.rect.getPos())
-    actualProximity := util::clamp(1.0-(distance/256.0), 0.0, 1.0)
     proximityMultiplier := util::clamp(1.0-(distance/512.0), 0.0, 1.0)
     if distance > 256 {
       proximityMultiplier /= 2
