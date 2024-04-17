@@ -90,16 +90,14 @@ type ChumState = struct {
   dir: int
   rotTime: real
   walkTime: real
+  loadTime: real
+  visRect: rect::Rect
   ent: Character
   toggleActiveStatic: bool
   toggleActiveWater: bool
 }
 
 var (
-  // Resources:
-  chumDir: int
-  chumRotTime: real
-  chumWalkTime: real
   chumFrown: bool = false
   imgObj: image::Image
   imgChum: image::Image
@@ -125,13 +123,11 @@ var (
   entities*: []Character
   sceneId*: int
   world*: world::World
-  chara*: Character
+  pal*: ChumState
   camera*: th::Vf2
   cameraScale*: real
   toggleActive: bool
-  toggleActiveWater: bool
   toggleActiveVal: real
-  toggleActiveStatic: bool
   resetPoint: th::Vf2
 
   saves: []ChumState
@@ -143,7 +139,7 @@ var (
 )
 
 fn getCameraRect(): rect::Rect {
-  return {chara.rect.x+chara.rect.w/2-global::screen.w/2, chara.rect.y+chara.rect.h/2-global::screen.h/2, global::screen.w, global::screen.h}
+  return {pal.ent.rect.x+pal.ent.rect.w/2-global::screen.w/2, pal.ent.rect.y+pal.ent.rect.h/2-global::screen.h/2, global::screen.w, global::screen.h}
 }
 
 fn findGuideInPoint(p: th::Vf2): rect::Rect {
@@ -158,22 +154,22 @@ fn findGuideInPoint(p: th::Vf2): rect::Rect {
 
 fn resetStates*() {
   toggleActive = false
-  toggleActiveStatic = metaBoulders 
-  toggleActiveWater = true
+  pal.toggleActiveStatic = metaBoulders 
+  pal.toggleActiveWater = true
   end = false 
   fadeoutTarget = 0
   saves = {}
 }
 
 fn reset*() {
-  chara.rect.x = resetPoint.x
-  chara.rect.y = resetPoint.y
+  pal.ent.rect.x = resetPoint.x
+  pal.ent.rect.y = resetPoint.y
   resetStates()
 }
 
 fn getCameraTargetRect(): rect::Rect {
 
-  guide := findGuideInPoint(chara.rect.getPos())
+  guide := findGuideInPoint(pal.ent.rect.getPos())
   if input::isPressedc('z') && len(saves) > 0 {
     guide = findGuideInPoint(saves[len(saves)-1].ent.rect.getPos())
   }
@@ -191,8 +187,8 @@ fn getCameraTargetRect(): rect::Rect {
     cameraRect.x = saves[len(saves)-1].ent.rect.x+saves[len(saves)-1].ent.rect.w/2-cameraRect.w/2
     cameraRect.y = saves[len(saves)-1].ent.rect.y+saves[len(saves)-1].ent.rect.h/2-cameraRect.h/2
   } else {
-    cameraRect.x = chara.rect.x+chara.rect.w/2-cameraRect.w/2
-    cameraRect.y = chara.rect.y+chara.rect.h/2-cameraRect.h/2
+    cameraRect.x = pal.ent.rect.x+pal.ent.rect.w/2-cameraRect.w/2
+    cameraRect.y = pal.ent.rect.y+pal.ent.rect.h/2-cameraRect.h/2
   }
   
   return util::rectKeepInBounds(cameraRect, guide)
@@ -234,53 +230,53 @@ fn cameraOffsetRect(r: rect::Rect): rect::Rect {
 }
 
 fn playerControl() {
-  if !wasOnGround && chara.onGround {
+  if !wasOnGround && pal.ent.onGround {
     rumbling = 0.2
     palLand.start()
   }
-  if (input::isPressed(.up) || input::gamepad().isPressed(.a)) && chara.onGround {
+  if (input::isPressed(.up) || input::gamepad().isPressed(.a)) && pal.ent.onGround {
     palJump.start()
-    chara.vel.y = -3.65
+    pal.ent.vel.y = -3.65
   }
   if input::gamepad().id != -1 {
     stick := input::gamepad().stick(.left)
 
     if stick.x < -0.5 {
-      chumDir = 0
-      chumWalkTime += updateStep*fabs(stick.x)
-      chara.vel.x = 2.5*stick.x
+      pal.dir = 0
+      pal.walkTime += updateStep*fabs(stick.x)
+      pal.ent.vel.x = 2.5*stick.x
     } else if stick.x > 0.5 {
-      chumDir = 1
-      chumWalkTime += updateStep*fabs(stick.x)
-      chara.vel.x = 2.5*stick.x
+      pal.dir = 1
+      pal.walkTime += updateStep*fabs(stick.x)
+      pal.ent.vel.x = 2.5*stick.x
     }
   }
   if input::isPressed(.left) {
-    chumDir = 0
-    chara.vel.x = -2.5
-    chumWalkTime += updateStep
+    pal.dir = 0
+    pal.ent.vel.x = -2.5
+    pal.walkTime += updateStep
   }
   if input::isPressed(.right) {
-    chumDir = 1
-    chara.vel.x = 2.5
-    chumWalkTime += updateStep
+    pal.dir = 1
+    pal.ent.vel.x = 2.5
+    pal.walkTime += updateStep
   } 
 
-  if fabs(chara.vel.x) < 0.1 {
-    chumWalkTime = 0
+  if fabs(pal.ent.vel.x) < 0.1 {
+    pal.walkTime = 0
   }
 
-  if chara.rect.y > 2e3 {
+  if pal.ent.rect.y > 2e3 {
     reset()
   }
 
-  if round(chumWalkTime*6+0.1) % 2 == 1 && chara.onGround {
+  if round(pal.walkTime*6+0.1) % 2 == 1 && pal.ent.onGround {
     palStep.setVol(0.5)
     palStep.setPitch(1.5+(std::rand()%10)/50.0)
     palStep.play()
   }
 
-  wasOnGround = chara.onGround
+  wasOnGround = pal.ent.onGround
 }
 
 fn entPhysics(ent: ^Character) {
@@ -516,7 +512,7 @@ fn entSolveCollision(ent: ^Character) {
 }
 
 fn _drawRectTangents(r: rect::Rect) {
-  solids := entConstructCollidingSolids(&chara)
+  solids := entConstructCollidingSolids(&pal.ent)
 
   for i, solid in solids {
     rec := cameraOffsetRect(solid.rect)
@@ -553,19 +549,19 @@ fn start*(worldData: world_data::WorldData) {
   fadeoutTarget = 0
   lastUpdateTime = th::time
   toggleActive = false
-  toggleActiveWater = true
+  pal.toggleActiveWater = true
   lockInput = false
   metaBoulders = false
 
   world = worldData.world
 
-  chara = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect::Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX/1.2, world.tileset.tileSizeY}}
+  pal.ent = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect::Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX/1.2, world.tileset.tileSizeY}}
 
-  resetPoint.x = chara.rect.x
-  resetPoint.y = chara.rect.y
-  chumRotTime = 0
-  chumWalkTime = 0
-  chumDir = 0
+  resetPoint.x = pal.ent.rect.x
+  resetPoint.y = pal.ent.rect.y
+  pal.rotTime = 0
+  pal.walkTime = 0
+  pal.dir = 0
 
   entities = make([]Character, 0)
   guides = make([]rect::Rect, 0)
@@ -590,7 +586,7 @@ fn start*(worldData: world_data::WorldData) {
     }
   }
 
-  toggleActiveStatic = metaBoulders
+  pal.toggleActiveStatic = metaBoulders
   saves = []ChumState{}
   camera = getCameraProperties().pos
   cameraScale = getCameraProperties().scale
@@ -613,12 +609,12 @@ fn init*(rl: ^resources::ResourceLoader) {
 }
 
 fn updateEntities() {
-  entPhysics(&chara)
-  if chara.vel.y < 0 && jitterDir >= 0 {
+  entPhysics(&pal.ent)
+  if pal.ent.vel.y < 0 && jitterDir >= 0 {
     jitterDir = -1
     jitterTime = 0
   }
-  if chara.vel.y > 0 && jitterDir <= 0 {
+  if pal.ent.vel.y > 0 && jitterDir <= 0 {
     jitterDir = 1
     jitterTime = 0
   }
@@ -630,13 +626,13 @@ fn updateEntities() {
   } else {
     jitterCounter = 0
   }
-  entSolveCollision(&chara)
+  entSolveCollision(&pal.ent)
  
-  if chara.vel.y > 3 {
-    chumRotTime += updateStep*100.0
+  if pal.ent.vel.y > 3 {
+    pal.rotTime += updateStep*100.0
   }
-  if chara.vel.y <= 0 {
-    chumRotTime = 0
+  if pal.ent.vel.y <= 0 {
+    pal.rotTime = 0
   }
 }
 
@@ -671,13 +667,13 @@ fn drawEntityObject*(name: str, tags: TagSet, rect: rect::Rect, scale: real): bo
       util::drawImageRect(imgObj, cropLeverOff, rect)
     }
   } else if tags.isSet("lever_s") {
-    if toggleActiveStatic {
+    if pal.toggleActiveStatic {
       util::drawImageRect(imgObj, cropLeverStaticOn, rect)
     } else {
       util::drawImageRect(imgObj, cropLeverStaticOff, rect)
     }
   } else if tags.isSet("lever_w") {
-    if toggleActiveWater {
+    if pal.toggleActiveWater {
       util::drawImageRect(imgObj, cropLeverWaterOn, rect)
     } else {
       util::drawImageRect(imgObj, cropLeverWaterOff, rect)
@@ -732,8 +728,15 @@ const (
   chumMouthRect = rect::Rect{41, 52, 22, 7}
 )
 
-fn drawChumState(state: int, chum: ChumState, tint: uint32) {
-  at := chum.ent.rect.getPos()
+fn drawChumState(state: int, chum: ^ChumState, tint: uint32) {
+  chum.loadTime -= th::delta/1000.0
+  if chum.loadTime < 0 {
+    chum.visRect = chum.ent.rect
+  } else {
+    chum.visRect = rerp::iRect(chum.visRect, chum.ent.rect, th::delta/100.0)
+  }
+
+  at := chum.visRect.getPos()
   bodyRect := rect::Rect{chumFaceRect.x+chumFaceRect.w*(state+1), chumFaceRect.y, chumFaceRect.w, chumFaceRect.h}
   offs := 0.0
   if chum.dir == 0 {
@@ -769,39 +772,22 @@ fn drawChumState(state: int, chum: ChumState, tint: uint32) {
 }
 
 fn loadStateToChar(state: ChumState) {
-  chara = state.ent
-  chumDir = state.dir
-  chumWalkTime = state.walkTime
-  chumRotTime = state.rotTime
-  
-  if !insideStatic {
-    toggleActiveStatic = state.toggleActiveStatic
-    toggleActiveWater = state.toggleActiveWater
-  }
-}
-
-fn getCharState(): ChumState {
-  return ChumState{
-    dir: chumDir,
-    walkTime: chumWalkTime,
-    rotTime: chumRotTime,
-    ent: chara,
-    toggleActiveStatic: toggleActiveStatic,
-    toggleActiveWater: toggleActiveWater
-  }
+  oldVisRect := pal.visRect
+  pal = state
+  pal.visRect = oldVisRect
+  pal.loadTime = 0.5
 }
 
 fn drawChum(state: int) {
   alpha := trunc((1-fadeout) * real(0xFF))
-  drawChumState(state, getCharState(), 0xFFFFFF00|alpha)
+  drawChumState(state, &pal, 0xFFFFFF00|alpha)
 }
 
 fn getChumSpriteState(chum: ChumState): int {
-  chara := &chum.ent
 
-  if chara.vel.y > 0 {
+  if chum.ent.vel.y > 0 {
     return chumStateFall
-  } else if !chara.onGround {
+  } else if !chum.ent.onGround {
     return chumStateJump
   } else if chum.walkTime == 0.0 {
     return chumStateStand
@@ -819,21 +805,21 @@ fn drawEntities() {
     drawEntity(entity)
   }
  
-  drawChum(getChumSpriteState(getCharState()))
+  drawChum(getChumSpriteState(pal))
 }
 
 fn drawEntityDebugRects() {
   for i, entity in entities {
     canvas::drawRect(color::alpha(th::blue, 0.4), cameraOffsetRect(entity.rect)) 
   }
-  canvas::drawRect(color::alpha(th::blue, 0.4), cameraOffsetRect(chara.rect)) 
+  canvas::drawRect(color::alpha(th::blue, 0.4), cameraOffsetRect(pal.ent.rect)) 
 }
 
 fn canActivateLever(): bool {
   can := true
   toggleActive = !toggleActive
 
-  if (entCheckCollision(&chara)) {
+  if (entCheckCollision(&pal.ent)) {
     can = false
   }
 
@@ -843,25 +829,25 @@ fn canActivateLever(): bool {
 
 fn canActivateStaticLever(): bool {
   can := true
-  toggleActiveStatic = !toggleActiveStatic
+  pal.toggleActiveStatic = !pal.toggleActiveStatic
 
-  if (entCheckCollision(&chara)) {
+  if (entCheckCollision(&pal.ent)) {
     can = false
   }
 
-  toggleActiveStatic = !toggleActiveStatic
+  pal.toggleActiveStatic = !pal.toggleActiveStatic
   return can
 }
 
 fn canActivateWaterLever(): bool {
   can := true
-  toggleActiveWater = !toggleActiveWater
+  pal.toggleActiveWater = !pal.toggleActiveWater
 
-  if (entCheckCollision(&chara)) {
+  if (entCheckCollision(&pal.ent)) {
     can = false
   }
 
-  toggleActiveWater = !toggleActiveWater
+  pal.toggleActiveWater = !pal.toggleActiveWater
   return can
 }
 
@@ -881,6 +867,13 @@ fn update*() {
     frameSkips += iterations-120
     iterations = 120
   } 
+
+  if pal.loadTime > 0 {
+    for d := 0; d < iterations; d++ {
+      cameraControl()
+    }
+    return;
+  }
 
   for d := 0; d < iterations; d++ {
     fadeout = rerp::iReal(fadeout, fadeoutTarget, updateStep*1.0)
@@ -909,7 +902,7 @@ fn update*() {
       }
       
       if input::isJustPressedc('x') || input::gamepad().isJustPressed(.rb) {
-        saves = append(saves, getCharState())
+        saves = append(saves, pal)
       }
     }
     noSaveLoad = false
@@ -925,53 +918,53 @@ fn update*() {
 
       if ent.tags.isSet("reset") {
         /*
-        if util.rectVsRect(ent.rect, chara.rect) {
+        if util.rectVsRect(ent.rect, pal.ent.rect) {
           saves = []ChumState{}
           toggleActive = false
-          toggleActiveStatic = false
+          pal.toggleActiveStatic = false
         }
         */
-        if util::rectVsRect(ent.rect, chara.rect) {
+        if util::rectVsRect(ent.rect, pal.ent.rect) {
           entShape := Shape{rect: ent.rect}
           if (ent.rect.w > ent.rect.h) {
-            if ((chara.rect.y + chara.rect.h) < (ent.rect.y+ent.rect.h))  {
-              chara.rect.y = ent.rect.y - chara.rect.h+1
-              entVsShape(&chara, entShape)
-              chumRotTime = 0
+            if ((pal.ent.rect.y + pal.ent.rect.h) < (ent.rect.y+ent.rect.h))  {
+              pal.ent.rect.y = ent.rect.y - pal.ent.rect.h+1
+              entVsShape(&pal.ent, entShape)
+              pal.rotTime = 0
             } else {
               ent.vel.y += 4
               resetPoint.x = ent.rect.x+ent.rect.w/2
               resetPoint.y = ent.rect.y-ent.rect.h/2
 
               toggleActive = false
-              toggleActiveStatic = false
+              pal.toggleActiveStatic = false
               saves = {}
             }
           } else {
-            if (chara.rect.x > ent.rect.x)  {
-              chara.rect.x = ent.rect.x + ent.rect.w-1
-              entVsShape(&chara, entShape)
-              chumRotTime = 0
+            if (pal.ent.rect.x > ent.rect.x)  {
+              pal.ent.rect.x = ent.rect.x + ent.rect.w-1
+              entVsShape(&pal.ent, entShape)
+              pal.rotTime = 0
             } else {
               ent.vel.x += 4
               resetPoint.x = ent.rect.x+ent.rect.w/2
-              resetPoint.y = ent.rect.y+ent.rect.h-chara.rect.h+1
+              resetPoint.y = ent.rect.y+ent.rect.h-pal.ent.rect.h+1
 
               toggleActive = false
-              toggleActiveStatic = false
+              pal.toggleActiveStatic = false
               saves = {}
             }
           }
         }
       }
       if ent.tags.isSet("boulder") {
-        power := real(int(toggleActiveStatic))
+        power := real(int(pal.toggleActiveStatic))
         boulderTargetRect := util::rectMove(ent.originalRect, th::Vf2{0, -ent.originalRect.h*power})
         ent.rect = rerp::iRect(ent.rect, boulderTargetRect, th::delta/50.0)
       }
       if ent.tags.isSet("lever") {
-        if util::rectVsRect(ent.rect, chara.rect) {
-          if isActivated() && chara.onGround {
+        if util::rectVsRect(ent.rect, pal.ent.rect) {
+          if isActivated() && pal.ent.onGround {
             if canActivateLever() {
               toggleActive = !toggleActive
             }
@@ -979,60 +972,60 @@ fn update*() {
         }
       }
       if ent.tags.isSet("lever_s") {
-        if util::rectVsRect(ent.rect, chara.rect) && chara.onGround {
+        if util::rectVsRect(ent.rect, pal.ent.rect) && pal.ent.onGround {
           if isActivated() {
             if canActivateStaticLever() {
-              toggleActiveStatic = !toggleActiveStatic
+              pal.toggleActiveStatic = !pal.toggleActiveStatic
             }
           } 
         }
       }
       if ent.tags.isSet("water") {
-        if toggleActiveWater {
+        if pal.toggleActiveWater {
           ent.rect.y = ent.originalRect.y
         } else {
           ent.rect.y = ent.originalRect.y+100000
         }
-        if util::rectVsRect(ent.rect, chara.rect) {
+        if util::rectVsRect(ent.rect, pal.ent.rect) {
           noSaveLoad = true
         }
       }
 
       if ent.tags.isSet("static") {
-        if util::rectVsRect(ent.rect, chara.rect) {
+        if util::rectVsRect(ent.rect, pal.ent.rect) {
           insideStatic = true
         }
       }
 
       if ent.tags.isSet("lever_w") {
-         if util::rectVsRect(ent.rect, chara.rect) && chara.onGround {
+         if util::rectVsRect(ent.rect, pal.ent.rect) && pal.ent.onGround {
           if isActivated() {
             if canActivateWaterLever() {
-              toggleActiveWater = !toggleActiveWater
+              pal.toggleActiveWater = !pal.toggleActiveWater
             }
           } 
         }
       }
       if ent.tags.isSet("exit") {
-        if util::rectVsRect(ent.rect, chara.rect) {
+        if util::rectVsRect(ent.rect, pal.ent.rect) {
           end = true
         }
       }
       if ent.tags.isSet("resetfield") {
-        if util::rectVsRect(ent.rect, chara.rect) {
+        if util::rectVsRect(ent.rect, pal.ent.rect) {
           reset()
         }
       }
       
       if ent.tags.isSet("fadeout") {
-        if util::rectVsRect(ent.rect, chara.rect) {
+        if util::rectVsRect(ent.rect, pal.ent.rect) {
           fadeoutTarget = 1
           saves = {}
         }
       }
 
       if ent.tags.isSet("tele") {
-        if util::rectVsRect(ent.rect, chara.rect) {
+        if util::rectVsRect(ent.rect, pal.ent.rect) {
           dest := ent.tags.param("tele")
           ent := findEntity(dest)
           if ent == null {
@@ -1040,8 +1033,8 @@ fn update*() {
           } else if isActivated() {
             if !entCheckCollision(ent) {
               resetStates()
-              chara.rect.x = ent.rect.x+(ent.rect.w-chara.rect.w)/2
-              chara.rect.y = ent.rect.y+(ent.rect.h-chara.rect.h)/2
+              pal.ent.rect.x = ent.rect.x+(ent.rect.w-pal.ent.rect.w)/2
+              pal.ent.rect.y = ent.rect.y+(ent.rect.h-pal.ent.rect.h)/2
             } 
           }
         }
@@ -1062,7 +1055,7 @@ fn drawOutlines() {
   renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
 
   for i, renderTile in renderTiles {
-    distance := renderTile.rect.getPos().distanceTo(chara.rect.getPos())
+    distance := renderTile.rect.getPos().distanceTo(pal.ent.rect.getPos())
     proximityMultiplier := util::clamp(1.0-(distance/512.0), 0.0, 1.0)
     
     if distance > 256 {
@@ -1134,9 +1127,9 @@ fn draw*() {
     
   for i, state in saves {
     if !entCheckCollision(&state.ent) {
-      drawChumState(getChumSpriteState(state), state, 0xFFFFFF44)
+      drawChumState(getChumSpriteState(state), &state, 0xFFFFFF44)
     } else {
-      drawChumState(getChumSpriteState(state), state, 0xFF000044)
+      drawChumState(getChumSpriteState(state), &state, 0xFF000044)
     }
   }
 
@@ -1144,7 +1137,7 @@ fn draw*() {
 
   // DEBUG OVERYALS //
   if showDebug {
-    _drawRectTangents(chara.rect)
+    _drawRectTangents(pal.ent.rect)
     drawGuideRects()
     util::drawRectLines(th::green, cameraOffsetRect(getCameraTargetRect()))
     drawEntityDebugRects()
