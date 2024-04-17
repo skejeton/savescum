@@ -22,6 +22,7 @@ type Session* = struct {
   entityBypass: bool
   layerSelected: int
   tileSelected: th::Vf2
+  plainBiscuit: bool
   windows: []Window
 }
 
@@ -34,6 +35,7 @@ fn save*(session: Session): str {
   result = append(result, ut::saveBool(session.entityBypass))
   result = append(result, ut::saveInt(session.layerSelected))
   result = append(result, ut::saveVf2(session.tileSelected))
+  result = append(result, ut::saveBool(session.plainBiscuit))
   
   result = append(result, ut::saveReal(len(session.windows)))
   for i, window in session.windows {
@@ -55,15 +57,16 @@ fn load*(sourceStr: str): Session {
   session.entityBypass = ut::loadBool(source[4])
   session.layerSelected = trunc(ut::loadInt(source[5]))
   session.tileSelected = ut::loadVf2(source[6])
+  session.plainBiscuit = ut::loadBool(source[7])
 
-  count := trunc(ut::loadReal(source[7]))
+  count := trunc(ut::loadReal(source[8]))
 
   for i := 0; i < count; i++ {
     window := Window{}
 
-    window.name = source[8+i*3][0]
-    window.visible = ut::loadBool(source[9+i*3])
-    window.rect = ut::loadRect(source[10+i*3])
+    window.name = source[9+i*3][0]
+    window.visible = ut::loadBool(source[10+i*3])
+    window.rect = ut::loadRect(source[11+i*3])
 
     session.windows = append(session.windows, window)
   }

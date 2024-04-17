@@ -179,7 +179,7 @@ fn getCameraTargetRect(): rect::Rect {
   }
   cameraRect := getCameraRect()
   scale := util::max(guide.w/cameraRect.w, guide.h/cameraRect.h)
-  maxScale := 1.0/(global::screen.w/640)
+  maxScale := 1.0/(global::screen.w/800)
   if scale > maxScale {
     scale = maxScale
   }
@@ -663,54 +663,63 @@ const (
   cropControls = rect::Rect{0, 128, 256, 256}
 )
 
-fn drawEntity(ent: ^Character) {
-  destRect := util::rectShrink(cameraOffsetRect(ent.rect), -1*cameraScale)
-
-  if ent.tags.isSet("lever") {
+fn drawEntityObject*(name: str, tags: TagSet, rect: rect::Rect, scale: real): bool {
+  if tags.isSet("lever") {
     if toggleActive {
-      util::drawImageRect(imgObj, cropLeverOn, destRect)
+      util::drawImageRect(imgObj, cropLeverOn, rect)
     } else {
-      util::drawImageRect(imgObj, cropLeverOff, destRect)
+      util::drawImageRect(imgObj, cropLeverOff, rect)
     }
-  } else if ent.tags.isSet("lever_s") {
+  } else if tags.isSet("lever_s") {
     if toggleActiveStatic {
-      util::drawImageRect(imgObj, cropLeverStaticOn, destRect)
+      util::drawImageRect(imgObj, cropLeverStaticOn, rect)
     } else {
-      util::drawImageRect(imgObj, cropLeverStaticOff, destRect)
+      util::drawImageRect(imgObj, cropLeverStaticOff, rect)
     }
-  } else if ent.tags.isSet("lever_w") {
+  } else if tags.isSet("lever_w") {
     if toggleActiveWater {
-      util::drawImageRect(imgObj, cropLeverWaterOn, destRect)
+      util::drawImageRect(imgObj, cropLeverWaterOn, rect)
     } else {
-      util::drawImageRect(imgObj, cropLeverWaterOff, destRect)
+      util::drawImageRect(imgObj, cropLeverWaterOff, rect)
     }
-  } else if ent.tags.isSet("water") {
-    canvas::drawRect(0x0099FF66, util::rectShrink(destRect, -2*cameraScale))
-  } else if ent.tags.isSet("static") {
-    canvas::drawRect(0xFFFF0066, util::rectShrink(destRect, -2*cameraScale))
-  } else if ent.tags.isSet("boulder") {
-    util::drawImageRect(imgObj, cropBoulder, destRect)
-  } else if ent.tags.isSet("tele") {
-    destRect = util::rectShrink(destRect, 5*cameraScale)
-    background::drawBackgroundSquare(destRect, th::time/1000.0, 0x111144FF, 0x222277FF, {0.5, 0.5})
-  } else if ent.tags.isSet("tele_off") {
-    destRect = util::rectShrink(destRect, 5*cameraScale)
-    background::drawBackgroundSquare(destRect, th::time/1000.0, 0x111111FF, 0x222222FF, {0.5, 0.5})
-  } else if ent.tags.isSet("reset") {
-    if (destRect.w < destRect.h) {
-      util::drawImageRect(imgObj, cropResetV, destRect)
+  } else if tags.isSet("water") {
+    canvas::drawRect(0x0099FF66, util::rectShrink(rect, -2*scale))
+  } else if tags.isSet("static") {
+    canvas::drawRect(0xFFFF0066, util::rectShrink(rect, -2*scale))
+  } else if tags.isSet("boulder") {
+    util::drawImageRect(imgObj, cropBoulder, rect)
+  } else if tags.isSet("tele") {
+    rect = util::rectShrink(rect, 5*scale)
+    background::drawBackgroundSquare(rect, th::time/1000.0, 0x111144FF, 0x222277FF, {0.5*scale, 0.5*scale})
+  } else if tags.isSet("tele_off") {
+    rect = util::rectShrink(rect, 5*scale)
+    background::drawBackgroundSquare(rect, th::time/1000.0, 0x111111FF, 0x222222FF, {0.5*scale, 0.5*scale})
+  } else if tags.isSet("reset") {
+    if (rect.w < rect.h) {
+      util::drawImageRect(imgObj, cropResetV, rect)
     } else {
-      util::drawImageRect(imgObj, cropResetH, destRect)
+      util::drawImageRect(imgObj, cropResetH, rect)
     }
-  } else if ent.tags.isSet("controls") {
-    util::drawImageRect(imgObj, cropControls, destRect)
-  } else if ent.tags.isSet("Comment") {
-    canvas::drawRect(0x000000FF, util::rectShrink(destRect, -cameraScale))
-    canvas::drawRect(0x00FFFFFF, destRect)
-    defaultFont.draw(ent.name, destRect.getPos(), 0x000000FF, cameraScale)
-  } else if ent.tags.isSet("resetfield") || ent.tags.isSet("fadeout") {
- 
+  } else if tags.isSet("controls") {
+    util::drawImageRect(imgObj, cropControls, rect)
+  } else if tags.isSet("Comment") {
+    canvas::drawRect(0x000000FF, util::rectShrink(rect, -scale))
+    canvas::drawRect(0x00FFFFFF, rect)
+    defaultFont.draw(name, rect.getPos(), 0x000000FF, scale)
   } else {
+    return false
+  }
+  return true
+}
+
+fn drawEntity(ent: ^Character) {
+  if ent.tags.isSet("resetfield") || ent.tags.isSet("fadeout") {
+    return
+  }
+
+  destRect := util::rectShrink(cameraOffsetRect(ent.rect), -1*cameraScale)
+ 
+  if !drawEntityObject(ent.name, ent.tags, destRect, cameraScale) {
     drawEntityCustomRect(ent, ent.rect)
   }
 }
@@ -1055,8 +1064,13 @@ fn drawOutlines() {
   for i, renderTile in renderTiles {
     distance := renderTile.rect.getPos().distanceTo(chara.rect.getPos())
     proximityMultiplier := util::clamp(1.0-(distance/512.0), 0.0, 1.0)
+    
     if distance > 256 {
       proximityMultiplier /= 2
+    }
+    
+    if global::plainBiscuit {
+      proximityMultiplier = 0.7
     }
 
     green := color::hsv(0.3, proximityMultiplier, util::max(proximityMultiplier, 0.05))
@@ -1101,7 +1115,12 @@ fn draw*() {
   rumbling = rerp::iReal(rumbling, 0, th::delta/100.0)
   oldScale := cameraScale 
   oldPos := camera
-  background::draw(bgCam)
+
+  if global::plainBiscuit {
+    canvas::drawRect(0x777777FF, global::screen)
+  } else {
+    background::draw(bgCam)
+  }
 
 
   bgAudio.setVol(1.0-fadeout)

@@ -1224,18 +1224,29 @@ fn applyRectResizeCommand(resizeCommand: RectResizeCommand, r: rect::Rect, delta
   return r
 }
 
+type DrawEntityCmd = struct {
+  entity: world_data::EntityDesc
+  r: rect::Rect
+  tags: game::TagSet
+  scale: real
+}
+
+fn (cmd: ^DrawEntityCmd) draw(props: drawcmd::DrawProperties) {
+  if !game::drawEntityObject(cmd.entity.name, cmd.tags, cmd.r, cmd.scale) {
+    canvas::drawRect(th::red, cmd.r)
+  }
+}
+
 fn drawTaggedEntityRect(editor: ^Editor, entity: ^world_data::EntityDesc, r: rect::Rect, tags: ^game::TagSet) {
   if tags.isSet("Guide") {
     editor.ui.ctx.drawRectLines(th::yellow, r)
-  } else {
-    editor.ui.ctx.drawRect(th::red, r)
-  }
-
-  if tags.isSet("Comment") {
+  } else if tags.isSet("Comment") {
     size := editor.resources.mainFont.measure(entity.name)
     entity.rect.w = size.x
     entity.rect.h = size.y
-    editor.ui.ctx.drawText(editor.resources.mainFont, entity.name, th::Vf2{r.x, r.y}, th::white, editor.tilemapGrid.s.x)
+    editor.ui.ctx.drawText(editor.resources.mainFont, entity.name, th::Vf2{r.x, r.y}, th::white, editor.tilemapGrid.s.x/32)
+  } else {
+    editor.ui.ctx.drawCustom(DrawEntityCmd{entity^, r, tags^, editor.tilemapGrid.s.x/32})
   }
 }
 
@@ -1619,6 +1630,7 @@ fn editorSaveSession(editor: ^Editor): session::Session {
   session.entityBypass = editor.entityBypass
   session.layerSelected = editor.tilemapLayer
   session.tileSelected  = editor.tileSelected
+  session.plainBiscuit = global::plainBiscuit
 
   for name, win in editor.wm.windows {
     isVisible := editor.wm.windowVisibility[name]
@@ -1638,6 +1650,7 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
   editor.entityBypass = session.entityBypass
   editor.tilemapLayer = session.layerSelected
   editor.tileSelected = session.tileSelected 
+  global::plainBiscuit = session.plainBiscuit
   
   for i, win in session.windows {
     editor.wm.setWindowVisible(win.name, win.visible)
@@ -1714,6 +1727,9 @@ fn editorMain*(enabled: bool) {
     if input::isJustPressed(.fn3) {
       editor.showDebugInfo = !editor.showDebugInfo
     }
+    if input::isJustPressed(.fn4) {
+      global::plainBiscuit = !global::plainBiscuit
+    }
 
     global::screen = rect::Rect{0, 0, window::w/sf, window::h/sf}
     window::setViewport(global::screen.getDims())
@@ -1740,7 +1756,8 @@ fn editorMain*(enabled: bool) {
           { "Frameskip", trunc(game::frameSkips), false },
           { "Dirty?", editor.dirty, false },
           { "Version", global::version, false },
-          { "Scale", editor.tilemapGrid.s, false }
+          { "Scale", editor.tilemapGrid.s, false },
+          { "Plain", global::plainBiscuit, false }
         }
       })
     }
