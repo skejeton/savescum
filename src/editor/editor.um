@@ -1704,7 +1704,7 @@ fn editorMain*(enabled: bool) {
   if sessionFile, err := util::readFileStr("user/session.csv"); err.code == 0 {
     editorLoadSession(editor, session::load(sessionFile))
   } else {
-    loadPortal(editor, "test3")
+    loadPortal(editor, "test")
   }
 
   editor.wm.setWindowVisible("Confirm", false)

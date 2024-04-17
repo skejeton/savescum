@@ -690,7 +690,7 @@ fn drawEntityObject*(name: str, tags: TagSet, rect: rect::Rect, scale: real): bo
     util::drawImageRect(imgObj, cropBoulder, rect)
   } else if tags.isSet("tele") {
     rect = util::rectShrink(rect, 5*scale)
-    background::drawBackgroundSquare(rect, th::time/1000.0, 0x111144FF, 0x222277FF, {0.5*scale, 0.5*scale})
+    background::drawBackgroundSquare(rect, 1000000-th::time/1000.0, 0x111144FF, 0x222277FF, {0.5*scale, 0.5*scale})
   } else if tags.isSet("tele_off") {
     rect = util::rectShrink(rect, 5*scale)
     background::drawBackgroundSquare(rect, th::time/1000.0, 0x111111FF, 0x222222FF, {0.5*scale, 0.5*scale})
