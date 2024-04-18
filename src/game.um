@@ -87,6 +87,7 @@ fn initTagSetFromString*(s: str): TagSet {
 }
 
 type ChumState = struct {
+  time: real
   dir: int
   rotTime: real
   walkTime: real
@@ -98,6 +99,7 @@ type ChumState = struct {
 }
 
 var (
+  time: real
   chumFrown: bool = false
   imgObj: image::Image
   imgChum: image::Image
@@ -686,10 +688,10 @@ fn drawEntityObject*(name: str, tags: TagSet, rect: rect::Rect, scale: real): bo
     util::drawImageRect(imgObj, cropBoulder, rect)
   } else if tags.isSet("tele") {
     rect = util::rectShrink(rect, 5*scale)
-    background::drawBackgroundSquare(rect, 1000000-th::time/1000.0, 0x111144FF, 0x222277FF, {0.5*scale, 0.5*scale})
+    background::drawBackgroundSquare(rect, 1000000-time, 0x111144FF, 0x222277FF, {0.5*scale, 0.5*scale})
   } else if tags.isSet("tele_off") {
     rect = util::rectShrink(rect, 5*scale)
-    background::drawBackgroundSquare(rect, th::time/1000.0, 0x111111FF, 0x222222FF, {0.5*scale, 0.5*scale})
+    background::drawBackgroundSquare(rect, time, 0x111111FF, 0x222222FF, {0.5*scale, 0.5*scale})
   } else if tags.isSet("reset") {
     if (rect.w < rect.h) {
       util::drawImageRect(imgObj, cropResetV, rect)
@@ -869,11 +871,15 @@ fn update*() {
   } 
 
   if pal.loadTime > 0 {
+    time = rerp::iReal(time, pal.time, th::delta/100.0)
     for d := 0; d < iterations; d++ {
       cameraControl()
     }
     return;
   }
+
+  pal.time += th::delta/1000.0
+  time = pal.time
 
   for d := 0; d < iterations; d++ {
     fadeout = rerp::iReal(fadeout, fadeoutTarget, updateStep*1.0)
