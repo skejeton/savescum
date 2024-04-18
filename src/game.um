@@ -1039,6 +1039,7 @@ fn update*() {
           } else if isActivated() {
             if !entCheckCollision(ent) {
               resetStates()
+              pal.loadTime = 0.5
               pal.ent.rect.x = ent.rect.x+(ent.rect.w-pal.ent.rect.w)/2
               pal.ent.rect.y = ent.rect.y+(ent.rect.h-pal.ent.rect.h)/2
             } 
