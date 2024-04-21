@@ -108,15 +108,11 @@ var (
   palStep: audio::Sound
   palJump: audio::Sound
   palLand: audio::Sound
-  end*: bool
   jitterDir: real
   jitterTime: real
   jitterCounter: int
   metaBoulders: bool
   wasOnGround: bool
-
-  fadeout: real = 0.0
-  fadeoutTarget: real = 0.0
 
   noSaveLoad: bool
   insideStatic: bool
@@ -158,8 +154,6 @@ fn resetStates*() {
   toggleActive = false
   pal.toggleActiveStatic = metaBoulders 
   pal.toggleActiveWater = true
-  end = false 
-  fadeoutTarget = 0
   saves = {}
 }
 
@@ -547,8 +541,6 @@ fn findEntity*(id: str): ^Character {
 fn start*(worldData: world_data::WorldData) {
   bgAudio.seekToFrame(0)
   // bgAudio.play()
-  fadeout = 0
-  fadeoutTarget = 0
   lastUpdateTime = th::time
   toggleActive = false
   pal.toggleActiveWater = true
@@ -692,12 +684,6 @@ fn drawEntityObject*(name: str, tags: TagSet, rect: rect::Rect, scale: real): bo
   } else if tags.isSet("tele_off") {
     rect = util::rectShrink(rect, 5*scale)
     background::drawBackgroundSquare(rect, time, 0x111111FF, 0x222222FF, {0.5*scale, 0.5*scale})
-  } else if tags.isSet("reset") {
-    if (rect.w < rect.h) {
-      util::drawImageRect(imgObj, cropResetV, rect)
-    } else {
-      util::drawImageRect(imgObj, cropResetH, rect)
-    }
   } else if tags.isSet("controls") {
     util::drawImageRect(imgObj, cropControls, rect)
   } else if tags.isSet("Comment") {
@@ -711,10 +697,6 @@ fn drawEntityObject*(name: str, tags: TagSet, rect: rect::Rect, scale: real): bo
 }
 
 fn drawEntity(ent: ^Character) {
-  if ent.tags.isSet("resetfield") || ent.tags.isSet("fadeout") {
-    return
-  }
-
   destRect := util::rectShrink(cameraOffsetRect(ent.rect), -1*cameraScale)
  
   if !drawEntityObject(ent.name, ent.tags, destRect, cameraScale) {
@@ -781,8 +763,7 @@ fn loadStateToChar(state: ChumState) {
 }
 
 fn drawChum(state: int) {
-  alpha := trunc((1-fadeout) * real(0xFF))
-  drawChumState(state, &pal, 0xFFFFFF00|alpha)
+  drawChumState(state, &pal, 0xFFFFFFFF)
 }
 
 fn getChumSpriteState(chum: ChumState): int {
@@ -882,13 +863,6 @@ fn update*() {
   time = pal.time
 
   for d := 0; d < iterations; d++ {
-    fadeout = rerp::iReal(fadeout, fadeoutTarget, updateStep*1.0)
-    if fadeout < 0 {
-      fadeout = 0
-    }
-    if fadeout > 0.99 {
-      fadeout = 0.99
-    }
     playerControl()
 
     // UPDATE PLAYER & CAMERA //
@@ -922,47 +896,6 @@ fn update*() {
     for i := 0; i < len(entities); i++ {
       ent := &entities[i]
 
-      if ent.tags.isSet("reset") {
-        /*
-        if util.rectVsRect(ent.rect, pal.ent.rect) {
-          saves = []ChumState{}
-          toggleActive = false
-          pal.toggleActiveStatic = false
-        }
-        */
-        if util::rectVsRect(ent.rect, pal.ent.rect) {
-          entShape := Shape{rect: ent.rect}
-          if (ent.rect.w > ent.rect.h) {
-            if ((pal.ent.rect.y + pal.ent.rect.h) < (ent.rect.y+ent.rect.h))  {
-              pal.ent.rect.y = ent.rect.y - pal.ent.rect.h+1
-              entVsShape(&pal.ent, entShape)
-              pal.rotTime = 0
-            } else {
-              ent.vel.y += 4
-              resetPoint.x = ent.rect.x+ent.rect.w/2
-              resetPoint.y = ent.rect.y-ent.rect.h/2
-
-              toggleActive = false
-              pal.toggleActiveStatic = false
-              saves = {}
-            }
-          } else {
-            if (pal.ent.rect.x > ent.rect.x)  {
-              pal.ent.rect.x = ent.rect.x + ent.rect.w-1
-              entVsShape(&pal.ent, entShape)
-              pal.rotTime = 0
-            } else {
-              ent.vel.x += 4
-              resetPoint.x = ent.rect.x+ent.rect.w/2
-              resetPoint.y = ent.rect.y+ent.rect.h-pal.ent.rect.h+1
-
-              toggleActive = false
-              pal.toggleActiveStatic = false
-              saves = {}
-            }
-          }
-        }
-      }
       if ent.tags.isSet("boulder") {
         power := real(int(pal.toggleActiveStatic))
         boulderTargetRect := util::rectMove(ent.originalRect, th::Vf2{0, -ent.originalRect.h*power})
@@ -1010,23 +943,6 @@ fn update*() {
               pal.toggleActiveWater = !pal.toggleActiveWater
             }
           } 
-        }
-      }
-      if ent.tags.isSet("exit") {
-        if util::rectVsRect(ent.rect, pal.ent.rect) {
-          end = true
-        }
-      }
-      if ent.tags.isSet("resetfield") {
-        if util::rectVsRect(ent.rect, pal.ent.rect) {
-          reset()
-        }
-      }
-      
-      if ent.tags.isSet("fadeout") {
-        if util::rectVsRect(ent.rect, pal.ent.rect) {
-          fadeoutTarget = 1
-          saves = {}
         }
       }
 
@@ -1123,13 +1039,11 @@ fn draw*() {
   }
 
 
-  bgAudio.setVol(1.0-fadeout)
   // RENDER WORLD //
   world.drawLayer(cameraOffsetPoint({0, 0}), -1, cameraScale)
   drawOutlines()
   world.drawLayer(cameraOffsetPoint({0, 0}), 0, cameraScale)
   drawOverlays()
-  canvas::drawRect(th::black*trunc((1.0-fadeout)*real(0xFF)), global::screen)
   drawEntities()
     
   for i, state in saves {
