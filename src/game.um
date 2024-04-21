@@ -160,6 +160,8 @@ fn resetStates*() {
 fn reset*() {
   pal.ent.rect.x = resetPoint.x
   pal.ent.rect.y = resetPoint.y
+  pal.ent.vel.y = 0
+  pal.ent.vel.x = 0
   resetStates()
 }
 
@@ -647,9 +649,6 @@ const (
   cropLeverStaticOff = rect::Rect{256, 0, 64, 64}
   cropLeverWaterOn = rect::Rect{320, 128, 64, 64}
   cropLeverWaterOff = rect::Rect{320, 192, 64, 64}
-
-  cropResetV   = rect::Rect{256+64, 0, 64, 64}
-  cropResetH   = rect::Rect{256+64, 64, 64, 64}
   cropControls = rect::Rect{0, 128, 256, 256}
 )
 
