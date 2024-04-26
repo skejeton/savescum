@@ -1724,6 +1724,9 @@ fn editorMain*(enabled: bool) {
       dbg::logt("Console log!")
     }
 
+    if input::isJustPressed(.pause) {
+      editorToggleGame(editor)
+    }
     if input::isJustPressed(.fn3) {
       editor.showDebugInfo = !editor.showDebugInfo
     }
