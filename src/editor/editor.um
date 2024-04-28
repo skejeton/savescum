@@ -1293,32 +1293,36 @@ fn putWorldEntities(editor: ^Editor) {
       }
 
       if isEntitySelected(&editor.entities, i) {
-        dx, dy := 0, 0
-        if input::isPressedRepeat(.up) {
-          dy += -1
-          input::clear(.up)
-        }
-        if input::isPressedRepeat(.down) {
-          dy += 1 
-          input::clear(.down)
-        }
-        if input::isPressedRepeat(.right) {
-          dx += 1
-          input::clear(.right)
-        }
-        if input::isPressedRepeat(.left) {
-          dx += -1 
-          input::clear(.left)
-        }
-        if dx != 0 {
-          ent.rect.x += dx*32
-          ent.rect.x = 32*round(ent.rect.x/32)
-          editor.dirty = true
-        }
-        if dy != 0 {
-          ent.rect.y += dy*32
-          ent.rect.y = 32*round(ent.rect.y/32)
-          editor.dirty = true
+        editor.ui.beginTool("EntityMove", entVisRect)
+
+        if editor.ui.isCurrentToolFocused() {
+          dx, dy := 0, 0
+          if input::isPressedRepeat(.up) {
+            dy += -1
+            input::clear(.up)
+          }
+          if input::isPressedRepeat(.down) {
+            dy += 1 
+            input::clear(.down)
+          }
+          if input::isPressedRepeat(.right) {
+            dx += 1
+            input::clear(.right)
+          }
+          if input::isPressedRepeat(.left) {
+            dx += -1 
+            input::clear(.left)
+          }
+          if dx != 0 {
+            ent.rect.x += dx*32
+            ent.rect.x = 32*round(ent.rect.x/32)
+            editor.dirty = true
+          }
+          if dy != 0 {
+            ent.rect.y += dy*32
+            ent.rect.y = 32*round(ent.rect.y/32)
+            editor.dirty = true
+          }
         }
 
         editor.ui.ctx.drawRectLines(th::yellow, util::rectShrink(entVisRect, 0))
@@ -1334,6 +1338,7 @@ fn putWorldEntities(editor: ^Editor) {
 
         ent.rect.x -= rectCmd.posFactor.x*sizeD.x
         ent.rect.y -= rectCmd.posFactor.y*sizeD.y
+        editor.ui.endTool()
       }
 
       events := editor.ui.endTool()
