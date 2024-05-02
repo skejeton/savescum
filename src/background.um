@@ -77,10 +77,6 @@ fn extrudeSquareFromCenter(center: th::Vf2, diameter: real): rect::Rect {
   return rect::Rect{center.x-radius, center.y-radius, diameter, diameter}
 }
 
-fn rectCenter(rect: rect::Rect): th::Vf2 {
-  return th::Vf2{rect.x+rect.w/2, rect.y+rect.h/2}
-}
-
 // Draws a background with a square extending from the center
 fn drawBackgroundSquare*(bound: rect::Rect, time: real, color1, color2: uint32, scalexy: th::Vf2) {
   scale := scalexy.x
@@ -88,9 +84,10 @@ fn drawBackgroundSquare*(bound: rect::Rect, time: real, color1, color2: uint32, 
 
   frequency := trunc(64*scale)
   rectCount := trunc(util::max(bound.w, bound.h)/frequency)+2
-  center := rectCenter(bound)
-  
-  canvas::beginScissorRect(bound)
+  cropBound := util::rectIntersection(bound, global::screen)
+  center := util::rectCenter(bound)
+
+  canvas::beginScissorRect(cropBound)
   
   time *= frequency
  

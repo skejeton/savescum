@@ -172,7 +172,7 @@ fn getCameraTargetRect(): rect::Rect {
     guide = findGuideInPoint(saves[len(saves)-1].ent.rect.getPos())
   }
   cameraRect := getCameraRect()
-  scale := util::max(guide.w/cameraRect.w, guide.h/cameraRect.h)
+  scale := util::min(guide.w/cameraRect.w, guide.h/cameraRect.h)
   maxScale := 1.0/(global::screen.w/800)
   if scale > maxScale {
     scale = maxScale
@@ -347,7 +347,6 @@ fn entVsShape(ent: ^Character, s: Shape) {
   if util::rectVsRect(ent.rect, r) == false {
     return
   }
-
   
   switch s.shape {
   case ShapeType.leftUpSlope:

@@ -171,7 +171,7 @@ fn mergeScissorRects(child, parent: rect::Rect): rect::Rect {
   }
 
   // Otherwise return the intersection rect.
-  return util::rectUnion(child, parent)
+  return util::rectIntersection(child, parent)
 }
 
 fn (ctx: ^DrawContext) beginScissorRect*(r: rect::Rect) {

@@ -122,7 +122,7 @@ fn collectChunkRenderTiles(world: ^World, chunk: ^Chunk, offset: th::Vf2, pan: t
   chunkSize := tileSize.mul(th::Vf2{chunkW, chunkH})
   chunkRect := rect::Rect{offset.x, offset.y, chunkSize.x, chunkSize.y}
 
-  intersectionRect := util::rectUnion(chunkRect, global::screen)
+  intersectionRect := util::rectIntersection(chunkRect, global::screen)
 
   startTileIndex := intersectionRect.getPos().sub(chunkRect.getPos()).div(tileSize)
   endTileIndex := intersectionRect.getEnd().sub(chunkRect.getPos()).div(tileSize)

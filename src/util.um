@@ -258,7 +258,7 @@ fn isprint*(c: uint32): bool {
 }
 
 
-fn rectUnion*(a, b: rect::Rect): rect::Rect {
+fn rectIntersection*(a, b: rect::Rect): rect::Rect {
   x := max(a.x, b.x)
   y := max(a.y, b.y)
   return rect::Rect{
