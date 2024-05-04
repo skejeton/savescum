@@ -1313,15 +1313,28 @@ fn putWorldEntities(editor: ^Editor) {
             dx += -1 
             input::clear(.left)
           }
-          if dx != 0 {
-            ent.rect.x += dx*32
-            ent.rect.x = 32*round(ent.rect.x/32)
-            editor.dirty = true
-          }
-          if dy != 0 {
-            ent.rect.y += dy*32
-            ent.rect.y = 32*round(ent.rect.y/32)
-            editor.dirty = true
+          if input::isPressed(.alt) {
+            if dx != 0 {
+              ent.rect.w += dx*32
+              ent.rect.w = 32*round(ent.rect.w/32)
+              editor.dirty = true
+            }
+            if dy != 0 {
+              ent.rect.h += dy*32
+              ent.rect.h = 32*round(ent.rect.h/32)
+              editor.dirty = true
+            }
+          } else {
+            if dx != 0 {
+              ent.rect.x += dx*32
+              ent.rect.x = 32*round(ent.rect.x/32)
+              editor.dirty = true
+            }
+            if dy != 0 {
+              ent.rect.y += dy*32
+              ent.rect.y = 32*round(ent.rect.y/32)
+              editor.dirty = true
+            }
           }
         }
 
