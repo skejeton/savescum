@@ -1288,8 +1288,11 @@ fn putWorldEntities(editor: ^Editor) {
         immcursor::setCursor(.sizeAll)
       }
 
-      if editor.ui.isCurrentToolActive() {
+      if editor.ui.isCurrentToolFocused() {
         editor.ui.ctx.drawRectLines(th::blue, util::rectShrink(entVisRect, -1))
+      }
+      if editor.ui.isCurrentToolActive() {
+        editor.ui.ctx.drawRectLines(th::yellow, util::rectShrink(entVisRect, -1))
       }
 
       if isEntitySelected(&editor.entities, i) {
