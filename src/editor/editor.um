@@ -87,6 +87,9 @@ type (
 
   Editor = struct {
     // Misc
+    debugTimerStarted: bool
+    debugTimerOrigin: real
+    debugTimer: real
     showDebugInfo: bool
     completions: [25][2]bool
 
@@ -1290,8 +1293,7 @@ fn putWorldEntities(editor: ^Editor) {
 
       if editor.ui.isCurrentToolFocused() {
         editor.ui.ctx.drawRectLines(th::blue, util::rectShrink(entVisRect, -1))
-      }
-      if editor.ui.isCurrentToolActive() {
+      } else if editor.ui.isCurrentToolActive() {
         editor.ui.ctx.drawRectLines(th::yellow, util::rectShrink(entVisRect, -1))
       }
 
@@ -1728,6 +1730,9 @@ fn editorMain*(enabled: bool) {
   editor.wm.setWindowVisible("Confirm", false)
 
   window::onFrame.register(|sf, editor| {
+    if editor.debugTimerStarted {
+      editor.debugTimer = th::time-editor.debugTimerOrigin
+    }
     immcursor::setCursor(.system)
 
     std::srand(std::time())
@@ -1744,6 +1749,13 @@ fn editorMain*(enabled: bool) {
 
     if input::isJustPressed(.pause) {
       editorToggleGame(editor)
+    }
+    if input::isJustPressed(.fn6) {
+      editor.debugTimerStarted = !editor.debugTimerStarted
+      if editor.debugTimerStarted {
+        editor.debugTimerOrigin = th::time
+        editor.debugTimer = 0
+      }
     }
     if input::isJustPressed(.fn3) {
       editor.showDebugInfo = !editor.showDebugInfo
@@ -1778,7 +1790,9 @@ fn editorMain*(enabled: bool) {
           { "Dirty?", editor.dirty, false },
           { "Version", global::version, false },
           { "Scale", editor.tilemapGrid.s, false },
-          { "Plain", global::plainBiscuit, false }
+          { "Plain", global::plainBiscuit, false },
+          { "Debug Timer (ms)", editor.debugTimer, false },
+          { "Debug Timer Started", editor.debugTimerStarted, false }
         }
       })
     }
