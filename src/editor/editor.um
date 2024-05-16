@@ -1039,7 +1039,7 @@ fn cloneEntity(entities: []world_data::EntityDesc, ent: world_data::EntityDesc):
   return ent
 }
 
-fn putEntityList(editor: ^Editor) {
+fn doEntityAction(editor: ^Editor, action: EntityListAction, i: int) {
   entryRemoveIndex := -1
   moveFrom := -1
   moveTo := -1
@@ -1048,8 +1048,51 @@ fn putEntityList(editor: ^Editor) {
   pmoveTo := &moveTo
   pentryRemoveIndex := &entryRemoveIndex
 
+  switch action {
+    case .moveUp:
+      pmoveFrom ^= i
+      pmoveTo ^= i-1
+      editor.dirty = true
+    case .moveDown:
+      pmoveFrom ^= i
+      pmoveTo ^= i+1
+      editor.dirty = true
+    case .remove:
+      pentryRemoveIndex ^= i
+      editor.dirty = true
+    case .edit:
+      selectEntity(&editor.entities, i)
+      editor.wm.setWindowVisible("Entity Editor", true)
+      editor.wm.putWindowOnFront("Entity Editor")
+    case .duplicate:
+      appendEntity(&editor.entities, cloneEntity(editor.entities.list, editor.entities.list[i]))
+      pmoveFrom ^= len(editor.entities.list)-1
+      pmoveTo ^= i+1
+      selectEntity(&editor.entities, pmoveFrom^)
+      editor.dirty = true
+  }
 
-  widget_window(editor, "Entity List", {595, 5, 200, 200}, |editor, pmoveFrom, pmoveTo, pentryRemoveIndex| {
+  if moveFrom != -1 && moveTo != -1 && moveFrom < len(editor.entities.list) && moveTo < len(editor.entities.list) {
+    if getEntitySelectedIndex(&editor.entities) == moveFrom {
+      selectEntity(&editor.entities, moveTo)
+    }
+  
+    ent := editor.entities.list[moveFrom]
+    editor.entities.list[moveFrom] = editor.entities.list[moveTo]
+    editor.entities.list[moveTo] = ent
+  }
+
+  if entryRemoveIndex != -1 {
+    removeEntity(&editor.entities, entryRemoveIndex)
+    editor.dirty = true
+  }
+}
+
+fn putEntityList(editor: ^Editor) {
+  _actions := map[int]EntityListAction{}
+  actions := &_actions
+
+  widget_window(editor, "Entity List", {595, 5, 200, 200}, |editor, actions| {
     // Apply padding.
     contentRect := util::rectShrink(winfo.contentRect, 5)
 
@@ -1073,28 +1116,9 @@ fn putEntityList(editor: ^Editor) {
         entryRect := scrollAreaInfo.contentRect
         entryRect.h = 30
         for i, ent in editor.entities.list {
-          switch putEntityEntry(editor, ent, entryRect, isEntitySelected(&editor.entities, i)) {
-            case .moveUp:
-              pmoveFrom ^= i
-              pmoveTo ^= i-1
-              editor.dirty = true
-            case .moveDown:
-              pmoveFrom ^= i
-              pmoveTo ^= i+1
-              editor.dirty = true
-            case .remove:
-              pentryRemoveIndex ^= i
-              editor.dirty = true
-            case .edit:
-              selectEntity(&editor.entities, i)
-              editor.wm.setWindowVisible("Entity Editor", true)
-              editor.wm.putWindowOnFront("Entity Editor")
-            case .duplicate:
-              appendEntity(&editor.entities, cloneEntity(editor.entities.list, ent))
-              pmoveFrom ^= len(editor.entities.list)-1
-              pmoveTo ^= i+1
-              selectEntity(&editor.entities, pmoveFrom^)
-              editor.dirty = true
+          action := putEntityEntry(editor, ent, entryRect, isEntitySelected(&editor.entities, i))
+          if action != .none {
+            actions[i] = action
           }
           entryRect.y += 30
         }
@@ -1106,19 +1130,12 @@ fn putEntityList(editor: ^Editor) {
     }
   })
 
-  if moveFrom != -1 && moveTo != -1 && moveFrom < len(editor.entities.list) && moveTo < len(editor.entities.list) {
-    if getEntitySelectedIndex(&editor.entities) == moveFrom {
-      selectEntity(&editor.entities, moveTo)
-    }
-  
-    ent := editor.entities.list[moveFrom]
-    editor.entities.list[moveFrom] = editor.entities.list[moveTo]
-    editor.entities.list[moveTo] = ent
-  }
+  // For now, only one action can be applied at a time, due to indexing.
+  std::assert(len(_actions) < 2)
 
-  if entryRemoveIndex != -1 {
-    removeEntity(&editor.entities, entryRemoveIndex)
-    editor.dirty = true
+  // Apply actions.
+  for i, action in actions {
+    doEntityAction(editor, action, i)
   }
 }
 
@@ -1454,11 +1471,15 @@ fn editorPutUi(editor: ^Editor) {
       input::clearc('s')
       editorSaveWorld(editor)
     }
-    if input::isJustPressedc('d') {
-      input::clearc('d')
+    if input::isJustPressedc('q') {
+      input::clearc('q')
       for w in editor.wm.windows {
         editor.wm.setWindowVisible(w, false)
       }
+    }
+    if input::isJustPressedc('d') {
+      input::clearc('d')
+      doEntityAction(editor, .duplicate, getEntitySelectedIndex(&editor.entities))
     }
   }
 
@@ -1756,6 +1777,14 @@ fn editorMain*(enabled: bool) {
         editor.debugTimerOrigin = th::time
         editor.debugTimer = 0
       }
+    }
+    if input::isJustPressed(.fn5) {
+      editor.debugTimerStarted = !editor.debugTimerStarted
+      if editor.debugTimerStarted {
+        editor.debugTimerOrigin = th::time
+        editor.debugTimer = 0
+      }
+      editorToggleGame(editor)
     }
     if input::isJustPressed(.fn3) {
       editor.showDebugInfo = !editor.showDebugInfo
