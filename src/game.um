@@ -849,6 +849,17 @@ fn update*() {
     iterations = 120
   } 
 
+
+  for i := 0; i < len(entities); i++ {
+    ent := &entities[i]
+
+    if ent.tags.isSet("boulder") {
+      power := real(int(pal.toggleActiveStatic))
+      boulderTargetRect := util::rectMove(ent.originalRect, th::Vf2{0, -(ent.originalRect.h+32)*power})
+      ent.rect = rerp::iRect(ent.rect, boulderTargetRect, th::delta/100.0)
+    }
+  }
+
   if pal.loadTime > 0 {
     time = rerp::iReal(time, pal.time, th::delta/100.0)
     for d := 0; d < iterations; d++ {
@@ -872,9 +883,12 @@ fn update*() {
     if !noSaveLoad {
       if input::isJustPressedc('z') || input::gamepad().isJustPressed(.lb) {
         if len(saves) > 0 {
-          if !entCheckCollision(&saves[len(saves)-1].ent) {
-            loadStateToChar(saves[len(saves)-1])
-            saves = delete(saves, len(saves)-1)
+          for i := len(saves)-1; i >= 0; i-- {
+            if !entCheckCollision(&saves[i].ent) {
+              loadStateToChar(saves[i])
+              saves = delete(saves, i)
+              break
+            }
           }
         }
       }
@@ -894,11 +908,6 @@ fn update*() {
     for i := 0; i < len(entities); i++ {
       ent := &entities[i]
 
-      if ent.tags.isSet("boulder") {
-        power := real(int(pal.toggleActiveStatic))
-        boulderTargetRect := util::rectMove(ent.originalRect, th::Vf2{0, -ent.originalRect.h*power})
-        ent.rect = rerp::iRect(ent.rect, boulderTargetRect, th::delta/50.0)
-      }
       if ent.tags.isSet("lever") {
         if util::rectVsRect(ent.rect, pal.ent.rect) {
           if isActivated() && pal.ent.onGround {
@@ -1020,6 +1029,16 @@ fn drawOverlays() {
   }
 }
 
+fn drawObjectsAt(state: ChumState) {
+  for i, entity in entities {
+    if entity.tags.isSet("boulder") {
+      power := real(int(state.toggleActiveStatic))
+      boulderTargetRect := util::rectMove(entity.originalRect, th::Vf2{0, -(entity.originalRect.h+32)*power})
+      util::drawImageRect(imgObj, cropBoulder, cameraOffsetRect(boulderTargetRect), 0, 0xFFFFFF22)
+    }
+  }
+}
+
 fn draw*() {
   // RENDER BG //
   input::gamepad().rumble(rumbling*5, rumbling*5)
@@ -1050,6 +1069,7 @@ fn draw*() {
     } else {
       drawChumState(getChumSpriteState(state), &state, 0xFF000044)
     }
+    drawObjectsAt(state)
   }
 
   world.drawLayer(cameraOffsetPoint({0, 0}), 1, cameraScale)
