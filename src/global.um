@@ -6,5 +6,6 @@ var (
   skeDpiHack*: bool = false
   caseSensetiveFS*: bool = true
   plainBiscuit*: bool = false // removes all unnecessary visual elements 
+  playTime*: int
 )
 

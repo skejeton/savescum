@@ -4,9 +4,11 @@ import (
   "drawcmd.um"
   "buffer.um" 
   "grid.um"
+  "../ui/core.um"
   "../ui/debug.um"
   "../ui/atoms.um"
   "../ui/wm.um"
+  "../ui/notification.um"
   "session.um"
 
   "../dbg.um"
@@ -26,7 +28,6 @@ import (
   "../script.um"
   "../immcursor.um"
   "../payload_trigger.um"
-  "../ui/core.um"
   debug_info = "../debugdraw/info.um"
   render_debug_info = "../debugdraw/render.um"
 
@@ -88,8 +89,8 @@ type (
   Editor = struct {
     // Misc
     debugTimerStarted: bool
-    debugTimerOrigin: real
-    debugTimer: real
+    debugTimerOrigin: int
+    debugTimer: int
     showDebugInfo: bool
     completions: [25][2]bool
 
@@ -690,15 +691,20 @@ fn editorSaveWorld(editor: ^Editor) {
   err := util::writeFileStr(portalToPath(editor.currentPortal), world_data::save(world_data::WorldData{editor.world, editor.entities.list}))
   if err.code != 0 {
     dbg::logt("ed: save failed: "+err.msg)
+    notification::put({.error, "Failed to save: "+err.msg})
   }
   editor.dirty = false
 }
 
 fn editorToggleGame(editor: ^Editor) {
   if (!editor.isPlaying) {
+    editor.debugTimerStarted = true
+    editor.debugTimerOrigin = th::time
+    editor.debugTimer = 0
     game::start(world_data::WorldData{editor.world, editor.entities.list})
     script::init()
   } else {
+    editor.debugTimerStarted = false
     game::stop()
   }
   editor.isPlaying = !editor.isPlaying
@@ -1418,6 +1424,26 @@ fn putPortalEditor(editor: ^Editor) {
   })
 }
 
+fn putNotifications(editor: ^Editor) {
+  ns := notification::get()
+
+  y := 0.0
+  for i in ns {
+    n := ns[len(ns^)-i-1]
+    t := 1-util::clamp(n.time, 0, 1)
+    ts := editor.resources.mainFont.measure(n.info.message)
+    w := ts.x+30+10
+    h := ts.y + 20
+    y -= h
+
+    util::imageCropRect(editor.resources.toolbarIcons, {16*int(n.info.icon), 96, 16, 16})
+    drawBevelRect(editor, {10-t*500, global::screen.h-50+y, w, h}, true, 0xFFFFFFBB)
+    editor.ui.ctx.drawImage(editor.resources.toolbarIcons, th::Transform{p: th::Vf2{10-t*500+10, global::screen.h-50+y+10}, s: th::Vf2{1, 1}})
+    editor.ui.ctx.drawText(editor.resources.mainFont, n.info.message, {40-t*500, global::screen.h-50+y+9}, th::black)
+    y -= 10
+  }
+}
+
 fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources
 
 fn showErrorScreenIfResourcesFailedToLoad(rl: ^resources::ResourceLoader): bool {
@@ -1504,6 +1530,7 @@ fn editorPutUi(editor: ^Editor) {
     }
 
     game::showDebug = editor.showDebugInfo
+    global::playTime = editor.debugTimer
     game::update()
     script::update()
 
@@ -1603,6 +1630,10 @@ fn editorPutUi(editor: ^Editor) {
     putEntityEditor(editor)
     putPortalEditor(editor)
   }
+
+  editor.ui.ctx.moveLayer(1000)
+  putNotifications(editor)
+  editor.ui.ctx.moveLayer(-1000)
 
   if editor.isRelocatingPlayer {
     editor.ui.ctx.moveLayer(10000000)
@@ -1764,10 +1795,6 @@ fn editorMain*(enabled: bool) {
       std::assert(false, "The F25 key? What's that?")
     }
 
-    if input::isPressedc('1') {
-      dbg::logt("Console log!")
-    }
-
     if input::isJustPressed(.pause) {
       editorToggleGame(editor)
     }
@@ -1779,11 +1806,6 @@ fn editorMain*(enabled: bool) {
       }
     }
     if input::isJustPressed(.fn5) {
-      editor.debugTimerStarted = !editor.debugTimerStarted
-      if editor.debugTimerStarted {
-        editor.debugTimerOrigin = th::time
-        editor.debugTimer = 0
-      }
       editorToggleGame(editor)
     }
     if input::isJustPressed(.fn3) {
@@ -1792,9 +1814,14 @@ fn editorMain*(enabled: bool) {
     if input::isJustPressed(.fn2) {
       global::plainBiscuit = !global::plainBiscuit
     }
+    if input::isJustPressed(.fn1) {
+      notification::put({.warning, sprintf("Hello, world! %d", th::time)})
+    }
 
     global::screen = rect::Rect{0, 0, window::w/sf, window::h/sf}
     window::setViewport(global::screen.getDims())
+    
+    notification::update()
 
     fps::update()
     
@@ -1820,8 +1847,8 @@ fn editorMain*(enabled: bool) {
           { "Version", global::version, false },
           { "Scale", editor.tilemapGrid.s, false },
           { "Plain", global::plainBiscuit, false },
-          { "Debug Timer (ms)", editor.debugTimer, false },
-          { "Debug Timer Started", editor.debugTimerStarted, false }
+          { "Playthrough (ms)", editor.debugTimer, false },
+          { "Playthrough Started", editor.debugTimerStarted, false }
         }
       })
     }
@@ -1831,7 +1858,10 @@ fn editorMain*(enabled: bool) {
   window::onDestroy.register(|editor| {
     // TODO: What if the directory doesn't exist?
     // TODO: Make directory create function
-    util::writeFileStr("user/session.csv", session::save(editorSaveSession(editor)))
+    err := util::writeFileStr("user/session.csv", session::save(editorSaveSession(editor)))
+    if err.code != 0 {
+      dbg::logt("Failed to save session!")
+    }
     atoms::disconnectAllNodes(editor.ui.tools)
   })
 }

@@ -284,3 +284,19 @@ fn wrapText*(font: ^font::Font, text: str, boundary: real): []str {
 
   return result
 }
+
+fn formatMillis*(ms: int): str {
+  s := ms / 1000
+  m := s / 60
+  h := m / 60
+  s = s % 60
+  m = m % 60
+  if h > 0 {
+    return sprintf("%d:%02d:%02d", h, m, s)
+  } else if m > 0 {
+    return sprintf("%d:%02d", m, s)
+  } else if s > 0 {
+    return sprintf("%ds", s)
+  } 
+  return sprintf("%dms", ms)
+}

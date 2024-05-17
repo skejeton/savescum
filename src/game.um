@@ -17,6 +17,7 @@ import (
   "font.um"
   "std.um"
   "audio.um"
+  "ui/notification.um"
 )
 
 type ShapeType = enum {
@@ -132,6 +133,8 @@ var (
   showDebug*: bool = false
   lastUpdateTime: int = 0
   frameSkips*: int
+
+  firstTime: bool = true
 
   rumbling: real
 )
@@ -540,6 +543,10 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn start*(worldData: world_data::WorldData) {
+  if firstTime {
+    notification::put({.info, "Welcome to the demo!\nPress 'Z' to load the last save,\n      'X' to save the current state,\n      'R' to reset the level."})
+    firstTime = false
+  }
   bgAudio.seekToFrame(0)
   // bgAudio.play()
   lastUpdateTime = th::time
@@ -953,6 +960,15 @@ fn update*() {
         }
       }
 
+      if ent.tags.isSet("notify_end") {
+        if util::rectVsRect(ent.rect, pal.ent.rect) {
+          if isActivated() {
+            notification::put({.info, sprintf("--- Stats ---\nTotal time: %s\nLags: %d", util::formatMillis(global::playTime), frameSkips)})
+            notification::put({.info, "End of the demo. Thanks for playing!"})
+          }
+        }
+      }
+
       if ent.tags.isSet("tele") {
         if util::rectVsRect(ent.rect, pal.ent.rect) {
           dest := ent.tags.param("tele")
@@ -965,6 +981,8 @@ fn update*() {
               pal.loadTime = 0.5
               pal.ent.rect.x = ent.rect.x+(ent.rect.w-pal.ent.rect.w)/2
               pal.ent.rect.y = ent.rect.y+(ent.rect.h-pal.ent.rect.h)/2
+              resetPoint.x = pal.ent.rect.x
+              resetPoint.y = pal.ent.rect.y
             } 
           }
         }

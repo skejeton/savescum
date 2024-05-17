@@ -1,0 +1,49 @@
+import (
+  "th.um"
+)
+
+type (
+  Icon* = enum {
+    info
+    warning
+    error
+  }
+
+  NotificationInfo* = struct {
+    icon: Icon
+    message: str
+  }
+
+  Notification* = struct {
+    time: real
+    info: NotificationInfo
+  }
+)
+
+var (
+  notifications: []Notification
+)
+
+fn put*(n: NotificationInfo) {
+  notifications = append(notifications, Notification{time: 10, info: n})
+}
+
+fn update*() {
+  unexpired := []Notification{}
+
+  for i in notifications {
+    notifications[i].time -= th::delta/1000.0
+    if notifications[i].time > 0 {
+      unexpired = append(unexpired, notifications[i])
+    }
+  }
+
+  notifications = unexpired
+}
+
+fn get*(): ^[]Notification {
+  return &notifications
+}
+
+// TODO: I can't render notifications here right now because I can't access the renderer from here.
+//       The rendering is in main.um right now.
