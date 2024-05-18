@@ -82,6 +82,10 @@ fn drawBackgroundSquare*(bound: rect::Rect, time: real, color1, color2: uint32, 
   scale := scalexy.x
   // Amount of pixels to wait until a new rectangle appears
 
+  if scale == 0 {
+    return
+  }
+
   frequency := trunc(64*scale)
   rectCount := trunc(util::max(bound.w, bound.h)/frequency)+2
   cropBound := util::rectIntersection(bound, global::screen)
