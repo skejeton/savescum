@@ -102,9 +102,12 @@ fn drawBackgroundSquare*(bound: rect::Rect, time: real, color1, color2: uint32, 
     }
 
     diameter := (rectCount-i) * frequency + (trunc(time) % frequency) - frequency
+    rotation := 200.0 / (diameter == 0 ? 1 : diameter)
     square := extrudeSquareFromCenter(center, diameter)
 
-    canvas::drawRect(color, square)
+    quad := square.transformed({s: {1, 1}, r: rotation, o: {square.x+square.w/2, square.y+square.h/2}})
+
+    canvas::drawQuad(color, quad)
   }
 
   canvas::endScissor()
