@@ -114,6 +114,8 @@ var (
   jitterCounter: int
   metaBoulders: bool
   wasOnGround: bool
+  previewingLoad: bool
+  stopPreview: bool
 
   noSaveLoad: bool
   insideStatic: bool
@@ -130,6 +132,7 @@ var (
   resetPoint: th::Vf2
 
   saves: []ChumState
+  bufferState: ChumState
   showDebug*: bool = false
   lastUpdateTime: int = 0
   frameSkips*: int
@@ -543,8 +546,10 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn start*(worldData: world_data::WorldData) {
+  stopPreview = false
+  previewingLoad = false
   if firstTime {
-    notification::put({.info, "Welcome to the demo!\nPress 'Z' to load the last save,\n      'X' to save the current state,\n      'R' to reset the level."})
+    notification::put({.info, "Welcome to the demo!\nPress 'Z' to load the last save,\n      'X' to save the current state,\n      'R' to reset the level.\n      'C' to preview a load."})
     firstTime = false
   }
   bgAudio.seekToFrame(0)
@@ -856,7 +861,6 @@ fn update*() {
     iterations = 120
   } 
 
-
   for i := 0; i < len(entities); i++ {
     ent := &entities[i]
 
@@ -867,12 +871,28 @@ fn update*() {
     }
   }
 
+  if previewingLoad && input::isJustReleasedc('c') || input::gamepad().isJustReleased(.y) {
+    stopPreview = true
+  }
+
   if pal.loadTime > 0 {
     time = rerp::iReal(time, pal.time, th::delta/100.0)
     for d := 0; d < iterations; d++ {
       cameraControl()
     }
-    return;
+    return
+  }
+
+  if stopPreview {
+    saves = append(saves, pal)
+    loadStateToChar(bufferState)
+    previewingLoad = false
+    stopPreview = false
+    return
+  }
+
+  if previewingLoad {
+    return
   }
 
   pal.time += th::delta/1000.0
@@ -902,6 +922,18 @@ fn update*() {
       
       if input::isJustPressedc('x') || input::gamepad().isJustPressed(.rb) {
         saves = append(saves, pal)
+      }
+
+      if input::isJustPressedc('c') || input::gamepad().isJustPressed(.y) {
+        for i := len(saves)-1; i >= 0; i-- {
+          if !entCheckCollision(&saves[i].ent) {
+            previewingLoad = true
+            bufferState = pal
+            loadStateToChar(saves[i])
+            saves = delete(saves, i)
+            break
+          }
+        }
       }
     }
     noSaveLoad = false
@@ -1074,7 +1106,7 @@ fn draw*() {
   if global::plainBiscuit {
     canvas::drawRect(0x777777FF, global::screen)
   } else {
-    background::draw(bgCam)
+    background::draw(bgCam, time)
   }
 
 

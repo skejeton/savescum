@@ -134,11 +134,11 @@ fn drawCave*(screen: rect::Rect, position: th::Vf2, scale: th::Vf2) {
   }
 }
 
-fn drawBg*(screen: rect::Rect, which: int) {
+fn drawBg*(screen: rect::Rect, which: int, time: real) {
   screenScale := th::Vf2{global::screen.w/screen.w, global::screen.h/screen.h}
 
   switch which {
-    case backgroundBlack: drawBackgroundSquare(global::screen, th::time/1000.0, 0x000000FF, 0x040408FF, screenScale) 
+    case backgroundBlack: drawBackgroundSquare(global::screen, time, 0x000000FF, 0x040408FF, screenScale) 
     case backgroundDebug: drawClouds(screen, 0x99994400, 0x555555FF, global::screen.w/screen.w*0.5)
     case backgroundClouds: drawClouds(screen, 0x7777FF00, 0xEEEEEEFF, global::screen.w/screen.w*0.5)
     case backgroundAdvent: drawClouds(screen, 0x4444AA00, 0x000022FF, global::screen.w/screen.w*0.5); 
@@ -147,7 +147,7 @@ fn drawBg*(screen: rect::Rect, which: int) {
   }
 }
 
-fn draw*(screen: rect::Rect) {
-  drawBg(screen, backgroundBlack)
+fn draw*(screen: rect::Rect, time: real) {
+  drawBg(screen, backgroundBlack, time)
 }
 
