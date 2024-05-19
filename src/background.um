@@ -81,12 +81,12 @@ fn extrudeSquareFromCenter(center: th::Vf2, diameter: real): rect::Rect {
 fn drawBackgroundSquare*(bound: rect::Rect, time: real, color1, color2: uint32, scalexy: th::Vf2) {
   scale := scalexy.x
   // Amount of pixels to wait until a new rectangle appears
+  frequency := trunc(64*scale)
 
-  if scale == 0 {
+  if frequency == 0 {
     return
   }
 
-  frequency := trunc(64*scale)
   rectCount := trunc(util::max(bound.w, bound.h)/frequency)+2
   cropBound := util::rectIntersection(bound, global::screen)
   center := util::rectCenter(bound)
