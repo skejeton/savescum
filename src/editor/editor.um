@@ -109,8 +109,8 @@ type (
     isRelocatingPlayer: bool
     entityBypass: bool
     entities: EditorEntities
-    potentialPortal: str // the portal which is in the text box
-    currentPortal: str
+    potentialRoom: str // the room which is in the text box
+    currentRoom: str
     dirty: bool
     enabled: bool
     preChangeWorldData: world_data::WorldData
@@ -661,8 +661,8 @@ fn endScrollArea(editor: ^Editor) {
   scroll ^-= events.queryScroll()*20.0
 }
 
-fn portalToPath(portal: str): str {
-  return "data/spiel/sc_"+portal+".csv"
+fn roomToPath(room: str): str {
+  return "data/spiel/sc_"+room+".csv"
 }
 
 fn createEditorEntities(): EditorEntities {
@@ -670,9 +670,9 @@ fn createEditorEntities(): EditorEntities {
 }
 
 
-fn editorLoadWorld(editor: ^Editor, portal: str): bool {
+fn editorLoadRoom(editor: ^Editor, room: str): bool {
   dbg::logt("ed: loading world")
-  if data, err := util::readFileStr(portalToPath(portal)); err.code == 0 {
+  if data, err := util::readFileStr(roomToPath(room)); err.code == 0 {
     worldData := world_data::load(editor.world, data)
 
     editor.world = worldData.world
@@ -686,9 +686,9 @@ fn editorLoadWorld(editor: ^Editor, portal: str): bool {
   return false
 }
 
-fn editorSaveWorld(editor: ^Editor) {
+fn editorSaveRoom(editor: ^Editor) {
   dbg::logt("ed: saving world")
-  err := util::writeFileStr(portalToPath(editor.currentPortal), world_data::save(world_data::WorldData{editor.world, editor.entities.list}))
+  err := util::writeFileStr(roomToPath(editor.currentRoom), world_data::save(world_data::WorldData{editor.world, editor.entities.list}))
   if err.code != 0 {
     dbg::logt("ed: save failed: "+err.msg)
     notification::put({.error, "Failed to save: "+err.msg})
@@ -775,7 +775,7 @@ fn editorPutToolbar(editor: ^Editor) {
     }
 
     if !editor.isPlaying {
-      putToolbarWindowIconButton(editor, "Portal", &buttonRectangle, 2, 2)
+      putToolbarWindowIconButton(editor, "Load Room", &buttonRectangle, 2, 2)
       putToolbarWindowIconButton(editor, "Tile Picker", &buttonRectangle, 0, 1)
       putToolbarWindowIconButton(editor, "Player Placer", &buttonRectangle, 3, 1)
       putToolbarWindowIconButton(editor, "Entity List", &buttonRectangle, 0, 2)
@@ -790,12 +790,12 @@ fn editorPutToolbar(editor: ^Editor) {
         
         position.x -= 80
         if (putSimpleButton(editor, {position.x, position.y, 80, rectangle.h}, "Save").isReleased) {
-          editorSaveWorld(editor)
+          editorSaveRoom(editor)
         }
 
         position.x -= 80
         if (putSimpleButton(editor, {position.x, position.y, 80, rectangle.h}, "Load").isReleased) {
-          editorLoadWorld(editor, editor.currentPortal)
+          editorLoadRoom(editor, editor.currentRoom)
         }
       }
     }
@@ -1399,24 +1399,24 @@ fn deselectEntity(entities: ^EditorEntities) {
   entities.entitySelected = -1
 }
 
-fn loadPortal(editor: ^Editor, portal: str) {
-  editor.currentPortal = portal
-  editor.potentialPortal = portal
-  editorLoadWorld(editor, portal)
+fn loadRoom(editor: ^Editor, room: str) {
+  editor.currentRoom = room 
+  editor.potentialRoom = room 
+  editorLoadRoom(editor, room)
   editor.tilemapGrid.p = editor.world.playerSpawnPos
 }
 
-fn putPortalEditor(editor: ^Editor) {
-  widget_window(editor, "Portal", {180, 5, 200, 300}, |editor| {
+fn putRoomEditor(editor: ^Editor) {
+  widget_window(editor, "Load Room", {180, 5, 200, 300}, |editor| {
     contentRect := util::rectShrink(winfo.contentRect, 5)
     position := contentRect.getPos()
 
-    putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 30}, "Portal name", &editor.potentialPortal)
+    putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 30}, "Room name", &editor.potentialRoom)
 
     position.y += 40
     if input::isPressed(.shift) {
       if putSimpleButton(editor, {position.x, position.y, contentRect.w, 30}, "Load").isReleased {
-        loadPortal(editor, editor.potentialPortal)
+        loadRoom(editor, editor.potentialRoom)
       }
     } else {
       drawButtonInactive(editor, {position.x, position.y, contentRect.w, 30}, "Hold shift!")
@@ -1495,7 +1495,7 @@ fn editorPutUi(editor: ^Editor) {
   if input::isPressed(.ctrl) {
     if input::isJustPressedc('s') {
       input::clearc('s')
-      editorSaveWorld(editor)
+      editorSaveRoom(editor)
     }
     if input::isJustPressedc('q') {
       input::clearc('q')
@@ -1628,7 +1628,7 @@ fn editorPutUi(editor: ^Editor) {
     putPlayerPlacer(editor)
     putEntityList(editor)
     putEntityEditor(editor)
-    putPortalEditor(editor)
+    putRoomEditor(editor)
   }
 
   editor.ui.ctx.moveLayer(1000)
@@ -1697,7 +1697,7 @@ fn editorSaveSession(editor: ^Editor): session::Session {
   session := session::Session{}
   session.pan = editor.tilemapGrid.p
   session.scale = editor.tilemapGrid.s.x
-  session.portal = editor.currentPortal
+  session.room = editor.currentRoom
   session.allLayers = editor.tilemapShowAllLayers
   session.entityBypass = editor.entityBypass
   session.layerSelected = editor.tilemapLayer
@@ -1714,7 +1714,7 @@ fn editorSaveSession(editor: ^Editor): session::Session {
 }
 
 fn editorLoadSession(editor: ^Editor, session: session::Session) {
-  loadPortal(editor, session.portal)
+  loadRoom(editor, session.room)
   editor.tilemapGrid.p = session.pan
   editor.tilemapGrid.s.x = session.scale
   editor.tilemapGrid.s.y = session.scale
@@ -1776,7 +1776,7 @@ fn editorMain*(enabled: bool) {
   if sessionFile, err := util::readFileStr("user/session.csv"); err.code == 0 {
     editorLoadSession(editor, session::load(sessionFile))
   } else {
-    loadPortal(editor, "test")
+    loadRoom(editor, "test")
   }
 
   editor.wm.setWindowVisible("Confirm", false)
@@ -1841,7 +1841,7 @@ fn editorMain*(enabled: bool) {
         displays: {
           fpsNode,
           { "TPS", 1000.0/game::updateStepMs, false },
-          { "Room", editor.currentPortal, false },
+          { "Room", editor.currentRoom, false },
           { "Frameskip", trunc(game::frameSkips), false },
           { "Dirty?", editor.dirty, false },
           { "Version", global::version, false },

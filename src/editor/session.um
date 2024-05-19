@@ -17,7 +17,7 @@ type Window* = struct {
 type Session* = struct {
   pan: th::Vf2
   scale: real
-  portal: str
+  room: str
   allLayers: bool
   entityBypass: bool
   layerSelected: int
@@ -30,7 +30,7 @@ fn save*(session: Session): str {
   result := [][]str{}
   result = append(result, ut::saveVf2(session.pan))
   result = append(result, ut::saveReal(session.scale))
-  result = append(result, []str{session.portal})
+  result = append(result, []str{session.room})
   result = append(result, ut::saveBool(session.allLayers))
   result = append(result, ut::saveBool(session.entityBypass))
   result = append(result, ut::saveInt(session.layerSelected))
@@ -52,7 +52,7 @@ fn load*(sourceStr: str): Session {
   session := Session{}
   session.pan = ut::loadVf2(source[0])
   session.scale = ut::loadReal(source[1])
-  session.portal = source[2][0]
+  session.room = source[2][0]
   session.allLayers = ut::loadBool(source[3])
   session.entityBypass = ut::loadBool(source[4])
   session.layerSelected = trunc(ut::loadInt(source[5]))

@@ -997,6 +997,10 @@ fn drawGuideRects() {
   }
 }
 
+fn drawOutline(color: uint32, rect: rect::Rect) {
+  canvas::drawRect(color, rect)
+}
+
 fn drawOutlines() {
   radiusPulsing := 3
 
@@ -1019,15 +1023,15 @@ fn drawOutlines() {
     darkyellow := color::hsv(0.15, proximityMultiplier, util::max(proximityMultiplier, 0.05)/2.0)
 
     if renderTile.id == 29 {
-      canvas::drawRect(green, cameraOffsetRect(util::rectShrink(renderTile.rect, -3)))
+      drawOutline(green, cameraOffsetRect(util::rectShrink(renderTile.rect, -3)))
     }
     if (renderTile.id == 30) || (renderTile.id == 31) {
       radius := radiusPulsing
-      canvas::drawRect(0x000000FF, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius-1)))
+      drawOutline(0x000000FF, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius-1)))
       if renderTile.id == (toggleActive ? 31 : 30) {
-        canvas::drawRect(darkyellow, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius)))
+        drawOutline(darkyellow, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius)))
       } else {
-        canvas::drawRect(yellow, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius)))
+        drawOutline(yellow, cameraOffsetRect(util::rectShrink(renderTile.rect, -radius)))
       }
     }
   }
