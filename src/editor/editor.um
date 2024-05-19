@@ -1505,7 +1505,10 @@ fn editorPutUi(editor: ^Editor) {
     }
     if input::isJustPressedc('d') {
       input::clearc('d')
-      doEntityAction(editor, .duplicate, getEntitySelectedIndex(&editor.entities))
+      idx := getEntitySelectedIndex(&editor.entities)
+      if idx != -1 {
+        doEntityAction(editor, .duplicate, idx)
+      }
     }
   }
 
