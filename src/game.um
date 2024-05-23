@@ -870,6 +870,9 @@ fn update*() {
 
     if ent.tags.isSet("boulder") {
       power := real(int(pal.toggleActiveStatic))
+      if ent.tags.isSet("inv") {
+        power *= -1
+      }
       boulderTargetRect := util::rectMove(ent.originalRect, th::Vf2{0, -(ent.originalRect.h+32)*power})
       ent.rect = rerp::iRect(ent.rect, boulderTargetRect, th::delta/100.0)
     }
@@ -1091,6 +1094,9 @@ fn drawObjectsAt(state: ChumState) {
   for i, entity in entities {
     if entity.tags.isSet("boulder") {
       power := real(int(state.toggleActiveStatic))
+      if entity.tags.isSet("inv") {
+        power *= -1
+      }
       boulderTargetRect := util::rectMove(entity.originalRect, th::Vf2{0, -(entity.originalRect.h+32)*power})
       util::drawImageRect(imgObj, cropBoulder, cameraOffsetRect(boulderTargetRect), 0, 0xFFFFFF22)
     }
