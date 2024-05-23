@@ -500,7 +500,7 @@ fn entCheckCollision(ent: ^Character): bool {
         return true
       }
     }
-    // TODO: Other shapes
+    // TODO: Just re-use the entVsShape function here.
   }
 
   return false
@@ -766,10 +766,14 @@ fn drawChumState(state: int, chum: ^ChumState, tint: uint32) {
 }
 
 fn loadStateToChar(state: ChumState) {
+  old := pal
   oldVisRect := pal.visRect
   pal = state
   pal.visRect = oldVisRect
   pal.loadTime = 0.5
+  if insideStatic {
+    pal.toggleActiveStatic = old.toggleActiveStatic
+  }
 }
 
 fn drawChum(state: int) {
