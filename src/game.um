@@ -855,7 +855,7 @@ fn isActivated(): bool {
 fn update*() {
   chumFrown = jitterCounter > 300
 
-  toggleActiveVal = rerp::iReal(toggleActiveVal, real(int(toggleActive)), th::delta/100.0)
+  toggleActiveVal = rerp::iReal(toggleActiveVal, real(int(toggleActive)), th::delta/1000.0*20.0)
 
   iterations := (th::time - lastUpdateTime) / updateStepMs
   lastUpdateTime += iterations * updateStepMs
@@ -1079,13 +1079,17 @@ fn drawOutlines() {
 fn drawOverlays() {
   renderTiles := world.collectLayerRenderTiles(cameraOffsetPoint({0, 0}), 0, cameraScale)
 
+  alpha := color::alpha(0xFFFFFF00, toggleActiveVal)
+  alpha2 := color::alpha(0xFFFFFF00, 1-toggleActiveVal)
+  
   for i, renderTile in renderTiles {
     switch renderTile.id {
-      case 31: 
-        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 30 : 31), cameraOffsetRect(renderTile.rect))
       case 30: 
-        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(toggleActive ? 31 : 30), cameraOffsetRect(renderTile.rect))
-      default:
+        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(30), cameraOffsetRect(renderTile.rect))
+        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(31), cameraOffsetRect(renderTile.rect), 0.0, alpha)
+      case 31:
+        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(30), cameraOffsetRect(renderTile.rect))
+        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(31), cameraOffsetRect(renderTile.rect), 0.0, alpha2)
     }
   }
 }
