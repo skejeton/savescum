@@ -852,6 +852,22 @@ fn isActivated(): bool {
   return input::isJustPressedc(' ') || input::gamepad().isJustPressed(.x)
 }
 
+fn tele*(to: str) {
+  ent := findEntity(to)
+  if ent == null {
+    dbg::logt("Error: Destination entity doesn't exist")
+  } else {
+    if !entCheckCollision(ent) {
+      resetStates()
+      pal.loadTime = 0.5
+      pal.ent.rect.x = ent.rect.x+(ent.rect.w-pal.ent.rect.w)/2
+      pal.ent.rect.y = ent.rect.y+(ent.rect.h-pal.ent.rect.h)/2
+      resetPoint.x = pal.ent.rect.x
+      resetPoint.y = pal.ent.rect.y
+    } 
+  }
+}
+
 fn update*() {
   chumFrown = jitterCounter > 300
 
@@ -1009,21 +1025,9 @@ fn update*() {
       }
 
       if ent.tags.isSet("tele") {
-        if util::rectVsRect(ent.rect, pal.ent.rect) {
+        if util::rectVsRect(ent.rect, pal.ent.rect) && isActivated() {
           dest := ent.tags.param("tele")
-          ent := findEntity(dest)
-          if ent == null {
-            dbg::logt("Error: Destination entity doesn't exist")
-          } else if isActivated() {
-            if !entCheckCollision(ent) {
-              resetStates()
-              pal.loadTime = 0.5
-              pal.ent.rect.x = ent.rect.x+(ent.rect.w-pal.ent.rect.w)/2
-              pal.ent.rect.y = ent.rect.y+(ent.rect.h-pal.ent.rect.h)/2
-              resetPoint.x = pal.ent.rect.x
-              resetPoint.y = pal.ent.rect.y
-            } 
-          }
+          tele(dest)
         }
       }
     }

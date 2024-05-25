@@ -57,6 +57,13 @@ fn joinBy*(texts: []str, by: str): str {
   return join(intersperse(texts, by))
 }
 
+fn startsWith*(text: str, prefix: str): bool {
+  if len(text) < len(prefix) {
+    return false
+  }
+  return slice(text, 0, len(prefix)) == prefix
+}
+
 fn separateChar*(words: []str, c: char): []str {
   result := []str{}
   for i, word in words {

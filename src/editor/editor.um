@@ -435,7 +435,7 @@ fn putGrid(grid: ^grid::Grid, editor: ^Editor, rectangle: rect::Rect): th::Vf2 {
   if events.queryMouse(.middle, mouseinput::down) {
     grid::gridPan(grid, editor.ui.mouseState.delta)
   }
-
+  
   scroll := events.queryScroll()
   if scroll != 0 {
     grid::gridZoomInto(grid, updateZoom(grid.s.x, scroll/10.0), events.mouseState.pos)
@@ -698,6 +698,7 @@ fn editorSaveRoom(editor: ^Editor) {
 
 fn editorToggleGame(editor: ^Editor) {
   if (!editor.isPlaying) {
+    editor.wm.setWindowVisible("Level Select", true)
     editor.debugTimerStarted = true
     editor.debugTimerOrigin = th::time
     editor.debugTimer = 0
@@ -798,6 +799,8 @@ fn editorPutToolbar(editor: ^Editor) {
           editorLoadRoom(editor, editor.currentRoom)
         }
       }
+    } else {
+      putToolbarWindowIconButton(editor, "Level Select", &buttonRectangle, 3, 3)
     }
   }
   editor.ui.endTool()
@@ -1444,6 +1447,47 @@ fn putNotifications(editor: ^Editor) {
   }
 }
 
+fn putLevelSelect(editor: ^Editor) {
+  widget_window(editor, "Level Select", {390, 5, 200, 300}, |editor| {
+    contentRect := util::rectShrink(winfo.contentRect, 5)
+
+    levels := [][2]str{}
+
+    for i, ent in editor.entities.list {
+      if strings::startsWith(ent.id, "stage") {
+        levels = append(levels, [2]str{ent.id, ent.name})
+      }
+    }
+
+    // sort
+    for i := 0; i < len(levels)-1; i++ {
+      for j := i+1; j < len(levels); j++ {
+        if levels[i][0] > levels[j][0] {
+          levels[i], levels[j] = levels[j], levels[i]
+        }
+      }
+    }
+    contentSize := ^th::Vf2(editor.ui.getProperty("ContentSize", th::Vf2{0, 0}))
+    if ok, scrollAreaInfo := beginScrollArea(editor, contentRect, contentSize^); ok {
+      editor.ui.ctx.beginScissorRect(scrollAreaInfo.areaRect)
+      position := scrollAreaInfo.contentRect.getPos()
+
+      for i, level in levels {
+        if putSimpleButton(editor, {position.x, position.y, contentRect.w-20, 30}, level[1]).isReleased {
+          game::tele(level[0])
+        }
+        position.y += 30
+      }
+
+      contentSize ^= th::Vf2{contentRect.w, position.y-scrollAreaInfo.contentRect.y}
+
+      editor.ui.ctx.endScissor()
+      endScrollArea(editor)
+    }
+  })
+
+}
+
 fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources
 
 fn showErrorScreenIfResourcesFailedToLoad(rl: ^resources::ResourceLoader): bool {
@@ -1538,6 +1582,8 @@ fn editorPutUi(editor: ^Editor) {
     script::update()
 
     editor.ui.ctx.drawCustom(GameCmd{})
+
+    putLevelSelect(editor)
   } else {
     tool := editor.ui.beginTool("TileEditor", {0, 0, global::screen.w, global::screen.h-38})
 
