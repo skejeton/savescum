@@ -1,2 +1,2 @@
-current : 1:40
-target  : 1:40
+current : 2:00
+target  : 1:50
