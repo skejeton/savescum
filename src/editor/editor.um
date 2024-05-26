@@ -1473,10 +1473,10 @@ fn putLevelSelect(editor: ^Editor) {
       position := scrollAreaInfo.contentRect.getPos()
 
       for i, level in levels {
-        if putSimpleButton(editor, {position.x, position.y, contentRect.w-20, 30}, level[1]).isReleased {
+        p := th::Vf2{position.x+(i%2)*((contentRect.w-20)/2), position.y+(i/2)*30}
+        if putSimpleButton(editor, {p.x, p.y, (contentRect.w-20)/2, 30}, level[1]).isReleased {
           game::tele(level[0])
         }
-        position.y += 30
       }
 
       contentSize ^= th::Vf2{contentRect.w, position.y-scrollAreaInfo.contentRect.y}
