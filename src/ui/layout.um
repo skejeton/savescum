@@ -1,0 +1,63 @@
+type (
+  Unit* = enum {
+    px
+    prop
+  }
+
+  Dimension* = struct {
+    value: real
+    unit: Unit
+  }
+
+  Properties* = struct {
+    width: Dimension
+    height: Dimension
+  }
+
+  In* = struct {
+    properties: Properties
+    parent: ^In
+    children: []In
+  }
+
+  Out* = struct {
+    link: ^In
+    rect: rect.Rect
+  }
+
+  Maker* = struct {
+    curr: ^In
+  }
+
+  Solver* = struct {
+    
+  }
+)
+
+fn makeMaker*(): Maker {
+  return Maker{
+    curr: &In{
+      properties: {
+        width: {1, .prop},
+        height: {1, .prop}
+      },
+      children: []In{}
+    }
+  }
+}
+
+fn makeSolver*(): Solver {
+  return Solver{}
+}
+
+fn (m: ^Maker) push*(p: Properties): ^Maker {
+  m.curr.children = append(m.curr.children, In{
+    properties: p,
+    parent: m.curr,
+    children: []In{}
+  })
+}
+
+fn (m: ^Maker) pop*(): ^Maker {
+  m.curr = m.curr.parent 
+}

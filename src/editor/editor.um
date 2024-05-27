@@ -372,7 +372,7 @@ fn uiEndWindow(editor: ^Editor) {
   editor.currentWindow = ""
 }
 
-fn widget_window(editor: ^Editor, title: str, rect: rect::Rect, handler: fn (winfo: WindowInfo): void) {
+fn widgetWindow(editor: ^Editor, title: str, rect: rect::Rect, handler: fn (winfo: WindowInfo): void) {
   if info, ok := uiBeginWindow(editor, title, rect); ok {
     handler(info)
     uiEndWindow(editor)
@@ -884,7 +884,7 @@ fn putLabelY(editor: ^Editor, text: str, color: uint32, position: ^th::Vf2) {
 }
 
 fn putPlayerPlacer(editor: ^Editor) {
-  widget_window(editor, "Player Placer", {5, 249, 160, 224}, |editor| {
+  widgetWindow(editor, "Player Placer", {5, 249, 160, 224}, |editor| {
     contentRect := util::rectShrink(winfo.contentRect, 5)
     position := contentRect.getPos()
     playerPos := editor.world.playerSpawnPos
@@ -908,7 +908,7 @@ fn putPlayerPlacer(editor: ^Editor) {
 }
 
 fn putTilePicker(editor: ^Editor) {
-  widget_window(editor, "Tile Picker", {5, 5, 160, 224}, |editor| {
+  widgetWindow(editor, "Tile Picker", {5, 5, 160, 224}, |editor| {
     // NOTE: This is to cancel the window-body dragging thing.
     //       Probably not the best way to do it.
     contentRect := winfo.contentRect
@@ -1101,7 +1101,7 @@ fn putEntityList(editor: ^Editor) {
   _actions := map[int]EntityListAction{}
   actions := &_actions
 
-  widget_window(editor, "Entity List", {595, 5, 200, 200}, |editor, actions| {
+  widgetWindow(editor, "Entity List", {595, 5, 200, 200}, |editor, actions| {
     // Apply padding.
     contentRect := util::rectShrink(winfo.contentRect, 5)
 
@@ -1152,7 +1152,7 @@ fn putEntityEditor(editor: ^Editor) {
   entitySelected := getEntitySelected(&editor.entities)
 
   if entitySelected != null {
-    widget_window(editor, "Entity Editor", {595, 210, 200, 220}, |editor, entitySelected| {
+    widgetWindow(editor, "Entity Editor", {595, 210, 200, 220}, |editor, entitySelected| {
       contentRect := util::rectShrink(winfo.contentRect, 5)
 
       editor.ui.ctx.beginScissorRect(contentRect)
@@ -1410,7 +1410,7 @@ fn loadRoom(editor: ^Editor, room: str) {
 }
 
 fn putRoomEditor(editor: ^Editor) {
-  widget_window(editor, "Load Room", {180, 5, 200, 300}, |editor| {
+  widgetWindow(editor, "Load Room", {180, 5, 200, 300}, |editor| {
     contentRect := util::rectShrink(winfo.contentRect, 5)
     position := contentRect.getPos()
 
@@ -1448,7 +1448,7 @@ fn putNotifications(editor: ^Editor) {
 }
 
 fn putLevelSelect(editor: ^Editor) {
-  widget_window(editor, "Level Select", {390, 5, 200, 300}, |editor| {
+  widgetWindow(editor, "Level Select", {390, 5, 200, 300}, |editor| {
     contentRect := util::rectShrink(winfo.contentRect, 5)
 
     levels := [][2]str{}

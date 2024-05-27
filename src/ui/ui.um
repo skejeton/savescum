@@ -1,0 +1,11 @@
+// Main UI controller
+
+type (
+  UI* = struct {
+
+  }
+)
+
+fn create*(): UI {
+  return UI{}
+}
