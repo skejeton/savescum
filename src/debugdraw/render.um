@@ -2,7 +2,7 @@
 
 import (
   "canvas.um"
-  "font.um"
+  "../gfx/font.um"
   "rect.um"
   "th.um"
 
@@ -47,7 +47,7 @@ fn (wl: ^WrapLayout) newLine() {
 
 fn valueToDisplay*(value: any): DisplayToLayout {
   switch v := type(value) {
-    case bool: 
+    case bool:
       return {text: v ? "true" : "false", color: v ? 0x99FF99FF : 0xFF9999FF}
     case int:
       return {text: sprintf("%v", v), color: 0x9999FFFF}

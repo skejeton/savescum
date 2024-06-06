@@ -6,13 +6,13 @@ import (
   "input.um"
   "canvas.um"
   "utf8.um"
-  "font.um"
+  "gfx/font.um"
   
   "misc/strings.um"
 )
 
 fn posTrans*(x, y: th::fu): th::Transform {
-  return th::Transform{p: th::Vf2{x, y}, s: th::Vf2{1, 1}}
+  return {p: {x, y}, s: {1, 1}}
 }
 
 fn isMouseInRect*(r: rect::Rect): bool {
@@ -48,18 +48,18 @@ fn drawRectLines*(color: uint32, r: rect::Rect, thicc: real = 3.0) {
   t2 := thicc/2
 
   // top
-  canvas::drawLine(color, th::Vf2{r.x-t2, r.y}, th::Vf2{r.x+r.w+t2, r.y}, thicc)
+  canvas::drawLine(color, {r.x-t2, r.y}, {r.x+r.w+t2, r.y}, thicc)
   // bottom
-  canvas::drawLine(color, th::Vf2{r.x-t2, r.y+r.h}, th::Vf2{r.x+r.w+t2, r.y+r.h}, thicc)
+  canvas::drawLine(color, {r.x-t2, r.y+r.h}, {r.x+r.w+t2, r.y+r.h}, thicc)
   // left
-  canvas::drawLine(color, th::Vf2{r.x, r.y-t2}, th::Vf2{r.x, r.y+r.h+t2}, thicc)
+  canvas::drawLine(color, {r.x, r.y-t2}, {r.x, r.y+r.h+t2}, thicc)
   // right
-  canvas::drawLine(color, th::Vf2{r.x+r.w, r.y-t2}, th::Vf2{r.x+r.w, r.y+r.h+t2}, thicc)
+  canvas::drawLine(color, {r.x+r.w, r.y-t2}, {r.x+r.w, r.y+r.h+t2}, thicc)
 }
 
 fn rectChopRight*(r: ^rect::Rect, by: int): rect::Rect {
   r.w -= by
-  return rect::Rect{r.x+r.w, r.y, by, r.h}
+  return {r.x+r.w, r.y, by, r.h}
 }
 
 // Crops the input image by specified rectangle in pixels
@@ -69,7 +69,7 @@ fn rectChopRight*(r: ^rect::Rect, by: int): rect::Rect {
 //
 fn imageCropRect*(img: image::Image, rec: rect::Rect) {
   size := img.getDims()
-  img.crop(th::Vf2{rec.x/size.x, rec.y/size.y}, th::Vf2{(rec.x + rec.w)/size.x, (rec.y + rec.h)/size.y})
+  img.crop({rec.x/size.x, rec.y/size.y}, {(rec.x + rec.w)/size.x, (rec.y + rec.h)/size.y})
 }
 
 fn drawImageRect*(img: image::Image, src: rect::Rect, dst: rect::Rect, rot: real = 0, tint: uint32 = 0xFFFFFFFF) {
@@ -78,8 +78,8 @@ fn drawImageRect*(img: image::Image, src: rect::Rect, dst: rect::Rect, rot: real
   src.y += 0.5
   src.w -= 1
   src.h -= 1
-  img.crop(th::Vf2{src.x/dims.x, src.y/dims.y}, th::Vf2{(src.x + src.w)/dims.x, (src.y + src.h)/dims.y})
-  img.draw({p: th::Vf2{dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}, tint)
+  img.crop({src.x/dims.x, src.y/dims.y}, {(src.x + src.w)/dims.x, (src.y + src.h)/dims.y})
+  img.draw({p: {dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}, tint)
 }
 
 //
@@ -128,6 +128,7 @@ fn chopUtf8*(s: str, size: int): str {
     ofs += rune.size()
     size -= 1
   }
+
   return slice(s, 0, ofs)
 }
 
@@ -142,6 +143,7 @@ fn rectVsRect*(r1, r2: rect::Rect): bool {
 }
 
 // Rect vs point(
+
 //   Rect
 //   Point
 // )
@@ -168,11 +170,11 @@ fn rectShrink*(r: rect::Rect, by: real): rect::Rect {
 //
 // Returns rectangle moved by amount `by`
 fn rectMove*(r: rect::Rect, by: th::Vf2): rect::Rect {
-  return rect::Rect{r.x+by.x, r.y+by.y, r.w, r.h}
+  return {r.x+by.x, r.y+by.y, r.w, r.h}
 }
 
 fn rectCenter*(r: rect::Rect): th::Vf2 {
-  return th::Vf2{r.x+r.w/2, r.y+r.h/2}
+  return {r.x+r.w/2, r.y+r.h/2}
 }
 
 fn rectCenterWithinRect*(child, parent: rect::Rect): rect::Rect {
@@ -261,10 +263,7 @@ fn isprint*(c: uint32): bool {
 fn rectIntersection*(a, b: rect::Rect): rect::Rect {
   x := max(a.x, b.x)
   y := max(a.y, b.y)
-  return rect::Rect{
-    x,y, 
-    min(a.x + a.w, b.x + b.w) - x,
-    min(a.y + a.h, b.y + b.h) - y}
+  return {x, y, min(a.x + a.w, b.x + b.w) - x, min(a.y + a.h, b.y + b.h) - y}
 }
 
 fn wrapText*(font: ^font::Font, text: str, boundary: real): []str {
@@ -300,3 +299,4 @@ fn formatMillis*(ms: int): str {
   } 
   return sprintf("%dms", ms)
 }
+

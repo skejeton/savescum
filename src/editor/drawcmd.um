@@ -7,7 +7,7 @@ import (
   "th.um"
   "rect.um"
   "image.um"
-  "font.um"
+  "../gfx/font.um"
   "canvas.um"
   "std.um"
   "../util.um"
@@ -21,23 +21,46 @@ type (
     draw(props: DrawProperties): void
   }
 
-  CommandType = enum {
-    rect
-    rectLines
-    beginScissorRect
-    endScissor
-    custom = 255
+  ImageCmd = struct {
+    image: image::Image
+    transform: th::Transform
+    quadCrop: th::Quad
+    tint: uint32
   }
 
-  Command = struct {
-    attr: real
-    kind: CommandType
+  NinepatchCmd = struct {
+    image: image::Image
+    outer, inner, dest: rect::Rect
+    quadCrop: th::Quad
+    tint: uint32
+  }
+
+  TextCmd = struct {
+    font: font::Font
+    text: str
+    pos: th::Vf2
+    color: uint32
+    size: real
+  }
+
+  RectCmd = struct {
     rect: rect::Rect
     color: uint32
-    custom: CustomCommand
   }
 
-  Layer = []Command
+  RectLineCmd = struct {
+    rect: rect::Rect
+    color: uint32
+    thickness: real
+  }
+
+  BeginScissorRectCmd = struct {
+    rect: rect::Rect
+  }
+
+  EndScissorCmd = struct{}
+
+  Layer = []CustomCommand
 
   DrawContext* = struct {
     scissorRectStack: []rect::Rect
@@ -45,11 +68,12 @@ type (
     currentLayer: ^Layer
     layerOrder: []int
     layers: map[int]Layer
+    scissorCounter: int
   }
 )
 
-fn (lay: ^Layer) appendCommand(cmd: Command) {
-  lay ^= Layer(append([]Command(lay^), cmd))
+fn (lay: ^Layer) appendCommand(cmd: CustomCommand) {
+  lay ^= Layer(append([]CustomCommand(lay^), cmd))
 }
 
 fn (ctx: ^DrawContext) acquireLayer(layer: int) {
@@ -69,7 +93,7 @@ fn (ctx: ^DrawContext) acquireLayer(layer: int) {
     }
   }
 
-  ctx.layers[layer] = Layer(make([]Command, 0))
+  ctx.layers[layer] = Layer(make([]CustomCommand, 0))
   ctx.layerOrder = insert(ctx.layerOrder, insertIndex, layer)
 }
 
@@ -99,66 +123,98 @@ fn (ctx: ^DrawContext) getCurrentScissorRect*(): (bool, rect::Rect) {
 }
 
 fn (ctx: ^DrawContext) flush*() {
-  scissorCounter := 0
+  if ctx.scissorCounter != 0 {
+    std::assert(false, "Scissor mismatch.")
+  }
+
+  ctx.scissorCounter = 0
 
   for _, i in ctx.layerOrder {
     layer := ctx.layers[i]
 
     for j, command in layer {
-      command.rect.x = floor(command.rect.x)
-      command.rect.y = floor(command.rect.y)
-      switch command.kind {
-        case .rect:
-          canvas::drawRect(command.color, command.rect)
-        case .rectLines:
-          util::drawRectLines(command.color, command.rect, command.attr)
-        case .beginScissorRect:
-          canvas::beginScissorRect(command.rect)
-          scissorCounter += 1
-        case .endScissor:
-          canvas::endScissor()
-          scissorCounter -= 1
-          std::assert(scissorCounter >= 0, "Scissor mismatch.")
-        case .custom:
-          command.custom.draw(DrawProperties{})
-      }
+      command.draw(DrawProperties{})
     } 
-  }
-
-  if scissorCounter != 0 {
-    std::assert(false, "Scissor mismatch.")
   }
 
   ctx ^= init()
 }
 
-type TextCmd = struct {
-  font: font::Font
-  text: str
-  pos: th::Vf2
-  color: uint32
-  size: real
-}
+// COMMAND IMPL ================================================================
 
 fn (d: ^TextCmd) draw(props: DrawProperties) {
   d.font.draw(d.text, d.pos, d.color, d.size)
 }
 
+fn (d: ^ImageCmd) draw(props: DrawProperties) {
+  d.image.cropQuad(d.quadCrop)
+  d.image.draw(d.transform, d.tint)
+}
+
+fn (d: ^NinepatchCmd) draw(props: DrawProperties) {
+  d.image.cropQuad(d.quadCrop)
+  d.image.drawNinepatch(d.outer, d.inner, d.dest, d.tint)
+}
+
+fn (d: ^RectCmd) draw(props: DrawProperties) {
+  canvas::drawRect(d.color, d.rect)
+}
+
+fn (d: ^RectLineCmd) draw(props: DrawProperties) {
+  util::drawRectLines(d.color, d.rect, d.thickness)
+}
+
+fn (d: ^BeginScissorRectCmd) draw(props: DrawProperties) {
+  canvas::beginScissorRect(d.rect)
+}
+
+fn (d: ^EndScissorCmd) draw(props: DrawProperties) {
+  canvas::endScissor()
+}
+
+//==============================================================================
+
+
+
 fn (ctx: ^DrawContext) drawText*(f: font::Font, text: str, position: th::Vf2, color: uint32, size: th::fu = 1.0) {
-  ctx.currentLayer.appendCommand(Command{kind: .custom, custom: TextCmd{f, text, position, color, size}})
+  ctx.currentLayer.appendCommand(TextCmd{f, text, position, color, size})
 }
 
 fn (ctx: ^DrawContext) drawRect*(color: uint32, r: rect::Rect) {
-  ctx.currentLayer.appendCommand(Command{kind: .rect, color: color, rect: r})
+  ctx.currentLayer.appendCommand(RectCmd{color: color, rect: r})
 }
 
 fn (ctx: ^DrawContext) drawRectLines*(color: uint32, r: rect::Rect, thicc: real = 1.0) {
-  ctx.currentLayer.appendCommand(Command{kind: .rectLines, color: color, rect: r, attr: thicc})
+  ctx.currentLayer.appendCommand(RectLineCmd{color: color, rect: r, thickness: thicc})
 }
 
-fn (ctx: ^DrawContext) beginScissorRectRaw*(r: rect::Rect) {
+fn (ctx: ^DrawContext) beginScissorRectRaw(r: rect::Rect) {
   ctx.scissorRectStack = append(ctx.scissorRectStack, r)
-  ctx.currentLayer.appendCommand(Command{kind: .beginScissorRect, rect: r})
+  ctx.currentLayer.appendCommand(BeginScissorRectCmd{rect: r})
+  ctx.scissorCounter++
+}
+
+fn (ctx: ^DrawContext) drawImage*(img: image::Image, transform: th::Transform, color: uint32 = 0xFFFFFFFF) {
+  ctx.currentLayer.appendCommand(ImageCmd{img, transform, img.getCropQuad(), color})
+}
+
+fn (ctx: ^DrawContext) drawNinepatch*(img: image::Image, outer, inner, dest: rect::Rect, tint: uint32 = th::white) {
+  ctx.currentLayer.appendCommand(NinepatchCmd{img, outer, inner, dest, img.getCropQuad(), tint})
+}
+
+fn (ctx: ^DrawContext) drawCustom*(custom: CustomCommand) {
+  ctx.currentLayer.appendCommand(custom)
+}
+
+fn (ctx: ^DrawContext) endScissor*() {
+  if len(ctx.scissorRectStack) == 0 {
+    std::assert(false, "Mismatched beginScissor/endScissor")
+  }
+
+  ctx.scissorRectStack = delete(ctx.scissorRectStack, len(ctx.scissorRectStack)-1)
+
+  ctx.currentLayer.appendCommand(EndScissorCmd{})
+  ctx.scissorCounter--
 }
 
 fn mergeScissorRects(child, parent: rect::Rect): rect::Rect {
@@ -188,48 +244,3 @@ fn (ctx: ^DrawContext) beginScissorRect*(r: rect::Rect) {
   ctx.beginScissorRectRaw(r)
 }
 
-fn (ctx: ^DrawContext) endScissor*() {
-  if len(ctx.scissorRectStack) == 0 {
-    std::assert(false, "Mismatched beginScissor/endScissor")
-  }
-
-  ctx.scissorRectStack = delete(ctx.scissorRectStack, len(ctx.scissorRectStack)-1)
-
-  ctx.currentLayer.appendCommand(Command{kind: .endScissor})
-}
-
-type ImageCmd = struct {
-  image: image::Image
-  transform: th::Transform
-  quadCrop: th::Quad
-  tint: uint32
-}
-
-fn (d: ^ImageCmd) draw(props: DrawProperties) {
-  d.image.cropQuad(d.quadCrop)
-  d.image.draw(d.transform, d.tint)
-}
-
-fn (ctx: ^DrawContext) drawImage*(img: image::Image, transform: th::Transform, color: uint32 = 0xFFFFFFFF) {
-  ctx.currentLayer.appendCommand(Command{kind: .custom, custom: ImageCmd{img, transform, img.getCropQuad(), color}})
-}
-
-type NinepatchCmd = struct {
-  image: image::Image
-  outer, inner, dest: rect::Rect
-  quadCrop: th::Quad
-  tint: uint32
-}
-
-fn (d: ^NinepatchCmd) draw(props: DrawProperties) {
-  d.image.cropQuad(d.quadCrop)
-  d.image.drawNinepatch(d.outer, d.inner, d.dest, d.tint)
-}
-
-fn (ctx: ^DrawContext) drawNinepatch*(img: image::Image, outer, inner, dest: rect::Rect, tint: uint32 = th::white) {
-  ctx.currentLayer.appendCommand(Command{kind: .custom, custom: NinepatchCmd{img, outer, inner, dest, img.getCropQuad(), tint}})
-}
-
-fn (ctx: ^DrawContext) drawCustom*(custom: CustomCommand) {
-  ctx.currentLayer.appendCommand(Command{kind: .custom, custom: custom})
-}

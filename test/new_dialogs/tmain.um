@@ -30,7 +30,7 @@ import (
   "../../src/test.um"
   "../../src/util.um"
   "../../src/mouseinput.um"
-  "font.um"
+  "../../src/gfx/font.um"
   "color.um"
 )
 

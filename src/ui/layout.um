@@ -1,5 +1,8 @@
+import ("rect.um")
+
 type (
   Unit* = enum {
+    auto
     px
     prop
   }
@@ -30,7 +33,7 @@ type (
   }
 
   Solver* = struct {
-    
+
   }
 )
 
@@ -59,5 +62,11 @@ fn (m: ^Maker) push*(p: Properties): ^Maker {
 }
 
 fn (m: ^Maker) pop*(): ^Maker {
-  m.curr = m.curr.parent 
+  m.curr = m.curr.parent
+}
+
+fn (s: ^Solver) solve*(el: ^In, screenSize: rect.Rect): []Out {
+  for child in el.children {
+    s.solve(child)
+  }
 }

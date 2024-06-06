@@ -1,7 +1,7 @@
 import (
   "console/console.um"
   "global.um"
-  "font.um"
+  font = "gfx/font.um"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
   "window.um"
   "th.um"
   "input.um"
-  "font.um"
+  "gfx/font.um"
   "std.um"
 )
 

@@ -4,7 +4,7 @@ import (
   "../editor/drawcmd.um"
   "rect.um"
   "th.um"
-  font = "font.um"
+  "../gfx/font.um"
   "../util.um"
   "../global.um"
 )

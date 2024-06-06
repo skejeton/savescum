@@ -2,7 +2,7 @@
 
 import (
   "../../src/test.um"
-  font = "font.um"
+  "../../gfx/font.um"
   "window.um"
   "rect.um"
   "th.um"

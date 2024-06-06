@@ -2,7 +2,7 @@
 
 import (
   "drawcmd.um"
-  "buffer.um" 
+  "buffer.um"
   "grid.um"
   "../ui/core.um"
   "../ui/debug.um"
@@ -31,7 +31,7 @@ import (
   debug_info = "../debugdraw/info.um"
   render_debug_info = "../debugdraw/render.um"
 
-  "font.um"
+  "../gfx/font.um"
   "color.um"
   "../misc/strings.um" 
 
@@ -135,11 +135,11 @@ fn drawBevelRect(editor: ^Editor, r: rect::Rect, pushed: bool = false, color: ui
   }
 
   const (
-    bevelOuterRect = rect::Rect{0, 0, 10, 10}
-    bevelInnerRect = rect::Rect{3, 3, 2, 2}
+    bevelOuterRect = rect::Rect{0, 0, 20, 20}
+    bevelInnerRect = rect::Rect{6, 6, 4, 4}
  
-    bevelPushedOuterRect = rect::Rect{10, 0, 10, 10}
-    bevelPushedInnerRect = rect::Rect{3, 3, 2, 2}
+    bevelPushedOuterRect = rect::Rect{20, 0, 20, 20}
+    bevelPushedInnerRect = rect::Rect{6, 6, 4, 4}
   )
 
   if pushed {
@@ -210,7 +210,7 @@ fn putButtonBase(editor: ^Editor, r: rect::Rect, name: str, revert: bool = false
 fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect): (WindowInfo, bool) {
   const (
     padding = 0
-    titlebarHeight = 20
+    titlebarHeight = 30
   )
 
   var (
@@ -263,7 +263,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect): (WindowInfo, bool)
   // Frame tool.
   editor.ui.beginTool(title, windowRect^)
   {
-    drawBackdropRect(editor, util::rectShrink(windowRect^, -3), 0xCCCCCCFF)
+    drawBackdropRect(editor, util::rectShrink(windowRect^, -4), 0xCCCCCCFF)
     drawBackdropRect(editor, windowRect^)
 
     buttonSize := th::Vf2{titlebarHeight, titlebarHeight}
@@ -274,7 +274,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect): (WindowInfo, bool)
         editor.wm.setWindowVisible(title, false)
       }
   
-      editor.ui.ctx.drawRect(th::black, {position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-1, buttonSize.x-10, 2})
+      editor.ui.ctx.drawRect(th::black, {position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-2, buttonSize.x-10, 3})
       position.x += buttonSize.x + padding
     }
     
@@ -340,7 +340,7 @@ fn uiEndWindow(editor: ^Editor) {
         movement = events.mouseState.delta
       }
 
-      gripSize := th::Vf2{10, 10}
+      gripSize := th::Vf2{15, 15}
       gripRect := rect::Rect{windowRect.x+windowRect.w-gripSize.x, windowRect.y+windowRect.h-gripSize.y, gripSize.x, gripSize.y}
 
       {
@@ -446,7 +446,9 @@ fn putGrid(grid: ^grid::Grid, editor: ^Editor, rectangle: rect::Rect): th::Vf2 {
 
 fn putIconButton(editor: ^Editor, name: str, r: rect::Rect, img: image::Image, revert: bool = false): ButtonState {
   bs := putButtonBase(editor, r, name, revert)
-  editor.ui.ctx.drawImage(img, th::Transform{p: th::Vf2{r.x, r.y}, s: th::Vf2{1, 1}})
+  dims := th::Vf2{32, 32}
+  pos := util::rectCenterWithinRect({0, 0, dims.x, dims.y}, r).getPos()
+  editor.ui.ctx.drawImage(img, {p: pos, s: {1, 1}})
   return bs
 }
 
@@ -746,15 +748,15 @@ fn getEntitySelected(entities: ^EditorEntities): ^world_data::EntityDesc {
 fn editorPutToolbar(editor: ^Editor) {
   const (
     margin = 0
-    padding = 2
-    rectangleHeight = 32 + margin * 2 + padding * 2
+    padding = 4
+    rectangleHeight = 48 + margin * 2 + padding * 2
   )
 
   rectangle := rect::Rect{margin, global::screen.h - rectangleHeight + margin, global::screen.w - margin * 2, rectangleHeight - margin * 2}
 
   if payload_trigger::aprilFools() {
     x := 0
-    y := rectangle.y - 32
+    y := rectangle.y - 48
 
     util::imageCropRect(editor.resources.superHotFire, {0, (th::time/100%3)*32, 32, 32})
 
@@ -950,7 +952,7 @@ fn putTilePicker(editor: ^Editor) {
 }
 
 fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, selected: bool): EntityListAction {
-  r.w -= 60
+  r.w -= 45*2
   action := EntityListAction.none
 
   editor.ui.beginTool(ent.id, r)
@@ -962,18 +964,18 @@ fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, s
       editor.ui.ctx.drawRectLines(th::yellow, util::rectShrink(r, 1))
     }
     r.x += r.w
-    r.w = 30
-    r.h = 15
+    r.w = 45
+    r.h = 22.5
     if putSimpleButton(editor, r, "▲").isReleased {
       action = .moveUp
     }
-    r.y += 15
+    r.y += 22.5
     if putSimpleButton(editor, r, "▼").isReleased {
       action = .moveDown
     }
-    r.y -= 15
-    r.h = 30
-    r.x += 30
+    r.y -= 22.5
+    r.h = 45
+    r.x += 45
     if input::isPressed(.shift) {
       if putSimpleButton(editor, r, "␡").isReleased {
         action = .remove
@@ -1023,9 +1025,6 @@ fn allocateEntityId(entities: []world_data::EntityDesc): str {
   return id
 }
 
-/*
- * \brief Creates a random entity with a random ID and name, empty tags
- */
 fn makeRandomEntity(id: str): world_data::EntityDesc {
   return world_data::EntityDesc{name: id, id: id, tags: ""}
 }
@@ -1107,7 +1106,7 @@ fn putEntityList(editor: ^Editor) {
 
     // Put add button.
     {
-      buttonRect := util::rectCutRight(winfo.titlebarRect, 20)
+      buttonRect := util::rectCutRight(winfo.titlebarRect, winfo.titlebarRect.h)
 
       if (putSimpleButton(editor, buttonRect, "+").isReleased) {
         appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
@@ -1123,13 +1122,17 @@ fn putEntityList(editor: ^Editor) {
       if ok, scrollAreaInfo := beginScrollArea(editor, contentRect, contentSize^); ok {
         editor.ui.ctx.beginScissorRect(scrollAreaInfo.areaRect)
         entryRect := scrollAreaInfo.contentRect
-        entryRect.h = 30
+        entryRect.h = 45
         for i, ent in editor.entities.list {
+          if entryRect.y < scrollAreaInfo.areaRect.y-45 || entryRect.y > scrollAreaInfo.areaRect.y+scrollAreaInfo.areaRect.h {
+            entryRect.y += 45
+            continue
+          }
           action := putEntityEntry(editor, ent, entryRect, isEntitySelected(&editor.entities, i))
           if action != .none {
             actions[i] = action
           }
-          entryRect.y += 30
+          entryRect.y += 45
         }
 
         contentSize ^= th::Vf2{entryRect.w, entryRect.y-scrollAreaInfo.contentRect.y}
@@ -1158,16 +1161,16 @@ fn putEntityEditor(editor: ^Editor) {
       editor.ui.ctx.beginScissorRect(contentRect)
       position := contentRect.getPos()
       putLabelY(editor, "Name", th::black, &position)
-      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 30}, "Name", &entitySelected.name) || editor.dirty
-      position.y += 30
+      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 46}, "Name", &entitySelected.name) || editor.dirty
+      position.y += 46
       putLabelY(editor, "Id", th::black, &position)
-      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 30}, "Id", &entitySelected.id) || editor.dirty
-      position.y += 30
+      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 46}, "Id", &entitySelected.id) || editor.dirty
+      position.y += 46
       putLabelY(editor, "Tags", th::black, &position)
-      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 30}, "Tags", &entitySelected.tags) || editor.dirty
-      position.y += 30
+      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 46}, "Tags", &entitySelected.tags) || editor.dirty
+      position.y += 46
       position.y += 10
-      if putSimpleButton(editor, {position.x, position.y, contentRect.w, 30}, "Delete").isReleased {
+      if putSimpleButton(editor, {position.x, position.y, contentRect.w, 40}, "Delete").isReleased {
         removeEntity(&editor.entities, getEntitySelectedIndex(&editor.entities))
         editor.dirty = true
       } 
@@ -1190,16 +1193,16 @@ fn putRectGrips(editor: ^Editor, r: rect::Rect): RectResizeCommand {
   // Grips positions are initialized as relative here.
   // Will be multiplied by rect.w/h and added rect.x/y to them.
   const eightGrips = [8]EditGrip{
-    EditGrip{th::Vf2{0.0, 0.0}, RectResizeCommand{th::Vf2{1, 1}, th::Vf2{-1, -1}}}, // x
-    EditGrip{th::Vf2{0.5, 0.0}, RectResizeCommand{th::Vf2{0, 1}, th::Vf2{ 0, -1}}}, // x
-    EditGrip{th::Vf2{1.0, 0.0}, RectResizeCommand{th::Vf2{0, 1}, th::Vf2{ 1, -1}}}, // x
+    EditGrip{{0.0, 0.0}, {{1, 1}, {-1, -1}}}, // x
+    EditGrip{{0.5, 0.0}, {{0, 1}, { 0, -1}}}, // x
+    EditGrip{{1.0, 0.0}, {{0, 1}, { 1, -1}}}, // x
 
-    EditGrip{th::Vf2{0.0, 0.5}, RectResizeCommand{th::Vf2{1, 0}, th::Vf2{-1,  0}}},
-    EditGrip{th::Vf2{1.0, 0.5}, RectResizeCommand{th::Vf2{0, 0}, th::Vf2{ 1,  0}}},
+    EditGrip{{0.0, 0.5}, {{1, 0}, {-1,  0}}},
+    EditGrip{{1.0, 0.5}, {{0, 0}, { 1,  0}}},
 
-    EditGrip{th::Vf2{0.0, 1.0}, RectResizeCommand{th::Vf2{1, 0}, th::Vf2{-1,  1}}}, // x
-    EditGrip{th::Vf2{0.5, 1.0}, RectResizeCommand{th::Vf2{0, 0}, th::Vf2{ 0,  1}}}, // x
-    EditGrip{th::Vf2{1.0, 1.0}, RectResizeCommand{th::Vf2{0, 0}, th::Vf2{ 1,  1}}}  // x
+    EditGrip{{0.0, 1.0}, {{1, 0}, {-1,  1}}}, // x
+    EditGrip{{0.5, 1.0}, {{0, 0}, { 0,  1}}}, // x
+    EditGrip{{1.0, 1.0}, {{0, 0}, { 1,  1}}}  // x
   } 
 
   activeGrip := -1
@@ -1256,7 +1259,7 @@ fn applyRectResizeCommand(resizeCommand: RectResizeCommand, r: rect::Rect, delta
 type DrawEntityCmd = struct {
   entity: world_data::EntityDesc
   r: rect::Rect
-  tags: game::TagSet
+  tags: ^game::TagSet
   scale: real
 }
 
@@ -1275,7 +1278,7 @@ fn drawTaggedEntityRect(editor: ^Editor, entity: ^world_data::EntityDesc, r: rec
     entity.rect.h = size.y
     editor.ui.ctx.drawText(editor.resources.mainFont, entity.name, th::Vf2{r.x, r.y}, th::white, editor.tilemapGrid.s.x/32)
   } else {
-    editor.ui.ctx.drawCustom(DrawEntityCmd{entity^, r, tags^, editor.tilemapGrid.s.x/32})
+    editor.ui.ctx.drawCustom(DrawEntityCmd{entity^, r, tags, editor.tilemapGrid.s.x/32})
   }
 }
 
@@ -1304,11 +1307,16 @@ fn putWorldEntities(editor: ^Editor) {
 
     entVisRect := util::rectMove(util::rectScale(ent.rect, editor.tilemapGrid.s.x/32), editor.tilemapGrid.toScreen(th::Vf2{0, 0}))
 
+    if !util::rectVsRect(entVisRect, {0, 0, global::screen.w, global::screen.h}) {
+      continue
+    }
+
     // FIXME: Initializing tag set every time we render an entity is not efficent at all.
-    tags := game::initTagSetFromString(ent.tags)
+    tags_ := game::initTagSetFromString(ent.tags)
+    tags := new(game::TagSet, tags_)
     ignore := tags.isSet("Guide") && editor.entityBypass && !isEntitySelected(&editor.entities, i)
 
-    drawTaggedEntityRect(editor, ent, entVisRect, &tags)
+    drawTaggedEntityRect(editor, ent, entVisRect, tags)
 
     if !ignore {
       editor.ui.beginTool("Ent"+ent.id, entVisRect)
@@ -1374,7 +1382,7 @@ fn putWorldEntities(editor: ^Editor) {
 
         ent.rect = applyRectResizeCommand(rectCmd, ent.rect, delta)
 
-        adjusted := adjustEntityRect(editor, &tags, ent)
+        adjusted := adjustEntityRect(editor, tags, ent)
         sizeD := adjusted.getDims().sub(ent.rect.getDims())
         ent.rect = adjusted 
 
@@ -1535,6 +1543,7 @@ fn postUiUpdate(editor: ^Editor) {
 }
 
 fn editorPutUi(editor: ^Editor) {
+  editor.ui.begin()
 
   if input::isPressed(.ctrl) {
     if input::isJustPressedc('s') {
@@ -1705,9 +1714,9 @@ fn editorPutUi(editor: ^Editor) {
 
 fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources {
   editorResources := EditorResources {
-    bevelImage: resources::loadImage(rl, "data/img/ui_bevelbutton.png", .nearest),
+    bevelImage: resources::loadImage(rl, "data/img/ui/1_0x/base.png", .nearest),
     tilesetImage: resources::loadImage(rl, "data/img/ts_sky.png", .linear),
-    toolbarIcons: resources::loadImage(rl, "data/img/ui_trayicons.png", .linear),
+    toolbarIcons: resources::loadImage(rl, "data/img/ui/1_0x/icons.png", .linear),
     superHotFire: resources::loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
     mainFont: resources::loadFont(rl, "data/font/monospace.ttf", 16, .linear)
   }
@@ -1730,8 +1739,8 @@ fn editorInit(resources: EditorResources): Editor {
 
   return Editor{
     ui: ui,
-    tilemapGrid: grid::Grid{s: {32, 32}},
-    tilesetGrid: grid::Grid{s: {32, 32}},
+    tilemapGrid: grid::Grid{s: {48, 48}},
+    tilesetGrid: grid::Grid{s: {48, 48}},
     tilemapShowAllLayers: false,
     entityBypass: true,
     tileset: tileset,
@@ -1779,12 +1788,7 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
   }
 }
 
-fn editorMain*(enabled: bool) {
-  {
-    _, err := util::readFileStr("data/misc/CheckFS")
-    global::caseSensetiveFS = err.code != 0
-  }
-
+fn session*(enabled: bool) {
   global::screen = {0, 0, 800, 600}
   sf := window::getDpiScaleFactor()
   wsf := sf
@@ -1878,8 +1882,6 @@ fn editorMain*(enabled: bool) {
     editorPutUi(editor)
     postUiUpdate(editor)
 
-    dbg::drawConsole(editor.resources.mainFont)
-
     fpsNode := debug_info::Display{ "FPS", fps::getFps(), false }
     if payload_trigger::aprilFools() {
       fpsNode = debug_info::Display{ "SPF", 1/fps::getFps(), false }
@@ -1900,9 +1902,8 @@ fn editorMain*(enabled: bool) {
           { "Playthrough Started", editor.debugTimerStarted, false }
         }
       })
-    }
+    } 
   })
-
 
   window::onDestroy.register(|editor| {
     // TODO: What if the directory doesn't exist?

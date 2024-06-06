@@ -13,7 +13,7 @@ import (
 
 var screen: rect::Rect
 var scale: real
-var offset: th::Vf2
+var offset: th::fu
 var oldMousePos: th::Vf2
 
 fn init*() {
@@ -28,7 +28,6 @@ fn init*() {
     problem_screen::showResourceLoadingError(&rl)
     exit(1)
   }
-
 
   screen = {0, 0, 800, 600}
   scale = 1.0
@@ -53,4 +52,4 @@ fn init*() {
     background::drawCave(content, offset.mulf(-1), th::Vf2{scale, scale})
     util::drawRectLines(th::red, content)
   })
- }
+}

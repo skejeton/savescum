@@ -1,0 +1,24 @@
+import (
+  "editor/editor.um"
+)
+
+type Mode* = enum {
+  mainmenu
+  editor
+  game
+}
+
+type Config* = struct {
+  mode: Mode
+}
+
+fn init*(cfg: Config) {
+  switch cfg.mode {
+  case .mainmenu:
+    exit(1, "Main menu is not implemented yet")
+  case .editor:
+    editor::session(/*enabled*/ true)
+  case .game:
+    editor::session(/*enabled*/ false)
+  }
+}

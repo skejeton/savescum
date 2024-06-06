@@ -9,7 +9,7 @@ import (
   "canvas.um"
   "../rerp.um"
   "color.um"
-  "font.um"
+  "../gfx/font.um"
   strings = "../misc/strings.um"
   "../util.um"
 )

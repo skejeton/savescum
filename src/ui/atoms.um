@@ -3,8 +3,7 @@ import "rect.um"
 type ToolNode* = struct {
   children: map[str]^ToolNode
   parent: ^ToolNode
-  userdata: interface{}
-  // If set to -1, the node is frozen and not pruned therefore.
+  userdata: any
   lastFrameTouched: int
   layer: int
   rect: rect::Rect

@@ -50,10 +50,6 @@ fn (core: ^Core) getToolState*(tool: ^atoms::ToolNode): atoms::ToolState {
 }
 
 fn (core: ^Core) maybeAcquireToolNode(name: str): ^atoms::ToolNode {
-  if core.currentTool == null {
-    core.currentTool = core.tools
-  }
-
   if !validkey(core.currentTool.children, name) {
     return null
   }
@@ -99,6 +95,10 @@ fn (core: ^Core) freezeTool*(name: str) {
   if node != null {
     node.lastFrameTouched = -1
   }
+}
+
+fn (core: ^Core) begin*() {
+  core.currentTool = core.tools
 }
 
 fn (core: ^Core) beginTool*(name: str, toolRect: rect::Rect): ^atoms::ToolNode {
@@ -149,16 +149,12 @@ fn (core: ^Core) isCurrentToolFocused*(): bool {
   return core.getCurrentToolState().focused
 }
 
+const allSunk = InputSink{sunk: {true, true, true, true}}
+
 // Creates an input sink with all inputs set to 1.
 // Can be used for masking.
 fn initInputSinkSet*(): InputSink {
-  sink := InputSink{}
- 
-  for i in sink.sunk {
-    sink.sunk[i] = true
-  }
-
-  return sink
+  return allSunk
 }
 
 fn (core: ^Core) endTool*(): Events {
@@ -177,7 +173,7 @@ fn (core: ^Core) endTool*(): Events {
   return Events{sink: &core.inputSink, mask: mask, mouseState: core.mouseState}
 }
 
-fn (core: ^Core) getProperty*(name: str, def: interface{}): interface{} {
+fn (core: ^Core) getProperty*(name: str, def: any): any {
   // Create a dummy tool where we'll store the data.
   tool := core.beginTool(name, {-100000, -100000, 0, 0})
   core.endTool()

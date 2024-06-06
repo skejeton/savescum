@@ -1,0 +1,18 @@
+import (
+  "th.um"
+  f = "font.um"
+  "std.um"
+)
+
+type Filter* = f::Filter
+
+type Font* = interface {
+  validate(): bool
+  draw(text: str, pos: th::Vf2, color: uint32, scale: th::fu = 1.0)
+  measure(text: str): th::Vf2
+}
+
+fn load*(path: str, size: th::fu, filter: Filter = .linear): (Font, std::Err) {
+  font, err := f::load(path, size, f::Filter(filter))
+  return font, err
+}

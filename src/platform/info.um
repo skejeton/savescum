@@ -1,0 +1,18 @@
+type Access* = enum {
+  read
+  readwrite
+}
+
+type Info* = struct {
+  fsCaseSensetive: bool
+  fsAccess: Access
+}
+
+fn get*(): Info {
+  _, err := util::readFileStr("data/misc/CheckFS")
+
+  return {
+    fsCaseSensetive: err.code != 0,
+    fsAccess: th::platform == .web ? .read : .readwrite
+  }
+}

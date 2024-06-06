@@ -1,7 +1,0 @@
-import (
-  "editor/editor.um"
-)
-
-fn init*(editor: bool = true) {
-  editor::editorMain(editor)
-}

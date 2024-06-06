@@ -14,7 +14,7 @@ import (
   "world.um"
   "global.um"
   "world_data.um"
-  "font.um"
+  "gfx/font.um"
   "std.um"
   "audio.um"
   "ui/notification.um"
@@ -194,7 +194,7 @@ fn getCameraTargetRect(): rect::Rect {
     cameraRect.x = pal.ent.rect.x+pal.ent.rect.w/2-cameraRect.w/2
     cameraRect.y = pal.ent.rect.y+pal.ent.rect.h/2-cameraRect.h/2
   }
-  
+
   return util::rectKeepInBounds(cameraRect, guide)
 }
 
@@ -365,7 +365,6 @@ fn entVsShape(ent: ^Character, s: Shape) {
     if hitY > r.h {
       hitY = r.h
     }
-
     
     if cornerY > hitY {
       ent.vel.y = 0
@@ -663,7 +662,7 @@ const (
   cropControls = rect::Rect{0, 128, 256, 256}
 )
 
-fn drawEntityObject*(name: str, tags: TagSet, rect: rect::Rect, scale: real): bool {
+fn drawEntityObject*(name: str, tags: ^TagSet, rect: rect::Rect, scale: real): bool {
   if tags.isSet("lever") {
     if toggleActive {
       util::drawImageRect(imgObj, cropLeverOn, rect)
@@ -709,7 +708,7 @@ fn drawEntityObject*(name: str, tags: TagSet, rect: rect::Rect, scale: real): bo
 fn drawEntity(ent: ^Character) {
   destRect := util::rectShrink(cameraOffsetRect(ent.rect), -1*cameraScale)
  
-  if !drawEntityObject(ent.name, ent.tags, destRect, cameraScale) {
+  if !drawEntityObject(ent.name, &ent.tags, destRect, cameraScale) {
     drawEntityCustomRect(ent, ent.rect)
   }
 }
@@ -1134,7 +1133,7 @@ fn draw*() {
   world.drawLayer(cameraOffsetPoint({0, 0}), 0, cameraScale)
   drawOverlays()
   drawEntities()
-    
+
   for i, state in saves {
     if !entCheckCollision(&state.ent) {
       drawChumState(getChumSpriteState(state), &state, 0xFFFFFF44)

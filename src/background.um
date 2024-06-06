@@ -142,8 +142,8 @@ fn drawBg*(screen: rect::Rect, which: int, time: real) {
     case backgroundDebug: drawClouds(screen, 0x99994400, 0x555555FF, global::screen.w/screen.w*0.5)
     case backgroundClouds: drawClouds(screen, 0x7777FF00, 0xEEEEEEFF, global::screen.w/screen.w*0.5)
     case backgroundAdvent: drawClouds(screen, 0x4444AA00, 0x000022FF, global::screen.w/screen.w*0.5); 
-    case backgroundJazz: drawJazz(screen, th::Vf2{screen.x, screen.y}, screenScale)
-    case backgroundCave: drawCave(global::screen, th::Vf2{screen.x, screen.y}, screenScale)
+    case backgroundJazz: drawJazz(screen, {screen.x, screen.y}, screenScale)
+    case backgroundCave: drawCave(global::screen, {screen.x, screen.y}, screenScale)
   }
 }
 
