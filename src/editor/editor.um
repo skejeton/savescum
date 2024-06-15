@@ -78,6 +78,7 @@ type (
     bevelImage: image::Image
     tilesetImage: image::Image
     superHotFire: image::Image
+    glow: image::Image
     mainFont: font::Font
   }
 
@@ -135,11 +136,11 @@ fn drawBevelRect(editor: ^Editor, r: rect::Rect, pushed: bool = false, color: ui
   }
 
   const (
-    bevelOuterRect = rect::Rect{0, 0, 20, 20}
-    bevelInnerRect = rect::Rect{6, 6, 4, 4}
+    bevelOuterRect = rect::Rect{0, 0, 30, 30}
+    bevelInnerRect = rect::Rect{10, 10, 10, 10}
  
-    bevelPushedOuterRect = rect::Rect{20, 0, 20, 20}
-    bevelPushedInnerRect = rect::Rect{6, 6, 4, 4}
+    bevelPushedOuterRect = rect::Rect{30, 0, 30, 30}
+    bevelPushedInnerRect = rect::Rect{10, 10, 10, 10}
   )
 
   if pushed {
@@ -263,8 +264,9 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect): (WindowInfo, bool)
   // Frame tool.
   editor.ui.beginTool(title, windowRect^)
   {
-    drawBackdropRect(editor, util::rectShrink(windowRect^, -4), 0xCCCCCCFF)
-    drawBackdropRect(editor, windowRect^)
+    drawBackdropRect(editor, util::rectShrink(windowRect^, -4), 0xFAF7FFFF)
+    drawBackdropRect(editor, windowRect^, 0xEAEAEAFF)
+    editor.ui.ctx.drawNinepatch(editor.resources.glow, {0, 0, 48, 48}, {16, 16, 16, 16}, util::rectShrink(windowRect^, -20), 0x000000FF)
 
     buttonSize := th::Vf2{titlebarHeight, titlebarHeight}
     buttonRect := rect::Rect{position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y}
@@ -295,7 +297,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect): (WindowInfo, bool)
         }
       }
 
-      editor.ui.ctx.drawRect(0x000077FF, titlebarRect)
+      editor.ui.ctx.drawImageRect(editor.resources.bevelImage, {0, 30, 30, 30}, titlebarRect)
       editor.ui.ctx.beginScissorRect(titlebarRect)
         editor.ui.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, titlebarRect), th::white)
         titlebarRect.x += 1
@@ -446,7 +448,7 @@ fn putGrid(grid: ^grid::Grid, editor: ^Editor, rectangle: rect::Rect): th::Vf2 {
 
 fn putIconButton(editor: ^Editor, name: str, r: rect::Rect, img: image::Image, revert: bool = false): ButtonState {
   bs := putButtonBase(editor, r, name, revert)
-  dims := th::Vf2{32, 32}
+  dims := th::Vf2{48, 48}
   pos := util::rectCenterWithinRect({0, 0, dims.x, dims.y}, r).getPos()
   editor.ui.ctx.drawImage(img, {p: pos, s: {1, 1}})
   return bs
@@ -599,7 +601,7 @@ fn putTextEditOneLine(editor: ^Editor, r: rect::Rect, name: str, value: ^str): b
 
 fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2): (bool, ScrollAreaInfo) {
   const (
-    handleSize = 18
+    handleSize = 27
   )
 
   editor.ui.beginTool("ScrollArea", areaRect)
@@ -841,7 +843,7 @@ fn (d: ^WorldEditCmd) draw(props: drawcmd::DrawProperties) {
 
   d.toolbarIcons.crop(th::Vf2{2.0/4.0, 0.0/4.0}, th::Vf2{3.0/4.0, 1.0/4.0})
   pos := d.grid.toScreen(d.world.playerSpawnPos)
-  d.toolbarIcons.draw(th::Transform{p: th::Vf2{pos.x, pos.y}, s: d.grid.s.divf(32)})
+  d.toolbarIcons.draw(th::Transform{p: th::Vf2{pos.x, pos.y}, s: d.grid.s.divf(48)})
 }
 
 fn getShownLayersBitmap(layerSelected: int, showAllLayers: bool): uint {
@@ -856,12 +858,12 @@ fn drawLayerIcon(ctx: ^drawcmd::DrawContext, position: th::Vf2, layer: int, show
     fills = [3]bool{true, true, true}
   }
 
-  position.x += 26
+  position.x += 26*1.5
 
   for i, l in fills {
-    rec := rect::Rect{position.x-20, position.y, 20, 12}
-    position.x -= 2
-    position.y += 4
+    rec := rect::Rect{position.x-30+3, position.y+3, 30, 18}
+    position.x -= 3
+    position.y += 6
 
     if l {
       ctx.drawRect(0xf0b5afFF, rec)
@@ -886,7 +888,7 @@ fn putLabelY(editor: ^Editor, text: str, color: uint32, position: ^th::Vf2) {
 }
 
 fn putPlayerPlacer(editor: ^Editor) {
-  widgetWindow(editor, "Player Placer", {5, 249, 160, 224}, |editor| {
+  widgetWindow(editor, "Player Placer", {5*1.5, 249*1.5, 160*1.5, 224*1.5}, |editor| {
     contentRect := util::rectShrink(winfo.contentRect, 5)
     position := contentRect.getPos()
     playerPos := editor.world.playerSpawnPos
@@ -896,7 +898,7 @@ fn putPlayerPlacer(editor: ^Editor) {
       putLabelY(editor, sprintf("x %d y %d", trunc(playerPos.x), trunc(playerPos.y)), th::black, &position)
       position.y += 10
 
-      if (putSimpleButton(editor, {position.x, position.y, contentRect.w, 30}, "Relocate", editor.isRelocatingPlayer).isReleased) {
+      if (putSimpleButton(editor, {position.x, position.y, contentRect.w, 40}, "Relocate", editor.isRelocatingPlayer).isReleased) {
         editor.isRelocatingPlayer = !editor.isRelocatingPlayer
       }
       position.y += 30+10
@@ -910,7 +912,7 @@ fn putPlayerPlacer(editor: ^Editor) {
 }
 
 fn putTilePicker(editor: ^Editor) {
-  widgetWindow(editor, "Tile Picker", {5, 5, 160, 224}, |editor| {
+  widgetWindow(editor, "Tile Picker", {5*1.5, 5*1.5, 160*1.5, 224*1.5}, |editor| {
     // NOTE: This is to cancel the window-body dragging thing.
     //       Probably not the best way to do it.
     contentRect := winfo.contentRect
@@ -961,7 +963,10 @@ fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, s
       action = .edit
     }
     if selected {
-      editor.ui.ctx.drawRectLines(th::yellow, util::rectShrink(r, 1))
+      editor.ui.ctx.drawRectLines(th::white, util::rectShrink(r, 1))
+      editor.ui.ctx.moveLayer(1)
+      editor.ui.ctx.drawNinepatch(editor.resources.glow, {0, 0, 48, 48}, {16, 16, 16, 16}, util::rectShrink(r, -16), 0xFFFF00FF)
+      editor.ui.ctx.moveLayer(-1)
     }
     r.x += r.w
     r.w = 45
@@ -1100,7 +1105,7 @@ fn putEntityList(editor: ^Editor) {
   _actions := map[int]EntityListAction{}
   actions := &_actions
 
-  widgetWindow(editor, "Entity List", {595, 5, 200, 200}, |editor, actions| {
+  widgetWindow(editor, "Entity List", {595*1.5, 5*1.5, 200*1.5, 300*1.5}, |editor, actions| {
     // Apply padding.
     contentRect := util::rectShrink(winfo.contentRect, 5)
 
@@ -1418,19 +1423,19 @@ fn loadRoom(editor: ^Editor, room: str) {
 }
 
 fn putRoomEditor(editor: ^Editor) {
-  widgetWindow(editor, "Load Room", {180, 5, 200, 300}, |editor| {
+  widgetWindow(editor, "Load Room", {180*1.5, 5*1.5, 200*1.5, 100*1.5}, |editor| {
     contentRect := util::rectShrink(winfo.contentRect, 5)
     position := contentRect.getPos()
 
-    putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 30}, "Room name", &editor.potentialRoom)
+    putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 40}, "Room name", &editor.potentialRoom)
 
-    position.y += 40
+    position.y += 50
     if input::isPressed(.shift) {
-      if putSimpleButton(editor, {position.x, position.y, contentRect.w, 30}, "Load").isReleased {
+      if putSimpleButton(editor, {position.x, position.y, contentRect.w, 40}, "Load").isReleased {
         loadRoom(editor, editor.potentialRoom)
       }
     } else {
-      drawButtonInactive(editor, {position.x, position.y, contentRect.w, 30}, "Hold shift!")
+      drawButtonInactive(editor, {position.x, position.y, contentRect.w, 40}, "Hold shift!")
     }
   })
 }
@@ -1443,20 +1448,20 @@ fn putNotifications(editor: ^Editor) {
     n := ns[len(ns^)-i-1]
     t := 1-util::clamp(n.time, 0, 1)
     ts := editor.resources.mainFont.measure(n.info.message)
-    w := ts.x+30+10
+    w := ts.x+30+20
     h := ts.y + 20
     y -= h
 
-    util::imageCropRect(editor.resources.toolbarIcons, {16*int(n.info.icon), 96, 16, 16})
-    drawBevelRect(editor, {10-t*500, global::screen.h-50+y, w, h}, true, 0xFFFFFFBB)
-    editor.ui.ctx.drawImage(editor.resources.toolbarIcons, th::Transform{p: th::Vf2{10-t*500+10, global::screen.h-50+y+10}, s: th::Vf2{1, 1}})
-    editor.ui.ctx.drawText(editor.resources.mainFont, n.info.message, {40-t*500, global::screen.h-50+y+9}, th::black)
+    util::imageCropRect(editor.resources.toolbarIcons, {24*int(n.info.icon), 144, 24, 24})
+    drawBevelRect(editor, {10-t*500, global::screen.h-58+y, w, h}, true, 0xFFFFFFBB)
+    editor.ui.ctx.drawImage(editor.resources.toolbarIcons, th::Transform{p: th::Vf2{10-t*500+10, global::screen.h-58+y+10}, s: th::Vf2{1, 1}})
+    editor.ui.ctx.drawText(editor.resources.mainFont, n.info.message, {50-t*500, global::screen.h-58+y+9}, th::black)
     y -= 10
   }
 }
 
 fn putLevelSelect(editor: ^Editor) {
-  widgetWindow(editor, "Level Select", {390, 5, 200, 300}, |editor| {
+  widgetWindow(editor, "Level Select", {0, 0, 300, 450}, |editor| {
     contentRect := util::rectShrink(winfo.contentRect, 5)
 
     levels := [][2]str{}
@@ -1481,8 +1486,8 @@ fn putLevelSelect(editor: ^Editor) {
       position := scrollAreaInfo.contentRect.getPos()
 
       for i, level in levels {
-        p := th::Vf2{position.x+(i%2)*((contentRect.w-20)/2), position.y+(i/2)*30}
-        if putSimpleButton(editor, {p.x, p.y, (contentRect.w-20)/2, 30}, level[1]).isReleased {
+        p := th::Vf2{position.x+(i%2)*((contentRect.w-30)/2), position.y+(i/2)*45}
+        if putSimpleButton(editor, {p.x, p.y, (contentRect.w-30)/2, 45}, level[1]).isReleased {
           game::tele(level[0])
         }
       }
@@ -1594,7 +1599,7 @@ fn editorPutUi(editor: ^Editor) {
 
     putLevelSelect(editor)
   } else {
-    tool := editor.ui.beginTool("TileEditor", {0, 0, global::screen.w, global::screen.h-38})
+    tool := editor.ui.beginTool("TileEditor", {0, 0, global::screen.w, global::screen.h-58})
 
     if input::isPressed(.ctrl) && input::isJustPressedc('i') {
       appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
@@ -1605,7 +1610,7 @@ fn editorPutUi(editor: ^Editor) {
     // Draw ToggleAll/FG/MG/BG buttons.
     {
       const padding = 10
-      const elementSize = 30
+      const elementSize = 48
 
       editor.ui.ctx.moveLayer(-1)
       editor.ui.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tilemapGrid, &editor.world})
@@ -1650,7 +1655,7 @@ fn editorPutUi(editor: ^Editor) {
       drawLayerIcon(&editor.ui.ctx, position.add(th::Vf2{1, 5}), editor.tilemapLayer, editor.tilemapShowAllLayers)
       position.x -= elementSize
 
-      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "✋", editor.entityBypass).isReleased) {
+      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "🔒", editor.entityBypass).isReleased) {
         editor.entityBypass = !editor.entityBypass
       }
     }
@@ -1714,11 +1719,12 @@ fn editorPutUi(editor: ^Editor) {
 
 fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources {
   editorResources := EditorResources {
-    bevelImage: resources::loadImage(rl, "data/img/ui/1_0x/base.png", .nearest),
+    bevelImage: resources::loadImage(rl, "data/img/ui/1_5x/base.png", .nearest),
     tilesetImage: resources::loadImage(rl, "data/img/ts_sky.png", .linear),
-    toolbarIcons: resources::loadImage(rl, "data/img/ui/1_0x/icons.png", .linear),
+    toolbarIcons: resources::loadImage(rl, "data/img/ui/1_5x/icons.png", .linear),
     superHotFire: resources::loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
-    mainFont: resources::loadFont(rl, "data/font/monospace.ttf", 16, .linear)
+    glow: resources::loadImage(rl, "data/img/ui/1_0x/glow.png", .nearest),
+    mainFont: resources::loadFont(rl, "data/font/FairfaxHD.ttf", 24, .nearest)
   }
  
   return editorResources
@@ -1789,7 +1795,7 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
 }
 
 fn session*(enabled: bool) {
-  global::screen = {0, 0, 800, 600}
+  global::screen = {0, 0, 1200, 900}
   sf := window::getDpiScaleFactor()
   wsf := sf
   if global::skeDpiHack {
@@ -1824,7 +1830,7 @@ fn session*(enabled: bool) {
 
   editor := new(Editor)
   editor ^= editorInit(editorResources)
-  editor.enabled = true
+  editor.enabled = enabled
 
   if sessionFile, err := util::readFileStr("user/session.csv"); err.code == 0 {
     editorLoadSession(editor, session::load(sessionFile))
@@ -1833,6 +1839,10 @@ fn session*(enabled: bool) {
   }
 
   editor.wm.setWindowVisible("Confirm", false)
+
+  if !enabled {
+    editorToggleGame(editor)
+  }
 
   window::onFrame.register(|sf, editor| {
     if editor.debugTimerStarted {

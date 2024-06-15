@@ -14,6 +14,7 @@ type (
     image: image::Image
     scale: real
     tileSizeX, tileSizeY: int
+    scaledTileSizeX, scaledTileSizeY: real
     tileCountX, tileCountY: int
     tileProperties: map[int]TileProperties
   }
@@ -23,6 +24,7 @@ fn fromImage*(img: image::Image, tileSizeX, tileSizeY: int, scale: real): Tilese
   dims := img.getDims()
   return Tileset{
     image: img,
+    scaledTileSizeX: tileSizeX*scale, scaledTileSizeY: tileSizeY*scale,
     tileSizeX: tileSizeX, tileSizeY: tileSizeY,
     tileCountX: trunc(dims.x/(tileSizeX*scale)), tileCountY: trunc(dims.y/(tileSizeY*scale)), scale: scale}
 }
@@ -41,13 +43,14 @@ fn (ts: ^Tileset) setTileProperties*(pos: int, props: TileProperties) {
 }
 
 fn (ts: ^Tileset) getCroppingRect*(x, y: int): rect::Rect {
-  return {x*ts.tileSizeX*ts.scale, y*ts.tileSizeY*ts.scale,
-          ts.tileSizeX*ts.scale, ts.tileSizeY*ts.scale}
+  return {x*ts.scaledTileSizeX, y*ts.scaledTileSizeY,
+          ts.scaledTileSizeX, ts.scaledTileSizeY}
 }
 
 fn (ts: ^Tileset) getCroppingRectId*(id: int): rect::Rect {
-  id -= 1
-  return ts.getCroppingRect(id%ts.tileCountX, id/ts.tileCountX)
+  id--
+  return {(id%ts.tileCountX)*ts.scaledTileSizeX, (id/ts.tileCountX)*ts.scaledTileSizeY,
+          ts.scaledTileSizeX, ts.scaledTileSizeY}
 }
 
 fn (ts: ^Tileset) selectTile*(x, y: int) {

@@ -60,12 +60,12 @@ fn erase*(buffer: ^Buffer, cursor: ^Cursor) {
   }
 }
 
-// Inserts provided text into buffer. 
+// Inserts provided text into buffer.
 fn insertAt*(buffer: ^Buffer, cursor: ^Cursor, text: str) {
   linesToInsert := strings::splitBy(text, '\n')
   for index, line in linesToInsert {
     // Reset the column if we're on a new line.
-    if index != 0 { 
+    if index != 0 {
       splitLine(buffer, cursor)
     }
     buffer.lines[cursor.line] = strings::uniInsert(buffer.lines[cursor.line], cursor.column, line)
@@ -102,14 +102,14 @@ fn sanitizeCursor*(buffer: ^Buffer, cursor: Cursor): Cursor {
   }
 
   realLength := utf8::runeCount(buffer.lines[cursor.line])
-  
+
   if cursor.column < 0 {
     cursor.column = 0
   }
   for cursor.column > realLength {
     cursor.column = realLength
   }
-  
+
   return cursor
 }
 
@@ -152,4 +152,3 @@ fn moveCursor*(buffer: ^Buffer, cursor: Cursor, dx, dy: int): Cursor {
 
   return cursor
 }
-

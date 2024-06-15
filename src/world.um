@@ -174,20 +174,17 @@ fn (world: ^World) drawRenderTiles*(renderTiles: []RenderTile, tint: uint32, pan
 
   for i, renderTile in renderTiles {
     cr := world.tileset.getCroppingRectId(renderTile.id)
-    cr.x += 0.5
-    cr.y += 0.5
-    cr.w -= 1
-    cr.h -= 1
+
     if prevTileId != renderTile.id {
       util::imageCropRect(world.tileset.image, cr)
+      prevTileId = renderTile.id
     }
 
     if !world.tileset.tileProperties[renderTile.id].invisible {
       r := rect::Rect{renderTile.rect.x*scale+pan.x, renderTile.rect.y*scale+pan.y, renderTile.rect.w*scale, renderTile.rect.h*scale}
 
-      world.tileset.image.draw({p: r.getPos(), s: {r.w/cr.w, r.h/cr.h}}, tint)
+      world.tileset.image.draw({p: {r.x, r.y}, s: {r.w/cr.w, r.h/cr.h}}, tint)
     }
-    prevTileId = renderTile.id
   }
 }
 

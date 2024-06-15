@@ -1,0 +1,40 @@
+import (
+  "mat.um"
+  "th.um"
+)
+
+type Camera* = struct {
+  pos: mat::Vec
+  near: real
+  ppm: real
+  width: real
+  height: real
+}
+
+fn mkCamera*(width, height, fov: real): Camera {
+  fov = fov * 3.1415 / 180.0
+
+  return Camera{
+    pos: {0, 0, -2},
+    near: height,
+    width: width,
+    height: height
+  }
+}
+
+fn rotatePoint*(point: mat::Vec, v: mat::Vec): mat::Vec {
+  return v.toAttMat().mulv(point)
+}
+
+fn (c: ^Camera) project*(pos: mat::Vec): th::Vf2 {
+  distance := pos[2] - c.pos[2]
+
+  projection := c.near / distance
+
+  pos[0] *= projection
+  pos[1] *= projection
+  pos[0] += c.width/2
+  pos[1] += c.height/2
+
+  return {pos[0], pos[1]}
+}

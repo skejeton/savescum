@@ -198,6 +198,17 @@ fn (ctx: ^DrawContext) drawImage*(img: image::Image, transform: th::Transform, c
   ctx.currentLayer.appendCommand(ImageCmd{img, transform, img.getCropQuad(), color})
 }
 
+fn (ctx: ^DrawContext) drawImageRect*(img: image::Image, src: rect::Rect, dst: rect::Rect, rot: real = 0.0, color: uint32 = 0xFFFFFFFF) {
+  dims := img.getDims()
+  src.x += 0.5
+  src.y += 0.5
+  src.w -= 1
+  src.h -= 1
+  img.crop({src.x/dims.x, src.y/dims.y}, {(src.x + src.w)/dims.x, (src.y + src.h)/dims.y})
+  transform := th::Transform{p: {dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}
+  ctx.currentLayer.appendCommand(ImageCmd{img, transform, img.getCropQuad(), color})
+}
+
 fn (ctx: ^DrawContext) drawNinepatch*(img: image::Image, outer, inner, dest: rect::Rect, tint: uint32 = th::white) {
   ctx.currentLayer.appendCommand(NinepatchCmd{img, outer, inner, dest, img.getCropQuad(), tint})
 }
