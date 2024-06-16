@@ -3,7 +3,6 @@ import "rect.um"
 var (
   version*: str = "5%"
   screen*: rect::Rect
-  skeDpiHack*: bool = false
   caseSensetiveFS*: bool = true
   plainBiscuit*: bool = false // removes all unnecessary visual elements
   playTime*: int

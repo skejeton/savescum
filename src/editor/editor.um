@@ -33,7 +33,7 @@ import (
 
   "../gfx/font.um"
   "color.um"
-  "../misc/strings.um" 
+  "../misc/strings.um"
 
   "window.um"
   "rect.um"
@@ -53,7 +53,7 @@ type (
     isPressed: bool
     isReleased: bool
   }
- 
+  
   WindowInfo = struct {
     contentRect: rect::Rect
     titlebarRect: rect::Rect
@@ -132,13 +132,13 @@ type (
 //   because the middle of the rectangle is tinted gray slightly.
 fn drawBevelRect(editor: ^Editor, r: rect::Rect, pushed: bool = false, color: uint32 = th::white) {
   if (payload_trigger::aprilFools()) {
-    color = color::hsv(th::time/5000.0, 0.9, 1.0)  
+    color = color::hsv(th::time/5000.0, 0.9, 1.0)
   }
 
   const (
     bevelOuterRect = rect::Rect{0, 0, 30, 30}
     bevelInnerRect = rect::Rect{10, 10, 10, 10}
- 
+
     bevelPushedOuterRect = rect::Rect{30, 0, 30, 30}
     bevelPushedInnerRect = rect::Rect{10, 10, 10, 10}
   )
@@ -195,7 +195,7 @@ fn putButton(editor: ^Editor, r: rect::Rect, name: str): ButtonState {
     buttonState.isDown = events.queryMouse(.left, mouseinput::down) || events.queryMouse(.left, mouseinput::released)
     buttonState.isPressed = events.queryMouse(.left, mouseinput::pressed)
     buttonState.isReleased = events.queryMouse(.left, mouseinput::released) && toolState.hovered
-    
+
     immcursor::setCursor(.finger)
   }
 
@@ -221,7 +221,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect): (WindowInfo, bool)
   )
 
   windowRect := editor.wm.getWindowRect(title, r)
-  
+
   if windowRect.x >= global::screen.w-25 {
     windowRect.x = global::screen.w-25
   }
@@ -275,11 +275,11 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect): (WindowInfo, bool)
       if (putButtonBase(editor, buttonRect, "Close").isReleased) {
         editor.wm.setWindowVisible(title, false)
       }
-  
+
       editor.ui.ctx.drawRect(th::black, {position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-2, buttonSize.x-10, 3})
       position.x += buttonSize.x + padding
     }
-    
+
     {
       handleSize := th::Vf2{windowRect.w - position.x - padding, titlebarHeight}
       titlebarRect = {position.x+windowRect.x, position.y+windowRect.y, handleSize.x-1, handleSize.y}
@@ -303,7 +303,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect): (WindowInfo, bool)
         titlebarRect.x += 1
         editor.ui.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, titlebarRect), th::white)
       editor.ui.ctx.endScissor()
-    
+
       position.x += handleSize.x + padding
     }
 
@@ -351,7 +351,7 @@ fn uiEndWindow(editor: ^Editor) {
           immcursor::setCursor(.sizeNWSE)
         }
         events := editor.ui.endTool()
-        
+
         if events.queryMouse(.left, mouseinput::down) {
           squishing = editor.ui.mouseState.delta
         }
@@ -437,7 +437,7 @@ fn putGrid(grid: ^grid::Grid, editor: ^Editor, rectangle: rect::Rect): th::Vf2 {
   if events.queryMouse(.middle, mouseinput::down) {
     grid::gridPan(grid, editor.ui.mouseState.delta)
   }
-  
+
   scroll := events.queryScroll()
   if scroll != 0 {
     grid::gridZoomInto(grid, updateZoom(grid.s.x, scroll/10.0), events.mouseState.pos)
@@ -483,7 +483,7 @@ fn insertInputTextIntoOneLineBuffer(buffer: ^buffer::Buffer, cursor: ^buffer::Cu
       dirty = true
     }
   }
-  
+
   return dirty
 }
 
@@ -520,7 +520,7 @@ fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect::Rect, dra
   precursor := strings::uniSlice(firstLine, 0, edit.cursor.column)
   precursorMeasured := editor.resources.mainFont.measure(precursor)
   cursorRect := rect::Rect{precursorMeasured.x, 0, 1, precursorMeasured.y}
- 
+
   // Make sure the cursor is visible on the screen
   // NOTE: Maybe I shouldn't modify the editor state while drawing eh?
   if (cursorRect.x+cursorRect.w) > (r.w-edit.scrollX) {
@@ -659,7 +659,7 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2):
 
 fn endScrollArea(editor: ^Editor) {
   scroll := ^real(editor.ui.getProperty("ScrollAreaScroll", 0.0))
-  
+
   events := editor.ui.endTool()
 
   scroll ^-= events.queryScroll()*20.0
@@ -713,7 +713,7 @@ fn editorToggleGame(editor: ^Editor) {
     game::stop()
   }
   editor.isPlaying = !editor.isPlaying
-} 
+}
 
 fn putToolbarIconButton(editor: ^Editor, btnName: str, buttonRectangle: ^rect::Rect, ix, iy: int, revert: bool): bool {
   pressed := false
@@ -766,7 +766,7 @@ fn editorPutToolbar(editor: ^Editor) {
       editor.ui.ctx.drawImage(editor.resources.superHotFire, th::Transform{p: th::Vf2{x+i*32, y}, s: th::Vf2{1, 1}})
     }
   }
-  
+
   editor.ui.beginTool("ToolBar", rectangle)
   {
     if !editor.isPlaying {
@@ -792,7 +792,7 @@ fn editorPutToolbar(editor: ^Editor) {
       {
         position := rectangle.getEnd()
         position.y -= rectangle.h
-        
+
         position.x -= 80
         if (putSimpleButton(editor, {position.x, position.y, 80, rectangle.h}, "Save").isReleased) {
           editorSaveRoom(editor)
@@ -812,7 +812,7 @@ fn editorPutToolbar(editor: ^Editor) {
 
 fn isAnyButtonHeld(mouseState: ^mouseinput::MouseState): bool {
   return mouseState.lmb.isDown || mouseState.mmb.isDown || mouseState.rmb.isDown
-} 
+}
 
 type WorldEditCmd = struct {
   showLayers: uint // 3 bits
@@ -933,7 +933,7 @@ fn putTilePicker(editor: ^Editor) {
         }
 
         selectedTilePos := editor.tilesetGrid.toScreen(editor.tileSelected)
-        
+
         editor.ui.ctx.beginScissorRect(contentRect)
         editor.ui.ctx.drawRectLines(color::alpha(th::green, 0.6), {selectedTilePos.x, selectedTilePos.y, editor.tilesetGrid.s.x, editor.tilesetGrid.s.y}, 1)
         editor.ui.ctx.endScissor()
@@ -998,15 +998,15 @@ fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, s
 
 fn appendEntity(editorEntities: ^EditorEntities, entity: world_data::EntityDesc) {
   editorEntities.list = append(editorEntities.list, entity)
-} 
+}
 
 fn removeEntity(editorEntities: ^EditorEntities, index: int) {
   // Unselect the entity
-  if index == editorEntities.entitySelected { 
+  if index == editorEntities.entitySelected {
     editorEntities.entitySelected = -1
   }
   // Shift the selected entity index down if entity below to be removed
-  if index < editorEntities.entitySelected { 
+  if index < editorEntities.entitySelected {
     editorEntities.entitySelected -= 1
   }
   editorEntities.list = delete(editorEntities.list, index)
@@ -1089,7 +1089,7 @@ fn doEntityAction(editor: ^Editor, action: EntityListAction, i: int) {
     if getEntitySelectedIndex(&editor.entities) == moveFrom {
       selectEntity(&editor.entities, moveTo)
     }
-  
+
     ent := editor.entities.list[moveFrom]
     editor.entities.list[moveFrom] = editor.entities.list[moveTo]
     editor.entities.list[moveTo] = ent
@@ -1178,7 +1178,7 @@ fn putEntityEditor(editor: ^Editor) {
       if putSimpleButton(editor, {position.x, position.y, contentRect.w, 40}, "Delete").isReleased {
         removeEntity(&editor.entities, getEntitySelectedIndex(&editor.entities))
         editor.dirty = true
-      } 
+      }
       editor.ui.ctx.endScissor()
     })
   }
@@ -1208,7 +1208,7 @@ fn putRectGrips(editor: ^Editor, r: rect::Rect): RectResizeCommand {
     EditGrip{{0.0, 1.0}, {{1, 0}, {-1,  1}}}, // x
     EditGrip{{0.5, 1.0}, {{0, 0}, { 0,  1}}}, // x
     EditGrip{{1.0, 1.0}, {{0, 0}, { 1,  1}}}  // x
-  } 
+  }
 
   activeGrip := -1
 
@@ -1229,7 +1229,7 @@ fn putRectGrips(editor: ^Editor, r: rect::Rect): RectResizeCommand {
       }
       immcursor::setCursor(cursor)
     }
- 
+
     color := th::blue
 
     if editor.ui.isCurrentToolActive() {
@@ -1344,7 +1344,7 @@ fn putWorldEntities(editor: ^Editor) {
             input::clear(.up)
           }
           if input::isPressedRepeat(.down) {
-            dy += 1 
+            dy += 1
             input::clear(.down)
           }
           if input::isPressedRepeat(.right) {
@@ -1352,7 +1352,7 @@ fn putWorldEntities(editor: ^Editor) {
             input::clear(.right)
           }
           if input::isPressedRepeat(.left) {
-            dx += -1 
+            dx += -1
             input::clear(.left)
           }
           if input::isPressed(.alt) {
@@ -1389,7 +1389,7 @@ fn putWorldEntities(editor: ^Editor) {
 
         adjusted := adjustEntityRect(editor, tags, ent)
         sizeD := adjusted.getDims().sub(ent.rect.getDims())
-        ent.rect = adjusted 
+        ent.rect = adjusted
 
         ent.rect.x -= rectCmd.posFactor.x*sizeD.x
         ent.rect.y -= rectCmd.posFactor.y*sizeD.y
@@ -1416,8 +1416,8 @@ fn deselectEntity(entities: ^EditorEntities) {
 }
 
 fn loadRoom(editor: ^Editor, room: str) {
-  editor.currentRoom = room 
-  editor.potentialRoom = room 
+  editor.currentRoom = room
+  editor.potentialRoom = room
   editorLoadRoom(editor, room)
   editor.tilemapGrid.p = editor.world.playerSpawnPos
 }
@@ -1484,15 +1484,17 @@ fn putLevelSelect(editor: ^Editor) {
     if ok, scrollAreaInfo := beginScrollArea(editor, contentRect, contentSize^); ok {
       editor.ui.ctx.beginScissorRect(scrollAreaInfo.areaRect)
       position := scrollAreaInfo.contentRect.getPos()
+      y := 0.0
 
       for i, level in levels {
         p := th::Vf2{position.x+(i%2)*((contentRect.w-30)/2), position.y+(i/2)*45}
         if putSimpleButton(editor, {p.x, p.y, (contentRect.w-30)/2, 45}, level[1]).isReleased {
           game::tele(level[0])
         }
+        y = p.y-position.y+45.0
       }
 
-      contentSize ^= th::Vf2{contentRect.w, position.y-scrollAreaInfo.contentRect.y}
+      contentSize ^= th::Vf2{contentRect.w, y}
 
       editor.ui.ctx.endScissor()
       endScrollArea(editor)
@@ -1586,8 +1588,8 @@ fn editorPutUi(editor: ^Editor) {
   if editor.isPlaying {
     if editor.enabled {
       if input::isJustPressed(.escape) {
-        editor.isPlaying = !editor.isPlaying 
-      } 
+        editor.isPlaying = !editor.isPlaying
+      }
     }
 
     game::showDebug = editor.showDebugInfo
@@ -1681,7 +1683,7 @@ fn editorPutUi(editor: ^Editor) {
       }
     }
   }
-  
+
   if editor.enabled {
     editorPutToolbar(editor)
   }
@@ -1714,7 +1716,7 @@ fn editorPutUi(editor: ^Editor) {
     editor.ui.endTool()
     editor.ui.ctx.moveLayer(-100000000)
   }
- 
+
 }
 
 fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources {
@@ -1726,7 +1728,7 @@ fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources {
     glow: resources::loadImage(rl, "data/img/ui/1_0x/glow.png", .nearest),
     mainFont: resources::loadFont(rl, "data/font/FairfaxHD.ttf", 24, .nearest)
   }
- 
+
   return editorResources
 }
 
@@ -1785,9 +1787,9 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
   editor.tilemapShowAllLayers = session.allLayers
   editor.entityBypass = session.entityBypass
   editor.tilemapLayer = session.layerSelected
-  editor.tileSelected = session.tileSelected 
+  editor.tileSelected = session.tileSelected
   global::plainBiscuit = session.plainBiscuit
-  
+
   for i, win in session.windows {
     editor.wm.setWindowVisible(win.name, win.visible)
     editor.wm.getWindowRect(win.name, win.rect)
@@ -1796,14 +1798,9 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
 
 fn session*(enabled: bool) {
   global::screen = {0, 0, 1200, 900}
-  sf := window::getDpiScaleFactor()
-  wsf := sf
-  if global::skeDpiHack {
-    wsf = 2
-    sf = 2
-  }
-  window::setup("Editor", trunc(global::screen.w*wsf), trunc(global::screen.h*wsf))
-  
+
+  window::setup("Editor", trunc(global::screen.w), trunc(global::screen.h))
+
   dbg::initConsole()
 
   dbg::logt(
@@ -1815,7 +1812,7 @@ fn session*(enabled: bool) {
     "/__.-'|_|--|_|\n"
   )
   dbg::logt("SAVESCUM")
-  dbg::logt(sprintf("DPI aware: %v\nDPI scale factor: %g", window::isDpiEnabled(), sf))
+  dbg::logt(sprintf("DPI aware: %v\n", window::isDpiEnabled()))
   dbg::logt("-*-")
 
   // init data
@@ -1844,16 +1841,17 @@ fn session*(enabled: bool) {
     editorToggleGame(editor)
   }
 
-  window::onFrame.register(|sf, editor| {
+  window::onFrame.register(|editor| {
     if editor.debugTimerStarted {
       editor.debugTimer = th::time-editor.debugTimerOrigin
     }
+    
     immcursor::setCursor(.system)
 
     std::srand(std::time())
     shortcuts::console()
     shortcuts::fullscreen()
-    
+
     if input::isPressed(.fn25) {
       std::assert(false, "The F25 key? What's that?")
     }
@@ -1881,13 +1879,13 @@ fn session*(enabled: bool) {
       notification::put({.warning, sprintf("Hello, world! %d", th::time)})
     }
 
-    global::screen = rect::Rect{0, 0, window::w/sf, window::h/sf}
+    global::screen = rect::Rect{0, 0, window::w, window::h}
     window::setViewport(global::screen.getDims())
-    
+
     notification::update()
 
     fps::update()
-    
+
     preUiUpdate(editor)
     editorPutUi(editor)
     postUiUpdate(editor)
@@ -1912,7 +1910,7 @@ fn session*(enabled: bool) {
           { "Playthrough Started", editor.debugTimerStarted, false }
         }
       })
-    } 
+    }
   })
 
   window::onDestroy.register(|editor| {
