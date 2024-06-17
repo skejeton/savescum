@@ -2,6 +2,7 @@ import (
 	"input.um"
 	"window.um"
 	"dbg.um"
+  "ui/wm.um"
 )
 
 // Enables: alt+enter: Enter/Leave fullscreen
@@ -12,10 +13,10 @@ fn fullscreen*() {
 	}
 }
 
-// handles input for a console. 
-fn console*() {
-	if input::isPressed(.alt) && input::isJustPressedc('t') {
-		input::clearc('t')
-		dbg::consolevis = !dbg::consolevis
-	}
+fn console*(wm: ^wm::WM) {
+  if input::isPressed(.alt) && input::isJustPressed(.t) {
+    input::clear(.t)
+    wm.putWindowOnFront("Console (Aux)")
+    wm.setWindowVisible("Console (Aux)", !wm.isWindowVisible("Console (Aux)"))
+  }
 }

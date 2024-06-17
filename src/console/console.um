@@ -10,8 +10,6 @@ import (
   "../rerp.um"
   "color.um"
   "../gfx/font.um"
-  strings = "../misc/strings.um"
-  "../util.um"
 )
 
 type Console* = struct {
@@ -84,14 +82,14 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect) {
   pass := RenderPass{r, th::Vf2{r.x, r.y+r.h}, font}
   startY := pass.pos.y
 
-  canvas::drawRect(color::alpha(th::black, 0.95), r)
+  canvas::beginScissorRect(r)
+  canvas::drawRect(color::alpha(th::black, 0.70), r)
   
   // FIXME: Inefficent
   //        right now size calculation and layouting of this console is done at the same time,
   //        so we cant spatially optimize its rendering
   for i in con.blocks {
     block := con.blocks[len(con.blocks)-i-1]
-    block = strings::joinBy(util::wrapText(&font, block, r.w), "\n")
 
     alpha := (pass.pos.y+vc.visualScroll)/r.h+0.4
     if alpha > 1.0 { alpha = 1.0; }
@@ -105,6 +103,7 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect) {
     
     renderBlock(&pass, vc, blockRect, block, color::alpha(bg, alpha*0.05), color::alpha(th::white, alpha))
   }
+  canvas::endScissor()
 
   vc.scrolley.clientsz = r.h
   vc.scrolley.contentsz = startY-pass.pos.y

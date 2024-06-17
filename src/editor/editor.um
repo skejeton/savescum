@@ -208,7 +208,7 @@ fn putButtonBase(editor: ^Editor, r: rect::Rect, name: str, revert: bool = false
   return bs
 }
 
-fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect): (WindowInfo, bool) {
+fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool = false): (WindowInfo, bool) {
   const (
     padding = 0
     titlebarHeight = 30
@@ -264,8 +264,11 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect): (WindowInfo, bool)
   // Frame tool.
   editor.ui.beginTool(title, windowRect^)
   {
-    drawBackdropRect(editor, util::rectShrink(windowRect^, -4), 0xFAF7FFFF)
-    drawBackdropRect(editor, windowRect^, 0xEAEAEAFF)
+    editor.ui.ctx.drawRectLines(0xFAF7FFFF, util::rectShrink(windowRect^, -2.1), 4)
+
+    if !transparent {
+      drawBackdropRect(editor, windowRect^, 0xEAEAEAFF)
+    }
     editor.ui.ctx.drawNinepatch(editor.resources.glow, {0, 0, 48, 48}, {16, 16, 16, 16}, util::rectShrink(windowRect^, -20), 0x000000FF)
 
     buttonSize := th::Vf2{titlebarHeight, titlebarHeight}
@@ -374,8 +377,8 @@ fn uiEndWindow(editor: ^Editor) {
   editor.currentWindow = ""
 }
 
-fn widgetWindow(editor: ^Editor, title: str, rect: rect::Rect, handler: fn (winfo: WindowInfo): void) {
-  if info, ok := uiBeginWindow(editor, title, rect); ok {
+fn widgetWindow(editor: ^Editor, title: str, rect: rect::Rect, handler: fn (winfo: WindowInfo): void, transparent: bool = false) {
+  if info, ok := uiBeginWindow(editor, title, rect, transparent); ok {
     handler(info)
     uiEndWindow(editor)
   }
@@ -778,6 +781,7 @@ fn editorPutToolbar(editor: ^Editor) {
     if putToolbarIconButton(editor, "Play", &buttonRectangle, 1, 1, editor.isPlaying) {
       editorToggleGame(editor)
     }
+    putToolbarWindowIconButton(editor, "Console (Aux)", &buttonRectangle, 1, 0)
 
     if !editor.isPlaying {
       putToolbarWindowIconButton(editor, "Load Room", &buttonRectangle, 2, 2)
@@ -1707,16 +1711,12 @@ fn editorPutUi(editor: ^Editor) {
     editor.ui.ctx.moveLayer(-10000000)
   }
 
-  if dbg::consolevis {
-    editor.ui.ctx.moveLayer(100000000)
-    tool := editor.ui.beginTool("Console", global::screen)
-    if editor.ui.hoveredTool == tool {
-      dbg::scrollConsole(editor.ui.mouseState.scroll.y)
-    }
-    editor.ui.endTool()
-    editor.ui.ctx.moveLayer(-100000000)
-  }
-
+  widgetWindow(editor, "Console (Aux)", {100, 100, 640, 480}, |editor| {
+    editor.ui.beginTool("Console", winfo.contentRect)
+    editor.ui.ctx.drawCustom(dbg::ConsoleDrawCmd{winfo.contentRect, editor.resources.mainFont})
+    events := editor.ui.endTool()
+    dbg::scrollConsole(events.queryScroll())
+  }, true)
 }
 
 fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources {
@@ -1849,7 +1849,7 @@ fn session*(enabled: bool) {
     immcursor::setCursor(.system)
 
     std::srand(std::time())
-    shortcuts::console()
+    shortcuts::console(&editor.wm)
     shortcuts::fullscreen()
 
     if input::isPressed(.fn25) {
@@ -1876,6 +1876,7 @@ fn session*(enabled: bool) {
       global::plainBiscuit = !global::plainBiscuit
     }
     if input::isJustPressed(.fn1) {
+      dbg::logt("dfjslfkjsd")
       notification::put({.warning, sprintf("Hello, world! %d", th::time)})
     }
 
