@@ -42,9 +42,16 @@ type Events* = struct {
 }
 
 fn (core: ^Core) getToolState*(tool: ^atoms::ToolNode): atoms::ToolState {
+  hovered := false
+  t := core.hoveredTool
+  for t != null {
+    hovered = hovered || tool == t
+    t = t.parent
+  }
+
   return atoms::ToolState{
     active: tool == core.activeTool,
-    hovered: tool == core.hoveredTool,
+    hovered: hovered,
     focused: tool == core.focusedTool
   }
 }
@@ -139,6 +146,10 @@ fn (core: ^Core) getCurrentToolName*(): str {
 
 fn (core: ^Core) getCurrentToolState*(): atoms::ToolState {
   return core.getToolState(core.currentTool)
+}
+
+fn (core: ^Core) isCurrentToolHovered*(): bool {
+  return core.getCurrentToolState().hovered
 }
 
 fn (core: ^Core) isCurrentToolActive*(): bool {

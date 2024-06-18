@@ -5,6 +5,7 @@ type (
     lastFrameTouched: int
     rect: rect::Rect
     layer: int
+    hideTitlebar: bool
   }
 
   WM* = struct {
@@ -53,5 +54,21 @@ fn (wm: ^WM) putWindowOnFront*(name: str) {
 
 fn (wm: ^WM) setWindowVisible*(name: str, to: bool) {
   wm.windowVisibility[name] = to
+}
+
+fn (wm: ^WM) getWindowHideTitlebar*(name: str): bool {
+  if !validkey(wm.windows, name) {
+    return false
+  } 
+
+  return wm.windows[name].hideTitlebar
+}
+
+fn (wm: ^WM) setWindowHideTitlebar*(name: str, to: bool) {
+  if !validkey(wm.windows, name) {
+    return
+  } 
+
+  wm.windows[name].hideTitlebar = to
 }
 

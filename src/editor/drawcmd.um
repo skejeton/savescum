@@ -13,7 +13,6 @@ import (
   "../util.um"
 )
 
-
 type (
   DrawProperties* = struct{}
 
@@ -173,8 +172,6 @@ fn (d: ^EndScissorCmd) draw(props: DrawProperties) {
 }
 
 //==============================================================================
-
-
 
 fn (ctx: ^DrawContext) drawText*(f: font::Font, text: str, position: th::Vf2, color: uint32, size: th::fu = 1.0) {
   ctx.currentLayer.appendCommand(TextCmd{f, text, position, color, size})

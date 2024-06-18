@@ -274,16 +274,14 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
     buttonSize := th::Vf2{titlebarHeight, titlebarHeight}
     buttonRect := rect::Rect{position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y}
 
-    {
+    if !editor.wm.getWindowHideTitlebar(title) {
       if (putButtonBase(editor, buttonRect, "Close").isReleased) {
         editor.wm.setWindowVisible(title, false)
       }
 
       editor.ui.ctx.drawRect(th::black, {position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-2, buttonSize.x-10, 3})
       position.x += buttonSize.x + padding
-    }
 
-    {
       handleSize := th::Vf2{windowRect.w - position.x - padding, titlebarHeight}
       titlebarRect = {position.x+windowRect.x, position.y+windowRect.y, handleSize.x-1, handleSize.y}
 
@@ -308,15 +306,19 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
       editor.ui.ctx.endScissor()
 
       position.x += handleSize.x + padding
-    }
 
-    position.x = 0
-    position.y += titlebarHeight
+      position.x = 0
+      position.y += titlebarHeight
+    }
 
     contentSize := th::Vf2{windowRect.w - position.x - padding, windowRect.h - position.y - padding}
     contentRect = {position.x+windowRect.x, position.y+windowRect.y, contentSize.x-1, contentSize.y-1}
 
     editor.ui.beginTool("Body", contentRect)
+
+    if editor.ui.isCurrentToolHovered() && input::isJustPressed(.alt) {
+      editor.wm.setWindowHideTitlebar(title, !editor.wm.getWindowHideTitlebar(title))
+    }
   }
 
   windowRect ^= util::rectMove(windowRect^, movement)

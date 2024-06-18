@@ -20,3 +20,4 @@ fn console*(wm: ^wm::WM) {
     wm.setWindowVisible("Console (Aux)", !wm.isWindowVisible("Console (Aux)"))
   }
 }
+

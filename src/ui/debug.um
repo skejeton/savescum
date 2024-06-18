@@ -56,6 +56,7 @@ fn isWhiteForeground(color: uint32): bool {
   return sum >= 1.5
 }
 
+
 fn drawToolDebugFrame(ctx: ^drawcmd::DrawContext, frame: ToolDebugFrame, font: font::Font) {
   textColor := th::white
   if isWhiteForeground(frame.color) {
