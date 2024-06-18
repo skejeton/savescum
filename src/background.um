@@ -26,12 +26,14 @@ const (
 var (
   imgClouds: image::Image
   imgRocks: image::Image
+  imgFadedLine: image::Image
   width: real
 )
 
 fn init*(rl: ^resources::ResourceLoader) {
   imgClouds = resources::loadImage(rl, "data/img/bg_sky.png")
   imgRocks = resources::loadImage(rl, "data/img/bg_pit.png")
+  imgFadedLine = resources::loadImage(rl, "data/img/fadedline.png")
 
   width = imgClouds.getDims().x
 }
@@ -138,15 +140,18 @@ fn drawCave*(screen: rect::Rect, position: th::Vf2, scale: th::Vf2) {
   }
 }
 
-fn drawFadedLine*(p1, p2: th::Vf2, color: uint32, alpha1: real, alpha2: real) {
-  ic := 10
-  for i := 0; i < ic; i++ {
-    alpha := alpha1 + (alpha2-alpha1)*real(i)/ic
-    pp0 := p1.add(p2.sub(p1).mulf(real(i)/ic))
-    pp1 := p1.add(p2.sub(p1).mulf(real(i+1)/ic))
+fn drawFadedLine*(p1, p2: th::Vf2, color: uint32, alpha1: real, alpha2: real, thickness: real) {
+  ortho := p2.sub(p1).norm()
+  ortho = {-ortho.y, ortho.x}
+  ortho1 := ortho.mulf(thickness/2*alpha1)
+  ortho2 := ortho.mulf(thickness/2*alpha2)
 
-    canvas::drawLine(color::alpha(color, alpha), pp0, pp1, 8*alpha)
-  }
+  line := th::Quad{p1.sub(ortho1), p1.add(ortho1), p2.add(ortho2), p2.sub(ortho2)}
+  
+  imgFadedLine.crop({0.5, 0}, {1.0, 1.0})
+  imgFadedLine.drawOnQuad(line, color::alpha(color, alpha2))
+  imgFadedLine.crop({0, 0}, {0.5, 1.0})
+  imgFadedLine.drawOnQuad(line, color::alpha(color, alpha1))
 }
 
 fn drawCubeGeneric*(screen: rect::Rect, color: uint32, scale: real, rotate: [3]real) {
@@ -154,16 +159,13 @@ fn drawCubeGeneric*(screen: rect::Rect, color: uint32, scale: real, rotate: [3]r
   cubeEdges := d3shapes::mkCubeEdges()
   camera := d3::mkCamera(screen.w, screen.h, 45)
 
-  for i, point in cube {
-    cube[i] = point.mul(scale)
+  for i, point^ in cube {
+    point^ = d3::rotatePoint(point.mul(scale), rotate).add({0, 0, 6})
   }
 
   for i, edge in cubeEdges {
     p1 := cube[edge[0]]
     p2 := cube[edge[1]]
-
-    p1 = d3::rotatePoint(p1, rotate).add({0, 0, 6})
-    p2 = d3::rotatePoint(p2, rotate).add({0, 0, 6})
 
     s1 := camera.project(p1)
     s2 := camera.project(p2)
@@ -171,7 +173,7 @@ fn drawCubeGeneric*(screen: rect::Rect, color: uint32, scale: real, rotate: [3]r
     alpha := 1.0 - util::clamp((p1[2]-5.0)/2.0, 0.0, 1.0)
     alpha2 := 1.0 - util::clamp((p2[2]-5.0)/2.0, 0.0, 1.0)
 
-    drawFadedLine(s1, s2, color, alpha, alpha2)
+    drawFadedLine(s1, s2, color, alpha, alpha2, 8)
   }
 }
 
