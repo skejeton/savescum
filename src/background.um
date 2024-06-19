@@ -13,15 +13,15 @@ import (
   "gfx/d3.um"
 )
 
-const (
-  backgroundDebug  = 0
-  backgroundClouds = 1
-  backgroundAdvent = 2
-  backgroundJazz   = 3
-  backgroundCave   = 4
-  backgroundCube   = 5
-  backgroundBlack  = 0
-)
+type Background = enum {
+  debug  
+  clouds
+  advent 
+  jazz
+  cave
+  cube
+  black
+}
 
 var (
   imgClouds: image::Image
@@ -184,20 +184,20 @@ fn drawCube*(screen: rect::Rect, position: th::Vf2, scale: th::Vf2) {
   drawCubeGeneric(screen, 0x00FFFFFF, 1, {0, th::time/2000.0, th::time/2000.0})
 }
 
-fn drawBg*(screen: rect::Rect, which: int, time: real) {
+fn drawBg*(screen: rect::Rect, which: Background, time: real) {
   screenScale := th::Vf2{global::screen.w/screen.w, global::screen.h/screen.h}
 
   switch which {
-    case backgroundBlack: drawBackgroundSquare(global::screen, time, 0x000000FF, 0x040408FF, screenScale)
-    case backgroundDebug: drawClouds(screen, 0x99994400, 0x555555FF, global::screen.w/screen.w*0.5)
-    case backgroundClouds: drawClouds(screen, 0x7777FF00, 0xEEEEEEFF, global::screen.w/screen.w*0.5)
-    case backgroundAdvent: drawClouds(screen, 0x4444AA00, 0x000022FF, global::screen.w/screen.w*0.5);
-    case backgroundJazz: drawJazz(screen, {screen.x, screen.y}, screenScale)
-    case backgroundCave: drawCave(global::screen, {screen.x, screen.y}, screenScale)
-    case backgroundCube: drawCube(global::screen, {screen.x, screen.y}, screenScale)
+    case .black: drawBackgroundSquare(global::screen, time, 0x000000FF, 0x040408FF, screenScale)
+    case .debug: drawClouds(screen, 0x99994400, 0x555555FF, global::screen.w/screen.w*0.5)
+    case .clouds: drawClouds(screen, 0x7777FF00, 0xEEEEEEFF, global::screen.w/screen.w*0.5)
+    case .advent: drawClouds(screen, 0x4444AA00, 0x000022FF, global::screen.w/screen.w*0.5);
+    case .jazz: drawJazz(screen, {screen.x, screen.y}, screenScale)
+    case .cave: drawCave(global::screen, {screen.x, screen.y}, screenScale)
+    case .cube: drawCube(global::screen, {screen.x, screen.y}, screenScale)
   }
 }
 
 fn draw*(screen: rect::Rect, time: real) {
-  drawBg(screen, backgroundCube, time)
+  drawBg(screen, .cube, time)
 }
