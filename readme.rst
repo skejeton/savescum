@@ -74,7 +74,7 @@ Follow standard umka coding style:
 *     | functionName
 *     | varName
 *     | constName
-*     | EnumConstName
+*     | enumConstName
 *     | TypeName
 
 Use 2 spaces everywhere for indentation, except Makefiles.
