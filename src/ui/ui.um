@@ -2,17 +2,18 @@
 
 import (
   "core.um"
+  "atoms.um"
   "rect.um"
 )
 
-type UI* = struct {
-  // Utility fields
-  rect: rect::Rect
+type El* = struct {
   id: str
+  rect: rect::Rect
+}
 
-  // Core
+type UI* = struct {
+  el: El
   core: core::Core
-  spaces: []rect::Rect
 }
 
 fn mk*(): UI {
@@ -23,17 +24,12 @@ fn mk*(): UI {
 
 // Creates a space with a default "screen" container for you to use.
 fn (ui: ^UI) space*(id: str, r: rect::Rect, cb: fn(ui: ^UI)) {
-  ui.spaces = append(ui.spaces, r)
   ui.core.beginTool(id, r)
-  pr := ui.rect
-  pid := ui.id
-  ui.rect = r
-  ui.id = id
+  pel := ui.el
+  ui.el = El{id: id, rect: r}
   cb(ui)
   ui.core.endTool()
-  ui.spaces = delete(ui.spaces, len(ui.spaces)-1)
-  ui.rect = pr
-  ui.id = pid
+  ui.el = pel
 }
 
 // Allows to hijack a tool and use it as a space.
@@ -47,17 +43,17 @@ fn (ui: ^UI) hack*(id: str, cb: fn(ui: ^UI)) {
 
 // ------------- STATES
 fn (ui: ^UI) isHovered*(): bool {
-  return ui.core.isCurrentToolHovered()
+  return ui.core.currentTool == ui.core.hoveredTool
 }
 
 fn (ui: ^UI) isPressed*(): bool {
-  return ui.core.isCurrentToolActive() && ui.core.mouseState.lmb.isDown
+  return ui.core.currentTool == ui.core.activeTool && ui.core.mouseState.lmb.isDown
 }
 
 // ------------- EVENTS
 
 fn (ui: ^UI) onClick*(handler: fn(ui: ^UI)) {
-  if ui.core.isCurrentToolHovered() && ui.core.mouseState.lmb.isReleased {
+  if ui.core.currentTool == ui.core.hoveredTool && ui.core.mouseState.lmb.isReleased {
     handler(ui)
   }
 }

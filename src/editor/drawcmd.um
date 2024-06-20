@@ -30,7 +30,6 @@ type (
   NinepatchCmd = struct {
     image: image::Image
     outer, inner, dest: rect::Rect
-    quadCrop: th::Quad
     tint: uint32
   }
 
@@ -59,7 +58,9 @@ type (
 
   EndScissorCmd = struct{}
 
-  Layer = []CustomCommand
+  Layer = struct {
+    commands: []CustomCommand
+  }
 
   DrawContext* = struct {
     scissorRectStack: []rect::Rect
@@ -71,8 +72,8 @@ type (
   }
 )
 
-fn (lay: ^Layer) appendCommand(cmd: CustomCommand) {
-  lay ^= Layer(append([]CustomCommand(lay^), cmd))
+fn (l: ^Layer) appendCommand(cmd: CustomCommand) {
+  l.commands = append(l.commands, cmd)
 }
 
 fn (ctx: ^DrawContext) acquireLayer(layer: int) {
@@ -92,7 +93,7 @@ fn (ctx: ^DrawContext) acquireLayer(layer: int) {
     }
   }
 
-  ctx.layers[layer] = Layer(make([]CustomCommand, 0))
+  ctx.layers[layer] = {}
   ctx.layerOrder = insert(ctx.layerOrder, insertIndex, layer)
 }
 
@@ -131,7 +132,7 @@ fn (ctx: ^DrawContext) flush*() {
   for _, i in ctx.layerOrder {
     layer := ctx.layers[i]
 
-    for j, command in layer {
+    for j, command in layer.commands {
       command.draw(DrawProperties{})
     } 
   }
@@ -151,7 +152,6 @@ fn (d: ^ImageCmd) draw(props: DrawProperties) {
 }
 
 fn (d: ^NinepatchCmd) draw(props: DrawProperties) {
-  d.image.cropQuad(d.quadCrop)
   d.image.drawNinepatch(d.outer, d.inner, d.dest, d.tint)
 }
 
@@ -207,7 +207,7 @@ fn (ctx: ^DrawContext) drawImageRect*(img: image::Image, src: rect::Rect, dst: r
 }
 
 fn (ctx: ^DrawContext) drawNinepatch*(img: image::Image, outer, inner, dest: rect::Rect, tint: uint32 = th::white) {
-  ctx.currentLayer.appendCommand(NinepatchCmd{img, outer, inner, dest, img.getCropQuad(), tint})
+  ctx.currentLayer.appendCommand(NinepatchCmd{img, outer, inner, dest, tint})
 }
 
 fn (ctx: ^DrawContext) drawCustom*(custom: CustomCommand) {

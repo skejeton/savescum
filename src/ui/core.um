@@ -68,20 +68,7 @@ fn (core: ^Core) maybeAcquireToolNode*(name: str): ^atoms::ToolNode {
     return null
   }
 
-  return core.currentTool.children[name]
-}
-
-fn (core: ^Core) acquireToolNode*(name: str): ^atoms::ToolNode {
-  node := core.maybeAcquireToolNode(name)
-
-  if node == null {
-    tool := new(atoms::ToolNode)
-    tool ^= atoms::ToolNode{children: map[str]^atoms::ToolNode{}, parent: core.currentTool}
-    node = tool
-    core.currentTool.children[name] = node    
-  }
-
-  return node
+  return &core.currentTool.children[name]
 }
 
 // Prunes all tools untouched last frame
@@ -94,7 +81,7 @@ fn (core: ^Core) pruneToolsRecursive*(node: ^atoms::ToolNode) {
   }
 
   for key in node.children {
-    core.pruneToolsRecursive(node.children[key])
+    core.pruneToolsRecursive(&node.children[key])
 
     if node.children[key].lastFrameTouched < core.frameNumber {
       // Fix leak
@@ -116,9 +103,10 @@ fn (core: ^Core) begin*() {
 }
 
 fn (core: ^Core) beginTool*(name: str, toolRect: rect::Rect): ^atoms::ToolNode {
-  node := core.acquireToolNode(name)
+  node := &core.currentTool.children[name]
   node.lastFrameTouched = core.frameNumber
   node.rect = toolRect
+  node.parent = core.currentTool
   node.layer = core.ctx.currentLayerId
   core.currentTool = node
   isOverMaybeActiveTool := true
@@ -144,7 +132,7 @@ fn (core: ^Core) getCurrentToolName*(): str {
     return ""
   }
   for key in p.children {
-    if p.children[key] == core.currentTool {
+    if &p.children[key] == core.currentTool {
       return key
     }
   }
@@ -176,8 +164,8 @@ fn initInputSinkSet*(): InputSink {
 }
 
 fn (core: ^Core) endTool*(): Events {
-  if core.currentTool.parent == null {
-    std::assert(false, "Parent node is null, beginTool/endTool mismatched!")
+  if core.currentTool == null {
+    std::assert(false, "Node is null, beginTool/endTool mismatched!")
   }
 
   mask := InputSink{}

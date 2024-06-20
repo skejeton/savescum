@@ -1,7 +1,7 @@
 import "rect.um"
 
 type ToolNode* = struct {
-  children: map[str]^ToolNode
+  children: map[str]ToolNode
   parent: ^ToolNode
   userdata: any
   lastFrameTouched: int
@@ -32,7 +32,7 @@ fn areToolsRelated*(parent, child: ^ToolNode): bool {
 /// @param[in] node The tool node to remove cyclic references from.
 fn disconnectAllNodes*(node: ^ToolNode) {
   node.parent = null
-  for _, child in node.children {
+  for _, child^ in node.children {
     disconnectAllNodes(child)
   }
 }
