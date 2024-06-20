@@ -1177,7 +1177,7 @@ fn draw*() {
 
   world.drawLayer(cameraOffsetPoint({0, 0}), 1, cameraScale)
 
-  // DEBUG OVERYALS //
+  // DEBUG OVERLAYS //
   if showDebug {
     _drawRectTangents(pal.ent.rect)
     drawGuideRects()
