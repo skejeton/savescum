@@ -162,6 +162,10 @@ fn centerTextWithinRect(font: font::Font, text: str, r: rect::Rect): th::Vf2 {
 }
 
 fn drawBtn(editor: ^Editor, text: str, r: rect::Rect, buttonState: ButtonState, revert: bool = false, color: uint32 = 0xFFFFFFFF) {
+  if buttonState.isOver {
+    immcursor::setCursor(.finger)
+  }
+
   pushed := buttonState.isDown != revert
 
   colorMod := 0xFFFFFFFF
@@ -1727,17 +1731,15 @@ fn editorPutUi(editor: ^Editor) {
   }
 
   editor.ui.space("Some button", {100, 500, 200, 200}, |editor| {
-    drawBtn(editor, ui.id, ui.rect, {}, false)
-  })
+    buttonState := ButtonState{}
+    buttonState.isOver = ui.isHovered()
+    buttonState.isDown = ui.isPressed()
 
-  editor.ui.hack("Some button", |editor| {
-    ui.onHover({
-      immcursor::setCursor(.finger)
-    })
-    
-    ui.onPress({
+    ui.onClick({
       dbg::logt("Hello world!")
     })
+
+    drawBtn(editor, ui.id, ui.rect, buttonState, false)
   })
 
   widgetWindow(editor, "Console (Aux)", {100, 100, 640, 480}, |editor| {

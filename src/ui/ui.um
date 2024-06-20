@@ -45,16 +45,19 @@ fn (ui: ^UI) hack*(id: str, cb: fn(ui: ^UI)) {
   }
 }
 
-// ------------- EVENTS
-
-fn (ui: ^UI) onPress*(handler: fn(ui: ^UI)) {
-  if ui.core.isCurrentToolHovered() && ui.core.mouseState.lmb.isReleased {
-    handler(ui)
-  }
+// ------------- STATES
+fn (ui: ^UI) isHovered*(): bool {
+  return ui.core.isCurrentToolHovered()
 }
 
-fn (ui: ^UI) onHover*(handler: fn(ui: ^UI)) {
-  if ui.core.isCurrentToolHovered() {
+fn (ui: ^UI) isPressed*(): bool {
+  return ui.core.isCurrentToolActive() && ui.core.mouseState.lmb.isDown
+}
+
+// ------------- EVENTS
+
+fn (ui: ^UI) onClick*(handler: fn(ui: ^UI)) {
+  if ui.core.isCurrentToolHovered() && ui.core.mouseState.lmb.isReleased {
     handler(ui)
   }
 }
