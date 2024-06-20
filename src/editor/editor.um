@@ -9,6 +9,7 @@ import (
   "../ui/atoms.um"
   "../ui/wm.um"
   "../ui/notification.um"
+  "../ui/ui.um"
   "session.um"
 
   "../dbg.um"
@@ -123,7 +124,8 @@ type (
     keepActive: bool
 
     // UI state
-    ui: core::Core
+    uicore: ^core::Core
+    ui: ^ui::UI
   }
 )
 
@@ -144,22 +146,33 @@ fn drawBevelRect(editor: ^Editor, r: rect::Rect, pushed: bool = false, color: ui
   )
 
   if pushed {
-    editor.ui.ctx.drawNinepatch(editor.resources.bevelImage, bevelPushedOuterRect, bevelPushedInnerRect, r, color)
+    editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, bevelPushedOuterRect, bevelPushedInnerRect, r, color)
   } else {
-    editor.ui.ctx.drawNinepatch(editor.resources.bevelImage, bevelOuterRect, bevelInnerRect, r, color)
+    editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, bevelOuterRect, bevelInnerRect, r, color)
   }
 }
 
 fn drawBackdropRect(editor: ^Editor, r: rect::Rect, color: uint32 = 0xFFFFFFFF) {
-  editor.ui.ctx.drawRect(color, r)
-  editor.ui.ctx.drawRectLines(0x000000FF, r)
+  editor.uicore.ctx.drawRect(color, r)
+  editor.uicore.ctx.drawRectLines(0x000000FF, r)
 }
 
 fn centerTextWithinRect(font: font::Font, text: str, r: rect::Rect): th::Vf2 {
   return r.getDims().sub(font.measure(text)).divf(2.0).add(r.getPos()).subf(1)
 }
 
-// TODO: Ability to pass colour
+fn drawBtn(editor: ^Editor, text: str, r: rect::Rect, buttonState: ButtonState, revert: bool = false, color: uint32 = 0xFFFFFFFF) {
+  pushed := buttonState.isDown != revert
+
+  colorMod := 0xFFFFFFFF
+  if pushed {
+    colorMod = 0xCCCCCCFF
+  }
+
+  drawBevelRect(editor, r, pushed, colorMod&color)
+  editor.uicore.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), th::black)
+}
+
 fn drawButton(editor: ^Editor, r: rect::Rect, buttonState: ButtonState, revert: bool = false, color: uint32 = 0xFFFFFFFF) {
   pushed := buttonState.isDown != revert
 
@@ -172,23 +185,23 @@ fn drawButton(editor: ^Editor, r: rect::Rect, buttonState: ButtonState, revert: 
 }
 
 fn drawButtonInactive(editor: ^Editor, r: rect::Rect, text: str, color: uint32 = 0x999999FF) {
-  editor.ui.beginTool(text, r)
-  if (editor.ui.isCurrentToolActive()) {
+  editor.uicore.beginTool(text, r)
+  if (editor.uicore.isCurrentToolActive()) {
     immcursor::setCursor(.no)
   }
-  events := editor.ui.endTool()
+  events := editor.uicore.endTool()
   events.queryMouse(.left, mouseinput::pressed)
   text = strings::splitBy(text, '#')[0]
-  editor.ui.ctx.drawRect(color, r)
-  editor.ui.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), 0x000000FF)
+  editor.uicore.ctx.drawRect(color, r)
+  editor.uicore.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), 0x000000FF)
 }
 
 fn putButton(editor: ^Editor, r: rect::Rect, name: str): ButtonState {
-  editor.ui.beginTool(name,  r)
+  editor.uicore.beginTool(name, r)
 
   buttonState := ButtonState{}
-  toolState := editor.ui.getCurrentToolState()
-  events := editor.ui.endTool()
+  toolState := editor.uicore.getCurrentToolState()
+  events := editor.uicore.endTool()
 
   if (toolState.active) {
     buttonState.isOver = true
@@ -245,7 +258,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
 
   if !editor.wm.isWindowVisible(title) {
     // Prevent from getting pruned
-    editor.ui.freezeTool(title)
+    editor.uicore.freezeTool(title)
 
     return WindowInfo{}, false
   }
@@ -260,16 +273,16 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
 
   position := th::Vf2{padding, padding}
 
-  editor.ui.ctx.moveLayer(1000*editor.currentWindowLayer)
+  editor.uicore.ctx.moveLayer(1000*editor.currentWindowLayer)
   // Frame tool.
-  editor.ui.beginTool(title, windowRect^)
+  editor.uicore.beginTool(title, windowRect^)
   {
-    editor.ui.ctx.drawRectLines(0xFAF7FFFF, util::rectShrink(windowRect^, -2.1), 4)
+    editor.uicore.ctx.drawRectLines(0xFAF7FFFF, util::rectShrink(windowRect^, -2.1), 4)
 
     if !transparent {
       drawBackdropRect(editor, windowRect^, 0xEAEAEAFF)
     }
-    editor.ui.ctx.drawNinepatch(editor.resources.glow, {0, 0, 48, 48}, {16, 16, 16, 16}, util::rectShrink(windowRect^, -20), 0x000000FF)
+    editor.uicore.ctx.drawNinepatch(editor.resources.glow, {0, 0, 48, 48}, {16, 16, 16, 16}, util::rectShrink(windowRect^, -20), 0x000000FF)
 
     buttonSize := th::Vf2{titlebarHeight, titlebarHeight}
     buttonRect := rect::Rect{position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y}
@@ -279,7 +292,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
         editor.wm.setWindowVisible(title, false)
       }
 
-      editor.ui.ctx.drawRect(th::black, {position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-2, buttonSize.x-10, 3})
+      editor.uicore.ctx.drawRect(th::black, {position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-2, buttonSize.x-10, 3})
       position.x += buttonSize.x + padding
 
       handleSize := th::Vf2{windowRect.w - position.x - padding, titlebarHeight}
@@ -287,8 +300,8 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
 
       // Titlebar tool.
       {
-        editor.ui.beginTool("Titlebar", titlebarRect)
-        events := editor.ui.endTool()
+        editor.uicore.beginTool("Titlebar", titlebarRect)
+        events := editor.uicore.endTool()
 
         if (events.queryMouse(.left, mouseinput::pressed)) {
           editor.wm.putWindowOnFront(title)
@@ -298,12 +311,12 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
         }
       }
 
-      editor.ui.ctx.drawImageRect(editor.resources.bevelImage, {0, 30, 30, 30}, titlebarRect)
-      editor.ui.ctx.beginScissorRect(titlebarRect)
-        editor.ui.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, titlebarRect), th::white)
+      editor.uicore.ctx.drawImageRect(editor.resources.bevelImage, {0, 30, 30, 30}, titlebarRect)
+      editor.uicore.ctx.beginScissorRect(titlebarRect)
+        editor.uicore.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, titlebarRect), th::white)
         titlebarRect.x += 1
-        editor.ui.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, titlebarRect), th::white)
-      editor.ui.ctx.endScissor()
+        editor.uicore.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, titlebarRect), th::white)
+      editor.uicore.ctx.endScissor()
 
       position.x += handleSize.x + padding
 
@@ -314,9 +327,9 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
     contentSize := th::Vf2{windowRect.w - position.x - padding, windowRect.h - position.y - padding}
     contentRect = {position.x+windowRect.x, position.y+windowRect.y, contentSize.x-1, contentSize.y-1}
 
-    editor.ui.beginTool("Body", contentRect)
+    editor.uicore.beginTool("Body", contentRect)
 
-    if editor.ui.isCurrentToolHovered() && input::isJustPressed(.alt) {
+    if editor.uicore.isCurrentToolHovered() && input::isJustPressed(.alt) {
       editor.wm.setWindowHideTitlebar(title, !editor.wm.getWindowHideTitlebar(title))
     }
   }
@@ -338,7 +351,7 @@ fn uiEndWindow(editor: ^Editor) {
 
   // Finish ui tools.
   {
-      events := editor.ui.endTool()
+      events := editor.uicore.endTool()
 
       if (events.queryMouse(.left, mouseinput::pressed)) {
         editor.wm.putWindowOnFront(title)
@@ -351,20 +364,20 @@ fn uiEndWindow(editor: ^Editor) {
       gripRect := rect::Rect{windowRect.x+windowRect.w-gripSize.x, windowRect.y+windowRect.h-gripSize.y, gripSize.x, gripSize.y}
 
       {
-        editor.ui.beginTool("Grip", gripRect)
-        if editor.ui.isCurrentToolActive() {
+        editor.uicore.beginTool("Grip", gripRect)
+        if editor.uicore.isCurrentToolActive() {
           immcursor::setCursor(.sizeNWSE)
         }
-        events := editor.ui.endTool()
+        events := editor.uicore.endTool()
 
         if events.queryMouse(.left, mouseinput::down) {
-          squishing = editor.ui.mouseState.delta
+          squishing = editor.uicore.mouseState.delta
         }
       }
 
-    editor.ui.endTool()
+    editor.uicore.endTool()
   }
-  editor.ui.ctx.moveLayer(-1000*editor.currentWindowLayer)
+  editor.uicore.ctx.moveLayer(-1000*editor.currentWindowLayer)
 
   windowRect ^= util::rectMove(windowRect^, movement)
   windowRect.w += squishing.x; windowRect.h += squishing.y
@@ -407,17 +420,17 @@ fn updateZoom(init: real, plus: real): th::Vf2 {
 fn putGrid(grid: ^grid::Grid, editor: ^Editor, rectangle: rect::Rect): th::Vf2 {
   grid.bb = rectangle
 
-  editor.ui.beginTool("Grid", rectangle)
+  editor.uicore.beginTool("Grid", rectangle)
 
   var highlightedTile: th::Vf2
-  editor.ui.ctx.beginScissorRect(rectangle)
+  editor.uicore.ctx.beginScissorRect(rectangle)
   {
-    editor.ui.ctx.drawCustom(DrawGridRenderGuideCommand{grid::mkRenderGuideFromBoundingBox(grid^), 0xFFFFFF11, 1})
-    highlightedTile = grid.toGrid(editor.ui.mouseState.pos).floor()
+    editor.uicore.ctx.drawCustom(DrawGridRenderGuideCommand{grid::mkRenderGuideFromBoundingBox(grid^), 0xFFFFFF11, 1})
+    highlightedTile = grid.toGrid(editor.uicore.mouseState.pos).floor()
 
-    if editor.ui.isCurrentToolActive() {
+    if editor.uicore.isCurrentToolActive() {
       p1, p2 := grid.toScreen(highlightedTile), grid.toScreen(highlightedTile.addf(1))
-      editor.ui.ctx.drawRect(0xFFFFFF33, {p1.x, p1.y, p2.x-p1.x, p2.y-p1.y})
+      editor.uicore.ctx.drawRect(0xFFFFFF33, {p1.x, p1.y, p2.x-p1.x, p2.y-p1.y})
       // Draw highlighted tile
     }
 
@@ -426,21 +439,21 @@ fn putGrid(grid: ^grid::Grid, editor: ^Editor, rectangle: rect::Rect): th::Vf2 {
 
     bottomLeft := th::Vf2{rectangle.x, rectangle.y+rectangle.h}
     bottomLeft.y -= editor.resources.mainFont.measure(coordinateString).y
-    editor.ui.ctx.moveLayer(1)
-    editor.ui.ctx.drawText(editor.resources.mainFont, coordinateString, bottomLeft, th::white)
-    editor.ui.ctx.moveLayer(-1)
+    editor.uicore.ctx.moveLayer(1)
+    editor.uicore.ctx.drawText(editor.resources.mainFont, coordinateString, bottomLeft, th::white)
+    editor.uicore.ctx.moveLayer(-1)
   }
 
-  editor.ui.ctx.endScissor()
+  editor.uicore.ctx.endScissor()
 
-  if editor.ui.isCurrentToolActive() && input::isPressed(.space) {
-    grid::gridPan(grid, editor.ui.mouseState.delta)
+  if editor.uicore.isCurrentToolActive() && input::isPressed(.space) {
+    grid::gridPan(grid, editor.uicore.mouseState.delta)
   }
 
-  events := editor.ui.endTool()
+  events := editor.uicore.endTool()
 
   if events.queryMouse(.middle, mouseinput::down) {
-    grid::gridPan(grid, editor.ui.mouseState.delta)
+    grid::gridPan(grid, editor.uicore.mouseState.delta)
   }
 
   scroll := events.queryScroll()
@@ -455,7 +468,7 @@ fn putIconButton(editor: ^Editor, name: str, r: rect::Rect, img: image::Image, r
   bs := putButtonBase(editor, r, name, revert)
   dims := th::Vf2{48, 48}
   pos := util::rectCenterWithinRect({0, 0, dims.x, dims.y}, r).getPos()
-  editor.ui.ctx.drawImage(img, {p: pos, s: {1, 1}})
+  editor.uicore.ctx.drawImage(img, {p: pos, s: {1, 1}})
   return bs
 }
 
@@ -464,7 +477,7 @@ fn putRadioButton(editor: ^Editor, r: rect::Rect, text: str, revert: bool = fals
     drawButtonInactive(editor, r, text)
   } else {
     bs := putButtonBase(editor, r, text, revert)
-    editor.ui.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), th::black)
+    editor.uicore.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), th::black)
     return bs
   }
   return ButtonState{}
@@ -473,7 +486,7 @@ fn putRadioButton(editor: ^Editor, r: rect::Rect, text: str, revert: bool = fals
 fn putSimpleButton(editor: ^Editor, r: rect::Rect, text: str, revert: bool = false, color: uint32 = 0xFFFFFFFF): ButtonState {
   bs := putButtonBase(editor, r, text, revert, color)
   text = strings::splitBy(text, '#')[0]
-  editor.ui.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), th::black)
+  editor.uicore.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), th::black)
   return bs
 }
 
@@ -520,7 +533,7 @@ fn initBufferFromString(s: str): buffer::Buffer {
 
 fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect::Rect, drawCursor: bool) {
 
-  editor.ui.ctx.beginScissorRect(r)
+  editor.uicore.ctx.beginScissorRect(r)
   firstLine := getFirstLineOfBuffer(&edit.buffer)
   precursor := strings::uniSlice(firstLine, 0, edit.cursor.column)
   precursorMeasured := editor.resources.mainFont.measure(precursor)
@@ -543,22 +556,22 @@ fn drawSingleLineEdit(editor: ^Editor, edit: ^SingleLineEdit, r: rect::Rect, dra
   cursorRect.y += r.y
 
   if drawCursor {
-    editor.ui.ctx.drawRect(th::black, cursorRect)
+    editor.uicore.ctx.drawRect(th::black, cursorRect)
   }
-  editor.ui.ctx.drawText(editor.resources.mainFont, firstLine, r.getPos().add(th::Vf2{edit.scrollX, 0}), th::black)
-  editor.ui.ctx.endScissor()
+  editor.uicore.ctx.drawText(editor.resources.mainFont, firstLine, r.getPos().add(th::Vf2{edit.scrollX, 0}), th::black)
+  editor.uicore.ctx.endScissor()
 }
 
 // @returns Is dirty
 fn putTextEditOneLine(editor: ^Editor, r: rect::Rect, name: str, value: ^str): bool {
   dirty := false
-  editor.ui.beginTool(name, r)
-    edit := ^SingleLineEdit(editor.ui.getPropertyLazy("Editor", |value| { return initSingleLineEdit(value^) }))
+  editor.uicore.beginTool(name, r)
+    edit := ^SingleLineEdit(editor.uicore.getPropertyLazy("Editor", |value| { return initSingleLineEdit(value^) }))
     edit.buffer = initBufferFromString(value^)
     edit.cursor = buffer::sanitizeCursor(&edit.buffer, edit.cursor)
 
     // Handle input.
-    if (editor.ui.isCurrentToolFocused()) {
+    if (editor.uicore.isCurrentToolFocused()) {
       immcursor::setCursor(.iBeam)
       dirty = insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input::getStr())
       if input::isPressedRepeat(.backspace) {
@@ -590,16 +603,16 @@ fn putTextEditOneLine(editor: ^Editor, r: rect::Rect, name: str, value: ^str): b
     {
       drawBevelRect(editor, r, true)
       // Draw the inside white
-      editor.ui.ctx.drawRect(th::white, util::rectShrink(r, 2))
+      editor.uicore.ctx.drawRect(th::white, util::rectShrink(r, 2))
 
       fontHeight := editor.resources.mainFont.measure(" ").y
       textRect := rect::Rect{r.x+5, r.y+(r.h-fontHeight)/2.0, r.w-10, fontHeight}
-      drawSingleLineEdit(editor, edit, textRect, editor.ui.isCurrentToolFocused())
+      drawSingleLineEdit(editor, edit, textRect, editor.uicore.isCurrentToolFocused())
     }
 
     // Sync buffer up with the value.
     value ^= getFirstLineOfBuffer(&edit.buffer)
-  editor.ui.endTool()
+  editor.uicore.endTool()
 
   return dirty
 }
@@ -609,9 +622,9 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2):
     handleSize = 27
   )
 
-  editor.ui.beginTool("ScrollArea", areaRect)
+  editor.uicore.beginTool("ScrollArea", areaRect)
 
-  scroll := ^real(editor.ui.getProperty("ScrollAreaScroll", 0.0))
+  scroll := ^real(editor.uicore.getProperty("ScrollAreaScroll", 0.0))
   overflow := util::clamp(contentSize.y-areaRect.h, 0, contentSize.y)
   scrollValue := util::clamp(scroll^, 0, overflow)
   yScrollOverflowFactor := 0.0
@@ -621,7 +634,7 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2):
   doNotTruncateScroll := false
 
   rightHandleRect := util::rectCutRight(areaRect, handleSize)
-  editor.ui.ctx.drawRect(0x777777FF, rightHandleRect)
+  editor.uicore.ctx.drawRect(0x777777FF, rightHandleRect)
 
   // If there's yknow, some overflow..
   if yScrollOverflowFactor > 1 {
@@ -635,16 +648,16 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2):
     thumbState := putButtonBase(editor, util::rectShrink(thumbRect, 1), "ScrollbarThumb")
     if thumbState.isDown {
       doNotTruncateScroll = true
-      scroll ^+= editor.ui.mouseState.delta.y*yScrollOverflowFactor
+      scroll ^+= editor.uicore.mouseState.delta.y*yScrollOverflowFactor
     }
 
   }
 
   if editor.showDebugInfo {
     // Show where the content ends.
-    editor.ui.ctx.moveLayer(1)
-    editor.ui.ctx.drawRect(th::magenta, {areaRect.x, areaRect.y+contentSize.y, contentSize.x, 1})
-    editor.ui.ctx.moveLayer(-1)
+    editor.uicore.ctx.moveLayer(1)
+    editor.uicore.ctx.drawRect(th::magenta, {areaRect.x, areaRect.y+contentSize.y, contentSize.x, 1})
+    editor.uicore.ctx.moveLayer(-1)
   }
 
   if !doNotTruncateScroll {
@@ -663,9 +676,9 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2):
 }
 
 fn endScrollArea(editor: ^Editor) {
-  scroll := ^real(editor.ui.getProperty("ScrollAreaScroll", 0.0))
+  scroll := ^real(editor.uicore.getProperty("ScrollAreaScroll", 0.0))
 
-  events := editor.ui.endTool()
+  events := editor.uicore.endTool()
 
   scroll ^-= events.queryScroll()*20.0
 }
@@ -768,11 +781,11 @@ fn editorPutToolbar(editor: ^Editor) {
     util::imageCropRect(editor.resources.superHotFire, {0, (th::time/100%3)*32, 32, 32})
 
     for i := 0; i < global::screen.w/32+1; i++ {
-      editor.ui.ctx.drawImage(editor.resources.superHotFire, th::Transform{p: th::Vf2{x+i*32, y}, s: th::Vf2{1, 1}})
+      editor.uicore.ctx.drawImage(editor.resources.superHotFire, th::Transform{p: th::Vf2{x+i*32, y}, s: th::Vf2{1, 1}})
     }
   }
 
-  editor.ui.beginTool("ToolBar", rectangle)
+  editor.uicore.beginTool("ToolBar", rectangle)
   {
     if !editor.isPlaying {
       drawBackdropRect(editor, rectangle, editor.dirty ? 0xFF0000FF : 0xFFFFFFFF)
@@ -813,7 +826,7 @@ fn editorPutToolbar(editor: ^Editor) {
       putToolbarWindowIconButton(editor, "Level Select", &buttonRectangle, 3, 3)
     }
   }
-  editor.ui.endTool()
+  editor.uicore.endTool()
 }
 
 fn isAnyButtonHeld(mouseState: ^mouseinput::MouseState): bool {
@@ -889,7 +902,7 @@ fn (gc: ^GameCmd) draw(props: drawcmd::DrawProperties) {
 }
 
 fn putLabelY(editor: ^Editor, text: str, color: uint32, position: ^th::Vf2) {
-  editor.ui.ctx.drawText(editor.resources.mainFont, text, position^, color)
+  editor.uicore.ctx.drawText(editor.resources.mainFont, text, position^, color)
   position.y += editor.resources.mainFont.measure(text).y
 }
 
@@ -899,7 +912,7 @@ fn putPlayerPlacer(editor: ^Editor) {
     position := contentRect.getPos()
     playerPos := editor.world.playerSpawnPos
 
-    editor.ui.ctx.beginScissorRect(contentRect)
+    editor.uicore.ctx.beginScissorRect(contentRect)
     {
       putLabelY(editor, sprintf("x %d y %d", trunc(playerPos.x), trunc(playerPos.y)), th::black, &position)
       position.y += 10
@@ -913,7 +926,7 @@ fn putPlayerPlacer(editor: ^Editor) {
         putLabelY(editor, "Click on the grid\nTo place player.", th::black, &position)
       }
     }
-    editor.ui.ctx.endScissor()
+    editor.uicore.ctx.endScissor()
   })
 }
 
@@ -924,10 +937,10 @@ fn putTilePicker(editor: ^Editor) {
     contentRect := winfo.contentRect
     var selectedTile: th::Vf2
 
-    editor.ui.beginTool("Picker", contentRect)
+    editor.uicore.beginTool("Picker", contentRect)
     {
-      editor.ui.ctx.drawRect(0x222222FF, contentRect)
-      editor.ui.ctx.moveLayer(1)
+      editor.uicore.ctx.drawRect(0x222222FF, contentRect)
+      editor.uicore.ctx.moveLayer(1)
       {
         imgDims := editor.tileset.image.getDims()
         newSelectedTile := putGrid(&editor.tilesetGrid, editor, contentRect)
@@ -940,18 +953,18 @@ fn putTilePicker(editor: ^Editor) {
 
         selectedTilePos := editor.tilesetGrid.toScreen(editor.tileSelected)
 
-        editor.ui.ctx.beginScissorRect(contentRect)
-        editor.ui.ctx.drawRectLines(color::alpha(th::green, 0.6), {selectedTilePos.x, selectedTilePos.y, editor.tilesetGrid.s.x, editor.tilesetGrid.s.y}, 1)
-        editor.ui.ctx.endScissor()
+        editor.uicore.ctx.beginScissorRect(contentRect)
+        editor.uicore.ctx.drawRectLines(color::alpha(th::green, 0.6), {selectedTilePos.x, selectedTilePos.y, editor.tilesetGrid.s.x, editor.tilesetGrid.s.y}, 1)
+        editor.uicore.ctx.endScissor()
       }
-      editor.ui.ctx.moveLayer(-1)
-      editor.ui.ctx.beginScissorRect(contentRect)
+      editor.uicore.ctx.moveLayer(-1)
+      editor.uicore.ctx.beginScissorRect(contentRect)
 
       editor.tileset.image.crop(th::Vf2{0, 0}, th::Vf2{1, 1})
-      editor.ui.ctx.drawImage(editor.tileset.image, th::Transform{s: editor.tilesetGrid.s.divf(64), p: editor.tilesetGrid.toScreen(th::Vf2{0, 0})})
-      editor.ui.ctx.endScissor()
+      editor.uicore.ctx.drawImage(editor.tileset.image, th::Transform{s: editor.tilesetGrid.s.divf(64), p: editor.tilesetGrid.toScreen(th::Vf2{0, 0})})
+      editor.uicore.ctx.endScissor()
     }
-    events := editor.ui.endTool()
+    events := editor.uicore.endTool()
 
     if events.queryMouse(.left, mouseinput::down) {
       editor.tileSelected = selectedTile
@@ -963,16 +976,16 @@ fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, s
   r.w -= 45*2
   action := EntityListAction.none
 
-  editor.ui.beginTool(ent.id, r)
+  editor.uicore.beginTool(ent.id, r)
   {
     if (putSimpleButton(editor, r, ent.name).isReleased) {
       action = .edit
     }
     if selected {
-      editor.ui.ctx.drawRectLines(th::white, util::rectShrink(r, 1))
-      editor.ui.ctx.moveLayer(1)
-      editor.ui.ctx.drawNinepatch(editor.resources.glow, {0, 0, 48, 48}, {16, 16, 16, 16}, util::rectShrink(r, -16), 0xFFFF00FF)
-      editor.ui.ctx.moveLayer(-1)
+      editor.uicore.ctx.drawRectLines(th::white, util::rectShrink(r, 1))
+      editor.uicore.ctx.moveLayer(1)
+      editor.uicore.ctx.drawNinepatch(editor.resources.glow, {0, 0, 48, 48}, {16, 16, 16, 16}, util::rectShrink(r, -16), 0xFFFF00FF)
+      editor.uicore.ctx.moveLayer(-1)
     }
     r.x += r.w
     r.w = 45
@@ -997,7 +1010,7 @@ fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, s
       }
     }
   }
-  editor.ui.endTool()
+  editor.uicore.endTool()
 
   return action
 }
@@ -1128,10 +1141,10 @@ fn putEntityList(editor: ^Editor) {
     // Put entries.
     {
       // Get content size.
-      contentSize := ^th::Vf2(editor.ui.getProperty("ContentSize", th::Vf2{0, 0}))
+      contentSize := ^th::Vf2(editor.uicore.getProperty("ContentSize", th::Vf2{0, 0}))
 
       if ok, scrollAreaInfo := beginScrollArea(editor, contentRect, contentSize^); ok {
-        editor.ui.ctx.beginScissorRect(scrollAreaInfo.areaRect)
+        editor.uicore.ctx.beginScissorRect(scrollAreaInfo.areaRect)
         entryRect := scrollAreaInfo.contentRect
         entryRect.h = 45
         for i, ent in editor.entities.list {
@@ -1147,7 +1160,7 @@ fn putEntityList(editor: ^Editor) {
         }
 
         contentSize ^= th::Vf2{entryRect.w, entryRect.y-scrollAreaInfo.contentRect.y}
-        editor.ui.ctx.endScissor()
+        editor.uicore.ctx.endScissor()
         endScrollArea(editor)
       }
     }
@@ -1169,7 +1182,7 @@ fn putEntityEditor(editor: ^Editor) {
     widgetWindow(editor, "Entity Editor", {595, 210, 200, 220}, |editor, entitySelected| {
       contentRect := util::rectShrink(winfo.contentRect, 5)
 
-      editor.ui.ctx.beginScissorRect(contentRect)
+      editor.uicore.ctx.beginScissorRect(contentRect)
       position := contentRect.getPos()
       putLabelY(editor, "Name", th::black, &position)
       editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 46}, "Name", &entitySelected.name) || editor.dirty
@@ -1185,7 +1198,7 @@ fn putEntityEditor(editor: ^Editor) {
         removeEntity(&editor.entities, getEntitySelectedIndex(&editor.entities))
         editor.dirty = true
       }
-      editor.ui.ctx.endScissor()
+      editor.uicore.ctx.endScissor()
     })
   }
 }
@@ -1223,9 +1236,9 @@ fn putRectGrips(editor: ^Editor, r: rect::Rect): RectResizeCommand {
     gripRect := rect::Rect{gripPos.x-6, gripPos.y-6, 12, 12}
     gripDrawRect := util::rectShrink(gripRect, 2)
 
-    editor.ui.beginTool(sprintf("Grip%d", i), gripRect)
+    editor.uicore.beginTool(sprintf("Grip%d", i), gripRect)
 
-    if editor.ui.isCurrentToolActive() {
+    if editor.uicore.isCurrentToolActive() {
       cursor := window::Cursor.sizeAll
       switch i {
       case 0, 7: cursor = .sizeNWSE
@@ -1238,14 +1251,14 @@ fn putRectGrips(editor: ^Editor, r: rect::Rect): RectResizeCommand {
 
     color := th::blue
 
-    if editor.ui.isCurrentToolActive() {
+    if editor.uicore.isCurrentToolActive() {
       color = th::cyan
     }
 
-    editor.ui.ctx.drawRect(color, gripDrawRect)
-    editor.ui.ctx.drawRectLines(th::black, gripDrawRect)
+    editor.uicore.ctx.drawRect(color, gripDrawRect)
+    editor.uicore.ctx.drawRectLines(th::black, gripDrawRect)
 
-    events := editor.ui.endTool()
+    events := editor.uicore.endTool()
 
     if events.queryMouse(.left, mouseinput::down) {
       activeGrip = i
@@ -1282,14 +1295,14 @@ fn (cmd: ^DrawEntityCmd) draw(props: drawcmd::DrawProperties) {
 
 fn drawTaggedEntityRect(editor: ^Editor, entity: ^world_data::EntityDesc, r: rect::Rect, tags: ^game::TagSet) {
   if tags.isSet("Guide") {
-    editor.ui.ctx.drawRectLines(th::yellow, r)
+    editor.uicore.ctx.drawRectLines(th::yellow, r)
   } else if tags.isSet("Comment") {
     size := editor.resources.mainFont.measure(entity.name)
     entity.rect.w = size.x
     entity.rect.h = size.y
-    editor.ui.ctx.drawText(editor.resources.mainFont, entity.name, th::Vf2{r.x, r.y}, th::white, editor.tilemapGrid.s.x/32)
+    editor.uicore.ctx.drawText(editor.resources.mainFont, entity.name, th::Vf2{r.x, r.y}, th::white, editor.tilemapGrid.s.x/32)
   } else {
-    editor.ui.ctx.drawCustom(DrawEntityCmd{entity^, r, tags, editor.tilemapGrid.s.x/32})
+    editor.uicore.ctx.drawCustom(DrawEntityCmd{entity^, r, tags, editor.tilemapGrid.s.x/32})
   }
 }
 
@@ -1330,20 +1343,20 @@ fn putWorldEntities(editor: ^Editor) {
     drawTaggedEntityRect(editor, ent, entVisRect, tags)
 
     if !ignore {
-      editor.ui.beginTool("Ent"+ent.id, entVisRect)
+      editor.uicore.beginTool("Ent"+ent.id, entVisRect)
 
-      if editor.ui.isCurrentToolActive() {
+      if editor.uicore.isCurrentToolActive() {
         immcursor::setCursor(.sizeAll)
       }
 
-      if editor.ui.isCurrentToolFocused() {
-        editor.ui.ctx.drawRectLines(th::blue, util::rectShrink(entVisRect, -1))
-      } else if editor.ui.isCurrentToolActive() {
-        editor.ui.ctx.drawRectLines(th::yellow, util::rectShrink(entVisRect, -1))
+      if editor.uicore.isCurrentToolFocused() {
+        editor.uicore.ctx.drawRectLines(th::blue, util::rectShrink(entVisRect, -1))
+      } else if editor.uicore.isCurrentToolActive() {
+        editor.uicore.ctx.drawRectLines(th::yellow, util::rectShrink(entVisRect, -1))
       }
 
       if isEntitySelected(&editor.entities, i) {
-        if editor.ui.isCurrentToolFocused() {
+        if editor.uicore.isCurrentToolFocused() {
           dx, dy := 0, 0
           if input::isPressedRepeat(.up) {
             dy += -1
@@ -1386,10 +1399,10 @@ fn putWorldEntities(editor: ^Editor) {
           }
         }
 
-        editor.ui.ctx.drawRectLines(th::yellow, util::rectShrink(entVisRect, 0))
+        editor.uicore.ctx.drawRectLines(th::yellow, util::rectShrink(entVisRect, 0))
 
         rectCmd := putRectGrips(editor, entVisRect)
-        delta := editor.ui.mouseState.delta.div(editor.tilemapGrid.s).mulf(32)
+        delta := editor.uicore.mouseState.delta.div(editor.tilemapGrid.s).mulf(32)
 
         ent.rect = applyRectResizeCommand(rectCmd, ent.rect, delta)
 
@@ -1401,7 +1414,7 @@ fn putWorldEntities(editor: ^Editor) {
         ent.rect.y -= rectCmd.posFactor.y*sizeD.y
       }
 
-      events := editor.ui.endTool()
+      events := editor.uicore.endTool()
 
       if events.queryMouse(.left, mouseinput::pressed) {
         selectEntity(&editor.entities, i)
@@ -1460,8 +1473,8 @@ fn putNotifications(editor: ^Editor) {
 
     util::imageCropRect(editor.resources.toolbarIcons, {24*int(n.info.icon), 144, 24, 24})
     drawBevelRect(editor, {10-t*500, global::screen.h-58+y, w, h}, true, 0xFFFFFFBB)
-    editor.ui.ctx.drawImage(editor.resources.toolbarIcons, th::Transform{p: th::Vf2{10-t*500+10, global::screen.h-58+y+10}, s: th::Vf2{1, 1}})
-    editor.ui.ctx.drawText(editor.resources.mainFont, n.info.message, {50-t*500, global::screen.h-58+y+9}, th::black)
+    editor.uicore.ctx.drawImage(editor.resources.toolbarIcons, th::Transform{p: th::Vf2{10-t*500+10, global::screen.h-58+y+10}, s: th::Vf2{1, 1}})
+    editor.uicore.ctx.drawText(editor.resources.mainFont, n.info.message, {50-t*500, global::screen.h-58+y+9}, th::black)
     y -= 10
   }
 }
@@ -1486,9 +1499,9 @@ fn putLevelSelect(editor: ^Editor) {
         }
       }
     }
-    contentSize := ^th::Vf2(editor.ui.getProperty("ContentSize", th::Vf2{0, 0}))
+    contentSize := ^th::Vf2(editor.uicore.getProperty("ContentSize", th::Vf2{0, 0}))
     if ok, scrollAreaInfo := beginScrollArea(editor, contentRect, contentSize^); ok {
-      editor.ui.ctx.beginScissorRect(scrollAreaInfo.areaRect)
+      editor.uicore.ctx.beginScissorRect(scrollAreaInfo.areaRect)
       position := scrollAreaInfo.contentRect.getPos()
       y := 0.0
 
@@ -1502,7 +1515,7 @@ fn putLevelSelect(editor: ^Editor) {
 
       contentSize ^= th::Vf2{contentRect.w, y}
 
-      editor.ui.ctx.endScissor()
+      editor.uicore.ctx.endScissor()
       endScrollArea(editor)
     }
   })
@@ -1521,14 +1534,14 @@ fn showErrorScreenIfResourcesFailedToLoad(rl: ^resources::ResourceLoader): bool 
 
 fn preUiUpdate(editor: ^Editor) {
   // Clear the input sink.
-  editor.ui.inputSink = core::InputSink{}
+  editor.uicore.inputSink = core::InputSink{}
 
-  editor.ui.mouseState = editor.ui.mouseState.updated()
+  editor.uicore.mouseState = editor.uicore.mouseState.updated()
 
-  editor.ui.frameNumber += 1
+  editor.uicore.frameNumber += 1
 
-  if input::isJustPressed(.escape) && editor.ui.focusedTool != null {
-    editor.ui.focusedTool = null
+  if input::isJustPressed(.escape) && editor.uicore.focusedTool != null {
+    editor.uicore.focusedTool = null
     input::clear(.escape)
   }
 }
@@ -1536,27 +1549,27 @@ fn preUiUpdate(editor: ^Editor) {
 fn postUiUpdate(editor: ^Editor) {
   // put debug overlays
   if (editor.showDebugInfo) {
-    debug::putDebugFrames(&editor.ui, editor.resources.mainFont, &editor.ui.ctx)
+    debug::putDebugFrames(editor.uicore, editor.resources.mainFont, &editor.uicore.ctx)
   }
 
   // flush render context
-  editor.ui.ctx.flush()
+  editor.uicore.ctx.flush()
 
   // swap frame census
-  if !isAnyButtonHeld(&editor.ui.mouseState) && !editor.keepActive {
-    editor.ui.activeTool = editor.ui.maybeActiveTool
+  if !isAnyButtonHeld(&editor.uicore.mouseState) && !editor.keepActive {
+    editor.uicore.activeTool = editor.uicore.maybeActiveTool
   }
   editor.keepActive = false
-  editor.ui.hoveredTool = editor.ui.maybeActiveTool
-  if isAnyButtonHeld(&editor.ui.mouseState) {
-    editor.ui.focusedTool = editor.ui.activeTool
+  editor.uicore.hoveredTool = editor.uicore.maybeActiveTool
+  if isAnyButtonHeld(&editor.uicore.mouseState) {
+    editor.uicore.focusedTool = editor.uicore.activeTool
   }
-  editor.ui.maybeActiveTool = null
-  editor.ui.pruneToolsRecursive(editor.ui.tools)
+  editor.uicore.maybeActiveTool = null
+  editor.uicore.pruneToolsRecursive(editor.uicore.tools)
 }
 
 fn editorPutUi(editor: ^Editor) {
-  editor.ui.begin()
+  editor.uicore.begin()
 
   if input::isPressed(.ctrl) {
     if input::isJustPressedc('s') {
@@ -1603,11 +1616,11 @@ fn editorPutUi(editor: ^Editor) {
     game::update()
     script::update()
 
-    editor.ui.ctx.drawCustom(GameCmd{})
+    editor.uicore.ctx.drawCustom(GameCmd{})
 
     putLevelSelect(editor)
   } else {
-    tool := editor.ui.beginTool("TileEditor", {0, 0, global::screen.w, global::screen.h-58})
+    tool := editor.uicore.beginTool("TileEditor", {0, 0, global::screen.w, global::screen.h-58})
 
     if input::isPressed(.ctrl) && input::isJustPressedc('i') {
       appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
@@ -1620,9 +1633,9 @@ fn editorPutUi(editor: ^Editor) {
       const padding = 10
       const elementSize = 48
 
-      editor.ui.ctx.moveLayer(-1)
-      editor.ui.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tilemapGrid, &editor.world})
-      editor.ui.ctx.moveLayer(1)
+      editor.uicore.ctx.moveLayer(-1)
+      editor.uicore.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tilemapGrid, &editor.world})
+      editor.uicore.ctx.moveLayer(1)
       putWorldEntities(editor)
 
       position := tool.rect.getEnd().subf(padding).subf(elementSize)
@@ -1660,7 +1673,7 @@ fn editorPutUi(editor: ^Editor) {
         editor.tilemapShowAllLayers = !editor.tilemapShowAllLayers
       }
 
-      drawLayerIcon(&editor.ui.ctx, position.add(th::Vf2{1, 5}), editor.tilemapLayer, editor.tilemapShowAllLayers)
+      drawLayerIcon(&editor.uicore.ctx, position.add(th::Vf2{1, 5}), editor.tilemapLayer, editor.tilemapShowAllLayers)
       position.x -= elementSize
 
       if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "🔒", editor.entityBypass).isReleased) {
@@ -1668,7 +1681,7 @@ fn editorPutUi(editor: ^Editor) {
       }
     }
 
-    events := editor.ui.endTool()
+    events := editor.uicore.endTool()
 
     if editor.isRelocatingPlayer {
       if (events.queryMouse(.left, mouseinput::down)) {
@@ -1702,21 +1715,35 @@ fn editorPutUi(editor: ^Editor) {
     putRoomEditor(editor)
   }
 
-  editor.ui.ctx.moveLayer(1000)
+  editor.uicore.ctx.moveLayer(1000)
   putNotifications(editor)
-  editor.ui.ctx.moveLayer(-1000)
+  editor.uicore.ctx.moveLayer(-1000)
 
   if editor.isRelocatingPlayer {
-    editor.ui.ctx.moveLayer(10000000)
+    editor.uicore.ctx.moveLayer(10000000)
     editor.resources.toolbarIcons.crop(th::Vf2{2.0/4.0, 0.0/4.0}, th::Vf2{3.0/4.0, 1.0/4.0})
-    editor.ui.ctx.drawImage(editor.resources.toolbarIcons, util::posTrans(editor.ui.mouseState.pos.x, editor.ui.mouseState.pos.y))
-    editor.ui.ctx.moveLayer(-10000000)
+    editor.uicore.ctx.drawImage(editor.resources.toolbarIcons, util::posTrans(editor.uicore.mouseState.pos.x, editor.uicore.mouseState.pos.y))
+    editor.uicore.ctx.moveLayer(-10000000)
   }
 
+  editor.ui.space("Some button", {100, 500, 200, 200}, |editor| {
+    drawBtn(editor, ui.id, ui.rect, {}, false)
+  })
+
+  editor.ui.hack("Some button", |editor| {
+    ui.onHover({
+      immcursor::setCursor(.finger)
+    })
+    
+    ui.onPress({
+      dbg::logt("Hello world!")
+    })
+  })
+
   widgetWindow(editor, "Console (Aux)", {100, 100, 640, 480}, |editor| {
-    editor.ui.beginTool("Console", winfo.contentRect)
-    editor.ui.ctx.drawCustom(dbg::ConsoleDrawCmd{winfo.contentRect, editor.resources.mainFont})
-    events := editor.ui.endTool()
+    editor.uicore.beginTool("Console", winfo.contentRect)
+    editor.uicore.ctx.drawCustom(dbg::ConsoleDrawCmd{winfo.contentRect, editor.resources.mainFont})
+    events := editor.uicore.endTool()
     dbg::scrollConsole(events.queryScroll())
   }, true)
 }
@@ -1735,20 +1762,15 @@ fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources {
 }
 
 fn editorInit(resources: EditorResources): Editor {
-  rootNode := new(atoms::ToolNode)
-  rootNode ^= atoms::ToolNode{children: map[str]^atoms::ToolNode{}}
-
   tileset := tileset::fromImage(resources.tilesetImage, 32, 32, 2)
 
   world := world::fromTileset(tileset)
 
-  ui := core::Core{
-    ctx: drawcmd::init(),
-    tools: rootNode
-  }
+  ui := new(ui::UI, ui::mk())
 
   return Editor{
     ui: ui,
+    uicore: &ui.core,
     tilemapGrid: grid::Grid{s: {48, 48}},
     tilesetGrid: grid::Grid{s: {48, 48}},
     tilemapShowAllLayers: false,
@@ -1923,6 +1945,6 @@ fn session*(enabled: bool) {
     if err.code != 0 {
       dbg::logt("Failed to save session!")
     }
-    atoms::disconnectAllNodes(editor.ui.tools)
+    atoms::disconnectAllNodes(editor.uicore.tools)
   })
 }

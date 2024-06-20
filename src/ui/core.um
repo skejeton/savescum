@@ -41,6 +41,13 @@ type Events* = struct {
   mouseState: mouseinput::MouseState
 }
 
+fn mk*(): Core {
+  return {
+    ctx: drawcmd::mk(),
+    tools: new(atoms::ToolNode)
+  }
+}
+
 fn (core: ^Core) getToolState*(tool: ^atoms::ToolNode): atoms::ToolState {
   hovered := false
   t := core.hoveredTool
@@ -56,7 +63,7 @@ fn (core: ^Core) getToolState*(tool: ^atoms::ToolNode): atoms::ToolState {
   }
 }
 
-fn (core: ^Core) maybeAcquireToolNode(name: str): ^atoms::ToolNode {
+fn (core: ^Core) maybeAcquireToolNode*(name: str): ^atoms::ToolNode {
   if !validkey(core.currentTool.children, name) {
     return null
   }

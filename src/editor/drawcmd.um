@@ -97,7 +97,7 @@ fn (ctx: ^DrawContext) acquireLayer(layer: int) {
 }
 
 
-fn init*(): DrawContext {
+fn mk*(): DrawContext {
   ctx := DrawContext{}
   ctx.acquireLayer(0)
   ctx.currentLayer = &ctx.layers[0]
@@ -136,7 +136,7 @@ fn (ctx: ^DrawContext) flush*() {
     } 
   }
 
-  ctx ^= init()
+  ctx ^= mk()
 }
 
 // COMMAND IMPL ================================================================

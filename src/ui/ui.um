@@ -1,11 +1,60 @@
 // Main UI controller
 
-type (
-  UI* = struct {
-
-  }
+import (
+  "core.um"
+  "rect.um"
 )
 
-fn create*(): UI {
-  return UI{}
+type UI* = struct {
+  // Utility fields
+  rect: rect::Rect
+  id: str
+
+  // Core
+  core: core::Core
+  spaces: []rect::Rect
+}
+
+fn mk*(): UI {
+  return {
+    core: core::mk()
+  }
+}
+
+// Creates a space with a default "screen" container for you to use.
+fn (ui: ^UI) space*(id: str, r: rect::Rect, cb: fn(ui: ^UI)) {
+  ui.spaces = append(ui.spaces, r)
+  ui.core.beginTool(id, r)
+  pr := ui.rect
+  pid := ui.id
+  ui.rect = r
+  ui.id = id
+  cb(ui)
+  ui.core.endTool()
+  ui.spaces = delete(ui.spaces, len(ui.spaces)-1)
+  ui.rect = pr
+  ui.id = pid
+}
+
+// Allows to hijack a tool and use it as a space.
+fn (ui: ^UI) hack*(id: str, cb: fn(ui: ^UI)) {
+  tool := ui.core.maybeAcquireToolNode(id)
+
+  if tool != null {
+    ui.space(id, tool.rect, cb)
+  }
+}
+
+// ------------- EVENTS
+
+fn (ui: ^UI) onPress*(handler: fn(ui: ^UI)) {
+  if ui.core.isCurrentToolHovered() && ui.core.mouseState.lmb.isReleased {
+    handler(ui)
+  }
+}
+
+fn (ui: ^UI) onHover*(handler: fn(ui: ^UI)) {
+  if ui.core.isCurrentToolHovered() {
+    handler(ui)
+  }
 }
