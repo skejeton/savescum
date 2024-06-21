@@ -823,12 +823,12 @@ fn editorPutToolbar(editor: ^Editor) {
         position.y -= rectangle.h
 
         position.x -= 80
-        if (putSimpleButton(editor, {position.x, position.y, 80, rectangle.h}, "Save").isReleased) {
+        if (editor.ui.button("Save", {position.x, position.y, 80, rectangle.h})) {
           editorSaveRoom(editor)
         }
 
         position.x -= 80
-        if (putSimpleButton(editor, {position.x, position.y, 80, rectangle.h}, "Load").isReleased) {
+        if (editor.ui.button("Load", {position.x, position.y, 80, rectangle.h})) {
           editorLoadRoom(editor, editor.currentRoom)
         }
       }
@@ -988,7 +988,7 @@ fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, s
 
   editor.uicore.beginTool(ent.id, r)
   {
-    if (putSimpleButton(editor, r, ent.name).isReleased) {
+    if editor.ui.button(ent.name, r) {
       action = .edit
     }
     if selected {
@@ -1000,7 +1000,7 @@ fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, s
     r.x += r.w
     r.w = 45
     r.h = 22.5
-    if putSimpleButton(editor, r, "▲").isReleased {
+    if editor.ui.button("▲", r) {
       action = .moveUp
     }
     r.y += 22.5
@@ -1579,6 +1579,7 @@ fn postUiUpdate(editor: ^Editor) {
 }
 
 fn editorPutUi(editor: ^Editor) {
+  editor.ui.begin()
   editor.uicore.begin()
 
   if input::isPressed(.ctrl) {
@@ -1736,16 +1737,13 @@ fn editorPutUi(editor: ^Editor) {
     editor.uicore.ctx.moveLayer(-10000000)
   }
 
-  editor.ui.space("Some button", {100, 500, 200, 200}, |editor| {
-    buttonState := ButtonState{}
-    buttonState.isOver = ui.isHovered()
-    buttonState.isDown = ui.isPressed()
+  editor.ui.render("button", |editor| {
+    bs := ButtonState{
+      isOver: state.hovered,
+      isDown: state.pressed
+    }
 
-    ui.onClick({
-      dbg::logt("Hello world!")
-    })
-
-    drawBtn(editor, ui.el.id, ui.el.rect, buttonState, false)
+    drawBtn(editor, state.id, state.rect, bs, false, 0xFFFF00FF)
   })
 
   widgetWindow(editor, "Console (Aux)", {100, 100, 640, 480}, |editor| {

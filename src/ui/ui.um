@@ -8,11 +8,14 @@ import (
 
 type (
   El* = struct {
+    hovered: bool
+    pressed: bool
     id: str
     rect: rect::Rect
   }
 
   UI* = struct {
+    classes: map[str][]El
     el: El
     core: core::Core
   } 
@@ -24,11 +27,38 @@ fn mk*(): UI {
   }
 }
 
+
+fn (ui: ^UI) begin*() {
+  ui.classes = {}
+}
+
+fn (ui: ^UI) beginSpace*(id: str, r: rect::Rect): El {
+  pel := ui.el
+  ui.core.beginTool(id, r)
+  ui.el = El{
+    hovered: ui.core.currentTool == ui.core.hoveredTool, 
+    pressed: ui.core.currentTool == ui.core.activeTool && ui.core.mouseState.lmb.isDown,
+    id: id,
+    rect: r
+  }
+  return pel
+}
+
+fn (ui: ^UI) endSpace*(pel: El) {
+  ui.core.endTool()
+  ui.el = pel
+}
+
 // Creates a space with a default "screen" container for you to use.
 fn (ui: ^UI) space*(id: str, r: rect::Rect, cb: fn(ui: ^UI)) {
   pel := ui.el
-  ui.el = El{id: id, rect: r}
   ui.core.beginTool(id, r)
+  ui.el = El{
+    hovered: ui.core.currentTool == ui.core.hoveredTool, 
+    pressed: ui.core.currentTool == ui.core.activeTool && ui.core.mouseState.lmb.isDown,
+    id: id,
+    rect: r
+  }
   cb(ui)
   ui.core.endTool()
   ui.el = pel
@@ -43,13 +73,29 @@ fn (ui: ^UI) hack*(id: str, cb: fn(ui: ^UI)) {
   }
 }
 
+// ------------- IDENTIFICATION
+fn (ui: ^UI) class*(class: str) {
+  ui.classes[class] = append(ui.classes[class], ui.el)
+}
+
+// ------------- RENDERING
+fn (ui: ^UI) render*(class: str, cb: fn(ui: ^UI, state: El)) {
+  if !validkey(ui.classes, class) {
+    return
+  }
+
+  for i, el in ui.classes[class] {
+    cb(ui, el)
+  }
+}
+
 // ------------- STATES
 fn (ui: ^UI) isHovered*(): bool {
-  return ui.core.currentTool == ui.core.hoveredTool
+  return ui.el.hovered
 }
 
 fn (ui: ^UI) isPressed*(): bool {
-  return ui.core.currentTool == ui.core.activeTool && ui.core.mouseState.lmb.isDown
+  return ui.el.pressed
 }
 
 // ------------- EVENTS
@@ -61,3 +107,11 @@ fn (ui: ^UI) onClick*(handler: fn(ui: ^UI)) {
 }
 
 // ------------- WIDGETS
+
+fn (ui: ^UI) button*(text: str, rect: rect::Rect): bool {
+  pel := ui.beginSpace(text, rect)
+  ui.class("button")
+  clicked := ui.core.currentTool == ui.core.hoveredTool && ui.core.mouseState.lmb.isReleased
+  ui.endSpace(pel)
+  return clicked
+}
