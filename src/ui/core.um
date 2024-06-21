@@ -7,39 +7,43 @@ import (
   "rect.um"
 )
 
-type EventMouse = enum {
-  left
-  middle
-  right
-  scroll
-  _count
-}
 
-type InputSink* = struct {
-  sunk: [int(EventMouse._count)]bool
-}
+type (
+  EventMouse = enum {
+    left
+    middle
+    right
+    scroll
+    _count
+  }
 
-type Core* = struct {
-  mouseState: mouseinput::MouseState
-  frameNumber: uint
-  inputSink: InputSink
+  InputSink* = struct {
+    sunk: [int(EventMouse._count)]bool
+  }
 
-  ctx: drawcmd::DrawContext
-  tools: ^atoms::ToolNode
-  currentTool: ^atoms::ToolNode
-  maybeActiveTool: ^atoms::ToolNode
-  activeTool: ^atoms::ToolNode
-  hoveredTool: ^atoms::ToolNode
-  focusedTool: ^atoms::ToolNode
-}
+  Core* = struct {
+    mouseState: mouseinput::MouseState
+    frameNumber: uint
+    inputSink: InputSink
 
-type Events* = struct {
-  sink: ^InputSink
-  // The events the element itself has sunk, so we can return true if the event were to be queried again.
-  acquired: InputSink
-  mask: InputSink
-  mouseState: mouseinput::MouseState
-}
+    ctx: drawcmd::DrawContext
+    tools: ^atoms::ToolNode
+    currentTool: ^atoms::ToolNode
+    maybeActiveTool: ^atoms::ToolNode
+    activeTool: ^atoms::ToolNode
+    hoveredTool: ^atoms::ToolNode
+    focusedTool: ^atoms::ToolNode
+  }
+
+  Events* = struct {
+    sink: ^InputSink
+    // The events the element itself has sunk, so we can return true if the event were to be queried again.
+    acquired: InputSink
+    mask: InputSink
+    mouseState: mouseinput::MouseState
+  }
+)
+
 
 fn mk*(): Core {
   return {

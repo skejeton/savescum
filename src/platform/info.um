@@ -1,12 +1,14 @@
-type Access* = enum {
-  read
-  readwrite
-}
+type (
+  Access* = enum {
+    read
+    readwrite
+  }
 
-type Info* = struct {
-  fsCaseSensetive: bool
-  fsAccess: Access
-}
+  Info* = struct {
+    fsCaseSensetive: bool
+    fsAccess: Access
+  } 
+)
 
 fn get*(): Info {
   _, err := util::readFileStr("data/misc/CheckFS")

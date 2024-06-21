@@ -133,6 +133,7 @@ type ChumState = struct {
 
 var (
   time: real
+  coyoteTime: int
   chumFrown: bool = false
   imgObj: image::Image
   imgChum: image::Image
@@ -266,11 +267,16 @@ fn cameraOffsetRect(r: rect::Rect): rect::Rect {
 }
 
 fn playerControl() {
+  coyoteTime -= 1
+  if wasOnGround && !pal.ent.onGround {
+    coyoteTime = 40
+  }
   if !wasOnGround && pal.ent.onGround {
     rumbling = 0.2
     palLand.start()
   }
-  if (input::isPressed(.up) || input::gamepad().isPressed(.a)) && pal.ent.onGround {
+  if (input::isPressed(.up) || input::gamepad().isPressed(.a)) && (pal.ent.onGround || coyoteTime > 0) {
+    coyoteTime = 0
     palJump.start()
     pal.ent.vel.y = -3.65
   }

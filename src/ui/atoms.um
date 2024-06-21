@@ -1,20 +1,22 @@
 import "rect.um"
 
-type ToolNode* = struct {
-  children: map[str]ToolNode
-  parent: ^ToolNode
-  userdata: any
-  lastFrameTouched: int
-  layer: int
-  rect: rect::Rect
-}
+type (
+  ToolNode* = struct {
+    children: map[str]ToolNode
+    parent: ^ToolNode
+    userdata: any
+    lastFrameTouched: int
+    layer: int
+    rect: rect::Rect
+  }
 
-type ToolState* = struct {
-  active: bool
-  hovered: bool
-  focused: bool
-}
-
+  ToolState* = struct {
+    active: bool
+    hovered: bool
+    focused: bool
+  }
+)
+ 
 /// @return True if child is related to parent node. 
 /// @param[in] parent Parent node.
 /// @param[in] child Child node.

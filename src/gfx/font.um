@@ -1,6 +1,7 @@
 import (
   "th.um"
   f = "font.um"
+  "canvas.um"
   "std.um"
 )
 
@@ -10,6 +11,20 @@ type Font* = interface {
   validate(): bool
   draw(text: str, pos: th::Vf2, color: uint32, scale: th::fu = 1.0)
   measure(text: str): th::Vf2
+}
+
+type Default* = struct {}
+
+fn (d: ^Default) validate(): bool {
+  return true
+}
+
+fn (d: ^Default) draw(text: str, pos: th::Vf2, color: uint32, scale: th::fu = 1.0) {
+  canvas::drawText(text, pos, color, scale)
+}
+
+fn (d: ^Default) measure(text: str): th::Vf2 {
+  return canvas::textSize(text, 1)
 }
 
 fn load*(path: str, size: th::fu, filter: Filter = .linear): (Font, std::Err) {

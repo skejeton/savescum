@@ -6,15 +6,17 @@ import (
   "rect.um"
 )
 
-type El* = struct {
-  id: str
-  rect: rect::Rect
-}
+type (
+  El* = struct {
+    id: str
+    rect: rect::Rect
+  }
 
-type UI* = struct {
-  el: El
-  core: core::Core
-}
+  UI* = struct {
+    el: El
+    core: core::Core
+  } 
+)
 
 fn mk*(): UI {
   return {
@@ -24,9 +26,9 @@ fn mk*(): UI {
 
 // Creates a space with a default "screen" container for you to use.
 fn (ui: ^UI) space*(id: str, r: rect::Rect, cb: fn(ui: ^UI)) {
-  ui.core.beginTool(id, r)
   pel := ui.el
   ui.el = El{id: id, rect: r}
+  ui.core.beginTool(id, r)
   cb(ui)
   ui.core.endTool()
   ui.el = pel
@@ -57,3 +59,5 @@ fn (ui: ^UI) onClick*(handler: fn(ui: ^UI)) {
     handler(ui)
   }
 }
+
+// ------------- WIDGETS
