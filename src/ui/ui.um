@@ -10,7 +10,9 @@ type (
   El* = struct {
     hovered: bool
     pressed: bool
+    layer: int
     id: str
+    scissorRect: rect::Rect
     rect: rect::Rect
   }
 
@@ -35,10 +37,25 @@ fn (ui: ^UI) begin*() {
 fn (ui: ^UI) beginSpace*(id: str, r: rect::Rect): El {
   pel := ui.el
   ui.core.beginTool(id, r)
+
+  // HACK: yeah
+  scissorRect := rect::Rect{
+    x: 0,
+    y: 0,
+    w: 10000,
+    h: 10000
+  }
+
+  if sr, ok := ui.core.ctx.getCurrentScissorRect(); ok {
+    scissorRect = sr
+  }
+
   ui.el = El{
     hovered: ui.core.currentTool == ui.core.hoveredTool, 
     pressed: ui.core.currentTool == ui.core.activeTool && ui.core.mouseState.lmb.isDown,
+    layer: ui.core.ctx.currentLayerId,
     id: id,
+    scissorRect: scissorRect,
     rect: r
   }
   return pel
@@ -53,10 +70,25 @@ fn (ui: ^UI) endSpace*(pel: El) {
 fn (ui: ^UI) space*(id: str, r: rect::Rect, cb: fn(ui: ^UI)) {
   pel := ui.el
   ui.core.beginTool(id, r)
-  ui.el = El{
+
+  // HACK: yeah
+  scissorRect := rect::Rect{
+    x: 0,
+    y: 0,
+    w: 10000,
+    h: 10000
+  }
+
+  if sr, ok := ui.core.ctx.getCurrentScissorRect(); ok {
+    scissorRect = sr
+  }
+
+  ui.el = {
     hovered: ui.core.currentTool == ui.core.hoveredTool, 
     pressed: ui.core.currentTool == ui.core.activeTool && ui.core.mouseState.lmb.isDown,
+    layer: ui.core.ctx.currentLayerId,
     id: id,
+    scissorRect: scissorRect,
     rect: r
   }
   cb(ui)
@@ -84,9 +116,17 @@ fn (ui: ^UI) render*(class: str, cb: fn(ui: ^UI, state: El)) {
     return
   }
 
+  // TODO: I won't need this after migrating everything to this new UI system.
+  l := ui.core.ctx.currentLayerId
+
   for i, el in ui.classes[class] {
+    ui.core.ctx.setLayer(el.layer)
+    ui.core.ctx.beginScissorRect(el.scissorRect)
     cb(ui, el)
+    ui.core.ctx.endScissor()
   }
+  
+  ui.core.ctx.setLayer(l)
 }
 
 // ------------- STATES

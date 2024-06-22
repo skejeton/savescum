@@ -115,11 +115,11 @@ fn (ctx: ^DrawContext) moveLayer*(layerBy: int) {
   ctx.setLayer(ctx.currentLayerId+layerBy)
 }
 
-fn (ctx: ^DrawContext) getCurrentScissorRect*(): (bool, rect::Rect) {
+fn (ctx: ^DrawContext) getCurrentScissorRect*(): (rect::Rect, bool) {
   if len(ctx.scissorRectStack) > 0 {
-    return true, ctx.scissorRectStack[len(ctx.scissorRectStack)-1]
+    return ctx.scissorRectStack[len(ctx.scissorRectStack)-1], true
   }
-  return false, rect::Rect{}
+  return rect::Rect{}, false
 }
 
 fn (ctx: ^DrawContext) flush*() {

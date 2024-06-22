@@ -119,7 +119,7 @@ fn (core: ^Core) beginTool*(name: str, toolRect: rect::Rect): ^atoms::ToolNode {
     isOverMaybeActiveTool = node.layer >= core.maybeActiveTool.layer
   }
  
-  if ok, scissorRect := core.ctx.getCurrentScissorRect(); ok {
+  if scissorRect, ok := core.ctx.getCurrentScissorRect(); ok {
     isOverMaybeActiveTool = isOverMaybeActiveTool && util::rectVsPoint(scissorRect, core.mouseState.pos)
   }
 
