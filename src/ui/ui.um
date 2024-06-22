@@ -2,7 +2,6 @@
 
 import (
   "core.um"
-  "atoms.um"
   "rect.um"
 )
 

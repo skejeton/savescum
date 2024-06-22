@@ -45,6 +45,8 @@ import (
 
   "utf8.um"
   "std.um"
+
+  "../../umbox/os/os.um"
 )
 
 type (
@@ -1948,8 +1950,10 @@ fn session*(enabled: bool) {
   })
 
   window::onDestroy.register(|editor| {
-    // TODO: What if the directory doesn't exist?
-    // TODO: Make directory create function
+    if !os::isdir("user") {
+      os::mkdir("user")
+    }
+
     err := util::writeFileStr("user/session.csv", session::save(editorSaveSession(editor)))
     if err.code != 0 {
       dbg::logt("Failed to save session!")
