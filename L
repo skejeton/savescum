@@ -193,6 +193,9 @@ case `getarg 0` in
       fi
     fi
   ;;
+  cl)
+    wc -l src/*.um src/**/*.um src/**/**/*.um
+  ;;
   *)
     echo "You can do: test, check, play"
     exit 3
