@@ -138,7 +138,6 @@ fn (ui: ^UI) isPressed*(): bool {
 }
 
 // ------------- EVENTS
-
 fn (ui: ^UI) onClick*(handler: fn(ui: ^UI)) {
   if ui.core.currentTool == ui.core.hoveredTool && ui.core.mouseState.lmb.isReleased {
     handler(ui)
@@ -146,7 +145,6 @@ fn (ui: ^UI) onClick*(handler: fn(ui: ^UI)) {
 }
 
 // ------------- WIDGETS
-
 fn (ui: ^UI) button*(text: str, rect: rect::Rect): bool {
   pel := ui.beginSpace(text, rect)
   ui.class("button")

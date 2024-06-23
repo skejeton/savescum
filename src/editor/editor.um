@@ -1006,18 +1006,18 @@ fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, s
       action = .moveUp
     }
     r.y += 22.5
-    if putSimpleButton(editor, r, "▼").isReleased {
+    if editor.ui.button("▼", r) {
       action = .moveDown
     }
     r.y -= 22.5
     r.h = 45
     r.x += 45
     if input::isPressed(.shift) {
-      if putSimpleButton(editor, r, "␡").isReleased {
+      if editor.ui.button("␡", r) {
         action = .remove
       }
     } else {
-      if putSimpleButton(editor, r, "⎘").isReleased {
+      if editor.ui.button("⎘", r) {
         action = .duplicate
       }
     }
@@ -1144,7 +1144,7 @@ fn putEntityList(editor: ^Editor) {
     {
       buttonRect := util::rectCutRight(winfo.titlebarRect, winfo.titlebarRect.h)
 
-      if (putSimpleButton(editor, buttonRect, "+").isReleased) {
+      if editor.ui.button("+", buttonRect) {
         appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
         selectEntity(&editor.entities, len(editor.entities.list)-1)
       }
@@ -1206,7 +1206,7 @@ fn putEntityEditor(editor: ^Editor) {
       editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 46}, "Tags", &entitySelected.tags) || editor.dirty
       position.y += 46
       position.y += 10
-      if putSimpleButton(editor, {position.x, position.y, contentRect.w, 40}, "Delete").isReleased {
+      if editor.ui.button("Delete", {position.x, position.y, contentRect.w, 40}) {
         removeEntity(&editor.entities, getEntitySelectedIndex(&editor.entities))
         editor.dirty = true
       }
@@ -1462,7 +1462,7 @@ fn putRoomEditor(editor: ^Editor) {
 
     position.y += 50
     if input::isPressed(.shift) {
-      if putSimpleButton(editor, {position.x, position.y, contentRect.w, 40}, "Load").isReleased {
+      if editor.ui.button("Load", {position.x, position.y, contentRect.w, 40}) {
         loadRoom(editor, editor.potentialRoom)
       }
     } else {
@@ -1652,17 +1652,17 @@ fn editorPutUi(editor: ^Editor) {
       putWorldEntities(editor)
 
       position := tool.rect.getEnd().subf(padding).subf(elementSize)
-      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "R/U").isReleased) {
+      if editor.ui.button("R/U", {position.x, position.y, elementSize, elementSize}) {
         editor.wm.windows = {}
       }
       position.x -= elementSize
 
-      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "> <").isReleased) {
+      if editor.ui.button("> <", {position.x, position.y, elementSize, elementSize}) {
         editor.tilemapGrid.p = th::Vf2{0, 0}
       }
       position.x -= elementSize
 
-      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "1:1").isReleased) {
+      if editor.ui.button("1:1", {position.x, position.y, elementSize, elementSize}) {
         grid::gridZoomInto(&editor.tilemapGrid, {32.0, 32.0}, util::rectCenter(editor.tilemapGrid.bb))
       }
       position.x -= elementSize
@@ -1689,7 +1689,7 @@ fn editorPutUi(editor: ^Editor) {
       drawLayerIcon(&editor.uicore.ctx, position.add(th::Vf2{1, 5}), editor.tilemapLayer, editor.tilemapShowAllLayers)
       position.x -= elementSize
 
-      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "🔒", editor.entityBypass).isReleased) {
+      if editor.ui.button("🔒", {position.x, position.y, elementSize, elementSize}) {
         editor.entityBypass = !editor.entityBypass
       }
     }
