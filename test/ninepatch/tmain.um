@@ -4,7 +4,7 @@ import (
   "window.um"
   "rect.um"
   "image.um"
-  "../../src/test.um"
+  "../test.um"
 )
 
 var (

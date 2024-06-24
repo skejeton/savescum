@@ -1,6 +1,6 @@
 import (
-  "../../src/util.um"
-  "../../src/test.um"
+  "../test.um"
+  "../../src/misc/util.um"
   "std.um"
 )
 

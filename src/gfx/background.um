@@ -4,13 +4,13 @@ import (
   "canvas.um"
   "th.um"
   "color.um"
-  "util.um"
-  "global.um"
-  "resources.um"
+  "../misc/util.um"
+  "../shared/global.um"
+  "../data/resources.um"
   "partition.um"
 
-  "gfx/d3shapes.um"
-  "gfx/d3.um"
+  "d3shapes.um"
+  "d3.um"
 )
 
 type Background = enum {

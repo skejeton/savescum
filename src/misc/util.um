@@ -6,9 +6,9 @@ import (
   "input.um"
   "canvas.um"
   "utf8.um"
-  "gfx/font.um"
+  "../gfx/font.um"
   
-  "misc/strings.um"
+  "../misc/strings.um"
 )
 
 fn posTrans*(x, y: th::fu): th::Transform {

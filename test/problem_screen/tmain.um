@@ -1,7 +1,7 @@
 import (
-  "../../src/problem_screen.um"
-  "../../src/resources.um"
-  "../../src/test.um"
+  "../../src/data/problem_screen.um"
+  "../../src/data/resources.um"
+  "../test.um"
   "window.um"
 )
 

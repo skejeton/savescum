@@ -6,9 +6,9 @@ import (
   "../../src/gfx/font.um"
   "image.um"
   "color.um"
-  "../../src/test.um"
-  "../../src/util.um"
-  "../../src/editor/drawcmd.um"
+  "../test.um"
+  "../../src/misc/util.um"
+  "../../src/gfx/drawcmd.um"
 )
 
 type OutlineRectCmd = struct {
@@ -34,13 +34,13 @@ fn init*() {
   test::isUnitTest(false)
 
   window::setup("Hello", 640, 480)
-  ctx = drawcmd::init()
-  font1 = font::load("data/font/monospace.ttf", 16, .nearest).item0
-  font2 = font::load("data/font/sans.ttf", 16).item0
+  ctx = drawcmd::mk()
+  font1 = font::load("data/font/FairfaxHD.ttf", 16, .nearest).item0
+  font2 = font::load("data/font/Roboto.ttf", 16).item0
   image1 = image::load("data/img/test.png").item0
   image2 = image::load("data/img/test.png").item0
   image2.setfilter(0)
-  image3 = image::load("data/img/ui_bevelbutton.png").item0
+  image3 = image::load("data/img/ui/1_0x/base.png").item0
 
   for i in colors {
     colors[i][0] = color::hsv(i/7.0, 1.0, 1.0)

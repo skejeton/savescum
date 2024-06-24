@@ -1,4 +1,4 @@
-import savescum = "src/savesc.um"
+import savescum = "src/savescum/savesc.um"
 
 fn init*() {
   savescum::init({mode: .editor})

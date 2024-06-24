@@ -27,9 +27,9 @@ import (
   strings = "../../src/misc/strings.um"
   m_layout = "layout.um"
   "draw_dialog.um"
-  "../../src/test.um"
-  "../../src/util.um"
-  "../../src/mouseinput.um"
+  "../test.um"
+  "../../src/misc/util.um"
+  "../../src/misc/mouseinput.um"
   "../../src/gfx/font.um"
   "color.um"
 )

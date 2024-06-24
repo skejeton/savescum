@@ -1,6 +1,6 @@
 import (
-  "../../src/hashname.um"
-  "../../src/test.um"
+  "../../src/misc/hashname.um"
+  "../test.um"
 )
 
 fn init*() {

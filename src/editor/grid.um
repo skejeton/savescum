@@ -1,7 +1,7 @@
 import (
   "th.um"
   "rect.um"
-  "../util.um"
+  "../misc/util.um"
   "canvas.um"
 )
 

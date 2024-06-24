@@ -3,7 +3,7 @@
 
 import (
   "image.um"
-  "gfx/font.um"
+  "../gfx/font.um"
   "audio.um"
 )
 

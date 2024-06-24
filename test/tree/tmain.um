@@ -1,6 +1,6 @@
 import (
   "tree.um"
-  "../../src/test.um"
+  "../test.um"
 )
 
 fn printElem(elem: ^tree::Elem, depth: int = 0) {

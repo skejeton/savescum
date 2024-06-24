@@ -11,6 +11,7 @@ type (
 )
 
 fn get*(): Info {
+  // FIXME: This path shouldn't be in this file ideally
   _, err := util::readFileStr("data/misc/CheckFS")
 
   return {

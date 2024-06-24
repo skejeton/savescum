@@ -1,6 +1,4 @@
-import (
-  "th.um"
-)
+import "th.um"
 
 type (
   Icon* = enum {

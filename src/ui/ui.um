@@ -19,7 +19,7 @@ type (
     classes: map[str][]El
     el: El
     core: core::Core
-  } 
+  }
 )
 
 fn mk*(): UI {

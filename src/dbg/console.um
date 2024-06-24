@@ -7,8 +7,8 @@ import (
   "rect.um"
   "th.um"
   "canvas.um"
-  "../rerp.um"
   "color.um"
+  "../gfx/rerp.um"
   "../gfx/font.um"
 )
 

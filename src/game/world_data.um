@@ -1,6 +1,6 @@
 import (
   "world.um"
-  "csvutil.um"
+  "../misc/csvutil.um"
   "rect.um"
   "std.um"
   "csv.um"

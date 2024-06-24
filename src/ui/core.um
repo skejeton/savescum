@@ -1,8 +1,8 @@
 import (
   "atoms.um"
-  "../mouseinput.um"
-  "../editor/drawcmd.um"
-  "../util.um"
+  "../misc/mouseinput.um"
+  "../gfx/drawcmd.um"
+  "../misc/util.um"
   "std.um"
   "rect.um"
 )

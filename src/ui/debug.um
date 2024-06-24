@@ -1,12 +1,12 @@
 import (
 	"core.um"
   "atoms.um"
-  "../editor/drawcmd.um"
+  "../gfx/drawcmd.um"
   "rect.um"
   "th.um"
   "../gfx/font.um"
-  "../util.um"
-  "../global.um"
+  "../misc/util.um"
+  "../shared/global.um"
 )
 
 type ToolDebugFrame = struct {

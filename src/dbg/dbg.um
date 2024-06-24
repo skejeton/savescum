@@ -1,8 +1,8 @@
 import (
-  "console/console.um"
-  "editor/drawcmd.um"
   "rect.um"
-  font = "gfx/font.um"
+  "console.um"
+  "../gfx/font.um"
+  "../gfx/drawcmd.um"
 )
 
 var (

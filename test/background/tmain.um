@@ -4,16 +4,16 @@ import (
   "th.um"
   "canvas.um"
   "input.um"
-  "../../src/test.um"
-  "../../src/background.um"
-  "../../src/util.um"
-  "../../src/resources.um"
-  "../../src/problem_screen.um"
+  "../test.um"
+  "../../src/gfx/background.um"
+  "../../src/misc/util.um"
+  "../../src/data/resources.um"
+  "../../src/data/problem_screen.um"
 )
 
 var screen: rect::Rect
 var scale: real
-var offset: th::fu
+var offset: th::Vf2
 var oldMousePos: th::Vf2
 
 fn init*() {

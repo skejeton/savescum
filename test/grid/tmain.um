@@ -1,6 +1,6 @@
 import (
-  "../../src/test.um"
-  "../../src/rerp.um" 
+  "../test.um"
+  "../../src/gfx/rerp.um" 
   "../../src/editor/grid.um"
   "image.um"
   "window.um"

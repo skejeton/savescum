@@ -5,9 +5,9 @@ import (
   "image.um"
   "th.um"
   "std.um"
-  "../../src/tileset.um"
-  "../../src/util.um"
-  "../../src/test.um"
+  "../../src/game/tileset.um"
+  "../../src/misc/util.um"
+  "../test.um"
 )
 
 type T = struct {x, y: int}

@@ -1,7 +1,7 @@
 import (
 	"input.um"
 	"window.um"
-  "ui/wm.um"
+  "../ui/wm.um"
 )
 
 // Enables: alt+enter: Enter/Leave fullscreen
@@ -19,4 +19,3 @@ fn console*(wm: ^wm::WM) {
     wm.setWindowVisible("Console (Aux)", !wm.isWindowVisible("Console (Aux)"))
   }
 }
-
