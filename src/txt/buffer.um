@@ -11,114 +11,137 @@ type Cursor* = struct {
   line, column: int
 }
 
-// Creates a new buffer with the provided text.
-fn newBuffer*(text: str): Buffer {
-  // Normalize line endings.
-  text = strings::join(strings::splitBy(text, '\r'))
-  return Buffer{lines: strings::splitBy(text, '\n')}
+fn mk*(string: str): Buffer {
+  return Buffer{lines: strings::splitBy(string, '\n')}
 }
 
-// Converts buffer to string
-fn bufferToString*(buffer: Buffer): str {
-  return strings::joinBy(buffer.lines, '\n')
+fn (buf: ^Buffer) toString*(): str {
+  return strings::joinBy(buf.lines, "\n")
 }
 
-// Splits line at the cursor, equivalent to inserting a newline.
-fn splitLine*(buffer: ^Buffer, cursor: ^Cursor) {
-  firstHalf, secondHalf := strings::uniSlice(buffer.lines[cursor.line], 0, cursor.column), strings::uniSliceFrom(buffer.lines[cursor.line], cursor.column)
+fn (buf: ^Buffer) splitLine*(cursor: ^Cursor) {
+  firstHalf, secondHalf := strings::uniSlice(buf.lines[cursor.line], 0, cursor.column), strings::uniSliceFrom(buf.lines[cursor.line], cursor.column)
 
-  buffer.lines[cursor.line] = firstHalf
+  buf.lines[cursor.line] = firstHalf
 
-  newLines := slice(buffer.lines, 0, cursor.line+1)
+  newLines := slice(buf.lines, 0, cursor.line+1)
   newLines = append(newLines, secondHalf)
-  newLines = append(newLines, slice(buffer.lines, cursor.line+1))
-  buffer.lines = newLines
+  newLines = append(newLines, slice(buf.lines, cursor.line+1))
+  buf.lines = newLines
 
   cursor.column = 0
   cursor.line += 1
 }
 
-
-// Erases character under cursor.
-// Joins the two lines if at the start of a line.
-fn erase*(buffer: ^Buffer, cursor: ^Cursor) {
+fn (buf: ^Buffer) erase*(cursor: ^Cursor) {
   cursor.column -= 1
   if cursor.column < 0 {
     // Join lines strategy.
     cursor.line -= 1
     if cursor.line >= 0 {
-      cursor.column = utf8::runeCount(buffer.lines[cursor.line])
-      buffer.lines[cursor.line] += buffer.lines[cursor.line+1]
-      buffer.lines = delete(buffer.lines, cursor.line+1)
+      cursor.column = utf8::runeCount(buf.lines[cursor.line])
+      buf.lines[cursor.line] += buf.lines[cursor.line+1]
+      buf.lines = delete(buf.lines, cursor.line+1)
     } else {
-      cursor.column = 0
       cursor.line = 0
+      cursor.column = 0
     }
   } else {
     // Remove char strategy.
-    buffer.lines[cursor.line] = strings::uniRemove(buffer.lines[cursor.line], cursor.column, 1)
+    buf.lines[cursor.line] = strings::uniRemove(buf.lines[cursor.line], cursor.column, 1)
   }
 }
 
-// Inserts provided text into buffer.
-fn insertAt*(buffer: ^Buffer, cursor: ^Cursor, text: str) {
+fn (buf: ^Buffer) eraseRange*(a: Cursor, b: ^Cursor) {
+  if a.line == b.line && a.column == b.column {
+    buf.erase(b)
+    return
+  }
+
+  if a.line > b.line || (a.line == b.line && a.column > b.column) {
+    a, b^ = b^, a
+  }
+
+  for a.line < b.line || (a.line == b.line && a.column < b.column) {
+    buf.erase(b)
+  }
+}
+
+fn (buf: ^Buffer) getRange*(a: Cursor, b: Cursor): str {
+  if a.line > b.line {
+    a, b = b, a
+  }
+
+  result := ""
+
+  for a.line < b.line {
+    result += strings::uniSliceFrom(buf.lines[a.line], a.column)+"\n"
+    a.line++
+    a.column = 0
+  }
+
+  if a.column > b.column {
+    a, b = b, a
+  }
+
+  result += strings::uniSlice(buf.lines[a.line], a.column, b.column-a.column)
+
+  return result
+}
+
+fn (buf: ^Buffer) insert*(cursor: ^Cursor, text: str) {
   linesToInsert := strings::splitBy(text, '\n')
   for index, line in linesToInsert {
     // Reset the column if we're on a new line.
-    if index != 0 {
-      splitLine(buffer, cursor)
+    if index != 0 { 
+      buf.splitLine(cursor)
     }
-    buffer.lines[cursor.line] = strings::uniInsert(buffer.lines[cursor.line], cursor.column, line)
+    buf.lines[cursor.line] = strings::uniInsert(buf.lines[cursor.line], cursor.column, line)
     cursor.column += utf8::runeCount(line)
   }
 }
 
-fn eraseRange*(buffer: ^Buffer, cursor: ^Cursor, start, end: Cursor) {
-  if start.line == end.line {
-    buffer.lines[start.line] = strings::uniRemove(buffer.lines[start.line], start.column, end.column-start.column)
-  } else {
-    // Remove the first line.
-    buffer.lines[start.line] = strings::uniSliceFrom(buffer.lines[start.line], start.column)
-    // Remove the last line.
-    buffer.lines[end.line] = strings::uniRemove(buffer.lines[end.line], 0, end.column)
-    // Join the two lines.
-    buffer.lines[start.line] += buffer.lines[end.line]
-    // Remove the lines in between.
-    for i := start.line+1; i < end.line-1; i++ {
-      buffer.lines = delete(buffer.lines, i)
+fn (buf: ^Buffer) update*(cursor: ^Cursor, text: str) {
+  runes := utf8::decode(text)
+
+  for index, rune in runes {
+    // Transform character to a buffer operation.
+    switch int(rune) {
+      case 13: // Enter key.
+        buf.insert(cursor, "\n")
+      case 9: // Tab key.
+        buf.insert(cursor, "  ")
+      case 8, 27: 
+      default: // Printable character.
+        buf.insert(cursor, rune.encode())
     }
   }
-  cursor.line = start.line
-  cursor.column = start.column
 }
 
-// Sanitizes the `cursor` so it doesn't go outside bounds of `buffer`.
-fn sanitizeCursor*(buffer: ^Buffer, cursor: Cursor): Cursor {
+fn (buf: ^Buffer) sanitizeCursor*(cursor: Cursor): Cursor {
   if cursor.line < 0 {
     cursor.line = 0
   }
-  if cursor.line > len(buffer.lines)-1 {
-    cursor.line = len(buffer.lines)-1
+  if cursor.line > len(buf.lines)-1 {
+    cursor.line = len(buf.lines)-1
   }
 
-  realLength := utf8::runeCount(buffer.lines[cursor.line])
-
+  realLength := utf8::runeCount(buf.lines[cursor.line])
+  
   if cursor.column < 0 {
     cursor.column = 0
   }
   for cursor.column > realLength {
     cursor.column = realLength
   }
-
+  
   return cursor
 }
 
-// Moves cursor within buffer by dx columns, dy rows.
-// Rows grow downwards.
-fn moveCursor*(buffer: ^Buffer, cursor: Cursor, dx, dy: int): Cursor {
+fn (buf: ^Buffer) moveCursor*(cursor: Cursor, dx, dy: int): Cursor {
   cursor.line += dy
 
-  cursor = sanitizeCursor(buffer, cursor)
+  cursor = buf.sanitizeCursor(cursor)
 
   if dx < 0 {
     for dx != 0 {
@@ -127,7 +150,7 @@ fn moveCursor*(buffer: ^Buffer, cursor: Cursor, dx, dy: int): Cursor {
       if cursor.column == 0 {
         cursor.line -= 1
         if cursor.line > 0 {
-          cursor.column = utf8::runeCount(buffer.lines[cursor.line])
+          cursor.column = utf8::runeCount(buf.lines[cursor.line])
         } else {
           cursor.line = 0
         }
@@ -139,8 +162,8 @@ fn moveCursor*(buffer: ^Buffer, cursor: Cursor, dx, dy: int): Cursor {
     for dx != 0 {
       dx -= 1
 
-      if cursor.column == utf8::runeCount(buffer.lines[cursor.line]) {
-        if cursor.line < len(buffer.lines)-1 {
+      if cursor.column == utf8::runeCount(buf.lines[cursor.line]) {
+        if cursor.line < len(buf.lines)-1 {
           cursor.column = 0
           cursor.line += 1
         }

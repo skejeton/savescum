@@ -510,7 +510,7 @@ fn insertInputTextIntoOneLineBuffer(buffer: ^buffer::Buffer, cursor: ^buffer::Cu
   for index, rune in runes {
     // Ignore non printable characters.
     if util::isprint(uint32(rune)) {
-      buffer::insertAt(buffer, cursor, rune.encode())
+      buffer.insert(cursor, rune.encode())
       dirty = true
     }
   }
@@ -535,7 +535,7 @@ type SingleLineEdit = struct {
 fn initSingleLineEdit(from: str): SingleLineEdit {
   buf :=  buffer::Buffer{lines: []str{from}}
   // NOTE: Maxout cursor
-  cursor := buffer::sanitizeCursor(&buf, buffer::Cursor{10000, 10000})
+  cursor := buf.sanitizeCursor(buffer::Cursor{10000, 10000})
 
   return SingleLineEdit{0, buf, cursor}
 }
@@ -581,14 +581,14 @@ fn putTextEditOneLine(editor: ^Editor, r: rect::Rect, name: str, value: ^str): b
   editor.uicore.beginTool(name, r)
     edit := ^SingleLineEdit(editor.uicore.getPropertyLazy("Editor", |value| { return initSingleLineEdit(value^) }))
     edit.buffer = initBufferFromString(value^)
-    edit.cursor = buffer::sanitizeCursor(&edit.buffer, edit.cursor)
+    edit.cursor = edit.buffer.sanitizeCursor(edit.cursor)
 
     // Handle input.
     if (editor.uicore.isCurrentToolFocused()) {
       immcursor::setCursor(.iBeam)
       dirty = insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input::getStr())
       if input::isPressedRepeat(.backspace) {
-        buffer::erase(&edit.buffer, &edit.cursor)
+        edit.buffer.erase(&edit.cursor)
         dirty = true
         input::clear(.backspace)
       }
@@ -596,18 +596,18 @@ fn putTextEditOneLine(editor: ^Editor, r: rect::Rect, name: str, value: ^str): b
         cursorNext := edit.cursor
         cursorNext.column += 1
         if cursorNext.column <= len(edit.buffer.lines[0]) {
-          cursorNext = buffer::sanitizeCursor(&edit.buffer, cursorNext)
-          buffer::erase(&edit.buffer, &cursorNext)
+          cursorNext = edit.buffer.sanitizeCursor(cursorNext)
+          edit.buffer.erase(&cursorNext)
         }
         dirty = true
         input::clear(.delete)
       }
       if input::isPressedRepeat(.left) {
-        edit.cursor = buffer::moveCursor(&edit.buffer, edit.cursor, -1, 0)
+        edit.cursor = edit.buffer.moveCursor(edit.cursor, -1, 0)
         input::clear(.left)
       }
       if input::isPressedRepeat(.right) {
-        edit.cursor = buffer::moveCursor(&edit.buffer, edit.cursor, 1, 0)
+        edit.cursor = edit.buffer.moveCursor(edit.cursor, 1, 0)
         input::clear(.right)
       }
     }
