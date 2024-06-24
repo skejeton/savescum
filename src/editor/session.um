@@ -3,9 +3,9 @@
 import (
   "th.um"
   "rect.um"
-  "csv.um"
 
-  ut = "../misc/csvutil.um"
+  "../../umbox/jsonenc/jsonenc.um"
+  "../../umbox/json/json.um"
 )
 
 type Window* = struct {
@@ -26,49 +26,116 @@ type Session* = struct {
   windows: []Window
 }
 
-fn save*(session: Session): str {
-  result := [][]str{}
-  result = append(result, ut::saveVf2(session.pan))
-  result = append(result, ut::saveReal(session.scale))
-  result = append(result, []str{session.room})
-  result = append(result, ut::saveBool(session.allLayers))
-  result = append(result, ut::saveBool(session.entityBypass))
-  result = append(result, ut::saveInt(session.layerSelected))
-  result = append(result, ut::saveVf2(session.tileSelected))
-  result = append(result, ut::saveBool(session.plainBiscuit))
-  
-  result = append(result, ut::saveReal(len(session.windows)))
-  for i, window in session.windows {
-    result = append(result, []str{window.name})
-    result = append(result, ut::saveBool(window.visible))
-    result = append(result, ut::saveRect(window.rect))
+fn encVf2*(enc: ^jsonenc::Encoder, value: th::Vf2) {
+  enc.startArray()
+  {
+    enc.putVal(value.x)
+    enc.putVal(value.y)
+  }
+  enc.endArray()
+}
+
+fn decNumber*(v: any): real {
+  if r := ^real(v); r != null {
+    return r^
   }
 
-  return csv::encode(result)
+  return int(v)
+}
+
+fn decVf2*(v: any): th::Vf2 {
+  a := []any(v)
+
+  return th::Vf2{decNumber(a[0]), decNumber(a[1])}
+}
+
+fn decRect*(v: any): rect::Rect {
+  a := ^[]any(v)
+
+  return rect::Rect{decNumber(a[0]), decNumber(a[1]), decNumber(a[2]), decNumber(a[3])}
+}
+
+fn save*(session: Session): str {
+  enc := jsonenc::mk(false) 
+  enc.startObject()
+  {
+    enc.putKey("pan")
+    encVf2(&enc, session.pan)
+    enc.putKey("scale")
+    enc.putVal(session.scale)
+    enc.putKey("room")
+    enc.putVal(session.room)
+    enc.putKey("all_layers")
+    enc.putVal(session.allLayers)
+    enc.putKey("entity_bypass")
+    enc.putVal(session.entityBypass)
+    enc.putKey("layer_selected")
+    enc.putVal(session.layerSelected)
+    enc.putKey("tile_selected")
+    encVf2(&enc, session.tileSelected)
+    enc.putKey("plain_biscuit")
+    enc.putVal(session.plainBiscuit)
+    enc.putKey("windows")
+    enc.startArray()
+    {
+      for i, window in session.windows {
+        enc.startObject()
+        {
+          enc.putKey("name")
+          enc.putVal(window.name)
+          enc.putKey("visible")
+          enc.putVal(window.visible)
+          enc.putKey("rect")
+          enc.startArray()
+          {
+            enc.putVal(window.rect.x)
+            enc.putVal(window.rect.y)
+            enc.putVal(window.rect.w)
+            enc.putVal(window.rect.h)
+          }
+          enc.endArray()
+        }
+        enc.endObject()
+      }
+    }
+    enc.endArray()
+  }
+  enc.endObject()
+
+  return enc.toStr()
 }
 
 fn load*(sourceStr: str): Session {
-  source := csv::parse(sourceStr)
+  data := json::parse(sourceStr)
+
+  if errors := ^[]json::Error(data); errors != null {
+    for _, err in errors {
+      printf("Invalid session file: (%d) %s", err.lno, err.message)
+    }
+    exit(-1)
+  }
+
+  main := map[str]any(data)
+
   session := Session{}
-  session.pan = ut::loadVf2(source[0])
-  session.scale = ut::loadReal(source[1])
-  session.room = source[2][0]
-  session.allLayers = ut::loadBool(source[3])
-  session.entityBypass = ut::loadBool(source[4])
-  session.layerSelected = trunc(ut::loadInt(source[5]))
-  session.tileSelected = ut::loadVf2(source[6])
-  session.plainBiscuit = ut::loadBool(source[7])
+  session.pan = decVf2(main["pan"])
+  session.scale = real(main["scale"])
+  session.room = str(main["room"])
+  session.allLayers = bool(main["all_layers"])
+  session.entityBypass = bool(main["entity_bypass"])
+  session.layerSelected = int(main["layer_selected"])
+  session.tileSelected = decVf2(main["tile_selected"])
+  session.plainBiscuit = bool(main["plain_biscuit"])
 
-  count := trunc(ut::loadReal(source[8]))
+  windows := []any(main["windows"])
+  for _, window_ in windows  {
+    window := map[str]any(window_)
 
-  for i := 0; i < count; i++ {
-    window := Window{}
-
-    window.name = source[9+i*3][0]
-    window.visible = ut::loadBool(source[10+i*3])
-    window.rect = ut::loadRect(source[11+i*3])
-
-    session.windows = append(session.windows, window)
+    win := Window{}
+    win.name = str(window["name"])
+    win.visible = bool(window["visible"])
+    win.rect = decRect(window["rect"])
+    session.windows = append(session.windows, win)
   }
 
   return session

@@ -6,9 +6,11 @@
 	"description": "SAVESCUM game",
 	"readme": "README.rst",
 	"dependencies": [
+		"jsonenc",
+		"json",
 		"os",
 		"args",
-        "umka_api"
+		"umka_api"
 	],
 	"include": [],
 	"source": "https://github.com/skejeton/savescum",

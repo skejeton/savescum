@@ -1862,7 +1862,7 @@ fn session*(enabled: bool) {
   editor ^= editorInit(editorResources)
   editor.enabled = enabled
 
-  if sessionFile, err := util::readFileStr("user/session.csv"); err.code == 0 {
+  if sessionFile, err := util::readFileStr("user/session.json"); err.code == 0 {
     editorLoadSession(editor, session::load(sessionFile))
   } else {
     loadRoom(editor, "test")
@@ -1955,7 +1955,7 @@ fn session*(enabled: bool) {
       os::mkdir("user")
     }
 
-    err := util::writeFileStr("user/session.csv", session::save(editorSaveSession(editor)))
+    err := util::writeFileStr("user/session.json", session::save(editorSaveSession(editor)))
     if err.code != 0 {
       dbg::logt("Failed to save session!")
     }
