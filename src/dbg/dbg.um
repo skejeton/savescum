@@ -1,6 +1,7 @@
 import (
   "rect.um"
   "console.um"
+  "../../umbox/fmt/fmt.um"
   "../gfx/font.um"
   "../gfx/drawcmd.um"
 )
@@ -20,8 +21,8 @@ fn initConsole*() {
   console = console::Console{}
 }
 
-fn logt*(text: str) {
-  console.write(text)
+fn logt*(fmt: str, args: ..any) {
+  console.write(fmt::vsfmt(fmt, args))
 }
 
 // don't use it unless you want to render the console in a special 

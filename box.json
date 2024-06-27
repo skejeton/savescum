@@ -6,6 +6,7 @@
 	"description": "SAVESCUM game",
 	"readme": "README.rst",
 	"dependencies": [
+		"fmt",
 		"jsonenc",
 		"json",
 		"os",
