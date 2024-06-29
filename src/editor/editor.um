@@ -1842,7 +1842,8 @@ fn session*(enabled: bool) {
     "     _/\\/\\/\\_/ /\n"+
     "   _|         /\n"+
     " _|  (  | (  |\n"+
-    "/__.-'|_|--|_|\n")
+    "/__.-'|_|--|_|\n"
+  )
   dbg::logt("SAVESCUM")
   dbg::logt("DPI aware: {}\n", window::isDpiEnabled())
   dbg::logt("-*-")
