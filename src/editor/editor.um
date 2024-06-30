@@ -1229,17 +1229,17 @@ type EditGrip = struct {
 fn putRectGrips(editor: ^Editor, r: rect::Rect): RectResizeCommand {
   // Grips positions are initialized as relative here.
   // Will be multiplied by rect.w/h and added rect.x/y to them.
-  const eightGrips = [8]EditGrip{
-    EditGrip{{0.0, 0.0}, {{1, 1}, {-1, -1}}}, // x
-    EditGrip{{0.5, 0.0}, {{0, 1}, { 0, -1}}}, // x
-    EditGrip{{1.0, 0.0}, {{0, 1}, { 1, -1}}}, // x
+  const eightGrips = []EditGrip{
+    {{0.0, 0.0}, {{1, 1}, {-1, -1}}}, // x
+    {{0.5, 0.0}, {{0, 1}, { 0, -1}}}, // x
+    {{1.0, 0.0}, {{0, 1}, { 1, -1}}}, // x
 
-    EditGrip{{0.0, 0.5}, {{1, 0}, {-1,  0}}},
-    EditGrip{{1.0, 0.5}, {{0, 0}, { 1,  0}}},
+    {{0.0, 0.5}, {{1, 0}, {-1,  0}}},
+    {{1.0, 0.5}, {{0, 0}, { 1,  0}}},
 
-    EditGrip{{0.0, 1.0}, {{1, 0}, {-1,  1}}}, // x
-    EditGrip{{0.5, 1.0}, {{0, 0}, { 0,  1}}}, // x
-    EditGrip{{1.0, 1.0}, {{0, 0}, { 1,  1}}}  // x
+    {{0.0, 1.0}, {{1, 0}, {-1,  1}}}, // x
+    {{0.5, 1.0}, {{0, 0}, { 0,  1}}}, // x
+    {{1.0, 1.0}, {{0, 0}, { 1,  1}}}  // x
   }
 
   activeGrip := -1
