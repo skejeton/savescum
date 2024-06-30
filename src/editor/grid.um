@@ -1,7 +1,6 @@
 import (
   "th.um"
   "rect.um"
-  "../misc/util.um"
   "canvas.um"
 )
 
@@ -48,7 +47,7 @@ fn gridZoomInto*(grid: ^Grid, newScale: th::Vf2, into: th::Vf2) {
 
 fn mkRenderGuideFromBoundingBox*(grid: Grid): RenderGuide {
   bb := grid.bb
-  starters := th::Vf2{util::fmod(grid.p.x, 1)*grid.s.x, util::fmod(grid.p.y, 1)*grid.s.y}
+  starters := th::Vf2{(grid.p.x % 1.0)*grid.s.x, (grid.p.y % 1.0)*grid.s.y}
 
   return RenderGuide {
     startv: th::Vf2{starters.x+bb.x, bb.y},

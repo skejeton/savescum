@@ -1,7 +1,6 @@
 import (
   "th.um"
   "rect.um"
-  "../misc/util.um"
 )
 
 type TileSpan* = struct {
@@ -16,6 +15,6 @@ fn calculateTileSpanOnScreen*(tileSize: th::Vf2, screen: rect::Rect): TileSpan {
     y: floor(screen.y/tileSize.y),
     w: ceil(screen.w/tileSize.x+1), // Add one for tiles drawn in middle of scroll
     h: ceil(screen.h/tileSize.y+1),
-    pos: th::Vf2{-util::fmod(screen.x, tileSize.x), -util::fmod(screen.y, tileSize.y)}
+    pos: th::Vf2{-(screen.x % tileSize.x), -(screen.y % tileSize.y)}
   }
 }

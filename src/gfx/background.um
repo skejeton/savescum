@@ -39,7 +39,7 @@ fn init*(rl: ^resources::ResourceLoader) {
 }
 
 fn drawCloudStrip(scroll: real, y: real, colorMod: uint32, scale: real) {
-  scroll = util::fmod(scroll, -width)
+  scroll = scroll % -width
 
   times := trunc(global::screen.w/width)+2
 
