@@ -5,9 +5,9 @@
 import "std.um"
 
 const (
-  prefixes = [21]str{"MO", "NO", "NE", "BRE", "BOR", "BU", "BO", "RU", "DAL", "PER",
+  prefixes = []str{"MO", "NO", "NE", "BRE", "BOR", "BU", "BO", "RU", "DAL", "PER",
   "SOR", "KO", "NOG", "KRO", "FER", "RAL", "LOA", "ROI", "FU", "YGG", "DRA"}
-  suffices = [18]str{"ETH", "YOR", "KKA", "TTU", "KIRK", "KER", "HAR", "KROK",
+  suffices = []str{"ETH", "YOR", "KKA", "TTU", "KIRK", "KER", "HAR", "KROK",
   "ROT", "TER", "FI", "AKKEN", "FOK", "TROL", "VARG", "LYR", "SIR", "SIL"}
 ) 
 
