@@ -1192,7 +1192,7 @@ fn putEntityEditor(editor: ^Editor) {
   entitySelected := getEntitySelected(&editor.entities)
 
   if entitySelected != null {
-    widgetWindow(editor, "Entity Editor", {595, 210, 200, 220}, |editor, entitySelected| {
+    widgetWindow(editor, "Entity Editor", {595, 210, 300, 330}, |editor, entitySelected| {
       contentRect := util::rectShrink(winfo.contentRect, 5)
 
       editor.uicore.ctx.beginScissorRect(contentRect)
