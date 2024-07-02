@@ -119,7 +119,7 @@ fn load*(sourceStr: str): Session {
 
   session := Session{}
   session.pan = decVf2(main["pan"])
-  session.scale = real(main["scale"])
+  session.scale = decNumber(main["scale"])
   session.room = str(main["room"])
   session.allLayers = bool(main["all_layers"])
   session.entityBypass = bool(main["entity_bypass"])
