@@ -297,7 +297,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
     buttonRect := rect::Rect{position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y}
 
     if !editor.wm.getWindowHideTitlebar(title) {
-      if (putButtonBase(editor, buttonRect, "Close").isReleased) {
+      if editor.ui.button("#Close", buttonRect) {
         editor.wm.setWindowVisible(title, false)
       }
 
@@ -494,13 +494,6 @@ fn putRadioButton(editor: ^Editor, r: rect::Rect, text: str, revert: bool = fals
     return bs
   }
   return ButtonState{}
-}
-
-fn putSimpleButton(editor: ^Editor, r: rect::Rect, text: str, revert: bool = false, color: uint32 = 0xFFFFFFFF): ButtonState {
-  bs := putButtonBase(editor, r, text, revert, color)
-  text = strings::splitBy(text, '#')[0]
-  editor.uicore.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), th::black)
-  return bs
 }
 
 fn insertInputTextIntoOneLineBuffer(buffer: ^buffer::Buffer, cursor: ^buffer::Cursor, text: str): bool {
@@ -930,7 +923,7 @@ fn putPlayerPlacer(editor: ^Editor) {
       putLabelY(editor, sprintf("x %d y %d", trunc(playerPos.x), trunc(playerPos.y)), th::black, &position)
       position.y += 10
 
-      if (putSimpleButton(editor, {position.x, position.y, contentRect.w, 40}, "Relocate", editor.isRelocatingPlayer).isReleased) {
+      if editor.ui.button("Relocate", {position.x, position.y, contentRect.w, 40}, editor.isRelocatingPlayer) {
         editor.isRelocatingPlayer = !editor.isRelocatingPlayer
       }
       position.y += 30+10
@@ -1520,7 +1513,7 @@ fn putLevelSelect(editor: ^Editor) {
 
       for i, level in levels {
         p := th::Vf2{position.x+(i%2)*((contentRect.w-30)/2), position.y+(i/2)*45}
-        if putSimpleButton(editor, {p.x, p.y, (contentRect.w-30)/2, 45}, level[1]).isReleased {
+        if editor.ui.button(level[1], {p.x, p.y, (contentRect.w-30)/2, 45}) {
           game::tele(level[0])
         }
         y = p.y-position.y+45.0
@@ -1683,7 +1676,7 @@ fn editorPutUi(editor: ^Editor) {
       }
       position.x -= elementSize
 
-      if (putSimpleButton(editor, {position.x, position.y, elementSize, elementSize}, "#Layer Select", editor.tilemapShowAllLayers).isReleased) {
+      if editor.ui.button("#Layer Select", {position.x, position.y, elementSize, elementSize}, editor.tilemapShowAllLayers) {
         editor.tilemapShowAllLayers = !editor.tilemapShowAllLayers
       }
 
@@ -1747,6 +1740,14 @@ fn editorPutUi(editor: ^Editor) {
     }
 
     drawBtn(editor, state.id, state.rect, bs, false, 0xFFFF00FF)
+  })
+  editor.ui.render("button_invert", |editor| {
+    bs := ButtonState{
+      isOver: state.hovered,
+      isDown: state.pressed
+    }
+
+    drawBtn(editor, state.id, state.rect, bs, true, 0xFFFF00FF)
   })
 
   widgetWindow(editor, "Console (Aux)", {100, 100, 640, 480}, |editor| {
