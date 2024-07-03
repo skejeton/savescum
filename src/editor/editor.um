@@ -170,6 +170,8 @@ fn drawBtn(editor: ^Editor, text: str, r: rect::Rect, buttonState: ButtonState, 
   if buttonState.isOver {
     immcursor::setCursor(.finger)
   }
+  
+  text = strings::splitBy(text, '#')[0]
 
   pushed := buttonState.isDown != revert
 
