@@ -115,3 +115,22 @@ fn uniInsert*(text: str, at: uint, other: str): str {
 fn windows2unix*(text: str): str {
   return joinBy(splitBy(text, '\r'), "")
 }
+
+fn toUpper*(c: char): char {
+  if c >= 'a' && c <= 'z' {
+    return char(int(c) + int('A')-int('a'))
+  }
+  return c
+}
+
+fn toUpperS*(s: str): str {
+  res := ""
+  for i, c in s {
+    if c >= 'a' && c <= 'z' {
+      res += char(int(c) + int('A')-int('a'))
+    } else {
+      res += c
+    }
+  }
+  return res
+}

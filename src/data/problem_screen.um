@@ -6,6 +6,7 @@ import (
   "input.um"
   "../gfx/font.um"
   "std.um"
+  "../misc/strings.um"
 )
 
 var (
@@ -20,23 +21,6 @@ fn restart() {
   canvas::drawRect(th::black, {0, 0, window::w, window::h})
 }
 
-fn charToUpper(c: char): char {
-  if c >= 'a' && c <= 'z' {
-    return char(int(c) + int('A')-int('a'))
-  }
-
-  return c
-}
-
-fn makeUppercase(text: str): str {
-  newText := ""
-  for i, c in text {
-    newText += charToUpper(c)
-  }
-
-  return newText
-}
-
 fn fontHeight(): th::fu {
   if fonterr.code == 0 {
     return font.measure(" ").y
@@ -48,7 +32,7 @@ fn drawText(text: str, pos: th::Vf2, color: uint32) {
   if fonterr.code == 0 {
     font.draw(text, pos, color, 1*window::getDpiScaleFactor())
   } else {
-    canvas::drawText(makeUppercase(text), pos, color, 2*window::getDpiScaleFactor())
+    canvas::drawText(strings::toUpperS(text), pos, color, 2*window::getDpiScaleFactor())
   }
 }
 
