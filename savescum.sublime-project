@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": ".",
+		}
+	],
+	"settings": {
+		"tab_size": 2,
+		"translate_tabs_to_spaces": true
+	},
+	"build_systems": [
+		{
+			"target": "ansi_color_build",
+			"syntax": "Packages/ANSIescape/ANSI.sublime-syntax",
+
+			"name": "savescum",
+			"working_dir": "$project_path",	
+			"shell_cmd": "$project_path/tophat.exe"
+		}
+	]
+}

@@ -1,6 +1,3 @@
-/* Resource loader.
- */
-
 import (
   "image.um"
   "../gfx/font.um"
@@ -13,7 +10,7 @@ type (
   }
 )
 
-fn initResourceLoader*(): ResourceLoader {
+fn mk*(): ResourceLoader {
   return ResourceLoader{errors: []str{}}
 }
 

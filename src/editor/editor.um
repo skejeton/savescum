@@ -1853,7 +1853,7 @@ fn session*(enabled: bool) {
 
   // init data
   rl := new(resources::ResourceLoader)
-  rl ^= resources::initResourceLoader()
+  rl ^= resources::mk()
   background::init(rl)
   game::init(rl)
   editorResources := loadEditorResources(rl)
