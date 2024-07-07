@@ -157,7 +157,7 @@ fn drawFadedLine*(p1, p2: th::Vf2, color: uint32, alpha1: real, alpha2: real, th
 fn drawCubeGeneric*(screen: rect::Rect, color: uint32, scale: real, rotate: [3]real) {
   cube := d3shapes::mkCube()
   cubeEdges := d3shapes::mkCubeEdges()
-  camera := d3::mkCamera(screen.w, screen.h, 45)
+  camera := d3::mkCamera(screen.w, screen.h)
 
   for i, point^ in cube {
     point^ = d3::rotatePoint(point.mul(scale), rotate).add({0, 0, 6})

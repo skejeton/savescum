@@ -11,10 +11,8 @@ type Camera* = struct {
   height: real
 }
 
-fn mkCamera*(width, height, fov: real): Camera {
-  fov = fov * 3.1415 / 180.0
-
-  return Camera{
+fn mkCamera*(width, height: real): Camera {
+  return {
     pos: {0, 0, -2},
     near: height,
     width: width,
