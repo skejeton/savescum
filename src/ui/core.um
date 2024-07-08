@@ -3,7 +3,6 @@ import (
   "coll.um"
   "../misc/mouseinput.um"
   "../gfx/drawcmd.um"
-  "../misc/util.um"
   "std.um"
   "rect.um"
 )

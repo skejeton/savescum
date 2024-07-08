@@ -2,7 +2,6 @@ import (
   "th.um"
   "image.um"
   "rect.um"
-  "../misc/util.um"
 )
 
 type (

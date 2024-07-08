@@ -3,9 +3,6 @@ import (
   "std.um"
   "th.um"
   "rect.um"
-  "input.um"
-  "canvas.um"
-  "utf8.um"
   "../gfx/font.um"
   
   "../misc/strings.um"
