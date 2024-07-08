@@ -95,7 +95,7 @@ fn drawBackgroundSquare*(bound: rect::Rect, time: real, color1, color2: uint32, 
 
   rectCount := trunc(util::max(bound.w, bound.h)/frequency)+2
   cropBound := util::rectIntersection(bound, global::screen)
-  center := util::rectCenter(bound)
+  center := bound.center()
 
   canvas::beginScissorRect(cropBound)
 

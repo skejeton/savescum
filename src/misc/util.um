@@ -15,11 +15,6 @@ fn posTrans*(x, y: th::fu): th::Transform {
   return {p: {x, y}, s: {1, 1}}
 }
 
-fn isMouseInRect*(r: rect::Rect): bool {
-  p := input::getMousePos()
-  return p.x >= r.x && p.y >= r.y && p.x <= (r.x+r.w) && p.y <= (r.y+r.h)
-}
-
 fn readFileStr*(path: str): (str, std::Err) {
   file, err := std::fopen(path, "rb")
 
@@ -44,34 +39,6 @@ fn writeFileStr*(path: str, dataStr: str): std::Err {
   return {}
 }
 
-fn drawRectLines*(color: uint32, r: rect::Rect, thicc: real = 3.0) {
-  t2 := thicc/2
-
-  // top
-  canvas::drawLine(color, {r.x-t2, r.y}, {r.x+r.w+t2, r.y}, thicc)
-  // bottom
-  canvas::drawLine(color, {r.x-t2, r.y+r.h}, {r.x+r.w+t2, r.y+r.h}, thicc)
-  // left
-  canvas::drawLine(color, {r.x, r.y-t2}, {r.x, r.y+r.h+t2}, thicc)
-  // right
-  canvas::drawLine(color, {r.x+r.w, r.y-t2}, {r.x+r.w, r.y+r.h+t2}, thicc)
-}
-
-fn rectChopRight*(r: ^rect::Rect, by: int): rect::Rect {
-  r.w -= by
-  return {r.x+r.w, r.y, by, r.h}
-}
-
-// Crops the input image by specified rectangle in pixels
-// 
-// img: Input image
-// rec: Cropping rectangle, in pixels
-//
-fn imageCropRect*(img: image::Image, rec: rect::Rect) {
-  size := img.getDims()
-  img.crop({rec.x/size.x, rec.y/size.y}, {(rec.x + rec.w)/size.x, (rec.y + rec.h)/size.y})
-}
-
 fn drawImageRect*(img: image::Image, src: rect::Rect, dst: rect::Rect, rot: real = 0, tint: uint32 = 0xFFFFFFFF) {
   dims := img.getDims()
   src.x += 0.5
@@ -82,99 +49,11 @@ fn drawImageRect*(img: image::Image, src: rect::Rect, dst: rect::Rect, rot: real
   img.draw({p: {dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}, tint)
 }
 
-//
-// Returns lowest number among a, b
-//
-fn fmin*(a, b: real): real {
-  if a < b {
-    return a
-  }
-  return b
-}
-
-//
-// Returns highest number among a, b
-//
-fn fmax*(a, b: real): real {
-  if a > b {
-    return a
-  }
-  return b
-}
-
-// 
-// Takes `size` characters (Runes) out of UTF-8 string `s` and returns the slice
-// 
-// s: Input UTF-8 encoded string
-// size: Amount of UTF-8 encoded runes to take
-//
-fn chopUtf8*(s: str, size: int): str {
-  ofs := 0
-  for size > 0 && ofs < len(s) {
-    rune := utf8::decodeRune(s, ofs)
-    ofs += rune.size()
-    size -= 1
-  }
-
-  return slice(s, 0, ofs)
-}
-
-// Rect vs rect(
-//   First rect
-//   Second rect
-// )
-//
-// Returns true if both rects collide
-fn rectVsRect*(r1, r2: rect::Rect): bool {
-  return (r1.x + r1.w) > (r2.x) && (r1.y + r1.h) > (r2.y) && (r1.x) < (r2.x + r2.w) && (r1.y) < (r2.y + r2.h)
-}
-
-// Rect vs point(
-
-//   Rect
-//   Point
-// )
-//
-// Returns true if point p is in rectangle r
-fn rectVsPoint*(r: rect::Rect, p: th::Vf2): bool {
-  return p.x >= r.x && p.y >= r.y && p.x < (r.x + r.w) && p.y < (r.y + r.h)
-}
-
-// Rect shrink(
-//   Rect,
-//   Shrink by
-// )
-// 
 // Returns rectangle shrinked by amount `by` from all left, right, top, bottom sides
 fn rectShrink*(r: rect::Rect, by: real): rect::Rect {
   return {r.x+by, r.y+by, r.w-by*2, r.h-by*2}
 }
 
-// Rect move(
-//   Rect,
-//   Move by
-// ) 
-//
-// Returns rectangle moved by amount `by`
-fn rectMove*(r: rect::Rect, by: th::Vf2): rect::Rect {
-  return {r.x+by.x, r.y+by.y, r.w, r.h}
-}
-
-fn rectCenter*(r: rect::Rect): th::Vf2 {
-  return {r.x+r.w/2, r.y+r.h/2}
-}
-
-fn rectCenterWithinRect*(child, parent: rect::Rect): rect::Rect {
-  child.x = parent.x+(parent.w-child.w)/2
-  child.y = parent.y+(parent.h-child.h)/2
-  return child
-}
-
-// Rect keep in bounds(
-//   Child rect
-//   Parent rect
-// )
-//
 // Pushes the child rect into the parent rect. 
 // Won't work if child rectangle dimensions are bigger than parents rectangle. 
 fn rectKeepInBounds*(child, parent: rect::Rect): rect::Rect {
@@ -194,9 +73,7 @@ fn rectKeepInBounds*(child, parent: rect::Rect): rect::Rect {
   return child
 } 
 
-/*
- * \brief Creates a split of rect `r` at `by` starting from the right side.
- */
+// Creates a split of rect `r` at `by` starting from the right side.
 fn rectCutRight*(r: rect::Rect, by: real): rect::Rect {
   result := r
   result.x += r.w-by
@@ -246,7 +123,6 @@ fn isprint*(c: uint32): bool {
   return c >= 32 && c != 127
 }
 
-
 fn rectIntersection*(a, b: rect::Rect): rect::Rect {
   x := max(a.x, b.x)
   y := max(a.y, b.y)
@@ -287,3 +163,15 @@ fn formatMillis*(ms: int): str {
   return sprintf("%dms", ms)
 }
 
+fn formatBytes*(bytes: int): str {
+  if bytes < 1024 {
+    return sprintf("%d B", bytes)
+  }
+  if bytes < 1024*1024 {
+    return sprintf("%.2f KB", real(bytes)/1024)
+  }
+  if bytes < 1024*1024*1024 {
+    return sprintf("%.2f MB", real(bytes)/(1024*1024))
+  }
+  return sprintf("%.2f GB", real(bytes)/(1024*1024*1024))
+}

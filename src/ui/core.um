@@ -1,5 +1,6 @@
 import (
   "atoms.um"
+  "coll.um"
   "../misc/mouseinput.um"
   "../gfx/drawcmd.um"
   "../misc/util.um"
@@ -120,10 +121,10 @@ fn (core: ^Core) beginTool*(name: str, toolRect: rect::Rect): ^atoms::ToolNode {
   }
  
   if scissorRect, ok := core.ctx.getCurrentScissorRect(); ok {
-    isOverMaybeActiveTool = isOverMaybeActiveTool && util::rectVsPoint(scissorRect, core.mouseState.pos)
+    isOverMaybeActiveTool = isOverMaybeActiveTool && coll::vf2ToRect(core.mouseState.pos, scissorRect)
   }
 
-  if isOverMaybeActiveTool && util::rectVsPoint(node.rect, core.mouseState.pos) {
+  if isOverMaybeActiveTool && coll::vf2ToRect(core.mouseState.pos, node.rect) {
     core.maybeActiveTool = node
   }
 

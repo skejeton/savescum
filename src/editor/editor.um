@@ -8,6 +8,7 @@ import (
   "image.um"
   "canvas.um"
   "input.um"
+  "coll.um"
 
   "utf8.um"
   "std.um"
@@ -346,9 +347,9 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
   }
 
   if editor.uicore.mouseState.lmb.isDown {
-    editor.wm.getWindowRect(title, windowRect) ^= util::rectMove(editor.wm.getWindowRect(title, windowRect)^, movement)
+    editor.wm.getWindowRect(title, windowRect) ^= editor.wm.getWindowRect(title, windowRect).shift(movement)
   } else {
-    editor.wm.getWindowRect(title, windowRect) ^= util::rectMove(windowRect, movement)
+    editor.wm.getWindowRect(title, windowRect) ^= windowRect.shift(movement)
   }
 
   return WindowInfo{contentRect: contentRect, titlebarRect: titlebarRect}, true
@@ -394,7 +395,7 @@ fn uiEndWindow(editor: ^Editor) {
   }
   editor.uicore.ctx.moveLayer(-1000*editor.currentWindowLayer)
 
-  windowRect ^= util::rectMove(windowRect^, movement)
+  windowRect ^= windowRect.shift(movement)
   windowRect.w += squishing.x; windowRect.h += squishing.y
   // Clamp
   if windowRect.w < 100 {
@@ -481,8 +482,7 @@ fn putGrid(grid: ^grid::Grid, editor: ^Editor, rectangle: rect::Rect): th::Vf2 {
 
 fn putIconButton(editor: ^Editor, name: str, r: rect::Rect, img: image::Image, revert: bool = false): ButtonState {
   bs := putButtonBase(editor, r, name, revert)
-  dims := th::Vf2{48, 48}
-  pos := util::rectCenterWithinRect({0, 0, dims.x, dims.y}, r).getPos()
+  pos := r.centerWithinRect({0, 0, 48, 48}).getPos()
   editor.uicore.ctx.drawImage(img, {p: pos, s: {1, 1}})
   return bs
 }
@@ -786,7 +786,7 @@ fn editorPutToolbar(editor: ^Editor) {
     x := 0
     y := rectangle.y - 48
 
-    util::imageCropRect(editor.resources.superHotFire, {0, (th::time/100%3)*32, 32, 32})
+    editor.resources.superHotFire.cropRect({0, (th::time/100%3)*32, 32, 32})
 
     for i := 0; i < global::screen.w/32+1; i++ {
       editor.uicore.ctx.drawImage(editor.resources.superHotFire, th::Transform{p: th::Vf2{x+i*32, y}, s: th::Vf2{1, 1}})
@@ -1337,9 +1337,9 @@ fn putWorldEntities(editor: ^Editor) {
   for i in editor.entities.list {
     ent := &editor.entities.list[i]
 
-    entVisRect := util::rectMove(util::rectScale(ent.rect, editor.tilemapGrid.s.x/32), editor.tilemapGrid.toScreen(th::Vf2{0, 0}))
+    entVisRect := util::rectScale(ent.rect, editor.tilemapGrid.s.x/32).shift(editor.tilemapGrid.toScreen(th::Vf2{0, 0}))
 
-    if !util::rectVsRect(entVisRect, {0, 0, global::screen.w, global::screen.h}) {
+    if !coll::rectToRect(entVisRect, {0, 0, global::screen.w, global::screen.h}) {
       continue
     }
 
@@ -1479,7 +1479,7 @@ fn putNotifications(editor: ^Editor) {
     h := ts.y + 20
     y -= h
 
-    util::imageCropRect(editor.resources.toolbarIcons, {24*int(n.info.icon), 144, 24, 24})
+    editor.resources.toolbarIcons.cropRect({24*int(n.info.icon), 144, 24, 24})
     drawBevelRect(editor, {10-t*500, global::screen.h-58+y, w, h}, true, 0xFFFFFFBB)
     editor.uicore.ctx.drawImage(editor.resources.toolbarIcons, th::Transform{p: th::Vf2{10-t*500+10, global::screen.h-58+y+10}, s: th::Vf2{1, 1}})
     editor.uicore.ctx.drawText(editor.resources.mainFont, n.info.message, {50-t*500, global::screen.h-58+y+9}, th::black)
@@ -1659,7 +1659,7 @@ fn editorPutUi(editor: ^Editor) {
       position.x -= elementSize
 
       if editor.ui.button("1:1", {position.x, position.y, elementSize, elementSize}) {
-        grid::gridZoomInto(&editor.tilemapGrid, {32.0, 32.0}, util::rectCenter(editor.tilemapGrid.bb))
+        grid::gridZoomInto(&editor.tilemapGrid, {32.0, 32.0}, editor.tilemapGrid.bb.center())
       }
       position.x -= elementSize
 
@@ -1730,8 +1730,8 @@ fn editorPutUi(editor: ^Editor) {
 
   if editor.isRelocatingPlayer {
     editor.uicore.ctx.moveLayer(10000000)
-    editor.resources.toolbarIcons.crop(th::Vf2{2.0/4.0, 0.0/4.0}, th::Vf2{3.0/4.0, 1.0/4.0})
-    editor.uicore.ctx.drawImage(editor.resources.toolbarIcons, util::posTrans(editor.uicore.mouseState.pos.x, editor.uicore.mouseState.pos.y))
+    editor.resources.toolbarIcons.crop({2.0/4.0, 0.0/4.0}, {3.0/4.0, 1.0/4.0})
+    editor.uicore.ctx.drawImage(editor.resources.toolbarIcons, {p: editor.uicore.mouseState.pos, s: {1, 1}})
     editor.uicore.ctx.moveLayer(-10000000)
   }
 
@@ -1947,7 +1947,7 @@ fn session*(enabled: bool) {
           { "Plain", global::plainBiscuit, false },
           { "Playthrough (ms)", editor.debugTimer, false },
           { "Playthrough Started", editor.debugTimerStarted, false },
-          { "Memory usage", memusage(), false }
+          { "Memory usage", util::formatBytes(memusage()), false }
         }
       })
     }

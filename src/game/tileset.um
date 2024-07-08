@@ -54,7 +54,7 @@ fn (ts: ^Tileset) getCroppingRectId*(id: int): rect::Rect {
 }
 
 fn (ts: ^Tileset) selectTile*(x, y: int) {
-  util::imageCropRect(ts.image, ts.getCroppingRect(x, y))
+  ts.image.cropRect(ts.getCroppingRect(x, y))
 }
 
 fn (ts: ^Tileset) selectTilePos*(pos: int) {

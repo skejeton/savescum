@@ -24,6 +24,7 @@ import (
   "load_poems.um"
   "speech.um"
   "construct.um"
+  "coll.um"
   strings = "../../src/misc/strings.um"
   m_layout = "layout.um"
   "draw_dialog.um"
@@ -49,7 +50,7 @@ type ContactPoint = struct {
 fn handleResizableRectangle(mouseInput: mouseinput::MouseState, contact: ^ContactPoint, rectangle: ^rect::Rect) {
   motion := mouseInput.delta
 
-  if util::rectVsPoint(rectangle^, mouseInput.lastPos) && !contact.isContact {
+  if coll::vf2ToRect(mouseInput.lastPos, rectangle^) && !contact.isContact {
     contact.size = rectangle.getDims()
     contact.isContact = true
     contact.at = mouseInput.lastPos

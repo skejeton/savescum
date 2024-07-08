@@ -176,7 +176,7 @@ fn (world: ^World) drawRenderTiles*(renderTiles: []RenderTile, tint: uint32, pan
     cr := world.tileset.getCroppingRectId(renderTile.id)
 
     if prevTileId != renderTile.id {
-      util::imageCropRect(world.tileset.image, cr)
+      world.tileset.image.cropRect(cr)
       prevTileId = renderTile.id
     }
 

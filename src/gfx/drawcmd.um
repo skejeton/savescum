@@ -7,6 +7,7 @@ import (
   "th.um"
   "rect.um"
   "image.um"
+  "coll.um"
   "../gfx/font.um"
   "canvas.um"
   "std.um"
@@ -160,7 +161,7 @@ fn (d: ^RectCmd) draw(props: DrawProperties) {
 }
 
 fn (d: ^RectLineCmd) draw(props: DrawProperties) {
-  util::drawRectLines(d.color, d.rect, d.thickness)
+  canvas::drawRectLines(d.color, d.rect, d.thickness)
 }
 
 fn (d: ^BeginScissorRectCmd) draw(props: DrawProperties) {
@@ -226,7 +227,7 @@ fn (ctx: ^DrawContext) endScissor*() {
 }
 
 fn mergeScissorRects(child, parent: rect::Rect): rect::Rect {
-  if util::rectVsRect(child, parent) == false {
+  if coll::rectToRect(child, parent) == false {
     // At this point we just need to disable rendering since child isn't even inside the parent,
     //  so it shouldn't be visible. 
     //
