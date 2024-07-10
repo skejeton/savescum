@@ -704,28 +704,28 @@ const (
 fn drawEntityObject*(name: str, tags: ^TagSet, rect: rect::Rect, scale: real): bool {
   if tags.isSet("lever") {
     if toggleActive {
-      util::drawImageRect(imgObj, cropLeverOn, rect)
+      imgObj.blit(cropLeverOn, rect)
     } else {
-      util::drawImageRect(imgObj, cropLeverOff, rect)
+      imgObj.blit(cropLeverOff, rect)
     }
   } else if tags.isSet("lever_s") {
     if pal.toggleActiveStatic {
-      util::drawImageRect(imgObj, cropLeverStaticOn, rect)
+      imgObj.blit(cropLeverStaticOn, rect)
     } else {
-      util::drawImageRect(imgObj, cropLeverStaticOff, rect)
+      imgObj.blit(cropLeverStaticOff, rect)
     }
   } else if tags.isSet("lever_w") {
     if pal.toggleActiveWater {
-      util::drawImageRect(imgObj, cropLeverWaterOn, rect)
+      imgObj.blit(cropLeverWaterOn, rect)
     } else {
-      util::drawImageRect(imgObj, cropLeverWaterOff, rect)
+      imgObj.blit(cropLeverWaterOff, rect)
     }
   } else if tags.isSet("water") {
     canvas::drawRect(0x0099FF66, util::rectShrink(rect, -2*scale))
   } else if tags.isSet("static") {
     canvas::drawRect(0xFFFF0066, util::rectShrink(rect, -2*scale))
   } else if tags.isSet("boulder") {
-    util::drawImageRect(imgObj, cropBoulder, rect)
+    imgObj.blit(cropBoulder, rect)
   } else if tags.isSet("tele") {
     rect = util::rectShrink(rect, 5*scale)
     background::drawBackgroundSquare(rect, 1000000-time, 0x111144FF, 0x222277FF, {0.5*scale, 0.5*scale})
@@ -733,7 +733,7 @@ fn drawEntityObject*(name: str, tags: ^TagSet, rect: rect::Rect, scale: real): b
     rect = util::rectShrink(rect, 5*scale)
     background::drawBackgroundSquare(rect, time, 0x111111FF, 0x222222FF, {0.5*scale, 0.5*scale})
   } else if tags.isSet("controls") {
-    util::drawImageRect(imgObj, cropControls, rect)
+    imgObj.blit(cropControls, rect)
   } else if tags.isSet("Comment") {
     canvas::drawRect(0x000000FF, util::rectShrink(rect, -scale))
     canvas::drawRect(0x00FFFFFF, rect)
@@ -793,10 +793,10 @@ fn drawChumState(state: int, chum: ^ChumState, tint: uint32) {
   chumMouthDestRect.h -= 1
   chumMouthDestRect.w += 1
 
-  util::drawImageRect(imgChum, bodyRect, chumDestRect, chum.rotTime, tint)
-  util::drawImageRect(imgChum, chumFaceRect, chumDestRect, chum.rotTime, tint)
+  imgChum.blit(bodyRect, chumDestRect, tint, chum.rotTime, chumDestRect.getDims().divf(2))
+  imgChum.blit(chumFaceRect, chumDestRect, tint, chum.rotTime, chumDestRect.getDims().divf(2))
   if chumFrown {
-    util::drawImageRect(imgChum, chumMouthRect, chumMouthDestRect, chum.rotTime, tint)
+    imgChum.blit(chumMouthRect, chumMouthDestRect, tint, chum.rotTime, chumDestRect.getDims().divf(2))
   }
   if showDebug {
     canvas::drawText(sprintf("%d %d", trunc(at.x/32), trunc(at.y/32)), chumDestRect.getPos(), th::red, 1)
@@ -1126,11 +1126,11 @@ fn drawOverlays() {
   for i, renderTile in renderTiles {
     switch renderTile.id {
       case 30:
-        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(30), cameraOffsetRect(renderTile.rect))
-        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(31), cameraOffsetRect(renderTile.rect), 0.0, alpha)
+        world.tileset.image.blit(world.tileset.getCroppingRectId(30), cameraOffsetRect(renderTile.rect))
+        world.tileset.image.blit(world.tileset.getCroppingRectId(31), cameraOffsetRect(renderTile.rect), alpha)
       case 31:
-        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(30), cameraOffsetRect(renderTile.rect))
-        util::drawImageRect(world.tileset.image, world.tileset.getCroppingRectId(31), cameraOffsetRect(renderTile.rect), 0.0, alpha2)
+        world.tileset.image.blit(world.tileset.getCroppingRectId(30), cameraOffsetRect(renderTile.rect))
+        world.tileset.image.blit(world.tileset.getCroppingRectId(31), cameraOffsetRect(renderTile.rect), alpha2)
     }
   }
 }
@@ -1143,7 +1143,7 @@ fn drawObjectsAt(state: ChumState) {
         power *= -1
       }
       boulderTargetRect := entity.originalRect.shift(th::Vf2{0, -(entity.originalRect.h+32)*power})
-      util::drawImageRect(imgObj, cropBoulder, cameraOffsetRect(boulderTargetRect), 0, 0xFFFFFF22)
+      imgObj.blit(cropBoulder, cameraOffsetRect(boulderTargetRect), 0, 0xFFFFFF22)
     }
   }
 }

@@ -36,16 +36,6 @@ fn writeFileStr*(path: str, dataStr: str): std::Err {
   return {}
 }
 
-fn drawImageRect*(img: image::Image, src: rect::Rect, dst: rect::Rect, rot: real = 0, tint: uint32 = 0xFFFFFFFF) {
-  dims := img.getDims()
-  src.x += 0.5
-  src.y += 0.5
-  src.w -= 1
-  src.h -= 1
-  img.crop({src.x/dims.x, src.y/dims.y}, {(src.x + src.w)/dims.x, (src.y + src.h)/dims.y})
-  img.draw({p: {dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}, tint)
-}
-
 // Returns rectangle shrinked by amount `by` from all left, right, top, bottom sides
 fn rectShrink*(r: rect::Rect, by: real): rect::Rect {
   return {r.x+by, r.y+by, r.w-by*2, r.h-by*2}

@@ -28,6 +28,13 @@ type (
     tint: uint32
   }
 
+  BlitCmd = struct {
+    image: image::Image
+    src, dst: rect::Rect
+    tint: uint32
+    rot: real
+  }
+
   NinepatchCmd = struct {
     image: image::Image
     outer, inner, dest: rect::Rect
@@ -152,6 +159,10 @@ fn (d: ^ImageCmd) draw(props: DrawProperties) {
   d.image.draw(d.transform, d.tint)
 }
 
+fn (d: ^BlitCmd) draw(props: DrawProperties) {
+  d.image.blit(d.src, d.dst, d.tint, d.rot)
+}
+
 fn (d: ^NinepatchCmd) draw(props: DrawProperties) {
   d.image.drawNinepatch(d.outer, d.inner, d.dest, d.tint)
 }
@@ -160,21 +171,8 @@ fn (d: ^RectCmd) draw(props: DrawProperties) {
   canvas::drawRect(d.color, d.rect)
 }
 
-fn drawRectLines*(color: uint32, r: rect::Rect, thicc: real = 3.0) {
-  t2 := thicc/2
-
-  // top
-  canvas::drawLine(color, {r.x-t2, r.y}, {r.x+r.w+t2, r.y}, thicc)
-  // bottom
-  canvas::drawLine(color, {r.x-t2, r.y+r.h}, {r.x+r.w+t2, r.y+r.h}, thicc)
-  // left
-  canvas::drawLine(color, {r.x, r.y-t2}, {r.x, r.y+r.h+t2}, thicc)
-  // right
-  canvas::drawLine(color, {r.x+r.w, r.y-t2}, {r.x+r.w, r.y+r.h+t2}, thicc)
-}
-
 fn (d: ^RectLineCmd) draw(props: DrawProperties) {
-  drawRectLines(d.color, d.rect, d.thickness)
+  canvas::drawRectLines(d.color, d.rect, d.thickness)
 }
 
 fn (d: ^BeginScissorRectCmd) draw(props: DrawProperties) {
@@ -210,14 +208,7 @@ fn (ctx: ^DrawContext) drawImage*(img: image::Image, transform: th::Transform, c
 }
 
 fn (ctx: ^DrawContext) drawImageRect*(img: image::Image, src: rect::Rect, dst: rect::Rect, rot: real = 0.0, color: uint32 = 0xFFFFFFFF) {
-  dims := img.getDims()
-  src.x += 0.5
-  src.y += 0.5
-  src.w -= 1
-  src.h -= 1
-  img.crop({src.x/dims.x, src.y/dims.y}, {(src.x + src.w)/dims.x, (src.y + src.h)/dims.y})
-  transform := th::Transform{p: {dst.x, dst.y}, s: {dst.w/src.w, dst.h/src.h}, r: rot, o: {dst.w/2, dst.h/2}}
-  ctx.currentLayer.appendCommand(ImageCmd{img, transform, img.getCropQuad(), color})
+  ctx.currentLayer.appendCommand(BlitCmd{img, src, dst, color, rot})
 }
 
 fn (ctx: ^DrawContext) drawNinepatch*(img: image::Image, outer, inner, dest: rect::Rect, tint: uint32 = th::white) {
