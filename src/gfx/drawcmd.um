@@ -160,8 +160,21 @@ fn (d: ^RectCmd) draw(props: DrawProperties) {
   canvas::drawRect(d.color, d.rect)
 }
 
+fn drawRectLines*(color: uint32, r: rect::Rect, thicc: real = 3.0) {
+  t2 := thicc/2
+
+  // top
+  canvas::drawLine(color, {r.x-t2, r.y}, {r.x+r.w+t2, r.y}, thicc)
+  // bottom
+  canvas::drawLine(color, {r.x-t2, r.y+r.h}, {r.x+r.w+t2, r.y+r.h}, thicc)
+  // left
+  canvas::drawLine(color, {r.x, r.y-t2}, {r.x, r.y+r.h+t2}, thicc)
+  // right
+  canvas::drawLine(color, {r.x+r.w, r.y-t2}, {r.x+r.w, r.y+r.h+t2}, thicc)
+}
+
 fn (d: ^RectLineCmd) draw(props: DrawProperties) {
-  canvas::drawRectLines(d.color, d.rect, d.thickness)
+  drawRectLines(d.color, d.rect, d.thickness)
 }
 
 fn (d: ^BeginScissorRectCmd) draw(props: DrawProperties) {

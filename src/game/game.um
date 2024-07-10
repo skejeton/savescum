@@ -1004,7 +1004,6 @@ fn update*() {
       reset()
     }
 
-
     for i := 0; i < len(entities); i++ {
       ent := &entities[i]
 
