@@ -1,5 +1,4 @@
 import (
-  "image.um"
   "std.um"
   "th.um"
   "rect.um"

@@ -1735,13 +1735,20 @@ fn editorPutUi(editor: ^Editor) {
     editor.uicore.ctx.moveLayer(-10000000)
   }
 
+  widgetWindow(editor, "Console (Aux)", {100, 100, 640, 480}, |editor| {
+    editor.uicore.beginTool("Console", winfo.contentRect)
+    editor.uicore.ctx.drawCustom(dbg::ConsoleDrawCmd{winfo.contentRect, editor.resources.mainFont})
+    events := editor.uicore.endTool()
+    dbg::scrollConsole(events.queryScroll())
+  }, true)
+
   editor.ui.render("button", |editor| {
     bs := ButtonState{
       isOver: state.hovered,
       isDown: state.pressed
     }
 
-    drawBtn(editor, state.id, state.rect, bs, false, 0xFFFF00FF)
+    drawBtn(editor, state.id, state.rect, bs, false, 0xFFFFFFFF)
   })
   editor.ui.render("button_invert", |editor| {
     bs := ButtonState{
@@ -1749,15 +1756,8 @@ fn editorPutUi(editor: ^Editor) {
       isDown: state.pressed
     }
 
-    drawBtn(editor, state.id, state.rect, bs, true, 0xFFFF00FF)
+    drawBtn(editor, state.id, state.rect, bs, true, 0xFFFFFFFF)
   })
-
-  widgetWindow(editor, "Console (Aux)", {100, 100, 640, 480}, |editor| {
-    editor.uicore.beginTool("Console", winfo.contentRect)
-    editor.uicore.ctx.drawCustom(dbg::ConsoleDrawCmd{winfo.contentRect, editor.resources.mainFont})
-    events := editor.uicore.endTool()
-    dbg::scrollConsole(events.queryScroll())
-  }, true)
 }
 
 fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources {

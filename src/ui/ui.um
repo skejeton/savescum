@@ -28,7 +28,6 @@ fn mk*(): UI {
   }
 }
 
-
 fn (ui: ^UI) begin*() {
   ui.classes = {}
 }
