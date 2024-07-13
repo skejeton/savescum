@@ -9,8 +9,10 @@
 import (
   "th.um"
   "rect.um"
+  "atlas.um"
+  "tilemap.um"
+  "coll.um"
   "../misc/util.um"
-  "tileset.um"
   "../shared/global.um"
 )
 
@@ -20,28 +22,35 @@ const (
 )
 
 type (
-  Chunk* = [chunkW][chunkH]int
+  TileProperties* = struct {
+    invisible: bool
+  }
+
   ChunkPos* = struct {
     x: int
     y: int
   }
+
   World* = struct {
     playerSpawnPos: th::Vf2
-    tileset: tileset::Tileset
-    tilemap: [3]map[ChunkPos]Chunk
+    tileProperties: map[int]TileProperties
+    tileset: atlas::Atlas
+    tilemap: [3]map[ChunkPos]tilemap::Tilemap
   }
+
   Tangent* = struct {
     x, y: int
     id: int
   }
+
   RenderTile* = struct {
     rect: rect::Rect
     id: int
   }
 )
 
-fn fromTileset*(ts: tileset::Tileset): World {
-  return World{tileset: ts, tilemap: [3]map[ChunkPos]Chunk{map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}, map[ChunkPos]Chunk{}}}
+fn fromTileset*(ts: atlas::Atlas): World {
+  return World{tileset: ts}
 }
 
 fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
@@ -54,12 +63,15 @@ fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
   chunk_pos := ChunkPos{floor(tx/real(chunkW)), floor(ty/real(chunkH))}
 
   chunk := &world.tilemap[layer][chunk_pos]
+  if chunk.w == 0 {
+    chunk ^= tilemap::mk(make([]th::uu, chunkW*chunkH), chunkW, world.tileset, 1)
+  }
 
   // make tile positions local
   tx = tx - chunk_pos.x * chunkW
   ty = ty - chunk_pos.y * chunkH
 
-  chunk[tx][ty] = tile
+  chunk.edit(tx, ty, tile)
 }
 
 fn (world: ^World) getTile*(layer, tx, ty: int): int {
@@ -79,9 +91,12 @@ fn (world: ^World) getTile*(layer, tx, ty: int): int {
   tx = tx - chunk_pos.x * chunkW
   ty = ty - chunk_pos.y * chunkH
 
-  return chunk[tx][ty]
+  return chunk.cells[tx+ty*chunkW]
 }
 
+fn getTileSizeInPixels(world: ^World): th::Vf2 {
+  return th::Vf2{world.tileset.cs.x/2, world.tileset.cs.y/2}
+}
 
 //
 // getTangentTiles(
@@ -91,7 +106,9 @@ fn (world: ^World) getTile*(layer, tx, ty: int): int {
 // NOTE: This function only checks middleground layer (layer 0)
 //
 fn (world: ^World) getTangentTiles*(r: rect::Rect): []Tangent {
-  x, y, w, h := floor(r.x/world.tileset.tileSizeX), floor(r.y/world.tileset.tileSizeY), ceil(r.w/world.tileset.tileSizeX), ceil(r.h/world.tileset.tileSizeY)
+  sz := getTileSizeInPixels(world)
+
+  x, y, w, h := floor(r.x/sz.x), floor(r.y/sz.y), ceil(r.w/sz.x), ceil(r.h/sz.y)
   x2, y2 := x + w, y + h
   inity := y
   tangents := []Tangent{}
@@ -111,11 +128,17 @@ fn (world: ^World) getTangentTiles*(r: rect::Rect): []Tangent {
   return tangents
 }
 
-fn getTileSizeInPixels(world: ^World): th::Vf2 {
-  return th::Vf2{world.tileset.tileSizeX, world.tileset.tileSizeY}
+fn chunkVisible(world: ^World, chunk: ^tilemap::Tilemap, offset: th::Vf2, pan: th::Vf2, scale: real = 1.0): bool {
+  tsz := getTileSizeInPixels(world)
+  offset = offset.mulf(scale).add(pan)
+  tileSize := tsz.mulf(scale)
+  chunkSize := tileSize.mul(th::Vf2{chunkW, chunkH})
+  chunkRect := rect::Rect{offset.x, offset.y, chunkSize.x, chunkSize.y}
+
+  return coll::rectToRect(chunkRect, global::screen)
 }
 
-fn collectChunkRenderTiles(world: ^World, chunk: ^Chunk, offset: th::Vf2, pan: th::Vf2, scale: real = 1.0): []RenderTile {
+fn collectChunkRenderTiles(world: ^World, chunk: ^tilemap::Tilemap, offset: th::Vf2, pan: th::Vf2, scale: real = 1.0): []RenderTile {
   origOffset := offset
   tsz := getTileSizeInPixels(world)
   offset = offset.mulf(scale).add(pan)
@@ -138,7 +161,7 @@ fn collectChunkRenderTiles(world: ^World, chunk: ^Chunk, offset: th::Vf2, pan: t
   i := 0
   for cx := sx; cx < ex; cx++ {
     for cy := sy; cy < ey; cy++ {
-      tile := chunk[cx][cy]
+      tile := chunk.cells[cx+cy*chunkW]
       if tile > 0 {
         pos := th::Vf2{origOffset.x+cx*tsz.x, origOffset.y+cy*tsz.y}
         renderTiles[i] = RenderTile{{pos.x, pos.y, tsz.x, tsz.y}, tile}
@@ -170,27 +193,27 @@ fn (world: ^World) collectLayerRenderTiles*(pan: th::Vf2, layerId: int, scale: r
 
 
 fn (world: ^World) drawRenderTiles*(renderTiles: []RenderTile, tint: uint32, pan: th::Vf2, scale: real) {
-  prevTileId := -1
-
   for i, renderTile in renderTiles {
-    cr := world.tileset.getCroppingRectId(renderTile.id)
-
-    if prevTileId != renderTile.id {
-      world.tileset.image.cropRect(cr)
-      prevTileId = renderTile.id
-    }
-
-    if !world.tileset.tileProperties[renderTile.id].invisible {
-      r := rect::Rect{renderTile.rect.x*scale+pan.x, renderTile.rect.y*scale+pan.y, renderTile.rect.w*scale, renderTile.rect.h*scale}
-
-      world.tileset.image.draw({p: {r.x, r.y}, s: {r.w/cr.w, r.h/cr.h}}, tint)
+    if !world.tileProperties[renderTile.id].invisible {
+      world.tileset.draw(world.tileset.coords(renderTile.id-1).item0,
+        {
+          p: {renderTile.rect.x*scale+pan.x, renderTile.rect.y*scale+pan.y},
+          s: {renderTile.rect.w*scale/world.tileset.cs.x, renderTile.rect.h*scale/world.tileset.cs.y}
+        }
+      )
     }
   }
 }
 
 fn (world: ^World) drawLayer*(pan: th::Vf2, layerId: int, scale: real = 1.0, tint: uint32 = 0xFFFFFFFF) {
-  renderTiles := world.collectLayerRenderTiles(pan, layerId, scale)
-  world.drawRenderTiles(renderTiles, tint, pan, scale)
+  tsz := getTileSizeInPixels(world)
+  for p, chunk^ in world.tilemap[layerId+1] {
+    offs := th::Vf2{p.x*chunkW*tsz.x, p.y*chunkH*tsz.y}
+
+    if chunkVisible(world, chunk, offs, pan, scale) {
+      chunk.draw({s: {scale/2, scale/2}, p: pan.add(offs.mulf(scale))})
+    }
+  }
 }
 
 fn (world: ^World) draw*(pan: th::Vf2) {

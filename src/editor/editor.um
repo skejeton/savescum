@@ -32,7 +32,7 @@ import (
   "../data/problem_screen.um"
   "../gfx/background.um"
   "../game/world.um"
-  "../game/tileset.um"
+  "atlas.um"
   "../misc/util.um"
   "../misc/mouseinput.um"
   "../game/game.um"
@@ -109,7 +109,7 @@ type (
     tilemapLayer: int
     tilemapShowAllLayers: bool
     tileSelected: th::Vf2
-    tileset: tileset::Tileset
+    tileset: atlas::Atlas
     world: world::World
     isPlaying: bool
     isRelocatingPlayer: bool
@@ -154,11 +154,6 @@ fn drawBevelRect(editor: ^Editor, r: rect::Rect, pushed: bool = false, color: ui
   } else {
     editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, bevelOuterRect, bevelInnerRect, r, color)
   }
-}
-
-fn drawBackdropRect(editor: ^Editor, r: rect::Rect, color: uint32 = 0xFFFFFFFF) {
-  editor.uicore.ctx.drawRect(color, r)
-  editor.uicore.ctx.drawRectLines(0x000000FF, r)
 }
 
 fn centerTextWithinRect(font: font::Font, text: str, r: rect::Rect): th::Vf2 {
@@ -304,7 +299,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
         editor.wm.setWindowVisible(title, false)
       }
 
-      editor.uicore.ctx.drawRect(th::black, {position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-2, buttonSize.x-10, 3})
+      //editor.uicore.ctx.drawRect(th::black, {position.x+windowRect.x+5, position.y+windowRect.y+titlebarHeight/2-2, buttonSize.x-10, 3})
       position.x += buttonSize.x + padding
 
       handleSize := th::Vf2{windowRect.w - position.x - padding, titlebarHeight}
@@ -791,12 +786,12 @@ fn editorPutToolbar(editor: ^Editor) {
     for i := 0; i < global::screen.w/32+1; i++ {
       editor.uicore.ctx.drawImage(editor.resources.superHotFire, th::Transform{p: th::Vf2{x+i*32, y}, s: th::Vf2{1, 1}})
     }
-  }
+  } 
 
   editor.uicore.beginTool("ToolBar", rectangle)
   {
     if !editor.isPlaying {
-      editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {30, 30, 30, 30}, {10, 10, 10, 10}, rectangle, 0xFFFFFFFF)
+      editor.uicore.ctx.drawImageRect(editor.resources.bevelImage, {91, 30, 29, 30}, rectangle)
     }
 
     buttonRectangle := rect::Rect{rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2}
@@ -950,7 +945,7 @@ fn putTilePicker(editor: ^Editor) {
       editor.uicore.ctx.drawRect(0x222222FF, contentRect)
       editor.uicore.ctx.moveLayer(1)
       {
-        imgDims := editor.tileset.image.getDims()
+        imgDims := editor.tileset.i.getDims()
         newSelectedTile := putGrid(&editor.tilesetGrid, editor, contentRect)
         if !(newSelectedTile.x < 0 || newSelectedTile.y < 0 ||
            newSelectedTile.x >= imgDims.x/(imgDims.x/4) || newSelectedTile.y >= imgDims.y/(imgDims.x/4)) {
@@ -968,8 +963,8 @@ fn putTilePicker(editor: ^Editor) {
       editor.uicore.ctx.moveLayer(-1)
       editor.uicore.ctx.beginScissorRect(contentRect)
 
-      editor.tileset.image.crop(th::Vf2{0, 0}, th::Vf2{1, 1})
-      editor.uicore.ctx.drawImage(editor.tileset.image, th::Transform{s: editor.tilesetGrid.s.divf(64), p: editor.tilesetGrid.toScreen(th::Vf2{0, 0})})
+      editor.tileset.i.crop(th::Vf2{0, 0}, th::Vf2{1, 1})
+      editor.uicore.ctx.drawImage(editor.tileset.i, th::Transform{s: editor.tilesetGrid.s.divf(64), p: editor.tilesetGrid.toScreen(th::Vf2{0, 0})})
       editor.uicore.ctx.endScissor()
     }
     events := editor.uicore.endTool()
@@ -1343,7 +1338,7 @@ fn putWorldEntities(editor: ^Editor) {
       continue
     }
 
-    // FIXME: Initializing tag set every time we render an entity is not efficent at all.
+    // FIXME: Initializing tag set every time we render an entity is not efficient at all.
     tags_ := game::initTagSetFromString(ent.tags)
     tags := new(game::TagSet, tags_)
     ignore := tags.isSet("Guide") && editor.entityBypass && !isEntitySelected(&editor.entities, i)
@@ -1702,7 +1697,7 @@ fn editorPutUi(editor: ^Editor) {
       }
     } else {
       if events.queryMouse(.left, mouseinput::down) {
-        editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), editor.tileset.tileToPos(trunc(editor.tileSelected.x), trunc(editor.tileSelected.y)))
+        editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), trunc(editor.tileSelected.x+editor.tileSelected.y*editor.tileset.dm.x)+1)
         editor.dirty = true
       }
       if events.queryMouse(.right, mouseinput::down) {
@@ -1774,7 +1769,7 @@ fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources {
 }
 
 fn editorInit(resources: EditorResources): Editor {
-  tileset := tileset::fromImage(resources.tilesetImage, 32, 32, 2)
+  tileset := atlas::mk(resources.tilesetImage, {4, 9})
 
   world := world::fromTileset(tileset)
 

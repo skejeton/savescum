@@ -5,6 +5,7 @@ import (
   "std.um"
   "csv.um"
   "th.um"
+  "tilemap.um"
 )
 
 type (
@@ -55,7 +56,7 @@ fn save*(wd: WorldData): str {
       for ty := 0; ty < world::chunkH; ty++ {
         grid[ty] = make([]str, world::chunkW)
         for tx := 0; tx < world::chunkW; tx++ {
-          grid[ty][tx] = sprintf("%d", chunk[tx][ty])
+          grid[ty][tx] = sprintf("%d", chunk.cells[tx+ty*world::chunkW])
         }
       }
 
@@ -77,8 +78,6 @@ fn load*(world: world::World, data: str): WorldData {
   var (
     entities: []EntityDesc = make([]EntityDesc, 0)
   )
-
-  world.tilemap = [3]map[world::ChunkPos]world::Chunk{map[world::ChunkPos]world::Chunk{}, map[world::ChunkPos]world::Chunk{}, map[world::ChunkPos]world::Chunk{}}
 
   std::assert(csvData[0][0] == lastVersion, "Scene version mismatch.")
 
@@ -104,11 +103,11 @@ fn load*(world: world::World, data: str): WorldData {
 
     std::assert(layer >= 0 && layer <= 2, "Bad layer number.")
 
-    var chunk: world::Chunk
+    var chunk: tilemap::Tilemap = tilemap::mk(make([]th::uu, world::chunkW*world::chunkH), world::chunkW, world.tileset, 1)
     for y := 0; y < world::chunkH; y++ {
       for x := 0; x < world::chunkW; x++ {
         tileId := std::atoi(csvData[row+y][x])
-        chunk[x][y] = tileId        
+        chunk.cells[x+y*world::chunkW] = tileId
       }
     }
     row += world::chunkH

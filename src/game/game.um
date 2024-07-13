@@ -394,7 +394,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
   }
 
   switch s.shape {
-  case ShapeType.leftUpSlope:
+  case .leftUpSlope:
     cornerX := ent.rect.x + ent.rect.w - r.x
     if cornerX > r.w {
       cornerX = r.w
@@ -411,7 +411,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
       ent.onSlope = true
       ent.rect.y += hitY-cornerY
     }
-  case ShapeType.rightUpSlope:
+  case .rightUpSlope:
     cornerX := ent.rect.x - r.x
     if cornerX < 0 {
       cornerX = 0
@@ -425,7 +425,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
       ent.onSlope = true
       ent.rect.y += hitY-cornerY
     }
-  case ShapeType.leftDownSlope:
+  case .leftDownSlope:
     cornerX := ent.rect.x + ent.rect.w - r.x
     if cornerX > r.w {
       cornerX = r.w
@@ -439,7 +439,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
       }
       ent.rect.y += hitY-cornerY
     }
-  case ShapeType.rightDownSlope:
+  case .rightDownSlope:
     cornerX := ent.rect.x - r.x
     if cornerX < 0 {
       cornerX = 0
@@ -453,7 +453,7 @@ fn entVsShape(ent: ^Character, s: Shape) {
       }
       ent.rect.y += hitY-cornerY
     }
-  case ShapeType.block:
+  case .block:
     if snap.x != 0 {
       ent.vel.x = 0
     } else if (snap.y > 0 && ent.vel.y < 0) || (snap.y < 0 && ent.vel.y > 0) {
@@ -478,43 +478,43 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
       continue
     }
     if coll::rectToRect(ent.rect, entity.rect) && entity.tags.isSet("boulder") {
-      solids = append(solids, Shape{entity.rect, ShapeType.block})
+      solids = append(solids, Shape{entity.rect, .block})
     }
   }
 
   for i, tangent in tangents {
-    shapeRect := rect::Rect{tangent.x*world.tileset.tileSizeX, tangent.y*world.tileset.tileSizeY, world.tileset.tileSizeX, world.tileset.tileSizeY}
+    shapeRect := rect::Rect{tangent.x*(world.tileset.cs.x/2), tangent.y*(world.tileset.cs.y/2), world.tileset.cs.x/2, world.tileset.cs.y/2}
     shapeType := ShapeType.none
 
     switch tangent.id {
       // slab
-      case 25: shapeType = ShapeType.block
-        shapeRect.y += world.tileset.tileSizeY/2
+      case 25: shapeType = .block
+        shapeRect.y += world.tileset.cs.y/4
         shapeRect.h /= 2
-      case 30: if toggleActive { shapeType = ShapeType.block }
-      case 31: if !toggleActive { shapeType = ShapeType.block }
-      case 1, 5, 7, 29:   shapeType = ShapeType.block
-      case 9:   shapeType = ShapeType.leftUpSlope
-      case 10:  shapeType = ShapeType.rightUpSlope
-      case 13:  shapeType = ShapeType.leftDownSlope
-      case 14:  shapeType = ShapeType.rightDownSlope
-      case 15:  shapeType = ShapeType.leftUpSlope
+      case 30: if toggleActive { shapeType = .block }
+      case 31: if !toggleActive { shapeType = .block }
+      case 1, 5, 7, 29:   shapeType = .block
+      case 9:   shapeType = .leftUpSlope
+      case 10:  shapeType = .rightUpSlope
+      case 13:  shapeType = .leftDownSlope
+      case 14:  shapeType = .rightDownSlope
+      case 15:  shapeType = .leftUpSlope
         shapeRect.h /= 2
-      case 16:  shapeType = ShapeType.rightUpSlope
+      case 16:  shapeType = .rightUpSlope
         shapeRect.h /= 2
-      case 4:   shapeType = ShapeType.leftUpSlope
-        shapeRect.y += world.tileset.tileSizeY/2
+      case 4:   shapeType = .leftUpSlope
+        shapeRect.y += world.tileset.cs.y/4
         shapeRect.h /= 2
-      case 8:   shapeType = ShapeType.rightUpSlope
-        shapeRect.y += world.tileset.tileSizeY/2
+      case 8:   shapeType = .rightUpSlope
+        shapeRect.y += world.tileset.cs.y/4
         shapeRect.h /= 2
-      case 11:  shapeType = ShapeType.rightDownSlope
+      case 11:  shapeType = .rightDownSlope
         shapeRect.h /= 2
-      case 12:  shapeType = ShapeType.leftDownSlope
+      case 12:  shapeType = .leftDownSlope
         shapeRect.h /= 2
     }
 
-    if shapeType == ShapeType.block {
+    if shapeType == .block {
       solids = append(solids, Shape{shapeRect, shapeType})
     } else {
       nonBlockSolids = append(nonBlockSolids, Shape{shapeRect, shapeType})
@@ -533,7 +533,7 @@ fn entCheckCollision(ent: ^Character): bool {
 
   solids := entConstructCollidingSolids(ent)
   for i, shape in solids {
-    if shape.shape == ShapeType.block {
+    if shape.shape == .block {
       if coll::rectToRect(r, shape.rect) {
         return true
       }
@@ -558,11 +558,11 @@ fn _drawRectTangents(r: rect::Rect) {
   for i, solid in solids {
     rec := cameraOffsetRect(solid.rect)
     switch solid.shape {
-    case ShapeType.block:
+    case .block:
       canvas::drawRect(0x00FF0055, rec)
-    case ShapeType.leftUpSlope, ShapeType.rightDownSlope:
+    case .leftUpSlope, .rightDownSlope:
       canvas::drawLine(0x00FF0055, th::Vf2{rec.x, rec.y+rec.h}, th::Vf2{rec.x+rec.w, rec.y}, 2)
-    case ShapeType.rightUpSlope, ShapeType.leftDownSlope:
+    case .rightUpSlope, .leftDownSlope:
       canvas::drawLine(0x00FF0055, th::Vf2{rec.x, rec.y}, th::Vf2{rec.x+rec.w, rec.y+rec.h}, 2)
     }
     canvas::drawText(sprintf("%v", i), th::Vf2{rec.x, rec.y}, th::white, cameraScale)
@@ -600,7 +600,7 @@ fn start*(worldData: world_data::WorldData) {
 
   world = worldData.world
 
-  pal.ent = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect::Rect{world.playerSpawnPos.x*world.tileset.tileSizeX, world.playerSpawnPos.y*world.tileset.tileSizeY, world.tileset.tileSizeX/1.2, world.tileset.tileSizeY}}
+  pal.ent = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect::Rect{world.playerSpawnPos.x*(world.tileset.cs.x/2), world.playerSpawnPos.y*(world.tileset.cs.y/2), world.tileset.cs.x/2.4, world.tileset.cs.y/2}}
 
   resetPoint.x = pal.ent.rect.x
   resetPoint.y = pal.ent.rect.y
@@ -1126,11 +1126,11 @@ fn drawOverlays() {
   for i, renderTile in renderTiles {
     switch renderTile.id {
       case 30:
-        world.tileset.image.blit(world.tileset.getCroppingRectId(30), cameraOffsetRect(renderTile.rect))
-        world.tileset.image.blit(world.tileset.getCroppingRectId(31), cameraOffsetRect(renderTile.rect), alpha)
+        world.tileset.i.blit(world.tileset.rect(29).item0, cameraOffsetRect(renderTile.rect))
+        world.tileset.i.blit(world.tileset.rect(30).item0, cameraOffsetRect(renderTile.rect), alpha)
       case 31:
-        world.tileset.image.blit(world.tileset.getCroppingRectId(30), cameraOffsetRect(renderTile.rect))
-        world.tileset.image.blit(world.tileset.getCroppingRectId(31), cameraOffsetRect(renderTile.rect), alpha2)
+        world.tileset.i.blit(world.tileset.rect(29).item0, cameraOffsetRect(renderTile.rect))
+        world.tileset.i.blit(world.tileset.rect(30).item0, cameraOffsetRect(renderTile.rect), alpha2)
     }
   }
 }
