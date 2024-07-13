@@ -204,7 +204,7 @@ fn drawButtonInactive(editor: ^Editor, r: rect::Rect, text: str, color: uint32 =
   events := editor.uicore.endTool()
   events.queryMouse(.left, mouseinput::pressed)
   text = strings::splitBy(text, '#')[0]
-  editor.uicore.ctx.drawRect(color, r)
+  editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {60, 30, 30, 30}, {10, 10, 10, 10}, r, 0xFFFFFFFF)
   editor.uicore.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), 0x000000FF)
 }
 
@@ -289,10 +289,10 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
   // Frame tool.
   editor.uicore.beginTool(title, windowRect)
   {
-    editor.uicore.ctx.drawRectLines(0xFAF7FFFF, util::rectShrink(windowRect, -2.1), 4)
-
-    if !transparent {
-      drawBackdropRect(editor, windowRect, 0xEAEAEAFF)
+    if transparent {
+      editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {60, 0, 30, 30}, {10, 10, 10, 10}, util::rectShrink(windowRect, -5), 0xFFFFFFFF)
+    } else {
+      editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {30, 30, 30, 30}, {10, 10, 10, 10}, util::rectShrink(windowRect, -5), 0xFFFFFFFF)
     }
     editor.uicore.ctx.drawNinepatch(editor.resources.glow, {0, 0, 48, 48}, {16, 16, 16, 16}, util::rectShrink(windowRect, -20), 0x000000FF)
 
@@ -323,7 +323,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
         }
       }
 
-      editor.uicore.ctx.drawImageRect(editor.resources.bevelImage, {0, 30, 30, 30}, titlebarRect)
+      editor.uicore.ctx.drawImageRect(editor.resources.bevelImage, {0, 30, 29, 30}, titlebarRect)
       editor.uicore.ctx.beginScissorRect(titlebarRect)
         editor.uicore.ctx.drawText(editor.resources.mainFont, title, centerTextWithinRect(editor.resources.mainFont, title, titlebarRect), th::white)
         titlebarRect.x += 1
@@ -796,7 +796,7 @@ fn editorPutToolbar(editor: ^Editor) {
   editor.uicore.beginTool("ToolBar", rectangle)
   {
     if !editor.isPlaying {
-      drawBackdropRect(editor, rectangle, editor.dirty ? 0xFF0000FF : 0xFFFFFFFF)
+      editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {30, 30, 30, 30}, {10, 10, 10, 10}, rectangle, 0xFFFFFFFF)
     }
 
     buttonRectangle := rect::Rect{rectangle.x+padding, rectangle.y+padding, rectangle.h-padding*2, rectangle.h-padding*2}
@@ -821,12 +821,12 @@ fn editorPutToolbar(editor: ^Editor) {
         position.y -= rectangle.h
 
         position.x -= 80
-        if (editor.ui.button("Save", {position.x, position.y, 80, rectangle.h})) {
+        if (editor.ui.button("Save", {position.x-padding, position.y+padding, 80, rectangle.h-padding*2})) {
           editorSaveRoom(editor)
         }
 
         position.x -= 80
-        if (editor.ui.button("Load", {position.x, position.y, 80, rectangle.h})) {
+        if (editor.ui.button("Load", {position.x-padding, position.y+padding, 80, rectangle.h-padding*2})) {
           editorLoadRoom(editor, editor.currentRoom)
         }
       }

@@ -1164,7 +1164,6 @@ fn draw*() {
     background::draw(bgCam, time)
   }
 
-
   // RENDER WORLD //
   world.drawLayer(cameraOffsetPoint({0, 0}), -1, cameraScale)
   drawOutlines()
