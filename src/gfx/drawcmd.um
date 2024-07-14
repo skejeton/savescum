@@ -8,7 +8,7 @@ import (
   "rect.um"
   "image.um"
   "coll.um"
-  "../gfx/font.um"
+  "font.um"
   "canvas.um"
   "std.um"
 )

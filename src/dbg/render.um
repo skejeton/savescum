@@ -2,7 +2,7 @@
 
 import (
   "canvas.um"
-  "../gfx/font.um"
+  "font.um"
   "rect.um"
   "th.um"
 

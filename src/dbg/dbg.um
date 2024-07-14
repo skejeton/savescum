@@ -2,7 +2,7 @@ import (
   "rect.um"
   "console.um"
   "../../umbox/fmt/fmt.um"
-  "../gfx/font.um"
+  "font.um"
   "../gfx/drawcmd.um"
 )
 

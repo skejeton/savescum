@@ -9,7 +9,7 @@ import (
   "canvas.um"
   "color.um"
   "../gfx/rerp.um"
-  "../gfx/font.um"
+  "font.um"
 )
 
 type Console* = struct {

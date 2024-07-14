@@ -3,7 +3,7 @@ import (
   "th.um"
   "rect.um"
   "canvas.um"
-  "../gfx/font.um"
+  "font.um"
 
   "../misc/strings.um"
 )

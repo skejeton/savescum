@@ -4,13 +4,10 @@ import (
   "window.um"
   "th.um"
   "input.um"
-  "../gfx/font.um"
-  "std.um"
-  "../misc/strings.um"
+  "font.um"
 )
 
 var (
-  fonterr: std::Err
   font: font::Font
   scroll: th::Vf2
   y: th::fu
@@ -21,29 +18,20 @@ fn restart() {
   canvas::drawRect(th::black, {0, 0, window::w, window::h})
 }
 
-fn fontHeight(): th::fu {
-  if fonterr.code == 0 {
-    return font.measure(" ").y
-  }
-  return 10.0
-}
-
-fn drawText(text: str, pos: th::Vf2, color: uint32) {
-  if fonterr.code == 0 {
-    font.draw(text, pos, color, 1*window::getDpiScaleFactor())
-  } else {
-    canvas::drawText(strings::toUpperS(text), pos, color, 2*window::getDpiScaleFactor())
-  }
-}
-
 fn pushText(text: str, color: uint32 = th::white) {
-  drawText(text, th::Vf2{0, y}.add(scroll), color)
-  y += (fontHeight() + 10.0)*window::getDpiScaleFactor()
+  font.draw(text, {0, y}, color, 1*window::getDpiScaleFactor())
+  y += (font.measure(" ").y + 10.0)*window::getDpiScaleFactor()
 }
 
 fn init() {
   // Try to load a better font, the fallback will be used otherwise.
-  font, fonterr = font::load("data/font/Unifont.ttf", 16)
+  f, err := font::load("data/font/Unifont.ttf", 16)
+
+  if err.code != 0 {
+    f = canvas::pixelFont
+  }
+
+  font = f
 }
 
 oldMousePos := th::Vf2{0, 0}

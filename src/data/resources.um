@@ -1,6 +1,6 @@
 import (
   "image.um"
-  "../gfx/font.um"
+  "font.um"
   "audio.um"
 )
 

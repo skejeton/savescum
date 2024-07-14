@@ -15,7 +15,7 @@ import (
   "world.um"
   "../shared/global.um"
   "world_data.um"
-  "../gfx/font.um"
+  "font.um"
   "std.um"
   "audio.um"
   "../ui/notification.um"

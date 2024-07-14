@@ -47,7 +47,7 @@ import (
   "../txt/buffer.um"
   "grid.um"
 
-  "../gfx/font.um"
+  "font.um"
   "../misc/strings.um"
 
   "../../umbox/os/os.um"
