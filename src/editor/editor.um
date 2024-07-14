@@ -1,5 +1,7 @@
 // (C) skejeton
 
+// WAR CRIME: THIS FILE IS A MESS.
+
 import (
   "color.um"
   "window.um"

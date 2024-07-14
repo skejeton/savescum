@@ -8,6 +8,7 @@ import (
   "../shared/global.um"
   "../data/resources.um"
   "partition.um"
+  "coll.um"
 
   "d3shapes.um"
   "d3.um"
@@ -94,7 +95,7 @@ fn drawBackgroundSquare*(bound: rect::Rect, time: real, color1, color2: uint32, 
   }
 
   rectCount := trunc(util::max(bound.w, bound.h)/frequency)+2
-  cropBound := util::rectIntersection(bound, global::screen)
+  cropBound := coll::rectIntersect(bound, global::screen)
   center := bound.center()
 
   canvas::beginScissorRect(cropBound)

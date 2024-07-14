@@ -2,8 +2,9 @@ import (
   "std.um"
   "th.um"
   "rect.um"
+  "canvas.um"
   "../gfx/font.um"
-  
+
   "../misc/strings.um"
 )
 
@@ -33,6 +34,20 @@ fn writeFileStr*(path: str, dataStr: str): std::Err {
   std::fclose(file)
 
   return {}
+}
+
+fn drawArrow*(p: th::Vf2, p1: th::Vf2, color: uint32) {
+  canvas::drawLine(color, p, p1, 1)
+  // draw arrowhead
+  dir := p1.sub(p).norm()
+  dir1 := dir.rotated({0, 0}, 45)
+  dir2 := dir.rotated({0, 0}, -45)
+
+  p2 := p1.sub(dir1.mulf(10))
+  p3 := p1.sub(dir2.mulf(10))
+
+  canvas::drawLine(color, p1, p2, 1)
+  canvas::drawLine(color, p1, p3, 1)
 }
 
 // Returns rectangle shrinked by amount `by` from all left, right, top, bottom sides
@@ -107,12 +122,6 @@ fn isprint*(c: uint32): bool {
   // ASCII 127 is a control character (DEL)
   // we want to skip these 
   return c >= 32 && c != 127
-}
-
-fn rectIntersection*(a, b: rect::Rect): rect::Rect {
-  x := max(a.x, b.x)
-  y := max(a.y, b.y)
-  return {x, y, min(a.x + a.w, b.x + b.w) - x, min(a.y + a.h, b.y + b.h) - y}
 }
 
 fn wrapText*(font: ^font::Font, text: str, boundary: real): []str {

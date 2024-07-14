@@ -11,7 +11,6 @@ import (
   "../gfx/font.um"
   "canvas.um"
   "std.um"
-  "../misc/util.um"
 )
 
 type (
@@ -240,7 +239,7 @@ fn mergeScissorRects(child, parent: rect::Rect): rect::Rect {
   }
 
   // Otherwise return the intersection rect.
-  return util::rectIntersection(child, parent)
+  return coll::rectIntersect(child, parent)
 }
 
 fn (ctx: ^DrawContext) beginScissorRect*(r: rect::Rect) {

@@ -104,15 +104,20 @@ fn load*(world: world::World, data: str): WorldData {
     std::assert(layer >= 0 && layer <= 2, "Bad layer number.")
 
     var chunk: tilemap::Tilemap = tilemap::mk(make([]th::uu, world::chunkW*world::chunkH), world::chunkW, world.tileset, 1)
+    sum := 0
     for y := 0; y < world::chunkH; y++ {
       for x := 0; x < world::chunkW; x++ {
         tileId := std::atoi(csvData[row+y][x])
+        sum += tileId
         chunk.cells[x+y*world::chunkW] = tileId
       }
     }
     row += world::chunkH
 
-    world.tilemap[layer][chunkPos] = chunk
+    // If all tiles are empty, don't store the chunk
+    if sum != 0 {
+      world.tilemap[layer][chunkPos] = chunk
+    }
   }
 
   return WorldData{world, entities}

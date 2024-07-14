@@ -1148,6 +1148,35 @@ fn drawObjectsAt(state: ChumState) {
   }
 }
 
+
+fn drawRayCast() {
+  origin := cameraOffsetPoint(pal.ent.rect.center())
+  direction := input::getMousePos().sub(origin)
+
+
+  worldOrigin := pal.ent.rect.center()
+  worldDirection := direction.divf(cameraScale*100)
+
+  color := 0x0000FFFF
+
+  at := 0
+  for i := 0; i < 100; i++ {
+    worldOrigin = worldOrigin.add(worldDirection)
+
+    ent := Character{}
+    ent.rect = rect::Rect{worldOrigin.x, worldOrigin.y, 1, 1}
+    at = i
+
+    if entCheckCollision(&ent) {
+      color = 0xFF0000FF
+      break
+    }
+  }
+
+  canvas::drawLine(0x00FF00FF, origin, origin.add(direction.divf(100.0/at)), 3)
+  util::drawArrow(origin, origin.add(direction), color)
+}
+
 fn draw*() {
   // RENDER BG //
   input::gamepad().rumble(rumbling*5, rumbling*5)
@@ -1188,6 +1217,7 @@ fn draw*() {
     drawGuideRects()
     canvas::drawRectLines(th::green, cameraOffsetRect(getCameraTargetRect()))
     drawEntityDebugRects()
+    drawRayCast()
   }
 
   cameraScale = oldScale

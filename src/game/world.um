@@ -12,7 +12,6 @@ import (
   "atlas.um"
   "tilemap.um"
   "coll.um"
-  "../misc/util.um"
   "../shared/global.um"
 )
 
@@ -146,7 +145,7 @@ fn collectChunkRenderTiles(world: ^World, chunk: ^tilemap::Tilemap, offset: th::
   chunkSize := tileSize.mul(th::Vf2{chunkW, chunkH})
   chunkRect := rect::Rect{offset.x, offset.y, chunkSize.x, chunkSize.y}
 
-  intersectionRect := util::rectIntersection(chunkRect, global::screen)
+  intersectionRect := coll::rectIntersect(chunkRect, global::screen)
 
   startTileIndex := intersectionRect.getPos().sub(chunkRect.getPos()).div(tileSize)
   endTileIndex := intersectionRect.getEnd().sub(chunkRect.getPos()).div(tileSize)
