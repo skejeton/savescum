@@ -1,6 +1,6 @@
-/**
- * Ratio-based interpolation for different types.
- */
+//~~
+// Ratio-based interpolation for different types. 
+//~~
 
 import (
   "rect.um"
@@ -16,6 +16,7 @@ fn iReal*(s, t, f: real): real {
   return s + (t-s)*f
 }
 
+
 fn iVf2*(s, t: th::Vf2, f: real): th::Vf2 {
   if f > 1 {
     f = 1
@@ -26,6 +27,7 @@ fn iVf2*(s, t: th::Vf2, f: real): th::Vf2 {
   s.y += (t.y-s.y)*f
   return s
 }
+
 
 fn iRect*(s, t: rect::Rect, f: real): rect::Rect {
   if f > 1 {

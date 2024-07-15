@@ -3,7 +3,7 @@ import (
   "th.um"
   strings = "../../src/misc/strings.um"
   "color.um"
-  "../../src/gfx/font.um"
+  "font.um"
 )
 
 type AppearingText* = struct {

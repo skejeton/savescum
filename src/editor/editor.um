@@ -133,11 +133,8 @@ type (
     uicore: ^core::Core
     ui: ^ui::UI
   }
-)
+) 
 
-// Draws a beveled rectangle in Windows 3.11 style.
-// It may have a problem with displaying colors somewhat incorrectly,
-//   because the middle of the rectangle is tinted gray slightly.
 fn drawBevelRect(editor: ^Editor, r: rect::Rect, pushed: bool = false, color: uint32 = th::white) {
   if payload_trigger::aprilFools() {
     color = color::hsv(th::time/5000.0, 0.9, 1.0)
@@ -145,10 +142,10 @@ fn drawBevelRect(editor: ^Editor, r: rect::Rect, pushed: bool = false, color: ui
 
   const (
     bevelOuterRect = rect::Rect{0, 0, 30, 30}
-    bevelInnerRect = rect::Rect{10, 10, 10, 10}
+    bevelInnerRect = rect::Rect{5, 5, 20, 20}
 
     bevelPushedOuterRect = rect::Rect{30, 0, 30, 30}
-    bevelPushedInnerRect = rect::Rect{10, 10, 10, 10}
+    bevelPushedInnerRect = rect::Rect{5, 5, 20, 20}
   )
 
   if pushed {
@@ -289,7 +286,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
     if transparent {
       editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {60, 0, 30, 30}, {10, 10, 10, 10}, util::rectShrink(windowRect, -5), 0xFFFFFFFF)
     } else {
-      editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {30, 30, 30, 30}, {10, 10, 10, 10}, util::rectShrink(windowRect, -5), 0xFFFFFFFF)
+      editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {0, 0, 30, 30}, {10, 10, 10, 10}, util::rectShrink(windowRect, -5), 0xFFFFFFFF)
     }
     editor.uicore.ctx.drawNinepatch(editor.resources.glow, {0, 0, 48, 48}, {16, 16, 16, 16}, util::rectShrink(windowRect, -20), 0x000000FF)
 
@@ -627,6 +624,13 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2):
     handleSize = 27
   )
 
+  editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {30*2, 0, 30, 30}, {10, 10, 10, 10}, areaRect, 0xFFFFFFFF)
+
+  areaRect.x += 5
+  areaRect.y += 5
+  areaRect.w -= 10
+  areaRect.h -= 10
+
   editor.uicore.beginTool("ScrollArea", areaRect)
 
   scroll := ^real(editor.uicore.getProperty("ScrollAreaScroll", 0.0))
@@ -649,6 +653,10 @@ fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2):
     thumbRect := rightHandleRect
     thumbRect.h = thumbHeight
     thumbRect.y += thumbOffset
+
+    if thumbRect.h < 10 {
+      thumbRect.h = 10
+    }
 
     thumbState := putButtonBase(editor, util::rectShrink(thumbRect, 1), "ScrollbarThumb")
     if thumbState.isDown {

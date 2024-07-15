@@ -3,7 +3,7 @@ import (
   "window.um"
   "th.um"
   "rect.um"
-  "../../src/gfx/font.um"
+  "font.um"
   "image.um"
   "color.um"
   "../test.um"
