@@ -105,7 +105,6 @@ type (
     debugTimerOrigin: int
     debugTimer: int
     showDebugInfo: bool
-    completions: [25][2]bool
 
     // Visual data
     resources: EditorResources
@@ -126,7 +125,6 @@ type (
     currentRoom: str
     dirty: bool
     mode: EditorMode
-    preChangeWorldData: world_data::WorldData
 
     // UI misc.
     currentWindow: str
@@ -1580,26 +1578,6 @@ fn editorPutUi(editor: ^Editor) {
   editor.ui.begin()
   editor.uicore.begin()
 
-  if input::isPressed(.ctrl) {
-    if input::isJustPressedc('s') {
-      input::clearc('s')
-      editorSaveRoom(editor)
-    }
-    if input::isJustPressedc('q') {
-      input::clearc('q')
-      for w in editor.wm.windows {
-        editor.wm.setWindowVisible(w, false)
-      }
-    }
-    if input::isJustPressedc('d') {
-      input::clearc('d')
-      idx := getEntitySelectedIndex(&editor.entities)
-      if idx != -1 {
-        doEntityAction(editor, .duplicate, idx)
-      }
-    }
-  }
-
   if (input::isJustPressed(.escape)) {
     deselectEntity(&editor.entities)
   }
@@ -1798,6 +1776,25 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
 }
 
 fn (editor: ^Editor) handleShortcuts*() {
+  if input::isPressed(.ctrl) {
+    if input::isJustPressedc('s') {
+      input::clearc('s')
+      editorSaveRoom(editor)
+    }
+    if input::isJustPressedc('q') {
+      input::clearc('q')
+      for w in editor.wm.windows {
+        editor.wm.setWindowVisible(w, false)
+      }
+    }
+    if input::isJustPressedc('d') {
+      input::clearc('d')
+      idx := getEntitySelectedIndex(&editor.entities)
+      if idx != -1 {
+        doEntityAction(editor, .duplicate, idx)
+      }
+    }
+  }
   if input::isJustPressed(.fn25) {
     std::assert(false, "The F25 key? What's that?")
   }
@@ -1926,7 +1923,6 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
 
 fn (editor: ^Editor) destroy*() {
   // HACK: Should the session managment be handled here?
-
   if !os::isdir("user") {
     os::mkdir("user")
   }
