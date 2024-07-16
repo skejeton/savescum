@@ -14,7 +14,7 @@ fn mk*(): ResourceLoader {
   return ResourceLoader{errors: []str{}}
 }
 
-fn hasErrors*(loader: ^ResourceLoader): bool {
+fn (loader: ^ResourceLoader) hasErrors*(): bool {
   return len(loader.errors) > 0
 }
 

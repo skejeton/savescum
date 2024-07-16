@@ -36,7 +36,7 @@ fn init() {
 
 oldMousePos := th::Vf2{0, 0}
 
-fn showResourceLoadingError*(loader: ^resources::ResourceLoader) {
+fn setup*(loader: ^resources::ResourceLoader) {
   init()
   window::onFrame.clear()
   window::onFrame.register(|loader| {

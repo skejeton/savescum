@@ -31,7 +31,6 @@ import (
   "../game/world_data.um"
   "../shared/global.um"
   "../data/resources.um"
-  "../data/problem_screen.um"
   "../gfx/background.um"
   "../game/world.um"
   "atlas.um"
@@ -54,6 +53,12 @@ import (
 )
 
 type (
+  // HACK: Should editor handle the gameplay?
+  EditorMode = enum {
+    editor
+    gameplay
+  }
+
   ButtonState = struct {
     isOver: bool
     isDown: bool
@@ -120,7 +125,7 @@ type (
     potentialRoom: str // the room which is in the text box
     currentRoom: str
     dirty: bool
-    enabled: bool
+    mode: EditorMode
     preChangeWorldData: world_data::WorldData
 
     // UI misc.
@@ -1535,16 +1540,6 @@ fn putLevelSelect(editor: ^Editor) {
 
 }
 
-fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources
-
-fn showErrorScreenIfResourcesFailedToLoad(rl: ^resources::ResourceLoader): bool {
-  if resources::hasErrors(rl) {
-    problem_screen::showResourceLoadingError(rl)
-    return true
-  }
-  return false
-}
-
 fn preUiUpdate(editor: ^Editor) {
   // Clear the input sink.
   editor.uicore.inputSink = core::InputSink{}
@@ -1619,7 +1614,7 @@ fn editorPutUi(editor: ^Editor) {
 
   // put ui
   if editor.isPlaying {
-    if editor.enabled {
+    if editor.mode == .editor {
       if input::isJustPressed(.escape) {
         editor.isPlaying = !editor.isPlaying
       }
@@ -1717,7 +1712,7 @@ fn editorPutUi(editor: ^Editor) {
     }
   }
 
-  if editor.enabled {
+  if editor.mode == .editor {
     editorPutToolbar(editor)
   }
 
@@ -1765,41 +1760,6 @@ fn editorPutUi(editor: ^Editor) {
   })
 }
 
-fn loadEditorResources(rl: ^resources::ResourceLoader): EditorResources {
-  editorResources := EditorResources {
-    bevelImage: resources::loadImage(rl, "data/img/ui/1_5x/base.png", .linear),
-    tilesetImage: resources::loadImage(rl, "data/img/ts_sky.png", .linear),
-    toolbarIcons: resources::loadImage(rl, "data/img/ui/1_5x/icons.png", .linear),
-    superHotFire: resources::loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
-    glow: resources::loadImage(rl, "data/img/ui/1_0x/glow.png", .nearest),
-    mainFont: resources::loadFont(rl, "data/font/FairfaxHD.ttf", 24, .linear)
-  }
-
-  return editorResources
-}
-
-fn editorInit(resources: EditorResources): Editor {
-  tileset := atlas::mk(resources.tilesetImage, {4, 9})
-
-  world := world::fromTileset(tileset)
-
-  ui := new(ui::UI, ui::mk())
-
-  return Editor{
-    ui: ui,
-    uicore: &ui.core,
-    tilemapGrid: grid::Grid{s: {48, 48}},
-    tilesetGrid: grid::Grid{s: {48, 48}},
-    tilemapShowAllLayers: false,
-    entityBypass: true,
-    tileset: tileset,
-    world: world,
-    resources: resources,
-    entities: createEditorEntities(),
-    wm: wm::create()
-  }
-}
-
 fn editorSaveSession(editor: ^Editor): session::Session {
   session := session::Session{}
   session.pan = editor.tilemapGrid.p
@@ -1837,136 +1797,143 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
   }
 }
 
-fn session*(enabled: bool) {
+fn (editor: ^Editor) handleShortcuts*() {
+  if input::isJustPressed(.fn25) {
+    std::assert(false, "The F25 key? What's that?")
+  }
+  if input::isJustPressed(.pause) {
+    editorToggleGame(editor)
+  }
+  if input::isJustPressed(.fn6) {
+    editor.debugTimerStarted = !editor.debugTimerStarted
+    if editor.debugTimerStarted {
+      editor.debugTimerOrigin = th::time
+      editor.debugTimer = 0
+    }
+  }
+  if input::isJustPressed(.fn5) {
+    editorToggleGame(editor)
+  }
+  if input::isJustPressed(.fn3) {
+    editor.showDebugInfo = !editor.showDebugInfo
+  }
+  if input::isJustPressed(.fn2) {
+    global::plainBiscuit = !global::plainBiscuit
+  }
+  if input::isJustPressed(.fn1) {
+    dbg::logt("dfjslfkjsd")
+    notification::put({.warning, sprintf("Hello, world! %d", th::time)})
+  }
+}
+
+fn setup*() {
   global::screen = {0, 0, 1200, 900}
-
   window::setup("Editor", trunc(global::screen.w), trunc(global::screen.h))
+}
 
-  dbg::initConsole()
-
-  dbg::logt(
-    "              [ _ _]\n"+
-    "              [ ----]\n"+
-    "     _/\\/\\/\\_/ /\n"+
-    "   _|         /\n"+
-    " _|  (  | (  |\n"+
-    "/__.-'|_|--|_|\n"
-  )
-  dbg::logt("SAVESCUM")
-  dbg::logt("DPI aware: {}\n", window::isDpiEnabled())
-  dbg::logt("-*-")
-
-  // init data
-  rl := new(resources::ResourceLoader)
-  rl ^= resources::mk()
+fn mk*(rl: ^resources::ResourceLoader): ^Editor {
+  // HACK: This shouldn't be handled in the editor.
   background::init(rl)
   game::init(rl)
-  editorResources := loadEditorResources(rl)
-  if showErrorScreenIfResourcesFailedToLoad(rl) {
-    return
+
+  resources := EditorResources {
+    bevelImage: resources::loadImage(rl, "data/img/ui/1_5x/base.png", .linear),
+    tilesetImage: resources::loadImage(rl, "data/img/ts_sky.png", .linear),
+    toolbarIcons: resources::loadImage(rl, "data/img/ui/1_5x/icons.png", .linear),
+    superHotFire: resources::loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
+    glow: resources::loadImage(rl, "data/img/ui/1_0x/glow.png", .nearest),
+    mainFont: resources::loadFont(rl, "data/font/FairfaxHD.ttf", 24, .linear)
   }
 
-  editor := new(Editor)
-  editor ^= editorInit(editorResources)
-  editor.enabled = enabled
+  tileset := atlas::mk(resources.tilesetImage, {4, 9})
+  ui := new(ui::UI, ui::mk())
 
+  editor := &Editor{
+    mode: .editor,
+    ui: ui,
+    uicore: &ui.core,
+    tilemapGrid: grid::Grid{s: {48, 48}},
+    tilesetGrid: grid::Grid{s: {48, 48}},
+    tilemapShowAllLayers: false,
+    entityBypass: true,
+    tileset: tileset,
+    world: world::fromTileset(tileset),
+    resources: resources,
+    entities: createEditorEntities(),
+    wm: wm::create()
+  }
+
+  // TODO: Should we handle the session loading here really?
   if sessionFile, err := util::readFileStr("user/session.json"); err.code == 0 {
     editorLoadSession(editor, session::load(sessionFile))
   } else {
-    loadRoom(editor, "test")
+    loadRoom(editor, "testarea")
   }
 
-  editor.wm.setWindowVisible("Confirm", false)
+  return editor
+}
 
-  if !enabled {
+fn (editor: ^Editor) update*(mode: EditorMode) {
+  if mode == .gameplay && !editor.isPlaying {
     editorToggleGame(editor)
   }
 
-  window::onFrame.register(|editor| {
-    payload_trigger::update()
+  // Subsystem updates
+  notification::update()
+  fps::update()
+  payload_trigger::update()
+  immcursor::setCursor(.system)
+  editor.handleShortcuts()
 
-    if editor.debugTimerStarted {
-      editor.debugTimer = th::time-editor.debugTimerOrigin
-    }
-    
-    immcursor::setCursor(.system)
+  if editor.debugTimerStarted {
+    editor.debugTimer = th::time-editor.debugTimerOrigin
+  }
+  
+  std::srand(std::time())
+  shortcuts::console(&editor.wm)
+  shortcuts::fullscreen()
 
-    std::srand(std::time())
-    shortcuts::console(&editor.wm)
-    shortcuts::fullscreen()
+  global::screen = rect::Rect{0, 0, window::w, window::h}
+  window::setViewport(global::screen.getDims())
 
-    if input::isPressed(.fn25) {
-      std::assert(false, "The F25 key? What's that?")
-    }
+  preUiUpdate(editor)
+  editorPutUi(editor)
+  postUiUpdate(editor)
 
-    if input::isJustPressed(.pause) {
-      editorToggleGame(editor)
-    }
-    if input::isJustPressed(.fn6) {
-      editor.debugTimerStarted = !editor.debugTimerStarted
-      if editor.debugTimerStarted {
-        editor.debugTimerOrigin = th::time
-        editor.debugTimer = 0
+  fpsNode := debug_info::Display{ "FPS", fps::getFps(), false }
+  if payload_trigger::aprilFools() {
+    fpsNode = debug_info::Display{ "SPF", 1/fps::getFps(), false }
+  }
+
+  if editor.showDebugInfo {
+    render_debug_info::renderDebugInfo(editor.resources.mainFont, {
+      displays: {
+        fpsNode,
+        { "TPS", 1000.0/game::updateStepMs, false },
+        { "Room", editor.currentRoom, false },
+        { "Frameskip", trunc(game::frameSkips), false },
+        { "Dirty?", editor.dirty, false },
+        { "Version", global::version, false },
+        { "Scale", editor.tilemapGrid.s, false },
+        { "Plain", global::plainBiscuit, false },
+        { "Playthrough (ms)", editor.debugTimer, false },
+        { "Playthrough Started", editor.debugTimerStarted, false },
+        { "Memory usage", util::formatBytes(memusage()), false }
       }
-    }
-    if input::isJustPressed(.fn5) {
-      editorToggleGame(editor)
-    }
-    if input::isJustPressed(.fn3) {
-      editor.showDebugInfo = !editor.showDebugInfo
-    }
-    if input::isJustPressed(.fn2) {
-      global::plainBiscuit = !global::plainBiscuit
-    }
-    if input::isJustPressed(.fn1) {
-      dbg::logt("dfjslfkjsd")
-      notification::put({.warning, sprintf("Hello, world! %d", th::time)})
-    }
+    })
+  }
+}
 
-    global::screen = rect::Rect{0, 0, window::w, window::h}
-    window::setViewport(global::screen.getDims())
+fn (editor: ^Editor) destroy*() {
+  // HACK: Should the session managment be handled here?
 
-    notification::update()
+  if !os::isdir("user") {
+    os::mkdir("user")
+  }
 
-    fps::update()
-
-    preUiUpdate(editor)
-    editorPutUi(editor)
-    postUiUpdate(editor)
-
-    fpsNode := debug_info::Display{ "FPS", fps::getFps(), false }
-    if payload_trigger::aprilFools() {
-      fpsNode = debug_info::Display{ "SPF", 1/fps::getFps(), false }
-    }
-
-    if editor.showDebugInfo {
-      render_debug_info::renderDebugInfo(editor.resources.mainFont, {
-        displays: {
-          fpsNode,
-          { "TPS", 1000.0/game::updateStepMs, false },
-          { "Room", editor.currentRoom, false },
-          { "Frameskip", trunc(game::frameSkips), false },
-          { "Dirty?", editor.dirty, false },
-          { "Version", global::version, false },
-          { "Scale", editor.tilemapGrid.s, false },
-          { "Plain", global::plainBiscuit, false },
-          { "Playthrough (ms)", editor.debugTimer, false },
-          { "Playthrough Started", editor.debugTimerStarted, false },
-          { "Memory usage", util::formatBytes(memusage()), false }
-        }
-      })
-    }
-  })
-
-  window::onDestroy.register(|editor| {
-    if !os::isdir("user") {
-      os::mkdir("user")
-    }
-
-    err := util::writeFileStr("user/session.json", session::save(editorSaveSession(editor)))
-    if err.code != 0 {
-      dbg::logt("Failed to save session!")
-    }
-    atoms::disconnectAllNodes(editor.uicore.tools)
-  })
+  err := util::writeFileStr("user/session.json", session::save(editorSaveSession(editor)))
+  if err.code != 0 {
+    dbg::logt("Failed to save session!")
+  }
+  atoms::disconnectAllNodes(editor.uicore.tools)
 }

@@ -1,24 +1,71 @@
 import (
+  "signal.um"
+  "window.um"
+
   "../editor/editor.um"
+  "../data/resources.um"
+  "../data/problem_screen.um"
+  "../dbg/dbg.um"
 )
 
-type Mode* = enum {
-  mainmenu
-  editor
-  game
-}
+type (
+  Mode* = enum {
+    mainmenu
+    editor
+    game
+  }
 
-type Config* = struct {
-  mode: Mode
-}
+  Config* = struct {
+    mode: Mode
+  }
+)
+
+fn initLogs();
 
 fn init*(cfg: Config) {
+  // TODO: Maybe have some sort of subsystems that we can initialize/deinitialize?
+  initLogs()
+
+  rl := new(resources::ResourceLoader, resources::mk())
+
+  frameCb := signal::Callback{exit(1, "Invalid frame codepath")}
+  destroyCb := signal::Callback{exit(1, "Invalid destroy codepath")}
+
   switch cfg.mode {
   case .mainmenu:
     exit(1, "Main menu is not implemented yet")
   case .editor:
-    editor::session(/*enabled*/ true)
+    editor::setup()
+    editor := editor::mk(rl)
+    frameCb = |editor| { editor.update(.editor) }
+    destroyCb = |editor| { editor.destroy() }
   case .game:
-    editor::session(/*enabled*/ false)
+    editor::setup()
+    editor := editor::mk(rl)
+    frameCb = |editor| { editor.update(.gameplay) }
+    destroyCb = |editor| { editor.destroy() }
   }
+
+  if rl.hasErrors() {
+    problem_screen::setup(rl)
+  } else {
+    window::onFrame.register(frameCb)
+    window::onDestroy.register(destroyCb)
+  }
+}
+
+fn initLogs() {
+  dbg::initConsole()
+
+  dbg::logt(
+    "              [ _ _]\n"+
+    "              [ ----]\n"+
+    "     _/\\/\\/\\_/ /\n"+
+    "   _|         /\n"+
+    " _|  (  | (  |\n"+
+    "/__.-'|_|--|_|\n"
+  )
+  dbg::logt("SAVESCUM")
+  dbg::logt("DPI aware: {}\n", window::isDpiEnabled())
+  dbg::logt("-*-")
 }
