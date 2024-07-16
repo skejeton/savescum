@@ -63,7 +63,7 @@ fn (world: ^World) setTile*(layer, tx, ty, tile: int) {
 
   chunk := &world.tilemap[layer][chunk_pos]
   if chunk.w == 0 {
-    chunk ^= tilemap::mk(make([]th::uu, chunkW*chunkH), chunkW, world.tileset, 1)
+    chunk ^= tilemap::mk(chunkW, chunkH, world.tileset, 1)
   }
 
   // make tile positions local
@@ -194,7 +194,7 @@ fn (world: ^World) collectLayerRenderTiles*(pan: th::Vf2, layerId: int, scale: r
 fn (world: ^World) drawRenderTiles*(renderTiles: []RenderTile, tint: uint32, pan: th::Vf2, scale: real) {
   for i, renderTile in renderTiles {
     if !world.tileProperties[renderTile.id].invisible {
-      world.tileset.draw(world.tileset.coords(renderTile.id-1).item0,
+      world.tileset.draw(world.tileset.coords(renderTile.id),
         {
           p: {renderTile.rect.x*scale+pan.x, renderTile.rect.y*scale+pan.y},
           s: {renderTile.rect.w*scale/world.tileset.cs.x, renderTile.rect.h*scale/world.tileset.cs.y}

@@ -6,6 +6,7 @@ import (
 
 type (
   ResourceLoader* = struct {
+    cache: map[str]any
     errors: []str
   }
 )
@@ -24,6 +25,10 @@ fn loadingError*(loader: ^ResourceLoader, path, why: str) {
 
 fn loadImage*(loader: ^ResourceLoader, path: str, filter: font::Filter = .linear): image::Image {
   theImage, err := image::load(path)
+
+  if i := ^image::Image(loader.cache[path]); i != null {
+    return i^
+  }
   
   if err.code != 0 {
     loadingError(loader, path, err.msg)
@@ -31,16 +36,22 @@ fn loadImage*(loader: ^ResourceLoader, path: str, filter: font::Filter = .linear
     theImage.setfilter(int(filter))
   }
 
+  loader.cache[path] = theImage
   return theImage
 }
 
 fn loadAudio*(loader: ^ResourceLoader, path: str): audio::Sound {
   theAudio, err := audio::load(path)
+
+  if a := ^audio::Sound(loader.cache[path]); a != null {
+    return a^
+  }
   
   if err.code != 0 {
     loadingError(loader, path, err.msg)
   }
 
+  loader.cache[path] = theAudio
   return theAudio
 }
 
@@ -48,10 +59,15 @@ fn loadAudio*(loader: ^ResourceLoader, path: str): audio::Sound {
 fn loadFont*(loader: ^ResourceLoader, path: str, size: real, filter: font::Filter): font::Font {
   theFont, err := font::load(path, size, filter)
   
+  if f := ^font::Font(loader.cache[path]); f != null {
+    return f^
+  }
+
   if err.code != 0 {
     loadingError(loader, path, err.msg)
   }
 
+  loader.cache[path] = theFont
   return theFont
 }
 

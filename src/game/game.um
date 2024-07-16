@@ -1126,11 +1126,11 @@ fn drawOverlays() {
   for i, renderTile in renderTiles {
     switch renderTile.id {
       case 30:
-        world.tileset.i.blit(world.tileset.rect(29).item0, cameraOffsetRect(renderTile.rect))
-        world.tileset.i.blit(world.tileset.rect(30).item0, cameraOffsetRect(renderTile.rect), alpha)
+        world.tileset.i.blit(world.tileset.rect(30), cameraOffsetRect(renderTile.rect))
+        world.tileset.i.blit(world.tileset.rect(31), cameraOffsetRect(renderTile.rect), alpha)
       case 31:
-        world.tileset.i.blit(world.tileset.rect(29).item0, cameraOffsetRect(renderTile.rect))
-        world.tileset.i.blit(world.tileset.rect(30).item0, cameraOffsetRect(renderTile.rect), alpha2)
+        world.tileset.i.blit(world.tileset.rect(30), cameraOffsetRect(renderTile.rect))
+        world.tileset.i.blit(world.tileset.rect(31), cameraOffsetRect(renderTile.rect), alpha2)
     }
   }
 }

@@ -103,7 +103,7 @@ fn load*(world: world::World, data: str): WorldData {
 
     std::assert(layer >= 0 && layer <= 2, "Bad layer number.")
 
-    var chunk: tilemap::Tilemap = tilemap::mk(make([]th::uu, world::chunkW*world::chunkH), world::chunkW, world.tileset, 1)
+    var chunk: tilemap::Tilemap = tilemap::mk2(make([]th::uu, world::chunkW*world::chunkH), world::chunkW, world.tileset, 1)
     sum := 0
     for y := 0; y < world::chunkH; y++ {
       for x := 0; x < world::chunkW; x++ {
