@@ -1861,7 +1861,7 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
   }
 
   // TODO: Should we handle the session loading here really?
-  if sessionFile, err := util::readFileStr("user/session.json"); err.code == 0 {
+  if sessionFile, err := util::readFileStr(th::convPath("data://SAVESCUM/session.json")); err.code == 0 {
     editorLoadSession(editor, session::load(sessionFile))
   } else {
     loadRoom(editor, "testarea")
@@ -1923,11 +1923,11 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
 
 fn (editor: ^Editor) destroy*() {
   // HACK: Should the session managment be handled here?
-  if !os::isdir("user") {
-    os::mkdir("user")
+  if !os::isdir(th::convPath("data://SAVESCUM")) {
+    os::mkdir(th::convPath("data://SAVESCUM"))
   }
 
-  err := util::writeFileStr("user/session.json", session::save(editorSaveSession(editor)))
+  err := util::writeFileStr(th::convPath("data://SAVESCUM/session.json"), session::save(editorSaveSession(editor)))
   if err.code != 0 {
     dbg::logt("Failed to save session!")
   }
