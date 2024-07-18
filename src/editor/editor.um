@@ -105,6 +105,7 @@ type (
     debugTimerOrigin: int
     debugTimer: int
     showDebugInfo: bool
+    dimDebugInfo: bool
 
     // Visual data
     resources: EditorResources
@@ -1546,14 +1547,31 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
     }
   }
 
-  button("Copy")
-  button("Paste")
-  button("Open")
-  button("Collapse")
-
-  for i, m in messages {
-    ui.label(m)
-  }
+  ui.row(|button| {
+    button("Copy")
+    button("Paste")
+    ui.col({
+      ui.button("Context1") 
+      ui.button("Context2") 
+      ui.button("Context3") 
+      ui.button("Context4") 
+    })
+    button("Open")
+    button("Collapse")
+    ui.col({
+      ui.button("Context1") 
+      ui.button("Context2") 
+      ui.button("Context3") 
+      ui.button("Context4") 
+    })
+  })
+  
+  ui.row({
+    for i, m in messages {
+      ui.label(m)
+      ui.label(";")
+    }
+  })
 }
 
 fn editorSaveSession(editor: ^Editor): session::Session {
@@ -1711,16 +1729,21 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
   global::screen = rect::Rect{0, 0, window::w, window::h}
   window::setViewport(global::screen.getDims())
 
+  editor.ui.font = editor.resources.mainFont
+
   editor.ui.pass(|editor| {
     editor.putUi(ui)
   }, |editor| {
     if !el.label {
       editor.resources.bevelImage.drawNinepatch({0, 0, 30, 30}, {4, 4, 16, 16}, r)
     }
-    canvas::drawText(el.text, {r.x+el.padding, r.y+el.padding}, 0x000000FF, 2)
+
+    ui.font.draw(el.text, {r.x+el.padding, r.y+el.padding}, 0x000000FF)
   })
 
-  editor.ui.drawDebug()
+  if editor.showDebugInfo {
+    editor.ui.drawDebug()
+  }
 
   fpsNode := debug_info::Display{ "FPS", fps::getFps(), false }
   if payload_trigger::aprilFools() {
@@ -1728,7 +1751,7 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
   }
 
   if editor.showDebugInfo {
-    render_debug_info::renderDebugInfo(editor.resources.mainFont, {
+    editor.dimDebugInfo = render_debug_info::renderDebugInfo(editor.resources.mainFont, {
       displays: {
         fpsNode,
         { "TPS", 1000.0/game::updateStepMs, false },
@@ -1742,7 +1765,7 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
         { "Playthrough Started", editor.debugTimerStarted, false },
         { "Memory usage", util::formatBytes(memusage()), false }
       }
-    })
+    }, editor.dimDebugInfo)
   }
 }
 

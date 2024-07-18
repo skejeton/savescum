@@ -7,11 +7,17 @@ import (
   "th.um"
   "input.um"
   "coll.um"
+  "font.um"
   "../misc/fnv1.um"
 )
 
 type (
+  RenderFn* = fn(ui: ^UI, r: rect::Rect, el: ^El)
+
   El* = struct {
+    parent: weak ^El
+    children: []El
+    row: bool
     label: bool
     id: uint
     padding: real
@@ -25,34 +31,76 @@ type (
   }
 
   UI* = struct {
+    uniq: uint
+    font: font::Font
     retained: map[uint]Retained
     ids: []uint
-    elements: []El
+    parents: []^El
+    root: ^El
   }
 )
 
 fn mk*(): UI {
-  return {}
+  return {font: canvas::pixelFont}
 }
 
-fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: fn(ui: ^UI, r: rect::Rect, el: ^El)) {
+fn (ui: ^UI) layout(node: ^El, x, y: real, render: RenderFn): th::Vf2 {
+  if node == null {
+    return {}
+  }
+
+  sx, sy := 0.0, 0.0
+  x += node.padding
+  y += node.padding
+
+  for i, child^ in node.children {
+    if node.row {
+      sz := ui.layout(child, x+sx, y, render)
+      r := rect::Rect{x+sx, y, sz.x, sz.y}
+      ui.retained[child.id].rect = r
+      render(ui, r, child)
+      sx += r.w
+      sy = sy > r.h ? sy : r.h
+    } else {
+      sz := ui.layout(child, x, y+sy, render)
+      r := rect::Rect{x, y+sy, sz.x, sz.y}
+      ui.retained[child.id].rect = r
+      render(ui, r, child)
+      sy += r.h
+      sx = sx > r.w ? sx : r.w
+    }
+  }
+
+  return th::Vf2{node.size.x+node.padding*2+sx, node.size.y+node.padding*2+sy}
+}
+
+fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn) {
+  ui.uniq = 0
+  ui.root = new(El)
+  ui.parents = {ui.root}
   ui.ids = {fnv1::INIT}
   cb(ui)
 
   // calculate layout
-  x := 10.0
-  y := 10.0
-
-  for i, el in ui.elements {
-    r := rect::Rect{x, y, el.size.x+el.padding*2, el.size.y+el.padding*2}
-    ui.retained[el.id].rect = r
-    render(ui, ui.retained[el.id].rect, &el)
-    y += el.size.y+el.padding*2
-  }
+  ui.layout(ui.root, 300, 300, render)
 
   delete(ui.retained, 0)
+}
 
-  ui.elements = {}
+fn (ui: ^UI) pushEl*(): ^El {
+  parent := ui.parents[len(ui.parents)-1]
+  el := El{
+    parent: parent
+  }
+  parent.children = append(parent.children, el)
+  child := &parent.children[len(parent.children)-1]
+  ui.parents = append(ui.parents, child)
+
+  return child
+}
+
+fn (ui: ^UI) popEl*() {
+  ui.parents = delete(ui.parents, len(ui.parents)-1)
 }
 
 fn (ui: ^UI) pushIdInt*(i: int) {
@@ -68,6 +116,7 @@ fn (ui: ^UI) pushIdStr*(s: str) {
 }
 
 fn (ui: ^UI) popId*() {
+  ui.uniq++
   ui.ids = delete(ui.ids, len(ui.ids)-1)
 }
 
@@ -77,32 +126,54 @@ fn (ui: ^UI) id*(): uint {
 
 // ------------- WIDGETS
 fn (ui: ^UI) label*(text: str) {
-  el := El{
-    label: true,
-    size: canvas::textSize(text, 2),
-    text: text
-  }
-
-  ui.elements = append(ui.elements, el)
+  el := ui.pushEl()
+  el.label = true
+  el.size = ui.font.measure(text)
+  el.text = text
+  ui.popEl()
 }
 
 fn (ui: ^UI) button*(text: str): bool {
   ui.pushIdStr(text)
+  el := ui.pushEl()
 
-  el := El{
-    id: ui.id(),
-    padding: 10,
-    size: canvas::textSize(text, 2),
-    text: text
-  }
+  el.id = ui.id()
+  el.padding = 10
+  el.size = ui.font.measure(text)
+  el.text = text 
 
   retained := ui.retained[el.id].rect
   pressed := input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), retained)
-  ui.elements = append(ui.elements, el)
 
+  ui.popEl()
   ui.popId()
+
   return pressed
 }
+
+fn (ui: ^UI) row*(cb: fn(ui: ^UI)) {
+  ui.pushIdStr(sprintf("Row (%v)", ui.uniq))
+  el := ui.pushEl()
+  el.padding = 10
+  el.id = ui.id()
+  el.row = true
+  el.label = true
+  cb(ui)
+  ui.popEl()
+  ui.popId()
+}
+
+fn (ui: ^UI) col*(cb: fn(ui: ^UI)) {
+  ui.pushIdStr(sprintf("Col (%v)", ui.uniq))
+  el := ui.pushEl()
+  el.padding = 10
+  el.id = ui.id()
+  el.label = true
+  cb(ui)
+  ui.popEl()
+  ui.popId()
+}
+
 
 fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool {
   return false
@@ -112,8 +183,8 @@ fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool
 fn (ui: ^UI) drawDebug*() {
   for id, r in ui.retained {
     canvas::drawRectLines(0xff0000ff, r.rect, 1)
-    sz := canvas::textSize(sprintf("%v", r.id), 2)
+    sz := ui.font.measure(sprintf("%v", r.id)).mulf(0.5)
     canvas::drawRect(0xff000022, rect::Rect{r.rect.x, r.rect.y, sz.x, sz.y})
-    canvas::drawText(sprintf("%v", r.id), r.rect.getPos(), 0x770000FF, 2)
+    ui.font.draw(sprintf("%v", r.id), r.rect.getPos(), 0x770000FF, 0.5)
   }
 }

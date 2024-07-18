@@ -4,7 +4,9 @@ import (
   "canvas.um"
   "font.um"
   "rect.um"
+  "coll.um"
   "th.um"
+  "input.um"
 
   "info.um"
 )
@@ -74,8 +76,10 @@ fn valueToDisplay*(value: any): DisplayToLayout {
   return {text: sprintf("%v", value), color: 0xFF99FFFF}
 }
 
-fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo): rect::Rect {
+fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool): bool {
   displaysToLayout := []DisplayToLayout{}
+
+  and := dim ? 0xFFFFFF22 : 0xFFFFFFFF;
 
   for _, display in debugInfo.displays {
     val := valueToDisplay(display.value)
@@ -83,8 +87,10 @@ fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo): rect::Rect {
       val.btn = true
     }
 
+    val.color &= and
+
     elements := []DisplayToLayout{
-      {text: display.name, color: 0xFFFFFFFF},
+      {text: display.name, color: 0xFFFFFFFF&and},
       val,
       {newLine: true}
     }
@@ -126,15 +132,15 @@ fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo): rect::Rect {
     }
   }
 
-  canvas::drawRect(0x00000077, wl.box)
+  canvas::drawRect(0x00000066&and, wl.box)
 
   for _, command in renderCommands {
     size := font.measure(command.text)
     if command.btn {
-      canvas::drawRect(command.color&0xFFFFFF77, {command.position.x, command.position.y, size.x, size.y})
+      canvas::drawRect(command.color&0xFFFFFF77&and, {command.position.x, command.position.y, size.x, size.y})
     }
     font.draw(command.text, command.position, command.color)
   }
 
-  return wl.box
+  return coll::vf2ToRect(input::getMousePos(), wl.box)
 }
