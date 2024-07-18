@@ -19,8 +19,13 @@ type (
     text: str
   }
 
+  Retained* = struct {
+    id: any
+    rect: rect::Rect
+  }
+
   UI* = struct {
-    retained: map[uint]rect::Rect
+    retained: map[uint]Retained
     ids: []uint
     elements: []El
   }
@@ -40,8 +45,8 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: fn(ui: ^UI, r: rect::Rect, el: ^El))
 
   for i, el in ui.elements {
     r := rect::Rect{x, y, el.size.x+el.padding*2, el.size.y+el.padding*2}
-    ui.retained[el.id] = r
-    render(ui, ui.retained[el.id], &el)
+    ui.retained[el.id].rect = r
+    render(ui, ui.retained[el.id].rect, &el)
     y += el.size.y+el.padding*2
   }
 
@@ -52,11 +57,13 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: fn(ui: ^UI, r: rect::Rect, el: ^El))
 
 fn (ui: ^UI) pushIdInt*(i: int) {
   id := fnv1::hash64i(ui.ids[len(ui.ids)-1], i)
+  ui.retained[id].id = i
   ui.ids = append(ui.ids, uint(i))
 }
 
 fn (ui: ^UI) pushIdStr*(s: str) {
   id := fnv1::hash64s(ui.ids[len(ui.ids)-1], s)
+  ui.retained[id].id = s
   ui.ids = append(ui.ids, id)
 }
 
@@ -89,7 +96,7 @@ fn (ui: ^UI) button*(text: str): bool {
     text: text
   }
 
-  retained := ui.retained[el.id]
+  retained := ui.retained[el.id].rect
   pressed := input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), retained)
   ui.elements = append(ui.elements, el)
 
@@ -104,6 +111,9 @@ fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool
 // ------------- DEBUG
 fn (ui: ^UI) drawDebug*() {
   for id, r in ui.retained {
-    canvas::drawRectLines(0xff0000ff, r, 1)
+    canvas::drawRectLines(0xff0000ff, r.rect, 1)
+    sz := canvas::textSize(sprintf("%v", r.id), 2)
+    canvas::drawRect(0xff000022, rect::Rect{r.rect.x, r.rect.y, sz.x, sz.y})
+    canvas::drawText(sprintf("%v", r.id), r.rect.getPos(), 0x770000FF, 2)
   }
 }
