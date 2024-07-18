@@ -297,7 +297,7 @@ fn uiBeginWindow(editor: ^Editor, title: str, r: rect::Rect, transparent: bool =
     buttonRect := rect::Rect{position.x+windowRect.x, position.y+windowRect.y, buttonSize.x, buttonSize.y}
 
     if !editor.wm.getWindowHideTitlebar(title) {
-      if editor.ui.button("#Close", buttonRect) {
+      if editor.ui.buttonOLD("#Close", buttonRect) {
         editor.wm.setWindowVisible(title, false)
       }
 
@@ -829,12 +829,12 @@ fn editorPutToolbar(editor: ^Editor) {
         position.y -= rectangle.h
 
         position.x -= 80
-        if (editor.ui.button("Save", {position.x-padding, position.y+padding, 80, rectangle.h-padding*2})) {
+        if (editor.ui.buttonOLD("Save", {position.x-padding, position.y+padding, 80, rectangle.h-padding*2})) {
           editorSaveRoom(editor)
         }
 
         position.x -= 80
-        if (editor.ui.button("Load", {position.x-padding, position.y+padding, 80, rectangle.h-padding*2})) {
+        if (editor.ui.buttonOLD("Load", {position.x-padding, position.y+padding, 80, rectangle.h-padding*2})) {
           editorLoadRoom(editor, editor.currentRoom)
         }
       }
@@ -933,7 +933,7 @@ fn putPlayerPlacer(editor: ^Editor) {
       putLabelY(editor, sprintf("x %d y %d", trunc(playerPos.x), trunc(playerPos.y)), th::black, &position)
       position.y += 10
 
-      if editor.ui.button("Relocate", {position.x, position.y, contentRect.w, 40}, editor.isRelocatingPlayer) {
+      if editor.ui.buttonOLD("Relocate", {position.x, position.y, contentRect.w, 40}, editor.isRelocatingPlayer) {
         editor.isRelocatingPlayer = !editor.isRelocatingPlayer
       }
       position.y += 30+10
@@ -994,7 +994,7 @@ fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, s
 
   editor.uicore.beginTool(ent.id, r)
   {
-    if editor.ui.button(ent.name, r) {
+    if editor.ui.buttonOLD(ent.name, r) {
       action = .edit
     }
     if selected {
@@ -1006,22 +1006,22 @@ fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, s
     r.x += r.w
     r.w = 45
     r.h = 22.5
-    if editor.ui.button("▲", r) {
+    if editor.ui.buttonOLD("▲", r) {
       action = .moveUp
     }
     r.y += 22.5
-    if editor.ui.button("▼", r) {
+    if editor.ui.buttonOLD("▼", r) {
       action = .moveDown
     }
     r.y -= 22.5
     r.h = 45
     r.x += 45
     if input::isPressed(.shift) {
-      if editor.ui.button("␡", r) {
+      if editor.ui.buttonOLD("␡", r) {
         action = .remove
       }
     } else {
-      if editor.ui.button("⎘", r) {
+      if editor.ui.buttonOLD("⎘", r) {
         action = .duplicate
       }
     }
@@ -1148,7 +1148,7 @@ fn putEntityList(editor: ^Editor) {
     {
       buttonRect := util::rectCutRight(winfo.titlebarRect, winfo.titlebarRect.h)
 
-      if editor.ui.button("+", buttonRect) {
+      if editor.ui.buttonOLD("+", buttonRect) {
         appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
         selectEntity(&editor.entities, len(editor.entities.list)-1)
       }
@@ -1210,7 +1210,7 @@ fn putEntityEditor(editor: ^Editor) {
       editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 46}, "Tags", &entitySelected.tags) || editor.dirty
       position.y += 46
       position.y += 10
-      if editor.ui.button("Delete", {position.x, position.y, contentRect.w, 40}) {
+      if editor.ui.buttonOLD("Delete", {position.x, position.y, contentRect.w, 40}) {
         removeEntity(&editor.entities, getEntitySelectedIndex(&editor.entities))
         editor.dirty = true
       }
@@ -1466,7 +1466,7 @@ fn putRoomEditor(editor: ^Editor) {
 
     position.y += 50
     if input::isPressed(.shift) {
-      if editor.ui.button("Load", {position.x, position.y, contentRect.w, 40}) {
+      if editor.ui.buttonOLD("Load", {position.x, position.y, contentRect.w, 40}) {
         loadRoom(editor, editor.potentialRoom)
       }
     } else {
@@ -1523,7 +1523,7 @@ fn putLevelSelect(editor: ^Editor) {
 
       for i, level in levels {
         p := th::Vf2{position.x+(i%2)*((contentRect.w-30)/2), position.y+(i/2)*45}
-        if editor.ui.button(level[1], {p.x, p.y, (contentRect.w-30)/2, 45}) {
+        if editor.ui.buttonOLD(level[1], {p.x, p.y, (contentRect.w-30)/2, 45}) {
           game::tele(level[0])
         }
         y = p.y-position.y+45.0
@@ -1535,207 +1535,25 @@ fn putLevelSelect(editor: ^Editor) {
       endScrollArea(editor)
     }
   })
-
 }
 
-fn preUiUpdate(editor: ^Editor) {
-  // Clear the input sink.
-  editor.uicore.inputSink = core::InputSink{}
+messages := []str{}
 
-  editor.uicore.mouseState = editor.uicore.mouseState.updated()
-
-  editor.uicore.frameNumber += 1
-
-  if input::isJustPressed(.escape) && editor.uicore.focusedTool != null {
-    editor.uicore.focusedTool = null
-    input::clear(.escape)
-  }
-}
-
-fn postUiUpdate(editor: ^Editor) {
-  // put debug overlays
-  if (editor.showDebugInfo) {
-    debug::putDebugFrames(editor.uicore, editor.resources.mainFont, &editor.uicore.ctx)
-  }
-
-  // flush render context
-  editor.uicore.ctx.flush()
-
-  // swap frame census
-  if !isAnyButtonHeld(&editor.uicore.mouseState) && !editor.keepActive {
-    editor.uicore.activeTool = editor.uicore.maybeActiveTool
-  }
-  editor.keepActive = false
-  editor.uicore.hoveredTool = editor.uicore.maybeActiveTool
-  if isAnyButtonHeld(&editor.uicore.mouseState) {
-    editor.uicore.focusedTool = editor.uicore.activeTool
-  }
-  editor.uicore.maybeActiveTool = null
-  editor.uicore.pruneToolsRecursive(editor.uicore.tools)
-}
-
-fn editorPutUi(editor: ^Editor) {
-  editor.ui.begin()
-  editor.uicore.begin()
-
-  if (input::isJustPressed(.escape)) {
-    deselectEntity(&editor.entities)
-  }
-
-  if (input::isJustPressed(.delete)) {
-    if editor.entities.entitySelected > 0 {
-      removeEntity(&editor.entities, editor.entities.entitySelected)
-      editor.dirty = true
-      input::clear(.delete)
+fn (editor: ^Editor) putUi(ui: ^ui::UI) {
+  button := fn (s: str) |ui| {
+    if ui.button(s) {
+      messages = append(messages, s)
     }
   }
 
-  // put ui
-  if editor.isPlaying {
-    if editor.mode == .editor {
-      if input::isJustPressed(.escape) {
-        editor.isPlaying = !editor.isPlaying
-      }
-    }
+  button("Copy")
+  button("Paste")
+  button("Open")
+  button("Collapse")
 
-    game::showDebug = editor.showDebugInfo
-    global::playTime = editor.debugTimer
-    game::update()
-    script::update()
-
-    editor.uicore.ctx.drawCustom(GameCmd{})
-
-    putLevelSelect(editor)
-  } else {
-    tool := editor.uicore.beginTool("TileEditor", {0, 0, global::screen.w, global::screen.h-58})
-
-    if input::isPressed(.ctrl) && input::isJustPressedc('i') {
-      appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
-    }
-
-    selectedTile := putGrid(&editor.tilemapGrid, editor, tool.rect)
-
-    // Draw ToggleAll/FG/MG/BG buttons.
-    {
-      const padding = 10
-      const elementSize = 48
-
-      editor.uicore.ctx.moveLayer(-1)
-      editor.uicore.ctx.drawCustom(WorldEditCmd{getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers), editor.resources.toolbarIcons, tool.rect, editor.tilemapGrid, &editor.world})
-      editor.uicore.ctx.moveLayer(1)
-      putWorldEntities(editor)
-
-      position := tool.rect.getEnd().subf(padding).subf(elementSize)
-      if editor.ui.button("R/U", {position.x, position.y, elementSize, elementSize}) {
-        editor.wm.windows = {}
-      }
-      position.x -= elementSize
-
-      if editor.ui.button("> <", {position.x, position.y, elementSize, elementSize}) {
-        editor.tilemapGrid.p = th::Vf2{0, 0}
-      }
-      position.x -= elementSize
-
-      if editor.ui.button("1:1", {position.x, position.y, elementSize, elementSize}) {
-        grid::gridZoomInto(&editor.tilemapGrid, {32.0, 32.0}, editor.tilemapGrid.bb.center())
-      }
-      position.x -= elementSize
-
-      if (putRadioButton(editor, {position.x, position.y, elementSize, elementSize}, "BG", editor.tilemapLayer == -1).isReleased) {
-        editor.tilemapLayer = -1
-      }
-      position.x -= elementSize
-
-      if (putRadioButton(editor, {position.x, position.y, elementSize, elementSize}, "MG", editor.tilemapLayer == 0).isReleased) {
-        editor.tilemapLayer = 0
-      }
-      position.x -= elementSize
-
-      if (putRadioButton(editor, {position.x, position.y, elementSize, elementSize}, "FG", editor.tilemapLayer == 1).isReleased) {
-        editor.tilemapLayer = 1
-      }
-      position.x -= elementSize
-
-      if editor.ui.button("#Layer Select", {position.x, position.y, elementSize, elementSize}, editor.tilemapShowAllLayers) {
-        editor.tilemapShowAllLayers = !editor.tilemapShowAllLayers
-      }
-
-      drawLayerIcon(&editor.uicore.ctx, position.add(th::Vf2{1, 5}), editor.tilemapLayer, editor.tilemapShowAllLayers)
-      position.x -= elementSize
-
-      if editor.ui.button("🔒", {position.x, position.y, elementSize, elementSize}) {
-        editor.entityBypass = !editor.entityBypass
-      }
-    }
-
-    events := editor.uicore.endTool()
-
-    if editor.isRelocatingPlayer {
-      if (events.queryMouse(.left, mouseinput::down)) {
-        editor.world.playerSpawnPos = selectedTile
-        editor.dirty = true
-      }
-      if (events.queryMouse(.left, mouseinput::released)) {
-        editor.isRelocatingPlayer = false
-      }
-    } else {
-      if events.queryMouse(.left, mouseinput::down) {
-        editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), trunc(editor.tileSelected.x+editor.tileSelected.y*editor.tileset.dm.x)+1)
-        editor.dirty = true
-      }
-      if events.queryMouse(.right, mouseinput::down) {
-        editor.world.setTile(editor.tilemapLayer, trunc(selectedTile.x), trunc(selectedTile.y), 0)
-        editor.dirty = true
-      }
-    }
+  for i, m in messages {
+    ui.label(m)
   }
-
-  if editor.mode == .editor {
-    editorPutToolbar(editor)
-  }
-
-  if !editor.isPlaying {
-    putTilePicker(editor)
-    putPlayerPlacer(editor)
-    putEntityList(editor)
-    putEntityEditor(editor)
-    putRoomEditor(editor)
-  }
-
-  editor.uicore.ctx.moveLayer(1000)
-  putNotifications(editor)
-  editor.uicore.ctx.moveLayer(-1000)
-
-  if editor.isRelocatingPlayer {
-    editor.uicore.ctx.moveLayer(10000000)
-    editor.resources.toolbarIcons.crop({2.0/4.0, 0.0/4.0}, {3.0/4.0, 1.0/4.0})
-    editor.uicore.ctx.drawImage(editor.resources.toolbarIcons, {p: editor.uicore.mouseState.pos, s: {1, 1}})
-    editor.uicore.ctx.moveLayer(-10000000)
-  }
-
-  widgetWindow(editor, "Console (Aux)", {100, 100, 640, 480}, |editor| {
-    editor.uicore.beginTool("Console", winfo.contentRect)
-    editor.uicore.ctx.drawCustom(dbg::ConsoleDrawCmd{winfo.contentRect, editor.resources.mainFont})
-    events := editor.uicore.endTool()
-    dbg::scrollConsole(events.queryScroll())
-  }, true)
-
-  editor.ui.render("button", |editor| {
-    bs := ButtonState{
-      isOver: state.hovered,
-      isDown: state.pressed
-    }
-
-    drawBtn(editor, state.id, state.rect, bs, false, 0xFFFFFFFF)
-  })
-  editor.ui.render("button_invert", |editor| {
-    bs := ButtonState{
-      isOver: state.hovered,
-      isDown: state.pressed
-    }
-
-    drawBtn(editor, state.id, state.rect, bs, true, 0xFFFFFFFF)
-  })
 }
 
 fn editorSaveSession(editor: ^Editor): session::Session {
@@ -1848,7 +1666,7 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
   editor := &Editor{
     mode: .editor,
     ui: ui,
-    uicore: &ui.core,
+    uicore: new(core::Core, core::mk()),
     tilemapGrid: grid::Grid{s: {48, 48}},
     tilesetGrid: grid::Grid{s: {48, 48}},
     tilemapShowAllLayers: false,
@@ -1893,9 +1711,16 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
   global::screen = rect::Rect{0, 0, window::w, window::h}
   window::setViewport(global::screen.getDims())
 
-  preUiUpdate(editor)
-  editorPutUi(editor)
-  postUiUpdate(editor)
+  editor.ui.pass(|editor| {
+    editor.putUi(ui)
+  }, |editor| {
+    if !el.label {
+      editor.resources.bevelImage.drawNinepatch({0, 0, 30, 30}, {4, 4, 16, 16}, r)
+    }
+    canvas::drawText(el.text, {r.x+el.padding, r.y+el.padding}, 0x000000FF, 2)
+  })
+
+  editor.ui.drawDebug()
 
   fpsNode := debug_info::Display{ "FPS", fps::getFps(), false }
   if payload_trigger::aprilFools() {

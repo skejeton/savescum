@@ -1,153 +1,109 @@
 // Main UI controller
 
 import (
-  "core.um"
+  "std.um"
+  "canvas.um"
   "rect.um"
+  "th.um"
+  "input.um"
+  "coll.um"
+  "../misc/fnv1.um"
 )
 
 type (
   El* = struct {
-    hovered: bool
-    pressed: bool
-    layer: int
-    id: str
-    scissorRect: rect::Rect
-    rect: rect::Rect
+    label: bool
+    id: uint
+    padding: real
+    size: th::Vf2
+    text: str
   }
 
   UI* = struct {
-    classes: map[str][]El
-    el: El
-    core: core::Core
+    retained: map[uint]rect::Rect
+    ids: []uint
+    elements: []El
   }
 )
 
 fn mk*(): UI {
-  return {
-    core: core::mk()
-  }
+  return {}
 }
 
-fn (ui: ^UI) begin*() {
-  ui.classes = {}
-}
-
-fn (ui: ^UI) beginSpace*(id: str, r: rect::Rect): El {
-  pel := ui.el
-  ui.core.beginTool(id, r)
-
-  // HACK: yeah
-  scissorRect := rect::Rect{
-    x: 0,
-    y: 0,
-    w: 10000,
-    h: 10000
-  }
-
-  if sr, ok := ui.core.ctx.getCurrentScissorRect(); ok {
-    scissorRect = sr
-  }
-
-  ui.el = El{
-    hovered: ui.core.currentTool == ui.core.hoveredTool, 
-    pressed: ui.core.currentTool == ui.core.activeTool && ui.core.mouseState.lmb.isDown,
-    layer: ui.core.ctx.currentLayerId,
-    id: id,
-    scissorRect: scissorRect,
-    rect: r
-  }
-  return pel
-}
-
-fn (ui: ^UI) endSpace*(pel: El) {
-  ui.core.endTool()
-  ui.el = pel
-}
-
-// Creates a space with a default "screen" container for you to use.
-fn (ui: ^UI) space*(id: str, r: rect::Rect, cb: fn(ui: ^UI)) {
-  pel := ui.el
-  ui.core.beginTool(id, r)
-
-  // HACK: yeah
-  scissorRect := rect::Rect{
-    x: 0,
-    y: 0,
-    w: 10000,
-    h: 10000
-  }
-
-  if sr, ok := ui.core.ctx.getCurrentScissorRect(); ok {
-    scissorRect = sr
-  }
-
-  ui.el = {
-    hovered: ui.core.currentTool == ui.core.hoveredTool, 
-    pressed: ui.core.currentTool == ui.core.activeTool && ui.core.mouseState.lmb.isDown,
-    layer: ui.core.ctx.currentLayerId,
-    id: id,
-    scissorRect: scissorRect,
-    rect: r
-  }
+fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: fn(ui: ^UI, r: rect::Rect, el: ^El)) {
+  ui.ids = {fnv1::INIT}
   cb(ui)
-  ui.core.endTool()
-  ui.el = pel
-}
 
-// Allows to hijack a tool and use it as a space.
-fn (ui: ^UI) hack*(id: str, cb: fn(ui: ^UI)) {
-  tool := ui.core.maybeAcquireToolNode(id)
+  // calculate layout
+  x := 10.0
+  y := 10.0
 
-  if tool != null {
-    ui.space(id, tool.rect, cb)
-  }
-}
-
-// ------------- IDENTIFICATION
-fn (ui: ^UI) class*(class: str) {
-  ui.classes[class] = append(ui.classes[class], ui.el)
-}
-
-// ------------- RENDERING
-fn (ui: ^UI) render*(class: str, cb: fn(ui: ^UI, state: El)) {
-  if !validkey(ui.classes, class) {
-    return
+  for i, el in ui.elements {
+    r := rect::Rect{x, y, el.size.x+el.padding*2, el.size.y+el.padding*2}
+    ui.retained[el.id] = r
+    render(ui, ui.retained[el.id], &el)
+    y += el.size.y+el.padding*2
   }
 
-  // TODO: I won't need this after migrating everything to this new UI system.
-  l := ui.core.ctx.currentLayerId
+  delete(ui.retained, 0)
 
-  for i, el in ui.classes[class] {
-    ui.core.ctx.setLayer(el.layer)
-    ui.core.ctx.beginScissorRect(el.scissorRect)
-    cb(ui, el)
-    ui.core.ctx.endScissor()
-  }
-  
-  ui.core.ctx.setLayer(l)
+  ui.elements = {}
 }
 
-// ------------- STATES
-fn (ui: ^UI) isHovered*(): bool {
-  return ui.el.hovered
+fn (ui: ^UI) pushIdInt*(i: int) {
+  id := fnv1::hash64i(ui.ids[len(ui.ids)-1], i)
+  ui.ids = append(ui.ids, uint(i))
 }
 
-fn (ui: ^UI) isPressed*(): bool {
-  return ui.el.pressed
+fn (ui: ^UI) pushIdStr*(s: str) {
+  id := fnv1::hash64s(ui.ids[len(ui.ids)-1], s)
+  ui.ids = append(ui.ids, id)
 }
 
-// ------------- EVENTS
-fn (ui: ^UI) onClick*(handler: fn(ui: ^UI)) {
-  if ui.core.currentTool == ui.core.hoveredTool && ui.core.mouseState.lmb.isReleased {
-    handler(ui)
-  }
+fn (ui: ^UI) popId*() {
+  ui.ids = delete(ui.ids, len(ui.ids)-1)
+}
+
+fn (ui: ^UI) id*(): uint {
+  return ui.ids[len(ui.ids)-1]
 }
 
 // ------------- WIDGETS
-fn (ui: ^UI) button*(text: str, rect: rect::Rect, invert: bool = false): bool {
-  pel := ui.beginSpace(text, rect)
-  ui.class(invert ? "button_invert" : "button")
-  clicked := ui.core.currentTool == ui.core.hoveredTool && ui.core.mouseState.lmb.isReleased
-  ui.endSpace(pel)
-  return clicked
+fn (ui: ^UI) label*(text: str) {
+  el := El{
+    label: true,
+    size: canvas::textSize(text, 2),
+    text: text
+  }
+
+  ui.elements = append(ui.elements, el)
+}
+
+fn (ui: ^UI) button*(text: str): bool {
+  ui.pushIdStr(text)
+
+  el := El{
+    id: ui.id(),
+    padding: 10,
+    size: canvas::textSize(text, 2),
+    text: text
+  }
+
+  retained := ui.retained[el.id]
+  pressed := input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), retained)
+  ui.elements = append(ui.elements, el)
+
+  ui.popId()
+  return pressed
+}
+
+fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool {
+  return false
+}
+
+// ------------- DEBUG
+fn (ui: ^UI) drawDebug*() {
+  for id, r in ui.retained {
+    canvas::drawRectLines(0xff0000ff, r, 1)
+  }
 }
