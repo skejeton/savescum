@@ -15,6 +15,12 @@ import (
 type (
   RenderFn* = fn(ui: ^UI, r: rect::Rect, el: ^El)
 
+  LayoutType* = enum {
+    col
+    row
+    screen
+  }
+
   RenderCall* = struct {
     r: rect::Rect
     el: ^El
@@ -23,7 +29,8 @@ type (
   El* = struct {
     parent: weak ^El
     children: []El
-    row: bool
+    layout: LayoutType
+    pos: th::Vf2
     label: bool
     id: uint
     padding: real
@@ -63,19 +70,26 @@ fn (ui: ^UI) layout(renders: ^[]RenderCall, node: ^El, x, y: real): th::Vf2 {
   y += node.padding
 
   for i, child^ in node.children {
-    if node.row {
+    if node.layout == .row {
       sz := ui.layout(renders, child, x+sx, y)
       r := rect::Rect{x+sx, y, sz.x, sz.y}
       ui.retained[child.id].rect = r
       renders ^= append(renders^, RenderCall{r, child})
       sx += r.w
       sy = sy > r.h ? sy : r.h
-    } else {
+    } else if node.layout == .col {
       sz := ui.layout(renders, child, x, y+sy)
       r := rect::Rect{x, y+sy, sz.x, sz.y}
       ui.retained[child.id].rect = r
       renders ^= append(renders^, RenderCall{r, child})
       sy += r.h
+      sx = sx > r.w ? sx : r.w
+    } else {
+      sz := ui.layout(renders, child, node.pos.x, node.pos.y)
+      r := rect::Rect{node.pos.x, node.pos.y, sz.x, sz.y}
+      ui.retained[child.id].rect = r
+      renders ^= append(renders^, RenderCall{r, child})
+      sy = sy > r.h ? sy : r.h
       sx = sx > r.w ? sx : r.w
     }
   }
@@ -217,7 +231,7 @@ fn (ui: ^UI) row*(cb: fn(ui: ^UI)) {
   ui.pushIdStr(sprintf("Row (%v)", ui.uniq))
   el := ui.pushEl()
   el.id = ui.id()
-  el.row = true
+  el.layout = .row
   el.padding = 10
   el.label = true
   cb(ui)
@@ -231,6 +245,19 @@ fn (ui: ^UI) col*(cb: fn(ui: ^UI)) {
   el.id = ui.id()
   el.padding = 10
   el.label = true
+  cb(ui)
+  ui.popEl()
+  ui.popId()
+}
+
+fn (ui: ^UI) screen*(at: th::Vf2, cb: fn(ui: ^UI)) {
+  ui.pushIdStr(sprintf("Scr (%v)", ui.uniq))
+  el := ui.pushEl()
+  el.id = ui.id()
+  el.padding = 10
+  el.layout = .screen
+  el.label = true
+  el.pos = at
   cb(ui)
   ui.popEl()
   ui.popId()

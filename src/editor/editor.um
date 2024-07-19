@@ -1558,10 +1558,16 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.button("Save")
   })
 
+
+  idx := 0
   for i, w in windows {
     if w {
-      ui.button("||| "+i)
+      ui.screen({100+idx*15, 100+idx*15}, |i| {
+        ui.button("||| "+i)
+      })
+
     }
+    idx++
   }
 }
 
