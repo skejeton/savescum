@@ -27,12 +27,14 @@ type (
     label: bool
     id: uint
     padding: real
+    crop: rect::Rect
     size: th::Vf2
     img: image::Image
     text: str
   }
 
   Retained* = struct {
+    life: int
     id: any
     rect: rect::Rect
   }
@@ -98,6 +100,17 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn) {
     render(ui, r.r, r.el)
   }
 
+  filtered := map[uint]Retained{}
+
+  for i, r in ui.retained {
+    r.life -= 1
+    if r.life > 0 {
+      filtered[i] = r
+    }
+  }
+
+  ui.retained = filtered
+
   delete(ui.retained, 0)
 }
 
@@ -120,12 +133,14 @@ fn (ui: ^UI) popEl*() {
 fn (ui: ^UI) pushIdInt*(i: int) {
   id := fnv1::hash64i(ui.ids[len(ui.ids)-1], i)
   ui.retained[id].id = i
+  ui.retained[id].life = 2
   ui.ids = append(ui.ids, uint(i))
 }
 
 fn (ui: ^UI) pushIdStr*(s: str) {
   id := fnv1::hash64s(ui.ids[len(ui.ids)-1], s)
   ui.retained[id].id = s
+  ui.retained[id].life = 2
   ui.ids = append(ui.ids, id)
 }
 
@@ -143,6 +158,14 @@ fn (ui: ^UI) img*(img: image::Image) {
   el := ui.pushEl()
   el.img = img
   el.size = img.getDims()
+  ui.popEl()
+}
+
+fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
+  el := ui.pushEl()
+  el.img = img
+  el.crop = r
+  el.size = r.getDims()
   ui.popEl()
 }
 
@@ -177,7 +200,7 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
   el := ui.pushEl()
 
   el.id = ui.id()
-  el.padding = 10
+  el.padding = 5
 
   cb(ui)
 

@@ -1538,28 +1538,31 @@ fn putLevelSelect(editor: ^Editor) {
   })
 }
 
+var windows: map[str]bool
+
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.row(|editor| {
-    ui.img(editor.resources.toolbarIcons)
-    ui.col({
-      ui.button("Play")
-      ui.label("Play pressed!")
-      ui.label("Play pressed!")
-      ui.label("Play pressed!")
-      ui.label("Play pressed!")
-      ui.label("Play pressed!")
-      ui.label("Play pressed!")
-      ui.label("Play pressed!")
-      ui.label("Play pressed!")
-      ui.label("Play pressed!")
-      ui.label("Play pressed!")
-      ui.label("Play pressed!")
-    })
-    ui.button("Console")
-    ui.button2("Fire", |editor| {
-      ui.img(editor.resources.superHotFire)
-    })
+    windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
+      if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
+        windows[name] = !windows[name]
+      }
+    }
+
+    windowBtn("Play", {48, 48, 48, 48})
+    windowBtn("Console", {48, 0, 48, 48})
+    windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
+    windowBtn("Tile Picker", {48*0, 48, 48, 48}) 
+    windowBtn("Player Placer", {48*3, 48, 48, 48}) 
+    windowBtn("Entity List", {48*0, 48*2, 48, 48}) 
+    ui.button("Load")
+    ui.button("Save")
   })
+
+  for i, w in windows {
+    if w {
+      ui.button("||| "+i)
+    }
+  }
 }
 
 fn (editor: ^Editor) putUi(ui: ^ui::UI) {
@@ -1727,7 +1730,11 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
     editor.putUi(ui)
   }, |editor| {
     if el.img.validate() {
-      el.img.draw({p: {r.x, r.y}, s: {1, 1}})
+      if el.crop.w != 0 {
+        el.img.blit(el.crop, {r.x, r.y, el.crop.w, el.crop.h})
+      } else {
+        el.img.draw({p: {r.x, r.y}, s: {1, 1}})
+      }
     } else if !el.label {
       editor.resources.bevelImage.drawNinepatch({0, 0, 30, 30}, {4, 4, 16, 16}, r)
     } else {
