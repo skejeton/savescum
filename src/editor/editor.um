@@ -1538,40 +1538,32 @@ fn putLevelSelect(editor: ^Editor) {
   })
 }
 
-messages := []str{}
+fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
+  ui.row(|editor| {
+    ui.img(editor.resources.toolbarIcons)
+    ui.col({
+      ui.button("Play")
+      ui.label("Play pressed!")
+      ui.label("Play pressed!")
+      ui.label("Play pressed!")
+      ui.label("Play pressed!")
+      ui.label("Play pressed!")
+      ui.label("Play pressed!")
+      ui.label("Play pressed!")
+      ui.label("Play pressed!")
+      ui.label("Play pressed!")
+      ui.label("Play pressed!")
+      ui.label("Play pressed!")
+    })
+    ui.button("Console")
+    ui.button2("Fire", |editor| {
+      ui.img(editor.resources.superHotFire)
+    })
+  })
+}
 
 fn (editor: ^Editor) putUi(ui: ^ui::UI) {
-  button := fn (s: str) |ui| {
-    if ui.button(s) {
-      messages = append(messages, s)
-    }
-  }
-
-  ui.row(|button| {
-    button("Copy")
-    button("Paste")
-    ui.col({
-      ui.button("Context1") 
-      ui.button("Context2") 
-      ui.button("Context3") 
-      ui.button("Context4") 
-    })
-    button("Open")
-    button("Collapse")
-    ui.col({
-      ui.button("Context1") 
-      ui.button("Context2") 
-      ui.button("Context3") 
-      ui.button("Context4") 
-    })
-  })
-  
-  ui.row({
-    for i, m in messages {
-      ui.label(m)
-      ui.label(";")
-    }
-  })
+  editor.putToolbar(ui)
 }
 
 fn editorSaveSession(editor: ^Editor): session::Session {
@@ -1734,11 +1726,13 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
   editor.ui.pass(|editor| {
     editor.putUi(ui)
   }, |editor| {
-    if !el.label {
+    if el.img.validate() {
+      el.img.draw({p: {r.x, r.y}, s: {1, 1}})
+    } else if !el.label {
       editor.resources.bevelImage.drawNinepatch({0, 0, 30, 30}, {4, 4, 16, 16}, r)
+    } else {
+      ui.font.draw(el.text, {r.x+el.padding, r.y+el.padding}, 0x000000FF)
     }
-
-    ui.font.draw(el.text, {r.x+el.padding, r.y+el.padding}, 0x000000FF)
   })
 
   if editor.showDebugInfo {

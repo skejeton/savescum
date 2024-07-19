@@ -8,11 +8,17 @@ import (
   "input.um"
   "coll.um"
   "font.um"
+  "image.um"
   "../misc/fnv1.um"
 )
 
 type (
   RenderFn* = fn(ui: ^UI, r: rect::Rect, el: ^El)
+
+  RenderCall* = struct {
+    r: rect::Rect
+    el: ^El
+  }
 
   El* = struct {
     parent: weak ^El
@@ -22,6 +28,7 @@ type (
     id: uint
     padding: real
     size: th::Vf2
+    img: image::Image
     text: str
   }
 
@@ -44,7 +51,7 @@ fn mk*(): UI {
   return {font: canvas::pixelFont}
 }
 
-fn (ui: ^UI) layout(node: ^El, x, y: real, render: RenderFn): th::Vf2 {
+fn (ui: ^UI) layout(renders: ^[]RenderCall, node: ^El, x, y: real): th::Vf2 {
   if node == null {
     return {}
   }
@@ -55,17 +62,17 @@ fn (ui: ^UI) layout(node: ^El, x, y: real, render: RenderFn): th::Vf2 {
 
   for i, child^ in node.children {
     if node.row {
-      sz := ui.layout(child, x+sx, y, render)
+      sz := ui.layout(renders, child, x+sx, y)
       r := rect::Rect{x+sx, y, sz.x, sz.y}
       ui.retained[child.id].rect = r
-      render(ui, r, child)
+      renders ^= append(renders^, RenderCall{r, child})
       sx += r.w
       sy = sy > r.h ? sy : r.h
     } else {
-      sz := ui.layout(child, x, y+sy, render)
+      sz := ui.layout(renders, child, x, y+sy)
       r := rect::Rect{x, y+sy, sz.x, sz.y}
       ui.retained[child.id].rect = r
-      render(ui, r, child)
+      renders ^= append(renders^, RenderCall{r, child})
       sy += r.h
       sx = sx > r.w ? sx : r.w
     }
@@ -81,8 +88,15 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn) {
   ui.ids = {fnv1::INIT}
   cb(ui)
 
+  renders := []RenderCall{}
+
   // calculate layout
-  ui.layout(ui.root, 300, 300, render)
+  ui.layout(&renders, ui.root, 0, 0)
+
+  for i in renders {
+    r := renders[len(renders)-i-1]
+    render(ui, r.r, r.el)
+  }
 
   delete(ui.retained, 0)
 }
@@ -125,6 +139,13 @@ fn (ui: ^UI) id*(): uint {
 }
 
 // ------------- WIDGETS
+fn (ui: ^UI) img*(img: image::Image) {
+  el := ui.pushEl()
+  el.img = img
+  el.size = img.getDims()
+  ui.popEl()
+}
+
 fn (ui: ^UI) label*(text: str) {
   el := ui.pushEl()
   el.label = true
@@ -139,8 +160,26 @@ fn (ui: ^UI) button*(text: str): bool {
 
   el.id = ui.id()
   el.padding = 10
-  el.size = ui.font.measure(text)
-  el.text = text 
+
+  ui.label(text)
+
+  retained := ui.retained[el.id].rect
+  pressed := input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), retained)
+
+  ui.popEl()
+  ui.popId()
+
+  return pressed
+}
+
+fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
+  ui.pushIdStr(name)
+  el := ui.pushEl()
+
+  el.id = ui.id()
+  el.padding = 10
+
+  cb(ui)
 
   retained := ui.retained[el.id].rect
   pressed := input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), retained)
@@ -154,9 +193,9 @@ fn (ui: ^UI) button*(text: str): bool {
 fn (ui: ^UI) row*(cb: fn(ui: ^UI)) {
   ui.pushIdStr(sprintf("Row (%v)", ui.uniq))
   el := ui.pushEl()
-  el.padding = 10
   el.id = ui.id()
   el.row = true
+  el.padding = 10
   el.label = true
   cb(ui)
   ui.popEl()
@@ -166,8 +205,8 @@ fn (ui: ^UI) row*(cb: fn(ui: ^UI)) {
 fn (ui: ^UI) col*(cb: fn(ui: ^UI)) {
   ui.pushIdStr(sprintf("Col (%v)", ui.uniq))
   el := ui.pushEl()
-  el.padding = 10
   el.id = ui.id()
+  el.padding = 10
   el.label = true
   cb(ui)
   ui.popEl()
