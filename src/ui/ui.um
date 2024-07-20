@@ -28,6 +28,7 @@ type (
 
   El* = struct {
     parent: weak ^El
+    rect: rect::Rect
     children: []El
     layout: LayoutType
     pos: th::Vf2
@@ -60,7 +61,7 @@ fn mk*(): UI {
   return {font: canvas::pixelFont}
 }
 
-fn (ui: ^UI) layout(renders: ^[]RenderCall, node: ^El, x, y: real): th::Vf2 {
+fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
   if node == null {
     return {}
   }
@@ -71,30 +72,38 @@ fn (ui: ^UI) layout(renders: ^[]RenderCall, node: ^El, x, y: real): th::Vf2 {
 
   for i, child^ in node.children {
     if node.layout == .row {
-      sz := ui.layout(renders, child, x+sx, y)
+      sz := ui.layout(child, x+sx, y)
       r := rect::Rect{x+sx, y, sz.x, sz.y}
       ui.retained[child.id].rect = r
-      renders ^= append(renders^, RenderCall{r, child})
+      child.rect = r
       sx += r.w
       sy = sy > r.h ? sy : r.h
     } else if node.layout == .col {
-      sz := ui.layout(renders, child, x, y+sy)
+      sz := ui.layout(child, x, y+sy)
       r := rect::Rect{x, y+sy, sz.x, sz.y}
       ui.retained[child.id].rect = r
-      renders ^= append(renders^, RenderCall{r, child})
+      child.rect = r
       sy += r.h
       sx = sx > r.w ? sx : r.w
     } else {
-      sz := ui.layout(renders, child, node.pos.x, node.pos.y)
+      sz := ui.layout(child, node.pos.x, node.pos.y)
       r := rect::Rect{node.pos.x, node.pos.y, sz.x, sz.y}
       ui.retained[child.id].rect = r
-      renders ^= append(renders^, RenderCall{r, child})
+      child.rect = r
       sy = sy > r.h ? sy : r.h
       sx = sx > r.w ? sx : r.w
     }
   }
 
   return th::Vf2{node.size.x+node.padding*2+sx, node.size.y+node.padding*2+sy}
+}
+
+fn (ui: ^UI) render(node: ^El, render: RenderFn) {
+  render(ui, node.rect, node)
+
+  for i, child^ in node.children {
+    ui.render(child, render)
+  }
 }
 
 fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn) {
@@ -104,15 +113,9 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn) {
   ui.ids = {fnv1::INIT}
   cb(ui)
 
-  renders := []RenderCall{}
-
   // calculate layout
-  ui.layout(&renders, ui.root, 0, 0)
-
-  for i in renders {
-    r := renders[len(renders)-i-1]
-    render(ui, r.r, r.el)
-  }
+  ui.layout(ui.root, 0, 0)
+  ui.render(ui.root, render)
 
   filtered := map[uint]Retained{}
 

@@ -1565,9 +1565,8 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       ui.screen({100+idx*15, 100+idx*15}, |i| {
         ui.button("||| "+i)
       })
-
+      idx++
     }
-    idx++
   }
 }
 
