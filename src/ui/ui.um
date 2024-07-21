@@ -9,6 +9,7 @@ import (
   "coll.um"
   "font.um"
   "image.um"
+  "color.um"
   "../misc/fnv1.um"
 )
 
@@ -106,8 +107,8 @@ fn (ui: ^UI) render(node: ^El, render: RenderFn) {
   }
 }
 
-fn (ui: ^UI) drawDebug(el: ^El);
-fn (ui: ^UI) drawDebug2(el: ^El);
+fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0);
+fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0);
 
 fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn, debug: bool = false) {
   ui.uniq = 0
@@ -272,25 +273,32 @@ fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool
 }
 
 // ------------- DEBUG
-fn (ui: ^UI) drawDebug(el: ^El) {
+fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
   for i, child^ in el.children {
-    ui.drawDebug(child)
+    ui.drawDebug(child, hue+0.25)
   }
 
-  canvas::drawRectLines(0xff0000ff, el.rect, 1)
+  if coll::vf2ToRect(input::getMousePos(), el.rect) {
+    canvas::drawRectLines(color::hsv(hue, 1.0, 0.6, 1.0), el.rect, 2)
+  } else {
+    canvas::drawRectLines(color::hsv(hue, 1.0, 0.6, 0.4), el.rect, 1)
+  }
 }
 
-fn (ui: ^UI) drawDebug2(el: ^El) {
+fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0) {
   id := ui.retained[el.id].id
   if selfhasptr(id) && coll::vf2ToRect(input::getMousePos(), el.rect) {
+    rect := color::hsv(hue, 1.0, 0.8, 0.6)
+    text := color::hsv(hue, 1.0, 0.4, 1.0)
+
     strId := sprintf("%v", id)
     sz := ui.font.measure(strId).mulf(0.5)
-    canvas::drawRect(0xFF000066, rect::Rect{el.rect.x, el.rect.y-sz.y, sz.x, sz.y})
-    ui.font.draw(strId, el.rect.getPos().sub({0, sz.y}), 0x550000FF, 0.5)
+    canvas::drawRect(rect, rect::Rect{el.rect.x, el.rect.y-sz.y, sz.x, sz.y})
+    ui.font.draw(strId, el.rect.getPos().sub({0, sz.y}), text, 0.5)
   }
 
   for i, child^ in el.children {
-    ui.drawDebug2(child)
+    ui.drawDebug2(child, hue+0.25)
   }
 }
 
