@@ -1516,6 +1516,7 @@ fn putLevelSelect(editor: ^Editor) {
         }
       }
     }
+    
     contentSize := ^th::Vf2(editor.uicore.getProperty("ContentSize", th::Vf2{0, 0}))
     if ok, scrollAreaInfo := beginScrollArea(editor, contentRect, contentSize^); ok {
       editor.uicore.ctx.beginScissorRect(scrollAreaInfo.areaRect)

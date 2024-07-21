@@ -5,6 +5,7 @@ import (
   "canvas.um"
   "input.um"
   "image.um"
+  "window.um"
   "../misc/strings.um"
   "../dbg/dbg.um"
   "color.um"
@@ -167,7 +168,7 @@ var (
 
   saves: []ChumState
   bufferState: ChumState
-  showDebug*: bool = false
+  showDebug*: bool = true
   lastUpdateTime: int = 0
   frameSkips*: int
 
@@ -367,21 +368,11 @@ fn collCalcRectSnap(r, along: rect::Rect): th::Vf2 {
 }
 
 fn collSortShapesByProximity(shapes: ^[]Shape, along: th::Vf2) {
-  for i, closest^ in shapes {
-    mindist := real(99999999)
-    for j := i; j < len(shapes^); j++ {
-      current := shapes[j].rect
-      point := th::Vf2{current.x + current.w / 2, current.y + current.h / 2}
-      dist := point.distanceTo(along)
-      if dist < mindist {
-        mindist = dist
-        closest = &shapes[j]
-      }
-    }
-    tmp := closest^
-    closest^ = shapes[i]
-    shapes[i] = tmp
-  }
+  sort(shapes^, |along| {
+    distA := a.rect.center().distanceTo(along)
+    distB := a.rect.center().distanceTo(along)
+    return distA < distB ? -1 : 0
+  })
 }
 
 fn entVsShape(ent: ^Character, s: Shape) {
@@ -639,6 +630,11 @@ fn start*(worldData: world_data::WorldData) {
 
 fn stop*() {
   bgAudio.stop()
+}
+
+fn setup*() {
+  global::screen = {0, 0, 1200, 900}
+  window::setup("SAVESCUM", trunc(global::screen.w), trunc(global::screen.h))
 }
 
 fn init*(rl: ^resources::ResourceLoader) {

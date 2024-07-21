@@ -1,7 +1,13 @@
 import (
+  "atlas.um"
   "signal.um"
   "window.um"
 
+  "../gfx/background.um"
+  "../misc/util.um"
+  "../game/game.um"
+  "../game/world.um"
+  "../game/world_data.um"
   "../editor/editor.um"
   "../data/resources.um"
   "../data/problem_screen.um"
@@ -40,10 +46,16 @@ fn init*(cfg: Config) {
     frameCb = |editor| { editor.update(.editor) }
     destroyCb = |editor| { editor.destroy() }
   case .game:
+    background::init(rl)
+    game::setup()
+    game::init(rl)
+    tileset := atlas::mk(resources::loadImage(rl, "data/img/ts_sky.png", .linear), {4, 9})
+    world := world::fromTileset(tileset)
+    worldData := world_data::load(world, util::readFileStr("data/spiel/sc_testarea.csv").item0)
+    game::start(worldData)
     editor::setup()
-    editor := editor::mk(rl)
-    frameCb = |editor| { editor.update(.gameplay) }
-    destroyCb = |editor| { editor.destroy() }
+    frameCb = { game::update(); game::draw() }
+    destroyCb = {}
   }
 
   if rl.hasErrors() {
