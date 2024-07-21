@@ -36,3 +36,4 @@ fn (c: ^Camera) project*(pos: mat::Vec): th::Vf2 {
 
   return {pos[0], pos[1]}
 }
+

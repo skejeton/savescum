@@ -106,7 +106,10 @@ fn (ui: ^UI) render(node: ^El, render: RenderFn) {
   }
 }
 
-fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn) {
+fn (ui: ^UI) drawDebug(el: ^El);
+fn (ui: ^UI) drawDebug2(el: ^El);
+
+fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn, debug: bool = false) {
   ui.uniq = 0
   ui.root = new(El)
   ui.parents = {ui.root}
@@ -114,7 +117,7 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn) {
   cb(ui)
 
   // calculate layout
-  ui.layout(ui.root, 0, 0)
+  ui.layout(ui.root, 300, 300)
   ui.render(ui.root, render)
 
   filtered := map[uint]Retained{}
@@ -129,6 +132,9 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn) {
   ui.retained = filtered
 
   delete(ui.retained, 0)
+
+  ui.drawDebug(ui.root)
+  ui.drawDebug2(ui.root)
 }
 
 fn (ui: ^UI) pushEl*(): ^El {
@@ -231,7 +237,6 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
 }
 
 fn (ui: ^UI) row*(cb: fn(ui: ^UI)) {
-  ui.pushIdStr(sprintf("Row (%v)", ui.uniq))
   el := ui.pushEl()
   el.id = ui.id()
   el.layout = .row
@@ -239,22 +244,18 @@ fn (ui: ^UI) row*(cb: fn(ui: ^UI)) {
   el.label = true
   cb(ui)
   ui.popEl()
-  ui.popId()
 }
 
 fn (ui: ^UI) col*(cb: fn(ui: ^UI)) {
-  ui.pushIdStr(sprintf("Col (%v)", ui.uniq))
   el := ui.pushEl()
   el.id = ui.id()
   el.padding = 10
   el.label = true
   cb(ui)
   ui.popEl()
-  ui.popId()
 }
 
 fn (ui: ^UI) screen*(at: th::Vf2, cb: fn(ui: ^UI)) {
-  ui.pushIdStr(sprintf("Scr (%v)", ui.uniq))
   el := ui.pushEl()
   el.id = ui.id()
   el.padding = 10
@@ -263,7 +264,6 @@ fn (ui: ^UI) screen*(at: th::Vf2, cb: fn(ui: ^UI)) {
   el.pos = at
   cb(ui)
   ui.popEl()
-  ui.popId()
 }
 
 
@@ -272,11 +272,25 @@ fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool
 }
 
 // ------------- DEBUG
-fn (ui: ^UI) drawDebug*() {
-  for id, r in ui.retained {
-    canvas::drawRectLines(0xff0000ff, r.rect, 1)
-    sz := ui.font.measure(sprintf("%v", r.id)).mulf(0.5)
-    canvas::drawRect(0xff000022, rect::Rect{r.rect.x, r.rect.y, sz.x, sz.y})
-    ui.font.draw(sprintf("%v", r.id), r.rect.getPos(), 0x770000FF, 0.5)
+fn (ui: ^UI) drawDebug(el: ^El) {
+  for i, child^ in el.children {
+    ui.drawDebug(child)
+  }
+
+  canvas::drawRectLines(0xff0000ff, el.rect, 1)
+}
+
+fn (ui: ^UI) drawDebug2(el: ^El) {
+  id := ui.retained[el.id].id
+  if selfhasptr(id) && coll::vf2ToRect(input::getMousePos(), el.rect) {
+    strId := sprintf("%v", id)
+    sz := ui.font.measure(strId).mulf(0.5)
+    canvas::drawRect(0xFF000066, rect::Rect{el.rect.x, el.rect.y-sz.y, sz.x, sz.y})
+    ui.font.draw(strId, el.rect.getPos().sub({0, sz.y}), 0x550000FF, 0.5)
+  }
+
+  for i, child^ in el.children {
+    ui.drawDebug2(child)
   }
 }
+

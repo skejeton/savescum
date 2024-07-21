@@ -1562,7 +1562,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   idx := 0
   for i, w in windows {
     if w {
-      ui.screen({100+idx*15, 100+idx*15}, |i| {
+      ui.screen({300+idx*15, 400+idx*15}, |i| {
         ui.button("||| "+i)
       })
       idx++
@@ -1745,11 +1745,7 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
     } else {
       ui.font.draw(el.text, {r.x+el.padding, r.y+el.padding}, 0x000000FF)
     }
-  })
-
-  if editor.showDebugInfo {
-    editor.ui.drawDebug()
-  }
+  }, editor.showDebugInfo)
 
   fpsNode := debug_info::Display{ "FPS", fps::getFps(), false }
   if payload_trigger::aprilFools() {
