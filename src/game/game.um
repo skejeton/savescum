@@ -20,6 +20,7 @@ import (
   "std.um"
   "audio.um"
   "../ui/notification.um"
+  "controls.um"
 )
 
 type ShapeType = enum {
@@ -175,6 +176,7 @@ var (
   firstTime: bool = true
 
   rumbling: real
+  controls: controls::Controls
 )
 
 fn getCameraRect(): rect::Rect {
@@ -209,7 +211,7 @@ fn reset*() {
 fn getCameraTargetRect(): rect::Rect {
 
   guide := findGuideInPoint(pal.ent.rect.getPos())
-  if input::isPressedc('z') && len(saves) > 0 {
+  if controls.isPressed(.load) && len(saves) > 0 {
     guide = findGuideInPoint(saves[len(saves)-1].ent.rect.getPos())
   }
   cameraRect := getCameraRect()
@@ -222,7 +224,7 @@ fn getCameraTargetRect(): rect::Rect {
   // put at center
   cameraRect.w *= scale
   cameraRect.h *= scale
-  if input::isPressedc('z') && len(saves) > 0 {
+  if controls.isPressed(.load) && len(saves) > 0 {
     cameraRect.x = saves[len(saves)-1].ent.rect.x+saves[len(saves)-1].ent.rect.w/2-cameraRect.w/2
     cameraRect.y = saves[len(saves)-1].ent.rect.y+saves[len(saves)-1].ent.rect.h/2-cameraRect.h/2
   } else {
@@ -277,7 +279,7 @@ fn playerControl() {
     rumbling = 0.2
     palLand.start()
   }
-  if (input::isPressed(.up) || input::gamepad().isPressed(.a)) && (pal.ent.onGround || coyoteTime > 0) {
+  if (controls.isPressed(.jump) || input::gamepad().isPressed(.a)) && (pal.ent.onGround || coyoteTime > 0) {
     coyoteTime = 0
     palJump.start()
     pal.ent.vel.y = -3.65
@@ -295,12 +297,12 @@ fn playerControl() {
       pal.ent.vel.x = 2.5*stick.x
     }
   }
-  if input::isPressed(.left) {
+  if controls.isPressed(.left) {
     pal.dir = 0
     pal.ent.vel.x = -2.5
     pal.walkTime += updateStep
   }
-  if input::isPressed(.right) {
+  if controls.isPressed(.right) {
     pal.dir = 1
     pal.ent.vel.x = 2.5
     pal.walkTime += updateStep
@@ -638,6 +640,7 @@ fn setup*() {
 }
 
 fn init*(rl: ^resources::ResourceLoader) {
+  controls = controls::mk()
   bgAudio = resources::loadAudio(rl, "data/audio/soundtrack/scene1.ogg")
   palStep = resources::loadAudio(rl, "data/audio/sfx/pal_walk.ogg")
   palJump = resources::loadAudio(rl, "data/audio/sfx/pal_jump.ogg")
@@ -883,7 +886,7 @@ fn canActivateWaterLever(): bool {
 }
 
 fn isActivated(): bool {
-  return input::isJustPressedc(' ') || input::gamepad().isJustPressed(.x)
+  return controls.isJustPressed(.activate) || input::gamepad().isJustPressed(.down)
 }
 
 fn tele*(to: str) {
@@ -928,7 +931,7 @@ fn update*() {
     }
   }
 
-  if previewingLoad && input::isJustReleasedc('c') || input::gamepad().isJustReleased(.y) {
+  if previewingLoad && (controls.isJustReleased(.preview) || input::gamepad().isJustReleased(.y)) {
     stopPreview = true
   }
 
@@ -965,7 +968,7 @@ fn update*() {
 
   if !lockInput {
     if !noSaveLoad {
-      if input::isJustPressedc('z') || input::gamepad().isJustPressed(.lb) {
+      if controls.isJustPressed(.load) || input::gamepad().isJustPressed(.lb) {
         if len(saves) > 0 {
           for i := len(saves)-1; i >= 0; i-- {
             if !entCheckCollision(&saves[i].ent) {
@@ -977,11 +980,11 @@ fn update*() {
         }
       }
 
-      if input::isJustPressedc('x') || input::gamepad().isJustPressed(.rb) {
+      if controls.isJustPressed(.save) || input::gamepad().isJustPressed(.rb) {
         saves = append(saves, pal)
       }
 
-      if input::isJustPressedc('c') || input::gamepad().isJustPressed(.y) {
+      if controls.isJustPressed(.preview) || input::gamepad().isJustPressed(.y) {
         for i := len(saves)-1; i >= 0; i-- {
           if !entCheckCollision(&saves[i].ent) {
             previewingLoad = true
@@ -996,7 +999,7 @@ fn update*() {
     noSaveLoad = false
     insideStatic = false
 
-    if input::isJustPressedc('r') || input::gamepad().isJustPressed(.start) {
+    if controls.isJustPressed(.reset) || input::gamepad().isJustPressed(.start) {
       reset()
     }
 

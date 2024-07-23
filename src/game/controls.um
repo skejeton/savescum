@@ -1,0 +1,72 @@
+import (
+  "input.um"
+)
+
+
+type (
+  Control* = struct {
+    opts: []input::Key
+  }
+
+  ControlKind* = enum {
+    up
+    down
+    left
+    right
+    jump
+    save
+    load
+    activate
+    preview
+    reset
+    count
+  }
+
+  Controls* = [int(ControlKind.count)]Control
+)
+
+
+fn mk*(): Controls {
+  return {
+    {{.up, .w}},
+    {{.down, .s}},
+    {{.left, .a}},
+    {{.right, .d}},
+    {{.space, .up, .w}},
+    {{.z, .q}},
+    {{.x, .e}},
+    {{.down, .s}},
+    {{.c, .tab}},
+    {{.r}}
+  }
+}
+
+fn (ctls: ^Controls) isJustPressed*(ck: ControlKind): bool {
+  for i, k in ctls[int(ck)].opts {
+    if input::isJustPressed(k) {
+      return true
+    }
+  }
+
+  return false
+}
+
+fn (ctls: ^Controls) isJustReleased*(ck: ControlKind): bool {
+  for i, k in ctls[int(ck)].opts {
+    if input::isJustReleased(k) {
+      return true
+    }
+  }
+
+  return false
+}
+
+fn (ctls: ^Controls) isPressed*(ck: ControlKind): bool {
+  for i, k in ctls[int(ck)].opts {
+    if input::isPressed(k) {
+      return true
+    }
+  }
+
+  return false
+}

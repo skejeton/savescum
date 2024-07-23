@@ -46,6 +46,7 @@ fn init*(cfg: Config) {
     frameCb = |editor| { editor.update(.editor) }
     destroyCb = |editor| { editor.destroy() }
   case .game:
+    // TODO: Make the initialization less hacky.
     background::init(rl)
     game::setup()
     game::init(rl)
