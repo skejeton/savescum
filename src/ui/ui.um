@@ -134,8 +134,10 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn, debug: bool = false) {
 
   delete(ui.retained, 0)
 
-  ui.drawDebug(ui.root)
-  ui.drawDebug2(ui.root)
+  if debug {
+    ui.drawDebug(ui.root)
+    ui.drawDebug2(ui.root)
+  }
 }
 
 fn (ui: ^UI) pushEl*(): ^El {

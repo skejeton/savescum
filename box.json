@@ -17,6 +17,5 @@
 	"source": "https://github.com/skejeton/savescum",
 	"homepage": "https://savescum.lol",
 	"run_posix": "./tophat",
-	"run_windows": "tophat",
-	"pre_build": "make build"
+	"run_windows": "tophat"
 }

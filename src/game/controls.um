@@ -28,16 +28,16 @@ type (
 
 fn mk*(): Controls {
   return {
-    {{.up, .w}},
-    {{.down, .s}},
-    {{.left, .a}},
-    {{.right, .d}},
+    {{.up,    .w     }},
+    {{.down,  .s     }},
+    {{.left,  .a     }},
+    {{.right, .d     }},
     {{.space, .up, .w}},
-    {{.z, .q}},
-    {{.x, .e}},
-    {{.down, .s}},
-    {{.c, .tab}},
-    {{.r}}
+    {{.z,     .q     }},
+    {{.x,     .e     }},
+    {{.down,  .s     }},
+    {{.c,     .tab   }},
+    {{.r             }}
   }
 }
 
