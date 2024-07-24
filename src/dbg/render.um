@@ -79,7 +79,7 @@ fn valueToDisplay*(value: any): DisplayToLayout {
 fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool): bool {
   displaysToLayout := []DisplayToLayout{}
 
-  and := dim ? 0xFFFFFF22 : 0xFFFFFFFF;
+  and := dim ? 0xFFFFFF00 : 0xFFFFFFFF;
 
   for _, display in debugInfo.displays {
     val := valueToDisplay(display.value)

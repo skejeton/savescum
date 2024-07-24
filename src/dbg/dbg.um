@@ -16,7 +16,6 @@ type ConsoleDrawCmd* = struct {
   font: font::Font
 }
 
-
 fn initConsole*() {
   console = console::Console{}
 }

@@ -105,6 +105,7 @@ type (
     debugTimerOrigin: int
     debugTimer: int
     showDebugInfo: bool
+    showUiDebugInfo: bool
     dimDebugInfo: bool
 
     // Visual data
@@ -1554,10 +1555,11 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
     windowBtn("Tile Picker", {48*0, 48, 48, 48}) 
     windowBtn("Player Placer", {48*3, 48, 48, 48}) 
-    windowBtn("Entity List", {48*0, 48*2, 48, 48}) 
+    windowBtn("Entity List", {48*0, 48*2, 48, 48})
+    ui.spring(1.0)
     ui.button("Load")
     ui.button("Save")
-  })
+  }, 800)
 
 
   idx := 0
@@ -1584,6 +1586,7 @@ fn editorSaveSession(editor: ^Editor): session::Session {
   session.entityBypass = editor.entityBypass
   session.layerSelected = editor.tilemapLayer
   session.tileSelected  = editor.tileSelected
+  session.showUiDebug = editor.showUiDebugInfo
   session.plainBiscuit = global::plainBiscuit
 
   for name, win in editor.wm.windows {
@@ -1604,6 +1607,7 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
   editor.entityBypass = session.entityBypass
   editor.tilemapLayer = session.layerSelected
   editor.tileSelected = session.tileSelected
+  editor.showUiDebugInfo = session.showUiDebug
   global::plainBiscuit = session.plainBiscuit
 
   for i, win in session.windows {
@@ -1647,6 +1651,9 @@ fn (editor: ^Editor) handleShortcuts*() {
   }
   if input::isJustPressed(.fn5) {
     editorToggleGame(editor)
+  }
+  if input::isJustPressed(.fn4) {
+    editor.showUiDebugInfo = !editor.showUiDebugInfo
   }
   if input::isJustPressed(.fn3) {
     editor.showDebugInfo = !editor.showDebugInfo
@@ -1746,7 +1753,7 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
     } else {
       ui.font.draw(el.text, {r.x+el.padding, r.y+el.padding}, 0x000000FF)
     }
-  }, editor.showDebugInfo)
+  }, editor.showUiDebugInfo)
 
   fpsNode := debug_info::Display{ "FPS", fps::getFps(), false }
   if payload_trigger::aprilFools() {

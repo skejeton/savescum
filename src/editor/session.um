@@ -24,6 +24,7 @@ type Session* = struct {
   tileSelected: th::Vf2
   plainBiscuit: bool
   windows: []Window
+  showUiDebug: bool
 }
 
 fn encVf2*(enc: ^jsonenc::Encoder, value: th::Vf2) {
@@ -56,7 +57,7 @@ fn decRect*(v: any): rect::Rect {
 }
 
 fn save*(session: Session): str {
-  enc := jsonenc::mk(false) 
+  enc := jsonenc::mk(true) 
   enc.startObject()
   {
     enc.putKey("pan")
@@ -75,6 +76,8 @@ fn save*(session: Session): str {
     encVf2(&enc, session.tileSelected)
     enc.putKey("plain_biscuit")
     enc.putVal(session.plainBiscuit)
+    enc.putKey("show_ui_debug")
+    enc.putVal(session.showUiDebug)
     enc.putKey("windows")
     enc.startArray()
     {
@@ -126,6 +129,10 @@ fn load*(sourceStr: str): Session {
   session.layerSelected = int(main["layer_selected"])
   session.tileSelected = decVf2(main["tile_selected"])
   session.plainBiscuit = bool(main["plain_biscuit"])
+
+  if b := ^bool(main["show_ui_debug"]); b != null {
+    session.showUiDebug = b^
+  }
 
   windows := []any(main["windows"])
   for _, window_ in windows  {

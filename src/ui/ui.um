@@ -19,6 +19,7 @@ type (
   LayoutType* = enum {
     col
     row
+    spring
     screen
   }
 
@@ -29,6 +30,7 @@ type (
 
   El* = struct {
     parent: weak ^El
+    sizeOverride: real
     rect: rect::Rect
     children: []El
     layout: LayoutType
@@ -96,6 +98,15 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     }
   }
 
+  if node.sizeOverride != 0 { 
+    if node.layout == .row {
+      sx = node.sizeOverride
+    } 
+    if node.layout == .col {
+      sy = node.sizeOverride
+    }
+  }
+
   return th::Vf2{node.size.x+node.padding*2+sx, node.size.y+node.padding*2+sy}
 }
 
@@ -140,6 +151,12 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn, debug: bool = false) {
   }
 }
 
+fn (ui: ^UI) addEl*(): ^El {
+  el := El{parent: ui.parents[len(ui.parents)-1]}
+  el.parent.children = append(el.parent.children, el)
+  return &el.parent.children[len(el.parent.children)-1]
+}
+
 fn (ui: ^UI) pushEl*(): ^El {
   parent := ui.parents[len(ui.parents)-1]
   el := El{
@@ -181,26 +198,23 @@ fn (ui: ^UI) id*(): uint {
 
 // ------------- WIDGETS
 fn (ui: ^UI) img*(img: image::Image) {
-  el := ui.pushEl()
+  el := ui.addEl()
   el.img = img
   el.size = img.getDims()
-  ui.popEl()
 }
 
 fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
-  el := ui.pushEl()
+  el := ui.addEl()
   el.img = img
   el.crop = r
   el.size = r.getDims()
-  ui.popEl()
 }
 
 fn (ui: ^UI) label*(text: str) {
-  el := ui.pushEl()
+  el := ui.addEl()
   el.label = true
   el.size = ui.font.measure(text)
   el.text = text
-  ui.popEl()
 }
 
 fn (ui: ^UI) button*(text: str): bool {
@@ -239,9 +253,14 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
   return pressed
 }
 
-fn (ui: ^UI) row*(cb: fn(ui: ^UI)) {
+fn (ui: ^UI) spring*(power: real) {
+  el := ui.addEl()
+  el.layout = .spring
+}
+
+fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0) {
   el := ui.pushEl()
-  el.id = ui.id()
+  el.sizeOverride = width
   el.layout = .row
   el.padding = 10
   el.label = true
@@ -249,9 +268,9 @@ fn (ui: ^UI) row*(cb: fn(ui: ^UI)) {
   ui.popEl()
 }
 
-fn (ui: ^UI) col*(cb: fn(ui: ^UI)) {
+fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: int = 0) {
   el := ui.pushEl()
-  el.id = ui.id()
+  el.sizeOverride = height
   el.padding = 10
   el.label = true
   cb(ui)
@@ -260,7 +279,6 @@ fn (ui: ^UI) col*(cb: fn(ui: ^UI)) {
 
 fn (ui: ^UI) screen*(at: th::Vf2, cb: fn(ui: ^UI)) {
   el := ui.pushEl()
-  el.id = ui.id()
   el.padding = 10
   el.layout = .screen
   el.label = true
