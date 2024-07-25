@@ -72,8 +72,16 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
   sx, sy := 0.0, 0.0
   x += node.padding
   y += node.padding
+  initX, initY := x, y
+
+  springDiv := 0.0
 
   for i, child^ in node.children {
+    if child.layout == .spring {
+      springDiv += child.sizeOverride
+      continue
+    }
+
     if node.layout == .row {
       sz := ui.layout(child, x+sx, y)
       if child.layout == .screen {
@@ -101,6 +109,51 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
       child.rect = r
       sy = sy > r.h ? sy : r.h
       sx = sx > r.w ? sx : r.w
+    }
+  }
+
+  if node.sizeOverride != 0 && springDiv != 0 {
+    psx, psy := sx, sy
+    sx, sy = 0, 0
+    x, y = initX, initY
+
+    for i, child^ in node.children {
+      if child.layout == .spring {
+        if node.layout == .row {
+          d := (node.sizeOverride-psx)/springDiv*child.sizeOverride
+          sx += d
+        } else if node.layout == .col {
+          d := (node.sizeOverride-psy)/springDiv*child.sizeOverride
+          sy += d
+        }
+      } else if node.layout == .row {
+        sz := ui.layout(child, x+sx, y)
+        if child.layout == .screen {
+          continue
+        }
+        r := rect::Rect{x+sx, y, sz.x, sz.y}
+        ui.retained[child.id].rect = r
+        child.rect = r
+        sx += r.w
+        sy = sy > r.h ? sy : r.h
+      } else if node.layout == .col {
+        sz := ui.layout(child, x, y+sy)
+        if child.layout == .screen {
+          continue
+        }
+        r := rect::Rect{x, y+sy, sz.x, sz.y}
+        ui.retained[child.id].rect = r
+        child.rect = r
+        sy += r.h
+        sx = sx > r.w ? sx : r.w
+      } else {
+        sz := ui.layout(child, node.pos.x, node.pos.y)
+        r := rect::Rect{node.pos.x, node.pos.y, sz.x, sz.y}
+        ui.retained[child.id].rect = r
+        child.rect = r
+        sy = sy > r.h ? sy : r.h
+        sx = sx > r.w ? sx : r.w
+      }
     }
   }
 
@@ -262,6 +315,8 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
 fn (ui: ^UI) spring*(power: real) {
   el := ui.addEl()
   el.layout = .spring
+  el.label = true
+  el.sizeOverride = power
 }
 
 fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0) {
