@@ -81,7 +81,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
   for i, child^ in node.children {
     springTotal += child.justify
 
-    if child.justify != 0 {
+    if child.justify != 0 && node.layout != .screen {
       continue
     }
 
