@@ -10,6 +10,7 @@ import (
   "font.um"
   "image.um"
   "color.um"
+  "../misc/util.um"
   "../misc/fnv1.um"
 )
 
@@ -31,6 +32,7 @@ type (
   El* = struct {
     parent: weak ^El
     sizeOverride: real
+    justify: real
     rect: rect::Rect
     children: []El
     layout: LayoutType
@@ -74,11 +76,12 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
   y += node.padding
   initX, initY := x, y
 
-  springDiv := 0.0
+  springTotal := 0.0
 
   for i, child^ in node.children {
-    if child.layout == .spring {
-      springDiv += child.sizeOverride
+    springTotal += child.justify
+
+    if child.justify != 0 {
       continue
     }
 
@@ -112,18 +115,31 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     }
   }
 
-  if node.sizeOverride != 0 && springDiv != 0 {
+  if springTotal != 0.0 {
     psx, psy := sx, sy
+    projectedSizeX, projectedSizeY := 0.0, 0.0
+    if node.sizeOverride != 0 { 
+      if node.layout == .row {
+        projectedSizeX = node.sizeOverride
+      } 
+      if node.layout == .col {
+        projectedSizeY= node.sizeOverride
+      }
+    }
+
     sx, sy = 0, 0
     x, y = initX, initY
 
     for i, child^ in node.children {
-      if child.layout == .spring {
+      if child.justify != 0.0 {
         if node.layout == .row {
-          d := (node.sizeOverride-psx)/springDiv*child.sizeOverride
+          ui.layout(child, x+sx, y)
+          d := (projectedSizeX-psx)/springTotal*child.justify
+          child.rect = rect::Rect{x+sx, y, d, psy}
           sx += d
         } else if node.layout == .col {
-          d := (node.sizeOverride-psy)/springDiv*child.sizeOverride
+          ui.layout(child, x, y+sy)
+          d := (projectedSizeY-psy)/springTotal*child.justify
           sy += d
         }
       } else if node.layout == .row {
@@ -280,6 +296,7 @@ fn (ui: ^UI) button*(text: str): bool {
   ui.pushIdStr(text)
   el := ui.pushEl()
 
+  el.justify = 2
   el.id = ui.id()
   el.padding = 10
 
@@ -316,7 +333,7 @@ fn (ui: ^UI) spring*(power: real) {
   el := ui.addEl()
   el.layout = .spring
   el.label = true
-  el.sizeOverride = power
+  el.justify = power
 }
 
 fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0) {
@@ -357,6 +374,10 @@ fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool
 fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
   for i, child^ in el.children {
     ui.drawDebug(child, hue+0.25)
+  }
+
+  if el.layout == .spring {
+    util::drawArrow2({el.rect.x, el.rect.y+el.rect.h/2}, {el.rect.x+el.rect.w, el.rect.y+el.rect.h/2}, color::hsv(hue, 1.0, 0.6, 1.0))
   }
 
   if coll::vf2ToRect(input::getMousePos(), el.rect) {

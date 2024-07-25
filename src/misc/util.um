@@ -50,6 +50,35 @@ fn drawArrow*(p: th::Vf2, p1: th::Vf2, color: uint32) {
   canvas::drawLine(color, p1, p3, 1)
 }
 
+fn drawArrow2*(p: th::Vf2, p1: th::Vf2, color: uint32) {
+  canvas::drawLine(color, p, p1, 1)
+  // draw arrowhead 1
+  {
+    dir := p1.sub(p).norm()
+    dir1 := dir.rotated({0, 0}, 45)
+    dir2 := dir.rotated({0, 0}, -45)
+
+    p2 := p1.sub(dir1.mulf(10))
+    p3 := p1.sub(dir2.mulf(10))
+
+    canvas::drawLine(color, p1, p2, 1)
+    canvas::drawLine(color, p1, p3, 1)
+  }
+
+  // draw arrowhead 2
+  {
+    dir := p.sub(p1).norm()
+    dir1 := dir.rotated({0, 0}, 45)
+    dir2 := dir.rotated({0, 0}, -45)
+
+    p2 := p.sub(dir1.mulf(10))
+    p3 := p.sub(dir2.mulf(10))
+
+    canvas::drawLine(color, p, p2, 1)
+    canvas::drawLine(color, p, p3, 1)
+  }
+}
+
 // Returns rectangle shrinked by amount `by` from all left, right, top, bottom sides
 fn rectShrink*(r: rect::Rect, by: real): rect::Rect {
   return {r.x+by, r.y+by, r.w-by*2, r.h-by*2}
