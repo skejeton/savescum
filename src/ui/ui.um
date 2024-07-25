@@ -76,6 +76,9 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
   for i, child^ in node.children {
     if node.layout == .row {
       sz := ui.layout(child, x+sx, y)
+      if child.layout == .screen {
+        continue
+      }
       r := rect::Rect{x+sx, y, sz.x, sz.y}
       ui.retained[child.id].rect = r
       child.rect = r
@@ -83,6 +86,9 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
       sy = sy > r.h ? sy : r.h
     } else if node.layout == .col {
       sz := ui.layout(child, x, y+sy)
+      if child.layout == .screen {
+        continue
+      }
       r := rect::Rect{x, y+sy, sz.x, sz.y}
       ui.retained[child.id].rect = r
       child.rect = r
@@ -272,6 +278,7 @@ fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: int = 0) {
   el := ui.pushEl()
   el.sizeOverride = height
   el.padding = 10
+  el.layout = .col
   el.label = true
   cb(ui)
   ui.popEl()
@@ -286,7 +293,6 @@ fn (ui: ^UI) screen*(at: th::Vf2, cb: fn(ui: ^UI)) {
   cb(ui)
   ui.popEl()
 }
-
 
 fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool {
   return false
