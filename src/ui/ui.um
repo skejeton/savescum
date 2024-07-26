@@ -1,3 +1,6 @@
+// TODO: Make the elements smaller in size
+//       Fix duplicate in layouts
+//       Aligning rows and columns
 // Main UI controller
 
 import (
@@ -292,15 +295,19 @@ fn (ui: ^UI) label*(text: str) {
   el.text = text
 }
 
+fn (ui: ^UI) spring*(power: real)
 fn (ui: ^UI) button*(text: str): bool {
   ui.pushIdStr(text)
   el := ui.pushEl()
 
+  el.layout = .row
   el.justify = 2
   el.id = ui.id()
   el.padding = 10
 
+  ui.spring(2)
   ui.label(text)
+  ui.spring(1)
 
   retained := ui.retained[el.id].rect
   pressed := input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), retained)
