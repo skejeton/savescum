@@ -35,6 +35,7 @@ type (
   El* = struct {
     parent: weak ^El
     sizeOverride: real
+    align: real
     justify: real
     rect: rect::Rect
     children: []El
@@ -118,7 +119,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     }
   }
 
-  if springTotal != 0.0 {
+  if springTotal != 0.0 || node.align != 0.0 {
     psx, psy := sx, sy
     projectedSizeX, projectedSizeY := psx, psy
     if node.sizeOverride != 0 { 
@@ -136,13 +137,15 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     for i, child^ in node.children {
       if child.justify != 0.0 {
         if node.layout == .row {
-          ui.layout(child, x+sx, y)
           d := (projectedSizeX-psx)/springTotal*child.justify
+          child.sizeOverride = d-2*child.padding
+          ui.layout(child, x+sx, y)
           child.rect = rect::Rect{x+sx, y, d, psy}
           sx += d
         } else if node.layout == .col {
-          ui.layout(child, x, y+sy)
           d := (projectedSizeY-psy)/springTotal*child.justify
+          child.sizeOverride = d-2*child.padding
+          ui.layout(child, x, y+sy)
           sy += d
         }
       } else if node.layout == .row {
@@ -305,7 +308,7 @@ fn (ui: ^UI) button*(text: str): bool {
   el.id = ui.id()
   el.padding = 10
 
-  ui.spring(2)
+  ui.spring(1)
   ui.label(text)
   ui.spring(1)
 
