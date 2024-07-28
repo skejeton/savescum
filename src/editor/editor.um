@@ -1501,22 +1501,17 @@ fn putLevelSelect(editor: ^Editor) {
   widgetWindow(editor, "Level Select", {0, 0, 300, 450}, |editor| {
     contentRect := util::rectShrink(winfo.contentRect, 5)
 
-    levels := [][2]str{}
+    type Level = struct { id, name: str }
+
+    levels := []Level{}
 
     for i, ent in editor.entities.list {
       if strings::startsWith(ent.id, "stage") {
-        levels = append(levels, [2]str{ent.id, ent.name})
+        levels = append(levels, Level{ent.id, ent.name})
       }
     }
 
-    // sort
-    for i := 0; i < len(levels)-1; i++ {
-      for j := i+1; j < len(levels); j++ {
-        if levels[i][0] > levels[j][0] {
-          levels[i], levels[j] = levels[j], levels[i]
-        }
-      }
-    }
+    sort(levels, true, id)
     
     contentSize := ^th::Vf2(editor.uicore.getProperty("ContentSize", th::Vf2{0, 0}))
     if ok, scrollAreaInfo := beginScrollArea(editor, contentRect, contentSize^); ok {
@@ -1526,8 +1521,8 @@ fn putLevelSelect(editor: ^Editor) {
 
       for i, level in levels {
         p := th::Vf2{position.x+(i%2)*((contentRect.w-30)/2), position.y+(i/2)*45}
-        if editor.ui.buttonOLD(level[1], {p.x, p.y, (contentRect.w-30)/2, 45}) {
-          game::tele(level[0])
+        if editor.ui.buttonOLD(level.name, {p.x, p.y, (contentRect.w-30)/2, 45}) {
+          game::tele(level.id)
         }
         y = p.y-position.y+45.0
       }
@@ -1540,13 +1535,36 @@ fn putLevelSelect(editor: ^Editor) {
   })
 }
 
-var windows: map[str]bool
+type Window* = struct {
+  visible: bool
+  title: str
+  rect: rect::Rect
+}
+
+var windows: map[str]Window
+
+fn toggleWindow(title: str, rect: rect::Rect) {
+  if !validkey(windows, title) {
+    w := &windows[title]
+    w ^= {
+      visible: !w.visible,
+      title: title,
+      rect: rect
+    }
+  }
+}
+
+fn (w: ^Window) display(ui: ^ui::UI) {
+  ui.screen(w.rect.getPos(), |w| {
+    ui.button("||| "+w.title)
+  })
+}
 
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.row(|editor| {
     windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
       if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
-        windows[name] = !windows[name]
+        toggleWindow(name, {300, 300, 100, 200})
       }
     }
 
@@ -1564,14 +1582,8 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   }, 800)
 
 
-  idx := 0
-  for i, w in windows {
-    if w {
-      ui.screen({300+idx*15, 400+idx*15}, |i| {
-        ui.button("||| "+i)
-      })
-      idx++
-    }
+  for _, w in windows {
+    w.display(ui)
   }
 }
 

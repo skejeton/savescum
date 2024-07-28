@@ -116,24 +116,11 @@ fn rectScale*(r: rect::Rect, by: real): rect::Rect {
 }
 
 fn min*(a, b: real): real {
-  if a < b {
-    return a
-  }
-  return b
+  return a < b ? a : b
 }
 
 fn max*(a, b: real): real {
-  if a > b {
-    return a
-  }
-  return b
-}
-
-fn abs*(a: real): real {
-  if a < 0 {
-    return -a
-  }
-  return a
+  return a > b ? a : b
 }
 
 fn clamp*(a, b, c: real): real {
@@ -199,3 +186,5 @@ fn formatBytes*(bytes: int): str {
   }
   return sprintf("%.2f GB", real(bytes)/(1024*1024*1024))
 }
+
+
