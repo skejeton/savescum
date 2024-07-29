@@ -14,14 +14,17 @@ fn posTrans*(x, y: th::fu): th::Transform {
 
 fn readFileStr*(path: str): (str, std::Err) {
   file, err := std::fopen(path, "rb")
-
   if err.code != 0 {
     return "", err
   }
 
   s, err := std::freadall(file)
+  if err.code != 0 {
+    std::fclose(file)
+    return "", err
+  }
 
-  return err.code == 0 ? strings::windows2unix(s) : "", err
+  return s, std::fclose(file)
 }
 
 fn writeFileStr*(path: str, dataStr: str): std::Err {
@@ -30,10 +33,13 @@ fn writeFileStr*(path: str, dataStr: str): std::Err {
     return err
   }
 
-  std::fwrite(file, &[]char(dataStr))
-  std::fclose(file)
+  _, err := std::fwrite(file, &[]char(dataStr))
+  if err.code != 0 {
+    std::fclose(file)
+    return err
+  }
 
-  return {}
+  return std::fclose(file)
 }
 
 fn drawArrow*(p: th::Vf2, p1: th::Vf2, color: uint32) {
