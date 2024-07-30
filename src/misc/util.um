@@ -130,19 +130,16 @@ fn max*(a, b: real): real {
 }
 
 fn clamp*(a, b, c: real): real {
-  if a < b {
-    return b
-  }
-  if a > c {
-    return c
-  }
-  return a
+  return a < b ? b :
+         a > c ? c :
+         a
 }
 
+
+
 fn isprint*(c: uint32): bool {
-  // ASCII 0..31 (inclusive), are control characters
-  // ASCII 127 is a control character (DEL)
-  // we want to skip these 
+  // ASCII 0..31 control characters
+  // ASCII 127   control character (DEL)
   return c >= 32 && c != 127
 }
 

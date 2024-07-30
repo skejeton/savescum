@@ -502,11 +502,8 @@ fn insertInputTextIntoOneLineBuffer(buffer: ^buffer::Buffer, cursor: ^buffer::Cu
   dirty := false
 
   for index, rune in runes {
-    // Ignore non printable characters.
-    if util::isprint(uint32(rune)) {
-      buffer.insert(cursor, rune.encode())
-      dirty = true
-    }
+    buffer.insert(cursor, rune.encode())
+    dirty = true
   }
 
   return dirty
