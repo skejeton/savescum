@@ -16,7 +16,7 @@ type (
     focused: bool
   }
 )
- 
+
 /// @return True if child is related to parent node. 
 /// @param[in] parent Parent node.
 /// @param[in] child Child node.

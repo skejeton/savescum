@@ -4,8 +4,6 @@ import (
   "rect.um"
   "canvas.um"
   "font.um"
-
-  "../misc/strings.um"
 )
 
 fn posTrans*(x, y: th::fu): th::Transform {

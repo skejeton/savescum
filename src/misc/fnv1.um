@@ -1,34 +1,32 @@
 // Credit to @thacuber2a03
 
-import "std.um"
-
 const (
-    INIT*  = uint(0xcbf29ce484222325)
-    PRIME* = uint(0x00000100000001B3)
+  INIT*  = uint(0xcbf29ce484222325)
+  PRIME* = uint(0x00000100000001B3)
 )
 
 fn hash64*(h: uint, data: []uint8): uint {
-    for _, b in data { h = (h ~ b) * PRIME }
-    return h
+  for _, b in data { h = (h ~ b) * PRIME }
+  return h
 }
 
 fn hash64s*(h: uint, data: str): uint {
-    for _, b in data { h = (h ~ uint8(b)) * PRIME }
-    return h
+  for _, b in data { h = (h ~ uint8(b)) * PRIME }
+  return h
 }
 
 fn hash64i*(h: uint, data: int): uint {
-    b0, b1, b2, b3, b4, b5, b6, b7 := uint8(data), uint8(data >> 8), uint8(data >> 16), uint8(data >> 24), uint8(data >> 32), uint8(data >> 40), uint8(data >> 48), uint8(data >> 56) 
+  b0, b1, b2, b3, b4, b5, b6, b7 := uint8(data), uint8(data >> 8), uint8(data >> 16), uint8(data >> 24), uint8(data >> 32), uint8(data >> 40), uint8(data >> 48), uint8(data >> 56) 
 
-    h = (h ~ b0) * PRIME
-    h = (h ~ b1) * PRIME
-    h = (h ~ b2) * PRIME
-    h = (h ~ b3) * PRIME
-    h = (h ~ b4) * PRIME
-    h = (h ~ b5) * PRIME
-    h = (h ~ b6) * PRIME
-    h = (h ~ b7) * PRIME
-    
-    return h
+  h = (h ~ b0) * PRIME
+  h = (h ~ b1) * PRIME
+  h = (h ~ b2) * PRIME
+  h = (h ~ b3) * PRIME
+  h = (h ~ b4) * PRIME
+  h = (h ~ b5) * PRIME
+  h = (h ~ b6) * PRIME
+  h = (h ~ b7) * PRIME
+  
+  return h
 }
 
