@@ -133,30 +133,10 @@ fn clamp*(a, b, c: real): real {
          a
 }
 
-
-
 fn isprint*(c: uint32): bool {
   // ASCII 0..31 control characters
   // ASCII 127   control character (DEL)
   return c >= 32 && c != 127
-}
-
-fn wrapText*(font: ^font::Font, text: str, boundary: real): []str {
-  result := []str{}
-  lastIndex := 0
-  shift := 0.0
-
-  for i, chr in text {
-    if (shift+font.measure(""+chr).x) > boundary {
-      shift = 0
-      result = append(result, slice(text, lastIndex, i))
-      lastIndex = i
-    }
-    shift += font.measure(""+chr).x
-  }
-  result = append(result, slice(text, lastIndex))
-
-  return result
 }
 
 fn formatMillis*(ms: int): str {
@@ -187,5 +167,3 @@ fn formatBytes*(bytes: int): str {
   }
   return sprintf("%.2f GB", real(bytes)/(1024*1024*1024))
 }
-
-

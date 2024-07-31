@@ -17,7 +17,6 @@ import (
 
 
   "../ui/core.um"
-  "../ui/debug.um"
   "../ui/atoms.um"
   "../ui/wm.um"
   "../ui/notification.um"
@@ -1752,7 +1751,7 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
 
   editor.ui.pass(|editor| {
     editor.putUi(ui)
-  }, |editor| {
+  }, |editor| { 
     if el.img.validate() {
       if el.crop.w != 0 {
         el.img.blit(el.crop, {r.x, r.y, el.crop.w, el.crop.h})
