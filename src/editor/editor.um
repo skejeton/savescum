@@ -1560,7 +1560,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.row(|editor| {
     windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
       if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
-        toggleWindow(name, {300, 300, 100, 200})
+        toggleWindow(name, {300, 600, 100, 200})
       }
     }
 
