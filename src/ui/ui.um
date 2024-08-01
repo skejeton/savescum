@@ -12,6 +12,8 @@ import (
   "font.um"
   "image.um"
   "color.um"
+  "window.um"
+  "../misc/immcursor.um"
   "../misc/util.um"
   "../misc/fnv1.um"
 )
@@ -19,13 +21,38 @@ import (
 // >>> TYPES >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 type (
-  RenderFn* = fn(ui: ^UI, r: rect::Rect, el: ^El)
-
   LayoutType* = enum {
     col
     row
     spring
     screen
+  }
+
+  BoxRenderer* = interface {
+    draw(rect: rect::Rect)
+  }
+
+  BoxStyle* = enum {
+    none
+    button
+    window
+    titlebar
+    input
+    highlighted
+    _count
+  }
+
+  BoxState* = struct {
+    pressed: bool
+    hovered: bool
+    focused: bool
+  }
+
+  BoxTheme* = struct {
+    normal: BoxRenderer
+    hovered: BoxRenderer
+    pressed: BoxRenderer
+    focused: BoxRenderer
   }
 
   RenderCall* = struct {
@@ -49,19 +76,31 @@ type (
     size: th::Vf2
     img: image::Image
     text: str
+    boxStyle: BoxStyle
   }
 
   Retained* = struct {
     life: int
     id: any
     rect: rect::Rect
+    state: BoxState
+    boxStyle: BoxStyle
+  }
+
+  Attention* = struct {
+    focused: uint
+    active: uint
+    hovered: uint
   }
 
   UI* = struct {
     uniq: uint
     font: font::Font
     retained: map[uint]Retained
+    theme: [int(BoxStyle._count)]BoxTheme
+    cursors: [int(BoxStyle._count)]window::Cursor
     ids: []uint
+    attention: Attention
     parents: []^El
     root: ^El
   }
@@ -194,18 +233,78 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
   return th::Vf2{node.size.x+node.padding*2+sx, node.size.y+node.padding*2+sy}
 }
 
-fn (ui: ^UI) render(node: ^El, render: RenderFn) {
-  render(ui, node.rect, node)
+fn (ui: ^UI) processAttentionRec(el: ^El) {
+  if el.id != 0 && coll::vf2ToRect(input::getMousePos(), el.rect) {
+    ui.attention.hovered = el.id
+  }
 
-  for i, child^ in node.children {
-    ui.render(child, render)
+  if el.id != 0 && input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), el.rect) {
+    ui.attention.active = el.id
+    ui.attention.focused = el.id
+  }
+
+  for i, child^ in el.children {
+    ui.processAttentionRec(child)
+  }
+}
+
+fn (ui: ^UI) processAttention(el: ^El) {
+  ui.attention.hovered = 0
+
+  if input::isJustPressed(.mouse1) {
+    ui.attention.focused = 0
+  }
+
+  if input::isJustReleased(.mouse1) {
+    ui.attention.active = 0
+  }
+
+  ui.processAttentionRec(el)
+}
+
+fn (ui: ^UI) input(el: ^El) {
+  ui.retained[el.id].state.hovered = ui.attention.hovered == el.id
+  ui.retained[el.id].state.pressed = ui.attention.active == el.id
+
+  for i, child^ in el.children {
+    ui.input(child)
+  }
+}
+
+fn (ui: ^UI) render(el: ^El) {
+  theme := ui.theme[int(el.boxStyle)]
+
+  retained := ui.retained[el.id]
+
+  if selfhasptr(theme.pressed) && retained.state.pressed {
+    theme.pressed.draw(el.rect)
+  } else if selfhasptr(theme.normal) {
+    theme.normal.draw(el.rect)
+  }
+
+  if el.img.validate() {
+    el.img.blit(el.crop, el.rect)
+  }
+
+  ui.font.draw(el.text, {el.rect.x+el.padding, el.rect.y+el.padding}, 0x000000FF)
+
+  for i, child^ in el.children {
+    ui.render(child)
+  }
+}
+
+fn (ui: ^UI) updateCursor() {
+  if ui.attention.active != 0 {
+    immcursor::setCursor(ui.cursors[int(ui.retained[ui.attention.active].boxStyle)])
+  } else if ui.attention.hovered != 0 {
+    immcursor::setCursor(ui.cursors[int(ui.retained[ui.attention.hovered].boxStyle)])
   }
 }
 
 fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0);
 fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0);
 
-fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn, debug: bool = false) {
+fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   ui.uniq = 0
   ui.root = new(El)
   ui.parents = {ui.root}
@@ -214,7 +313,10 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), render: RenderFn, debug: bool = false) {
 
   // calculate layout
   ui.layout(ui.root, 300, 300)
-  ui.render(ui.root, render)
+  ui.processAttention(ui.root)
+  ui.input(ui.root)
+  ui.updateCursor()
+  ui.render(ui.root)
 
   filtered := map[uint]Retained{}
 
@@ -241,6 +343,10 @@ fn (ui: ^UI) addEl*(): ^El {
   el := El{parent: ui.parents[len(ui.parents)-1]}
   el.parent.children = append(el.parent.children, el)
   return &el.parent.children[len(el.parent.children)-1]
+}
+
+fn (ui: ^UI) lastEl*(): ^El {
+  return ui.parents[len(ui.parents)-1]
 }
 
 fn (ui: ^UI) pushEl*(): ^El {
@@ -282,12 +388,28 @@ fn (ui: ^UI) id*(): uint {
   return ui.ids[len(ui.ids)-1]
 }
 
+// >>> STYLING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+fn (ui: ^UI) boxStyle*(style: BoxStyle) {
+  ui.lastEl().boxStyle = style
+  ui.retained[ui.lastEl().id].boxStyle = style
+}
+
+fn (ui: ^UI) setBoxTheme*(style: BoxStyle, theme: BoxTheme) {
+  ui.theme[int(style)] = theme
+}
+
+fn (ui: ^UI) setBoxCursor*(style: BoxStyle, cursor: window::Cursor) {
+  ui.cursors[int(style)] = cursor
+}
+
 // >>> WIDGETS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 fn (ui: ^UI) img*(img: image::Image) {
   el := ui.addEl()
   el.img = img
   el.size = img.getDims()
+  el.crop = {0, 0, el.size.x, el.size.y}
 }
 
 fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
@@ -308,10 +430,11 @@ fn (ui: ^UI) spring*(power: real)
 fn (ui: ^UI) button*(text: str): bool {
   ui.pushIdStr(text)
   el := ui.pushEl()
+  el.id = ui.id()
+  ui.boxStyle(.button)
 
   el.layout = .row
   el.justify = 2
-  el.id = ui.id()
   el.padding = 10
 
   ui.spring(1)
@@ -330,8 +453,9 @@ fn (ui: ^UI) button*(text: str): bool {
 fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
   ui.pushIdStr(name)
   el := ui.pushEl()
-
   el.id = ui.id()
+  ui.boxStyle(.button)
+
   el.padding = 5
 
   cb(ui)
@@ -407,6 +531,10 @@ fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
     canvas::drawRectLines(color::hsv(hue, 1.0, 0.6, 1.0), el.rect, 2)
   } else {
     canvas::drawRectLines(color::hsv(hue, 1.0, 0.6, 0.4), el.rect, 1)
+  }
+
+  if el.id != 0 && ui.attention.focused == el.id {
+    canvas::drawRectLines(0xFF0000FF, el.rect, 4)
   }
 }
 

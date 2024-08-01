@@ -1,0 +1,20 @@
+import (
+  "image.um"
+  "rect.um"
+)
+
+type (
+  BoxNinepatch* = struct {
+    img: image::Image
+    outer, inner: rect::Rect
+  }
+)
+
+fn mkNinepatch*(img: image::Image, outer, inner: rect::Rect): BoxNinepatch {
+  return BoxNinepatch{img, outer, inner}
+}
+
+fn (b: ^BoxNinepatch) draw*(dest: rect::Rect) {
+  b.img.drawNinepatch(b.outer, b.inner, dest)
+}
+
