@@ -1,6 +1,7 @@
 // TODO: Make the element struct smaller in size
 //       Fix duplicate in layouts
 //       Aligning rows and columns
+//       Hovering effects?
 
 import (
   "std.um"
