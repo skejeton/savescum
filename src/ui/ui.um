@@ -313,7 +313,7 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   cb(ui)
 
   // calculate layout
-  ui.layout(ui.root, 300, 300)
+  ui.layout(ui.root, 0, 0)
   ui.processAttention(ui.root)
   ui.input(ui.root)
   ui.updateCursor()
@@ -435,7 +435,6 @@ fn (ui: ^UI) button*(text: str): bool {
   ui.boxStyle(.button)
 
   el.layout = .row
-  el.justify = 2
   el.padding = 10
 
   ui.spring(1)
@@ -481,7 +480,6 @@ fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0) {
   el := ui.pushEl()
   el.sizeOverride = width
   el.layout = .row
-  el.padding = 10
   el.label = true
   cb(ui)
   ui.popEl()
@@ -490,7 +488,6 @@ fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0) {
 fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: int = 0) {
   el := ui.pushEl()
   el.sizeOverride = height
-  el.padding = 10
   el.layout = .col
   el.label = true
   cb(ui)
@@ -499,7 +496,6 @@ fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: int = 0) {
 
 fn (ui: ^UI) screen*(at: th::Vf2, cb: fn(ui: ^UI)) {
   el := ui.pushEl()
-  el.padding = 10
   el.layout = .screen
   el.label = true
   el.pos = at

@@ -1565,7 +1565,6 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       }
     }
 
-    ui.spring(1.0)
     windowBtn("Play", {48, 48, 48, 48})
     windowBtn("Console", {48, 0, 48, 48})
     windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
@@ -1575,8 +1574,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.spring(0.5)
     ui.button("Load")
     ui.button("Save")
-    ui.spring(1.0)
-  }, 800)
+  }, window::w)
 
 
   for _, w in windows {
@@ -1585,7 +1583,12 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 }
 
 fn (editor: ^Editor) putUi(ui: ^ui::UI) {
-  editor.putToolbar(ui)
+  ui.col(|editor| {
+    ui.spring(1)
+    ui.row(|editor| {
+      editor.putToolbar(ui)
+    }, window::w)
+  }, window::h)
 }
 
 fn editorSaveSession(editor: ^Editor): session::Session {
