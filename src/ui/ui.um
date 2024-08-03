@@ -40,6 +40,7 @@ type (
     titlebar
     input
     highlighted
+    toolbar
     _count
   }
 
@@ -476,13 +477,15 @@ fn (ui: ^UI) spring*(power: real) {
   el.justify = power
 }
 
-fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0) {
+fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0): ^El {
   el := ui.pushEl()
   el.sizeOverride = width
   el.layout = .row
   el.label = true
   cb(ui)
   ui.popEl()
+
+  return el
 }
 
 fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: int = 0) {

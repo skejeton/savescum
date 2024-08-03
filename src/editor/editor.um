@@ -1559,6 +1559,8 @@ fn (w: ^Window) display(ui: ^ui::UI) {
 
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.row(|editor| {
+    ui.boxStyle(.toolbar)
+
     windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
       if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
         toggleWindow(name, {300, 600, 100, 200})
@@ -1574,7 +1576,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.spring(0.5)
     ui.button("Load")
     ui.button("Save")
-  }, window::w)
+  }, window::w).padding = 4
 
 
   for _, w in windows {
@@ -1723,6 +1725,9 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
     pressed: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21})
   })
   editor.ui.setBoxCursor(.button, .finger)
+  editor.ui.setBoxTheme(.toolbar, {
+    normal: themer::mkNinepatch(resources.bevelImage, {90, 30, 30, 30}, {4, 4, 21, 21})
+  })
 
   // TODO: Should we handle the session loading here really?
   if sessionFile, err := util::readFileStr(th::convPath("data://SAVESCUM/session.json")); err.code == 0 {
