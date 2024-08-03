@@ -1552,31 +1552,41 @@ fn toggleWindow(title: str, rect: rect::Rect) {
 }
 
 fn (w: ^Window) display(ui: ^ui::UI) {
-  //ui.cellRect(w.rect, |w| {
-  //  ui.boxStyle(.window)
-  //})
+  ui.cellRect(w.rect)
+  ui.row(|w| {
+    ui.boxStyle(.toolbar)
+  })
 }
 
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.row(|editor| {
     ui.boxStyle(.toolbar)
+    ui.cellJustify(1)
+    ui.row(|editor| {
 
-    windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
-      if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
-        toggleWindow(name, {300, 600, 100, 200})
+      // TODO: Remove the hardcoded window positions.
+      windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
+        if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
+          toggleWindow(name, {300, 600, 100, 200})
+        }
       }
-    }
 
-    windowBtn("Play", {48, 48, 48, 48})
-    windowBtn("Console", {48, 0, 48, 48})
-    windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
-    windowBtn("Tile Picker", {48*0, 48, 48, 48}) 
-    windowBtn("Player Placer", {48*3, 48, 48, 48}) 
-    windowBtn("Entity List", {48*0, 48*2, 48, 48})
-    ui.spring(0.5)
-    ui.button("Load")
-    ui.button("Save")
-  }, window::w).padding = 4
+      // TODO: Remove the hardcoded texture regions.
+      windowBtn("Play", {48, 48, 48, 48})
+      windowBtn("Console", {48, 0, 48, 48})
+      windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
+      windowBtn("Tile Picker", {48*0, 48, 48, 48}) 
+      windowBtn("Player Placer", {48*3, 48, 48, 48}) 
+      windowBtn("Entity List", {48*0, 48*2, 48, 48})
+
+      ui.spring(1)
+      
+      ui.cellJustify(0.3)
+      ui.button("Load")
+      ui.cellJustify(0.3)
+      ui.button("Save")
+    }).padding = 4
+  }, window::w)
 
 
   for _, w in windows {

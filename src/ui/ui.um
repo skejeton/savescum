@@ -62,11 +62,22 @@ type (
     el: ^El
   }
 
+  CellKind* = enum {
+    justify
+    rect
+  }
+
+  Cell* = struct {
+    kind: CellKind
+    justify: real
+    align: real
+    rect: rect::Rect
+  }
+
   El* = struct {
     parent: weak ^El
     sizeOverride: real
-    align: real
-    justify: real
+    cell: Cell
     rect: rect::Rect
     children: []El
     layout: LayoutType
@@ -105,6 +116,7 @@ type (
     attention: Attention
     parents: []^El
     root: ^El
+    cell: Cell
   }
 )
 
@@ -126,10 +138,12 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
 
   springTotal := 0.0
 
-  for i, child^ in node.children {
-    springTotal += child.justify
+  sizes := map[uint]th::Vf2{}
 
-    if child.justify != 0 && node.layout != .screen {
+  for i, child^ in node.children {
+    springTotal += child.cell.justify
+
+    if child.cell.justify != 0 && node.layout != .screen {
       continue
     }
 
@@ -143,6 +157,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
       child.rect = r
       sx += r.w
       sy = sy > r.h ? sy : r.h
+      sizes[i] = sz
     } else if node.layout == .col {
       sz := ui.layout(child, x, y+sy)
       if child.layout == .screen {
@@ -153,6 +168,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
       child.rect = r
       sy += r.h
       sx = sx > r.w ? sx : r.w
+      sizes[i] = sz
     } else {
       sz := ui.layout(child, node.pos.x, node.pos.y)
       r := rect::Rect{node.pos.x, node.pos.y, sz.x, sz.y}
@@ -163,7 +179,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     }
   }
 
-  if springTotal != 0.0 || node.align != 0.0 {
+  if springTotal != 0.0 {
     psx, psy := sx, sy
     projectedSizeX, projectedSizeY := psx, psy
     if node.sizeOverride != 0 { 
@@ -179,25 +195,28 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     x, y = initX, initY
 
     for i, child^ in node.children {
-      if child.justify != 0.0 {
+      if child.cell.justify != 0.0 || child.cell.align != 0.0 {
         if node.layout == .row {
-          d := (projectedSizeX-psx)/springTotal*child.justify
+          d := (projectedSizeX-psx)/springTotal*child.cell.justify
           child.sizeOverride = d-2*child.padding
-          ui.layout(child, x+sx, y)
+          csz := ui.layout(child, x+sx, y)
+          if csz.y > psy {psy = csz.y}
           child.rect = rect::Rect{x+sx, y, d, psy}
           sx += d
+          sy = sy > csz.y ? sy : csz.y
         } else if node.layout == .col {
-          d := (projectedSizeY-psy)/springTotal*child.justify
+          d := (projectedSizeY-psy)/springTotal*child.cell.justify
           child.sizeOverride = d-2*child.padding
           ui.layout(child, x, y+sy)
           sy += d
         }
       } else if node.layout == .row {
-        sz := ui.layout(child, x+sx, y)
+        sz := ui.layout(child, x+sx, y+(psy-sizes[i].y)*node.cell.align)
+        printf("psy %v\n", (sizes[i].y))
         if child.layout == .screen {
           continue
         }
-        r := rect::Rect{x+sx, y, sz.x, sz.y}
+        r := rect::Rect{x+sx, y+(psy-sizes[i].y)*node.cell.align, sz.x, sz.y}
         ui.retained[child.id].rect = r
         child.rect = r
         sx += r.w
@@ -343,6 +362,8 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
 
 fn (ui: ^UI) addEl*(): ^El {
   el := El{parent: ui.parents[len(ui.parents)-1]}
+  el.cell = ui.cell
+  ui.cell = {}
   el.parent.children = append(el.parent.children, el)
   return &el.parent.children[len(el.parent.children)-1]
 }
@@ -354,8 +375,10 @@ fn (ui: ^UI) lastEl*(): ^El {
 fn (ui: ^UI) pushEl*(): ^El {
   parent := ui.parents[len(ui.parents)-1]
   el := El{
-    parent: parent
+    parent: parent,
+    cell: ui.cell
   }
+  ui.cell = {}
   parent.children = append(parent.children, el)
   child := &parent.children[len(parent.children)-1]
   ui.parents = append(ui.parents, child)
@@ -405,6 +428,16 @@ fn (ui: ^UI) setBoxCursor*(style: BoxStyle, cursor: window::Cursor) {
   ui.cursors[int(style)] = cursor
 }
 
+// >>> CELLS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+fn (ui: ^UI) cellRect*(r: rect::Rect) {
+  ui.cell = Cell{kind: .rect, rect: r}
+}
+
+fn (ui: ^UI) cellJustify*(j: real) {
+  ui.cell = Cell{kind: .justify, justify: j}
+}
+
 // >>> WIDGETS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 fn (ui: ^UI) img*(img: image::Image) {
@@ -437,6 +470,7 @@ fn (ui: ^UI) button*(text: str): bool {
 
   el.layout = .row
   el.padding = 10
+  el.cell.align = 0.5
 
   ui.spring(1)
   ui.label(text)
@@ -474,7 +508,8 @@ fn (ui: ^UI) spring*(power: real) {
   el := ui.addEl()
   el.layout = .spring
   el.label = true
-  el.justify = power
+  el.cell.kind = .justify
+  el.cell.justify = power
 }
 
 fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0): ^El {
@@ -555,4 +590,3 @@ fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0) {
     ui.drawDebug2(child, hue+0.25)
   }
 }
-
