@@ -1558,6 +1558,8 @@ fn (w: ^Window) display(ui: ^ui::UI) {
   })
 }
 
+logs := ""
+
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.row(|editor| {
     ui.boxStyle(.toolbar)
@@ -1568,6 +1570,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
         if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
           toggleWindow(name, {300, 600, 100, 200})
+          logs += name+"\n"
         }
       }
 
@@ -1585,7 +1588,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       ui.button("Load")
       ui.cellJustify(0.3)
       ui.button("Save")
-    }).padding = 4
+    }).padding = 5
   }, window::w)
 
 
@@ -1596,6 +1599,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
 fn (editor: ^Editor) putUi(ui: ^ui::UI) {
   ui.col(|editor| {
+    ui.label(logs)
     ui.spring(1)
     ui.row(|editor| {
       editor.putToolbar(ui)
@@ -1734,6 +1738,7 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
     normal: themer::mkNinepatch(resources.bevelImage, {0, 0, 30, 30}, {4, 4, 21, 21}),
     pressed: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21})
   })
+
   editor.ui.setBoxCursor(.button, .finger)
   editor.ui.setBoxTheme(.toolbar, {
     normal: themer::mkNinepatch(resources.bevelImage, {90, 30, 30, 30}, {4, 4, 21, 21})

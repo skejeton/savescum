@@ -212,7 +212,6 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
         }
       } else if node.layout == .row {
         sz := ui.layout(child, x+sx, y+(psy-sizes[i].y)*node.cell.align)
-        printf("psy %v\n", (sizes[i].y))
         if child.layout == .screen {
           continue
         }
@@ -477,7 +476,9 @@ fn (ui: ^UI) button*(text: str): bool {
   ui.spring(1)
 
   retained := ui.retained[el.id].rect
-  pressed := input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), retained)
+  pressed := input::isJustReleased(.mouse1) && 
+             ui.attention.hovered == el.id &&
+             ui.attention.focused == el.id
 
   ui.popEl()
   ui.popId()
@@ -496,8 +497,10 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
   cb(ui)
 
   retained := ui.retained[el.id].rect
-  pressed := input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), retained)
-
+  pressed := input::isJustReleased(.mouse1) && 
+             ui.attention.hovered == el.id &&
+             ui.attention.focused == el.id
+  
   ui.popEl()
   ui.popId()
 
