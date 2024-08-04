@@ -1554,7 +1554,10 @@ fn toggleWindow(title: str, rect: rect::Rect) {
 fn (w: ^Window) display(ui: ^ui::UI) {
   ui.cellRect(w.rect)
   ui.row(|w| {
-    ui.boxStyle(.toolbar)
+    ui.boxStyle(.window)
+    ui.row(|w| {
+      ui.label(w.title)
+    })
   })
 }
 
@@ -1569,7 +1572,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       // TODO: Remove the hardcoded window positions.
       windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
         if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
-          toggleWindow(name, {300, 600, 100, 200})
+          toggleWindow(name, {300, 600, 400, 200})
           logs += name+"\n"
         }
       }

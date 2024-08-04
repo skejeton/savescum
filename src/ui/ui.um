@@ -76,17 +76,17 @@ type (
 
   El* = struct {
     parent: weak ^El
-    sizeOverride: real
-    cell: Cell
-    rect: rect::Rect
     children: []El
+    id: uint
+
     layout: LayoutType
     pos: th::Vf2
-    label: bool
-    id: uint
-    padding: real
-    crop: rect::Rect
     size: th::Vf2
+    cell: Cell
+    padding: real
+
+    // Rendering info @TODO: Move to an interface instead.
+    crop: rect::Rect
     img: image::Image
     text: str
     boxStyle: BoxStyle
@@ -132,6 +132,15 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
   }
 
   sx, sy := 0.0, 0.0
+
+  if node.cell.kind == .rect {
+    rect := node.cell.rect
+
+    x, y = rect.x, rect.y
+    sx, sy = rect.w-node.padding*2, rect.h-node.padding*2
+    node.layout = .screen
+  }
+
   x += node.padding
   y += node.padding
   initX, initY := x, y
@@ -154,7 +163,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
       }
       r := rect::Rect{x+sx, y, sz.x, sz.y}
       ui.retained[child.id].rect = r
-      child.rect = r
+      child.cell.rect = r
       sx += r.w
       sy = sy > r.h ? sy : r.h
       sizes[i] = sz
@@ -165,7 +174,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
       }
       r := rect::Rect{x, y+sy, sz.x, sz.y}
       ui.retained[child.id].rect = r
-      child.rect = r
+      child.cell.rect = r
       sy += r.h
       sx = sx > r.w ? sx : r.w
       sizes[i] = sz
@@ -173,7 +182,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
       sz := ui.layout(child, node.pos.x, node.pos.y)
       r := rect::Rect{node.pos.x, node.pos.y, sz.x, sz.y}
       ui.retained[child.id].rect = r
-      child.rect = r
+      child.cell.rect = r
       sy = sy > r.h ? sy : r.h
       sx = sx > r.w ? sx : r.w
     }
@@ -182,13 +191,11 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
   if springTotal != 0.0 {
     psx, psy := sx, sy
     projectedSizeX, projectedSizeY := psx, psy
-    if node.sizeOverride != 0 { 
-      if node.layout == .row {
-        projectedSizeX = node.sizeOverride
-      } 
-      if node.layout == .col {
-        projectedSizeY= node.sizeOverride
-      }
+
+    if node.size.x != 0 && node.layout == .row { 
+      projectedSizeX = node.size.x
+    } else if node.size.y != 0 && node.layout == .col {
+      projectedSizeY= node.size.y
     }
 
     sx, sy = 0, 0
@@ -198,15 +205,15 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
       if child.cell.justify != 0.0 || child.cell.align != 0.0 {
         if node.layout == .row {
           d := (projectedSizeX-psx)/springTotal*child.cell.justify
-          child.sizeOverride = d-2*child.padding
+          child.size.x = d-2*child.padding
           csz := ui.layout(child, x+sx, y)
           if csz.y > psy {psy = csz.y}
-          child.rect = rect::Rect{x+sx, y, d, psy}
+          child.cell.rect = rect::Rect{x+sx, y, d, psy}
           sx += d
           sy = sy > csz.y ? sy : csz.y
         } else if node.layout == .col {
           d := (projectedSizeY-psy)/springTotal*child.cell.justify
-          child.sizeOverride = d-2*child.padding
+          child.size.y = d-2*child.padding
           ui.layout(child, x, y+sy)
           sy += d
         }
@@ -217,7 +224,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
         }
         r := rect::Rect{x+sx, y+(psy-sizes[i].y)*node.cell.align, sz.x, sz.y}
         ui.retained[child.id].rect = r
-        child.rect = r
+        child.cell.rect = r
         sx += r.w
         sy = sy > r.h ? sy : r.h
       } else if node.layout == .col {
@@ -227,38 +234,36 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
         }
         r := rect::Rect{x, y+sy, sz.x, sz.y}
         ui.retained[child.id].rect = r
-        child.rect = r
+        child.cell.rect = r
         sy += r.h
         sx = sx > r.w ? sx : r.w
       } else {
         sz := ui.layout(child, node.pos.x, node.pos.y)
         r := rect::Rect{node.pos.x, node.pos.y, sz.x, sz.y}
         ui.retained[child.id].rect = r
-        child.rect = r
+        child.cell.rect = r
         sy = sy > r.h ? sy : r.h
         sx = sx > r.w ? sx : r.w
       }
     }
   }
 
-  if node.sizeOverride != 0 { 
-    if node.layout == .row {
-      sx = node.sizeOverride
-    } 
-    if node.layout == .col {
-      sy = node.sizeOverride
-    }
+  if node.size.x != 0 { 
+    sx = node.size.x
+  }
+  if node.size.y != 0 { 
+    sy = node.size.y
   }
 
-  return th::Vf2{node.size.x+node.padding*2+sx, node.size.y+node.padding*2+sy}
+  return th::Vf2{node.padding*2+sx, node.padding*2+sy}
 }
 
 fn (ui: ^UI) processAttentionRec(el: ^El) {
-  if el.id != 0 && coll::vf2ToRect(input::getMousePos(), el.rect) {
+  if el.id != 0 && coll::vf2ToRect(input::getMousePos(), el.cell.rect) {
     ui.attention.hovered = el.id
   }
 
-  if el.id != 0 && input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), el.rect) {
+  if el.id != 0 && input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), el.cell.rect) {
     ui.attention.active = el.id
     ui.attention.focused = el.id
   }
@@ -297,16 +302,18 @@ fn (ui: ^UI) render(el: ^El) {
   retained := ui.retained[el.id]
 
   if selfhasptr(theme.pressed) && retained.state.pressed {
-    theme.pressed.draw(el.rect)
+    theme.pressed.draw(el.cell.rect)
   } else if selfhasptr(theme.normal) {
-    theme.normal.draw(el.rect)
+    theme.normal.draw(el.cell.rect)
   }
 
   if el.img.validate() {
-    el.img.blit(el.crop, el.rect)
+    el.img.blit(el.crop, el.cell.rect)
   }
 
-  ui.font.draw(el.text, {el.rect.x+el.padding, el.rect.y+el.padding}, 0x000000FF)
+  if el.text != "" {
+    ui.font.draw(el.text, {el.cell.rect.x+el.padding, el.cell.rect.y+el.padding}, 0x000000FF)
+  }
 
   for i, child^ in el.children {
     ui.render(child)
@@ -455,7 +462,6 @@ fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
 
 fn (ui: ^UI) label*(text: str) {
   el := ui.addEl()
-  el.label = true
   el.size = ui.font.measure(text)
   el.text = text
 }
@@ -510,16 +516,14 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
 fn (ui: ^UI) spring*(power: real) {
   el := ui.addEl()
   el.layout = .spring
-  el.label = true
   el.cell.kind = .justify
   el.cell.justify = power
 }
 
 fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0): ^El {
   el := ui.pushEl()
-  el.sizeOverride = width
+  el.size.x = width
   el.layout = .row
-  el.label = true
   cb(ui)
   ui.popEl()
 
@@ -528,9 +532,8 @@ fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0): ^El {
 
 fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: int = 0) {
   el := ui.pushEl()
-  el.sizeOverride = height
+  el.size.y = height
   el.layout = .col
-  el.label = true
   cb(ui)
   ui.popEl()
 }
@@ -538,7 +541,6 @@ fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: int = 0) {
 fn (ui: ^UI) screen*(at: th::Vf2, cb: fn(ui: ^UI)) {
   el := ui.pushEl()
   el.layout = .screen
-  el.label = true
   el.pos = at
   cb(ui)
   ui.popEl()
@@ -557,36 +559,40 @@ fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
     ui.drawDebug(child, hue+0.25)
   }
 
+  rect := el.cell.rect
+
   if el.layout == .spring {
     util::drawArrow2(
-      {el.rect.x, el.rect.y+el.rect.h/2},
-      {el.rect.x+el.rect.w, el.rect.y+el.rect.h/2},
+      {rect.x, rect.y+rect.h/2},
+      {rect.x+rect.w, rect.y+rect.h/2},
       color::hsv(hue, 1.0, 0.6, 1.0)
     )
   }
 
-  if coll::vf2ToRect(input::getMousePos(), el.rect) {
-    canvas::drawRectLines(color::hsv(hue, 1.0, 0.6, 1.0), el.rect, 2)
+  if coll::vf2ToRect(input::getMousePos(), rect) {
+    canvas::drawRectLines(color::hsv(hue, 1.0, 0.6, 1.0), rect, 2)
   } else {
-    canvas::drawRectLines(color::hsv(hue, 1.0, 0.6, 0.4), el.rect, 1)
+    canvas::drawRectLines(color::hsv(hue, 1.0, 0.6, 0.4), rect, 1)
   }
 
   if el.id != 0 && ui.attention.focused == el.id {
-    canvas::drawRectLines(0xFF0000FF, el.rect, 4)
+    canvas::drawRectLines(0xFF0000FF, rect, 4)
   }
 }
 
 // NOTE: Step 2 in debug UI, draws the ID of hovered elements.
 fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0) {
   id := ui.retained[el.id].id
-  if selfhasptr(id) && coll::vf2ToRect(input::getMousePos(), el.rect) {
-    rect := color::hsv(hue, 1.0, 0.8, 0.6)
+  rect := el.cell.rect
+
+  if selfhasptr(id) && coll::vf2ToRect(input::getMousePos(), rect) {
+    border := color::hsv(hue, 1.0, 0.8, 0.6)
     text := color::hsv(hue, 1.0, 0.4, 1.0)
 
     strId := sprintf("%v", id)
     sz := ui.font.measure(strId).mulf(0.5)
-    canvas::drawRect(rect, rect::Rect{el.rect.x, el.rect.y-sz.y, sz.x, sz.y})
-    ui.font.draw(strId, el.rect.getPos().sub({0, sz.y}), text, 0.5)
+    canvas::drawRect(border, rect::Rect{rect.x, rect.y-sz.y, sz.x, sz.y})
+    ui.font.draw(strId, rect.getPos().sub({0, sz.y}), text, 0.5)
   }
 
   for i, child^ in el.children {
