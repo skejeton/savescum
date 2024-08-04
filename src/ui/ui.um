@@ -26,7 +26,6 @@ type (
     col
     row
     spring
-    screen
   }
 
   BoxRenderer* = interface {
@@ -131,14 +130,14 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     return {}
   }
 
+  doSecondPass := false
   sx, sy := 0.0, 0.0
-
   if node.cell.kind == .rect {
     rect := node.cell.rect
 
     x, y = rect.x, rect.y
     sx, sy = rect.w-node.padding*2, rect.h-node.padding*2
-    node.layout = .screen
+    doSecondPass = true
   }
 
   x += node.padding
@@ -149,46 +148,41 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
 
   sizes := map[uint]th::Vf2{}
 
-  for i, child^ in node.children {
-    springTotal += child.cell.justify
+  if !doSecondPass {
+    for i, child^ in node.children {
+      springTotal += child.cell.justify
 
-    if child.cell.justify != 0 && node.layout != .screen {
-      continue
-    }
-
-    if node.layout == .row {
-      sz := ui.layout(child, x+sx, y)
-      if child.layout == .screen {
+      if child.cell.justify != 0 {
         continue
       }
-      r := rect::Rect{x+sx, y, sz.x, sz.y}
-      ui.retained[child.id].rect = r
-      child.cell.rect = r
-      sx += r.w
-      sy = sy > r.h ? sy : r.h
-      sizes[i] = sz
-    } else if node.layout == .col {
-      sz := ui.layout(child, x, y+sy)
-      if child.layout == .screen {
+
+      if child.cell.kind == .rect {
+        ui.layout(child, x, y)
         continue
       }
-      r := rect::Rect{x, y+sy, sz.x, sz.y}
-      ui.retained[child.id].rect = r
-      child.cell.rect = r
-      sy += r.h
-      sx = sx > r.w ? sx : r.w
-      sizes[i] = sz
-    } else {
-      sz := ui.layout(child, node.pos.x, node.pos.y)
-      r := rect::Rect{node.pos.x, node.pos.y, sz.x, sz.y}
-      ui.retained[child.id].rect = r
-      child.cell.rect = r
-      sy = sy > r.h ? sy : r.h
-      sx = sx > r.w ? sx : r.w
+
+      if node.layout == .row {
+        sz := ui.layout(child, x+sx, y)
+        r := rect::Rect{x+sx, y, sz.x, sz.y}
+        ui.retained[child.id].rect = r
+        child.cell.rect = r
+        sx += r.w
+        sy = sy > r.h ? sy : r.h
+        sizes[i] = sz
+      } else if node.layout == .col {
+        sz := ui.layout(child, x, y+sy)
+        r := rect::Rect{x, y+sy, sz.x, sz.y}
+        ui.retained[child.id].rect = r
+        child.cell.rect = r
+        sy += r.h
+        sx = sx > r.w ? sx : r.w
+        sizes[i] = sz
+      }
     }
   }
 
-  if springTotal != 0.0 {
+
+  if springTotal != 0.0 || doSecondPass {
     psx, psy := sx, sy
     projectedSizeX, projectedSizeY := psx, psy
 
@@ -219,9 +213,6 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
         }
       } else if node.layout == .row {
         sz := ui.layout(child, x+sx, y+(psy-sizes[i].y)*node.cell.align)
-        if child.layout == .screen {
-          continue
-        }
         r := rect::Rect{x+sx, y+(psy-sizes[i].y)*node.cell.align, sz.x, sz.y}
         ui.retained[child.id].rect = r
         child.cell.rect = r
@@ -229,9 +220,6 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
         sy = sy > r.h ? sy : r.h
       } else if node.layout == .col {
         sz := ui.layout(child, x, y+sy)
-        if child.layout == .screen {
-          continue
-        }
         r := rect::Rect{x, y+sy, sz.x, sz.y}
         ui.retained[child.id].rect = r
         child.cell.rect = r
@@ -444,6 +432,16 @@ fn (ui: ^UI) cellJustify*(j: real) {
   ui.cell = Cell{kind: .justify, justify: j}
 }
 
+// >>> EVENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+fn (ui: ^UI) isHovered*(): bool {
+  return ui.attention.hovered == ui.lastEl().id && ui.attention.active != 0
+}
+
+fn (ui: ^UI) isActive*(): bool {
+  return ui.attention.active == ui.lastEl().id && ui.attention.active != 0
+}
+
 // >>> WIDGETS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 fn (ui: ^UI) img*(img: image::Image) {
@@ -522,6 +520,7 @@ fn (ui: ^UI) spring*(power: real) {
 
 fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0): ^El {
   el := ui.pushEl()
+  el.id = ui.id()
   el.size.x = width
   el.layout = .row
   cb(ui)
@@ -534,14 +533,6 @@ fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: int = 0) {
   el := ui.pushEl()
   el.size.y = height
   el.layout = .col
-  cb(ui)
-  ui.popEl()
-}
-
-fn (ui: ^UI) screen*(at: th::Vf2, cb: fn(ui: ^UI)) {
-  el := ui.pushEl()
-  el.layout = .screen
-  el.pos = at
   cb(ui)
   ui.popEl()
 }
@@ -585,14 +576,21 @@ fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0) {
   id := ui.retained[el.id].id
   rect := el.cell.rect
 
-  if selfhasptr(id) && coll::vf2ToRect(input::getMousePos(), rect) {
+  if coll::vf2ToRect(input::getMousePos(), rect) {
     border := color::hsv(hue, 1.0, 0.8, 0.6)
     text := color::hsv(hue, 1.0, 0.4, 1.0)
 
-    strId := sprintf("%v", id)
-    sz := ui.font.measure(strId).mulf(0.5)
-    canvas::drawRect(border, rect::Rect{rect.x, rect.y-sz.y, sz.x, sz.y})
-    ui.font.draw(strId, rect.getPos().sub({0, sz.y}), text, 0.5)
+    if selfhasptr(id) {
+      strId := sprintf("%v", id)
+      sz := ui.font.measure(strId).mulf(0.5)
+      canvas::drawRect(border, {rect.x, rect.y-sz.y, sz.x, sz.y})
+      ui.font.draw(strId, rect.getPos().sub({0, sz.y}), text, 0.5)
+    }
+
+    info := sprintf("LayoutType %v | Active? %v", el.layout, ui.attention.active == el.id)
+    sz := ui.font.measure(info).mulf(0.5)
+    canvas::drawRect(border, {0, window::h-sz.y, sz.x, sz.y})
+    ui.font.draw(info, {0, window::h-sz.y}, 0xFFFFFFFF, 0.5)
   }
 
   for i, child^ in el.children {

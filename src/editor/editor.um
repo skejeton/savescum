@@ -1553,11 +1553,20 @@ fn toggleWindow(title: str, rect: rect::Rect) {
 
 fn (w: ^Window) display(ui: ^ui::UI) {
   ui.cellRect(w.rect)
-  ui.row(|w| {
+  ui.col(|w| {
     ui.boxStyle(.window)
+    ui.pushIdStr("Win"+w.title)
     ui.row(|w| {
+      ui.boxStyle(.titlebar)
+      if ui.isActive() {
+        delta := input::getMouseDelta()
+
+        w.rect.x += delta.x
+        w.rect.y += delta.y
+      }
       ui.label(w.title)
-    })
+    }).padding = 5
+    ui.popId()
   })
 }
 
@@ -1594,8 +1603,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }).padding = 5
   }, window::w)
 
-
-  for _, w in windows {
+  for _, w^ in windows {
     w.display(ui)
   }
 }
@@ -1745,6 +1753,12 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
   editor.ui.setBoxCursor(.button, .finger)
   editor.ui.setBoxTheme(.toolbar, {
     normal: themer::mkNinepatch(resources.bevelImage, {90, 30, 30, 30}, {4, 4, 21, 21})
+  })
+  editor.ui.setBoxTheme(.titlebar, {
+    normal: themer::mkNinepatch(resources.bevelImage, {0, 30, 30, 30}, {1, 1, 28, 28})
+  })
+  editor.ui.setBoxTheme(.window, {
+    normal: themer::mkNinepatch(resources.bevelImage, {30, 30, 30, 30}, {6, 6, 18, 18})
   })
 
   // TODO: Should we handle the session loading here really?
