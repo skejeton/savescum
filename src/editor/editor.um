@@ -1536,18 +1536,27 @@ type Window* = struct {
   visible: bool
   title: str
   rect: rect::Rect
+  order: int
 }
 
+var lastOrder: int
 var windows: map[str]Window
 
 fn toggleWindow(title: str, rect: rect::Rect) {
   if !validkey(windows, title) {
     w := &windows[title]
     w ^= {
-      visible: !w.visible,
+      visible: true,
       title: title,
       rect: rect
     }
+    w.order = lastOrder+1
+    lastOrder++
+  } else {
+    w := &windows[title]
+    w.order = lastOrder+1
+    lastOrder++
+    w.visible = !w.visible
   }
 }
 
@@ -1561,13 +1570,15 @@ fn (w: ^Window) display(ui: ^ui::UI) {
       if ui.isActive() {
         delta := input::getMouseDelta()
 
+        w.order = lastOrder+1
+        lastOrder++
         w.rect.x += delta.x
         w.rect.y += delta.y
       }
       ui.label(w.title)
     }).padding = 5
     ui.popId()
-  })
+  }).padding = 5
 }
 
 logs := ""
@@ -1603,8 +1614,16 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }).padding = 5
   }, window::w)
 
+  ordered := []^Window{}
   for _, w^ in windows {
-    w.display(ui)
+    ordered = append(ordered, w)
+  }
+
+  sort(ordered, {return a^.order - b^.order})
+  for _, w in ordered {
+    if w.visible {
+      w.display(ui)
+    }
   }
 }
 

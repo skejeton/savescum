@@ -552,12 +552,14 @@ fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0): ^El {
   return el
 }
 
-fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: int = 0) {
+fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: int = 0): ^El {
   el := ui.pushEl()
   el.size.y = height
   el.layout = .col
   cb(ui)
   ui.popEl()
+
+  return el
 }
 
 // HACK: Just to make the editor compile while there's old code.
