@@ -130,6 +130,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     return {}
   }
 
+  springTotal := 0.0
   doSecondPass := false
   sx, sy := 0.0, 0.0
   if node.cell.kind == .rect {
@@ -138,13 +139,15 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     x, y = rect.x, rect.y
     sx, sy = rect.w-node.padding*2, rect.h-node.padding*2
     doSecondPass = true
+
+    for i, child^ in node.children {
+      springTotal += child.cell.justify
+    }
   }
 
   x += node.padding
   y += node.padding
   initX, initY := x, y
-
-  springTotal := 0.0
 
   sizes := map[uint]th::Vf2{}
 
@@ -186,10 +189,10 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     psx, psy := sx, sy
     projectedSizeX, projectedSizeY := psx, psy
 
-    if node.size.x != 0 && node.layout == .row { 
+    if node.size.x != 0 { 
       projectedSizeX = node.size.x
-    } else if node.size.y != 0 && node.layout == .col {
-      projectedSizeY= node.size.y
+    } else if node.size.y != 0 {
+      projectedSizeY = node.size.y
     }
 
     sx, sy = 0, 0
@@ -246,14 +249,24 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
   return th::Vf2{node.padding*2+sx, node.padding*2+sy}
 }
 
-fn (ui: ^UI) processAttentionRec(el: ^El) {
-  if el.id != 0 && coll::vf2ToRect(input::getMousePos(), el.cell.rect) {
-    ui.attention.hovered = el.id
+fn findClosestRetainedAncestorId(el: ^El): uint {
+  if el.id == 0 && el.parent != null {
+    return findClosestRetainedAncestorId(el.parent)
   }
 
-  if el.id != 0 && input::isJustPressed(.mouse1) && coll::vf2ToRect(input::getMousePos(), el.cell.rect) {
-    ui.attention.active = el.id
-    ui.attention.focused = el.id
+  return el.id
+}
+
+fn (ui: ^UI) processAttentionRec(el: ^El) {
+  // @MARK(DirectInput)
+  if coll::vf2ToRect(input::getMousePos(), el.cell.rect) {
+    id := findClosestRetainedAncestorId(el)
+    ui.attention.hovered = id
+    // @MARK(DirectInput)
+    if input::isJustPressed(.mouse1) {
+      ui.attention.active = id
+      ui.attention.focused = id
+    }
   }
 
   for i, child^ in el.children {
@@ -264,10 +277,12 @@ fn (ui: ^UI) processAttentionRec(el: ^El) {
 fn (ui: ^UI) processAttention(el: ^El) {
   ui.attention.hovered = 0
 
+  // @MARK(DirectInput)
   if input::isJustPressed(.mouse1) {
     ui.attention.focused = 0
   }
 
+  // @MARK(DirectInput)
   if input::isJustReleased(.mouse1) {
     ui.attention.active = 0
   }
@@ -316,8 +331,8 @@ fn (ui: ^UI) updateCursor() {
   }
 }
 
-fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0);
-fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0);
+fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0)
+fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0)
 
 fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   ui.uniq = 0
@@ -333,6 +348,11 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   ui.updateCursor()
   ui.render(ui.root)
 
+  if debug {
+    ui.drawDebug(ui.root)
+    ui.drawDebug2(ui.root)
+  }
+
   filtered := map[uint]Retained{}
 
   for i, r in ui.retained {
@@ -345,18 +365,15 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   ui.retained = filtered
 
   delete(ui.retained, 0)
-
-  if debug {
-    ui.drawDebug(ui.root)
-    ui.drawDebug2(ui.root)
-  }
 }
 
 // >>> INTERNALS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 fn (ui: ^UI) addEl*(): ^El {
-  el := El{parent: ui.parents[len(ui.parents)-1]}
-  el.cell = ui.cell
+  el := El{
+    parent: ui.parents[len(ui.parents)-1],
+    cell: ui.cell
+  }
   ui.cell = {}
   el.parent.children = append(el.parent.children, el)
   return &el.parent.children[len(el.parent.children)-1]
@@ -480,9 +497,12 @@ fn (ui: ^UI) button*(text: str): bool {
   ui.spring(1)
 
   retained := ui.retained[el.id].rect
-  pressed := input::isJustReleased(.mouse1) && 
-             ui.attention.hovered == el.id &&
-             ui.attention.focused == el.id
+
+  // @ROOT(DirectInput): Don't use `input` directly. 
+  pressed := 
+    input::isJustReleased(.mouse1) && 
+    ui.attention.hovered == el.id &&
+    ui.attention.focused == el.id
 
   ui.popEl()
   ui.popId()
@@ -501,9 +521,12 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
   cb(ui)
 
   retained := ui.retained[el.id].rect
-  pressed := input::isJustReleased(.mouse1) && 
-             ui.attention.hovered == el.id &&
-             ui.attention.focused == el.id
+
+  // @MARK(DirectInput)
+  pressed := 
+    input::isJustReleased(.mouse1) && 
+    ui.attention.hovered == el.id &&
+    ui.attention.focused == el.id
   
   ui.popEl()
   ui.popId()
@@ -560,6 +583,7 @@ fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
     )
   }
 
+  // @MARK(DirectInput): Probably doesn't matter here.
   if coll::vf2ToRect(input::getMousePos(), rect) {
     canvas::drawRectLines(color::hsv(hue, 1.0, 0.6, 1.0), rect, 2)
   } else {
@@ -572,10 +596,11 @@ fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
 }
 
 // NOTE: Step 2 in debug UI, draws the ID of hovered elements.
-fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0) {
+fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0) {
   id := ui.retained[el.id].id
   rect := el.cell.rect
 
+  // @MARK(DirectInput): Probably doesn't matter here.
   if coll::vf2ToRect(input::getMousePos(), rect) {
     border := color::hsv(hue, 1.0, 0.8, 0.6)
     text := color::hsv(hue, 1.0, 0.4, 1.0)
@@ -587,13 +612,14 @@ fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0) {
       ui.font.draw(strId, rect.getPos().sub({0, sz.y}), text, 0.5)
     }
 
-    info := sprintf("LayoutType %v | Active? %v", el.layout, ui.attention.active == el.id)
+    info := sprintf("Id:%20v | LayoutType:%v | Active:%5v | Parent:%20v | Parent=Null?:%v", el.id, el.layout, ui.attention.active == el.id, el.parent, el.parent == null)
     sz := ui.font.measure(info).mulf(0.5)
-    canvas::drawRect(border, {0, window::h-sz.y, sz.x, sz.y})
-    ui.font.draw(info, {0, window::h-sz.y}, 0xFFFFFFFF, 0.5)
+    canvas::drawRect(border, {0, hy, sz.x, sz.y})
+    ui.font.draw(info, {0, hy}, 0x000000FF, 0.5)
+    hy += sz.y
   }
 
   for i, child^ in el.children {
-    ui.drawDebug2(child, hue+0.25)
+    ui.drawDebug2(child, hue+0.25, hy)
   }
 }
