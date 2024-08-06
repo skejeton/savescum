@@ -370,6 +370,17 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
 
 // >>> INTERNALS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+fn (ui: ^UI) beginRoot*(): bool {
+  ui.parents = append(ui.parents, ui.root)
+  return true
+}
+
+fn (ui: ^UI) endRoot*(): bool {
+  std::assert(ui.parents[len(ui.parents)-1] == ui.root)
+  ui.parents = delete(ui.parents, len(ui.parents)-1)
+  return true
+}
+
 
 fn (ui: ^UI) addEl*(): ^El {
   el := &El{
@@ -616,7 +627,7 @@ fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0) {
       ui.font.draw(strId, rect.getPos().sub({0, sz.y}), text, 0.5)
     }
 
-    info := sprintf("Id:%20v | LayoutType:%v | Active:%5v | Parent:%20v | Parent=Null?:%v", el.id, el.layout, ui.attention.active == el.id, el.parent, el.parent == null)
+    info := sprintf("Id:%20v | LayoutType:%v | Active:%5v | Parent:%20v", el.id, el.layout, ui.attention.active == el.id, el.parent == null ? uint(0) : el.parent.id)
     sz := ui.font.measure(info).mulf(0.5)
     canvas::drawRect(border, {0, hy, sz.x, sz.y})
     ui.font.draw(info, {0, hy}, 0x000000FF, 0.5)

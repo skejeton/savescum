@@ -1614,16 +1614,19 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }).padding = 5
   }, window::w)
 
-  ordered := []^Window{}
-  for _, w^ in windows {
-    ordered = append(ordered, w)
-  }
-
-  sort(ordered, {return a^.order - b^.order})
-  for _, w in ordered {
-    if w.visible {
-      w.display(ui)
+  if ui.beginRoot() {
+    ordered := []^Window{}
+    for _, w^ in windows {
+      ordered = append(ordered, w)
     }
+    sort(ordered, {return a^.order - b^.order})
+    
+    for _, w in ordered {
+      if w.visible {
+        w.display(ui)
+      }
+    }
+    ui.endRoot()
   }
 }
 
