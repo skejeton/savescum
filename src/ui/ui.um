@@ -200,6 +200,11 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     x, y = initX, initY
 
     for i, child in node.children {
+      if child.cell.kind == .rect {
+        ui.layout(child, x, y)
+        continue
+      }
+
       if child.cell.justify != 0.0 || child.cell.align != 0.0 {
         if node.layout == .row {
           d := (projectedSizeX-psx)/springTotal*child.cell.justify

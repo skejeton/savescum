@@ -1577,6 +1577,22 @@ fn (w: ^Window) display(ui: ^ui::UI) {
       }
       ui.label(w.title)
     }).padding = 5
+
+    ui.pushIdStr("Resize")
+    ui.cellRect({w.rect.x+w.rect.w-10, w.rect.y+w.rect.h-10, 10, 10})
+    ui.row(|w| {
+      ui.boxStyle(.button)
+      if ui.isActive() {
+        delta := input::getMouseDelta()
+
+        w.order = lastOrder+1
+        lastOrder++
+        w.rect.w += delta.x
+        w.rect.h += delta.y
+      }
+    })
+    ui.popId()
+
     ui.popId()
   }).padding = 5
 }
