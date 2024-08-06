@@ -1,5 +1,4 @@
 // @TODO: Make the element struct smaller in size
-// @TODO: Fix duplicate in layouts
 // @TODO: Aligning rows and columns
 // @TODO: Hovering effects?
 // @TODO: Element pooling
@@ -63,6 +62,7 @@ type (
   }
 
   CellKind* = enum {
+    normal
     justify
     rect
   }
@@ -80,8 +80,8 @@ type (
     id: uint
 
     layout: LayoutType
-    pos: th::Vf2
     size: th::Vf2
+    contentSize: th::Vf2
     cell: Cell
     padding: real
 
@@ -126,133 +126,82 @@ fn mk*(): UI {
   return {font: canvas::pixelFont}
 }
 
-fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
-  if node == null {
-    return {}
-  }
-
-  springTotal := 0.0
-  doSecondPass := false
-  sx, sy := 0.0, 0.0
+fn (ui: ^UI) layout1(node: ^El): th::Vf2 {
   if node.cell.kind == .rect {
-    rect := node.cell.rect
+    node.size.x = node.cell.rect.w
+    node.size.y = node.cell.rect.h
+  }
 
-    x, y = rect.x, rect.y
-    sx, sy = rect.w-node.padding*2, rect.h-node.padding*2
-    doSecondPass = true
-
-    for i, child in node.children {
-      springTotal += child.cell.justify
+  // Calculate the natural size unless the size is already known.
+  size := th::Vf2{0, 0}
+  for i, child in node.children {
+    childSize := ui.layout1(child)
+    if child.cell.kind == .rect {
+      continue
+    }
+    if node.layout == .row {
+      if child.cell.kind != .justify { size.x += childSize.x }
+      size.y = util::max(size.y, childSize.y)
+    } else if node.layout == .col {
+      if child.cell.kind != .justify { size.y += childSize.y }
+      size.x = util::max(size.x, childSize.x)
     }
   }
 
-  x += node.padding
-  y += node.padding
-  initX, initY := x, y
+  node.contentSize = size.addf(node.padding*2)
 
-  sizes := map[uint]th::Vf2{}
+  // Apply size overrides
+  if node.size.x != 0 { size.x = node.size.x }
+  if node.size.y != 0 { size.y = node.size.y }
 
-  if !doSecondPass {
-    for i, child in node.children {
-      springTotal += child.cell.justify
+  node.size = size.addf(node.padding*2)
 
-      if child.cell.justify != 0 {
-        continue
-      }
+  return node.size
+}
 
-      if child.cell.kind == .rect {
-        ui.layout(child, x, y)
-        continue
-      }
+fn (ui: ^UI) layout2(node: ^El, pos: th::Vf2) {
+  if node.cell.kind != .rect {
+    node.cell.rect.x, node.cell.rect.y = pos.x, pos.y
+  } else {
+    pos.x, pos.y = node.cell.rect.x, node.cell.rect.y
+  }
 
-      if node.layout == .row {
-        sz := ui.layout(child, x+sx, y)
-        r := rect::Rect{x+sx, y, sz.x, sz.y}
-        ui.retained[child.id].rect = r
-        child.cell.rect = r
-        sx += r.w
-        sy = sy > r.h ? sy : r.h
-        sizes[i] = sz
+  pos.x += node.padding
+  pos.y += node.padding
+    
+  totalJustify := 0.0
+  for i, child in node.children {
+    totalJustify += child.cell.justify
+  }
+
+  for i, child in node.children {
+    contentDiff := node.size.sub(node.contentSize)
+
+    if child.cell.kind == .justify {
+      if node.layout == .row  {
+        child.size.x = contentDiff.x * (child.cell.justify / totalJustify)
+        child.size.y = node.size.y - node.padding * 2
       } else if node.layout == .col {
-        sz := ui.layout(child, x, y+sy)
-        r := rect::Rect{x, y+sy, sz.x, sz.y}
-        ui.retained[child.id].rect = r
-        child.cell.rect = r
-        sy += r.h
-        sx = sx > r.w ? sx : r.w
-        sizes[i] = sz
+        child.size.y = contentDiff.y * (child.cell.justify / totalJustify)
+        child.size.x = node.size.x - node.padding * 2
       }
     }
-  }
 
-
-  if springTotal != 0.0 || doSecondPass {
-    psx, psy := sx, sy
-    projectedSizeX, projectedSizeY := psx, psy
-
-    if node.size.x != 0 { 
-      projectedSizeX = node.size.x
-    } else if node.size.y != 0 {
-      projectedSizeY = node.size.y
-    }
-
-    sx, sy = 0, 0
-    x, y = initX, initY
-
-    for i, child in node.children {
-      if child.cell.kind == .rect {
-        ui.layout(child, x, y)
-        continue
-      }
-
-      if child.cell.justify != 0.0 || child.cell.align != 0.0 {
-        if node.layout == .row {
-          d := (projectedSizeX-psx)/springTotal*child.cell.justify
-          child.size.x = d-2*child.padding
-          csz := ui.layout(child, x+sx, y)
-          if csz.y > psy {psy = csz.y}
-          child.cell.rect = rect::Rect{x+sx, y, d, psy}
-          sx += d
-          sy = sy > csz.y ? sy : csz.y
-        } else if node.layout == .col {
-          d := (projectedSizeY-psy)/springTotal*child.cell.justify
-          child.size.y = d-2*child.padding
-          ui.layout(child, x, y+sy)
-          sy += d
-        }
-      } else if node.layout == .row {
-        sz := ui.layout(child, x+sx, y+(psy-sizes[i].y)*node.cell.align)
-        r := rect::Rect{x+sx, y+(psy-sizes[i].y)*node.cell.align, sz.x, sz.y}
-        ui.retained[child.id].rect = r
-        child.cell.rect = r
-        sx += r.w
-        sy = sy > r.h ? sy : r.h
-      } else if node.layout == .col {
-        sz := ui.layout(child, x, y+sy)
-        r := rect::Rect{x, y+sy, sz.x, sz.y}
-        ui.retained[child.id].rect = r
-        child.cell.rect = r
-        sy += r.h
-        sx = sx > r.w ? sx : r.w
-      } else {
-        sz := ui.layout(child, node.pos.x, node.pos.y)
-        r := rect::Rect{node.pos.x, node.pos.y, sz.x, sz.y}
-        ui.retained[child.id].rect = r
-        child.cell.rect = r
-        sy = sy > r.h ? sy : r.h
-        sx = sx > r.w ? sx : r.w
-      }
+    ui.layout2(child, pos)
+    if node.layout == .row {
+      pos.x += child.size.x
+    } else if node.layout == .col {
+      pos.y += child.size.y
     }
   }
+}
 
-  if node.size.x != 0 { 
-    sx = node.size.x
-  }
-  if node.size.y != 0 { 
-    sy = node.size.y
-  }
+fn (ui: ^UI) layout3(node: ^El) {
+  node.cell.rect.w, node.cell.rect.h = node.size.x, node.size.y
 
-  return th::Vf2{node.padding*2+sx, node.padding*2+sy}
+  for i, child in node.children {
+    ui.layout3(child)
+  }
 }
 
 fn findClosestRetainedAncestorId(el: ^El): uint {
@@ -348,7 +297,9 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   cb(ui)
 
   // calculate layout
-  ui.layout(ui.root, 0, 0)
+  ui.layout1(ui.root)
+  ui.layout2(ui.root, {0, 0})
+  ui.layout3(ui.root)
   ui.processAttention(ui.root)
   ui.input(ui.root)
   ui.updateCursor()
@@ -561,7 +512,6 @@ fn (ui: ^UI) spring*(power: real) {
 
 fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: int = 0): ^El {
   el := ui.pushEl()
-  el.id = ui.id()
   el.size.x = width
   el.layout = .row
   cb(ui)
@@ -596,11 +546,19 @@ fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
   rect := el.cell.rect
 
   if el.layout == .spring {
-    util::drawArrow2(
-      {rect.x, rect.y+rect.h/2},
-      {rect.x+rect.w, rect.y+rect.h/2},
-      color::hsv(hue, 1.0, 0.6, 1.0)
-    )
+    if el.parent.layout == .row {
+      util::drawArrow2(
+        {rect.x, rect.y+rect.h/2},
+        {rect.x+rect.w, rect.y+rect.h/2},
+        color::hsv(hue, 1.0, 0.6, 1.0)
+      )
+    } else {
+      util::drawArrow2(
+        {rect.x+rect.w/2, rect.y},
+        {rect.x+rect.w/2, rect.y+rect.h},
+        color::hsv(hue, 1.0, 0.6, 1.0)
+      )
+    }
   }
 
   // @MARK(DirectInput): Probably doesn't matter here.

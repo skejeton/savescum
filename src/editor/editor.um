@@ -1565,6 +1565,7 @@ fn (w: ^Window) display(ui: ^ui::UI) {
   ui.col(|w| {
     ui.boxStyle(.window)
     ui.pushIdStr("Win"+w.title)
+    ui.cellJustify(1)
     ui.row(|w| {
       ui.boxStyle(.titlebar)
       if ui.isActive() {
@@ -1578,20 +1579,20 @@ fn (w: ^Window) display(ui: ^ui::UI) {
       ui.label(w.title)
     }).padding = 5
 
-    ui.pushIdStr("Resize")
-    ui.cellRect({w.rect.x+w.rect.w-10, w.rect.y+w.rect.h-10, 10, 10})
-    ui.row(|w| {
-      ui.boxStyle(.button)
-      if ui.isActive() {
-        delta := input::getMouseDelta()
+    // ui.pushIdStr("Resize")
+    // ui.cellRect({w.rect.x+w.rect.w-10, w.rect.y+w.rect.h-10, 10, 10})
+    // ui.row(|w| {
+    //   ui.boxStyle(.button)
+    //   if ui.isActive() {
+    //     delta := input::getMouseDelta()
 
-        w.order = lastOrder+1
-        lastOrder++
-        w.rect.w += delta.x
-        w.rect.h += delta.y
-      }
-    })
-    ui.popId()
+    //     w.order = lastOrder+1
+    //     lastOrder++
+    //     w.rect.w += delta.x
+    //     w.rect.h += delta.y
+    //   }
+    // })
+    // ui.popId()
 
     ui.popId()
   }).padding = 5
@@ -1601,11 +1602,10 @@ logs := ""
 
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.row(|editor| {
-    ui.boxStyle(.toolbar)
     ui.cellJustify(1)
     ui.row(|editor| {
-
-      // TODO: Remove the hardcoded window positions.
+      ui.boxStyle(.toolbar)
+      // @TODO: Remove the hardcoded window positions.
       windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
         if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
           toggleWindow(name, {300, 600, 400, 200})
@@ -1613,7 +1613,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
         }
       }
 
-      // TODO: Remove the hardcoded texture regions.
+      // @TODO: Remove the hardcoded texture regions.
       windowBtn("Play", {48, 48, 48, 48})
       windowBtn("Console", {48, 0, 48, 48})
       windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
