@@ -1,7 +1,8 @@
-// TODO: Make the element struct smaller in size
-//       Fix duplicate in layouts
-//       Aligning rows and columns
-//       Hovering effects?
+// @TODO: Make the element struct smaller in size
+// @TODO: Fix duplicate in layouts
+// @TODO: Aligning rows and columns
+// @TODO: Hovering effects?
+// @TODO: Element pooling
 
 import (
   "std.um"
@@ -75,7 +76,7 @@ type (
 
   El* = struct {
     parent: weak ^El
-    children: []El
+    children: []^El
     id: uint
 
     layout: LayoutType
@@ -140,7 +141,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     sx, sy = rect.w-node.padding*2, rect.h-node.padding*2
     doSecondPass = true
 
-    for i, child^ in node.children {
+    for i, child in node.children {
       springTotal += child.cell.justify
     }
   }
@@ -152,7 +153,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
   sizes := map[uint]th::Vf2{}
 
   if !doSecondPass {
-    for i, child^ in node.children {
+    for i, child in node.children {
       springTotal += child.cell.justify
 
       if child.cell.justify != 0 {
@@ -198,7 +199,7 @@ fn (ui: ^UI) layout(node: ^El, x, y: real): th::Vf2 {
     sx, sy = 0, 0
     x, y = initX, initY
 
-    for i, child^ in node.children {
+    for i, child in node.children {
       if child.cell.justify != 0.0 || child.cell.align != 0.0 {
         if node.layout == .row {
           d := (projectedSizeX-psx)/springTotal*child.cell.justify
@@ -269,7 +270,7 @@ fn (ui: ^UI) processAttentionRec(el: ^El) {
     }
   }
 
-  for i, child^ in el.children {
+  for i, child in el.children {
     ui.processAttentionRec(child)
   }
 }
@@ -294,7 +295,7 @@ fn (ui: ^UI) input(el: ^El) {
   ui.retained[el.id].state.hovered = ui.attention.hovered == el.id
   ui.retained[el.id].state.pressed = ui.attention.active == el.id
 
-  for i, child^ in el.children {
+  for i, child in el.children {
     ui.input(child)
   }
 }
@@ -318,7 +319,7 @@ fn (ui: ^UI) render(el: ^El) {
     ui.font.draw(el.text, {el.cell.rect.x+el.padding, el.cell.rect.y+el.padding}, 0x000000FF)
   }
 
-  for i, child^ in el.children {
+  for i, child in el.children {
     ui.render(child)
   }
 }
@@ -369,32 +370,33 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
 
 // >>> INTERNALS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+
 fn (ui: ^UI) addEl*(): ^El {
-  el := El{
+  el := &El{
     parent: ui.parents[len(ui.parents)-1],
     cell: ui.cell
   }
   ui.cell = {}
   el.parent.children = append(el.parent.children, el)
-  return &el.parent.children[len(el.parent.children)-1]
-}
-
-fn (ui: ^UI) lastEl*(): ^El {
-  return ui.parents[len(ui.parents)-1]
+  return el
 }
 
 fn (ui: ^UI) pushEl*(): ^El {
   parent := ui.parents[len(ui.parents)-1]
-  el := El{
+
+  el := &El{
     parent: parent,
     cell: ui.cell
   }
   ui.cell = {}
   parent.children = append(parent.children, el)
-  child := &parent.children[len(parent.children)-1]
-  ui.parents = append(ui.parents, child)
+  ui.parents = append(ui.parents, el)
 
-  return child
+  return el
+}
+
+fn (ui: ^UI) lastEl*(): ^El {
+  return ui.parents[len(ui.parents)-1]
 }
 
 fn (ui: ^UI) popEl*() {
@@ -571,7 +573,7 @@ fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool
 
 // NOTE: Step 1 in debug UI, draws the outlines.
 fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
-  for i, child^ in el.children {
+  for i, child in el.children {
     ui.drawDebug(child, hue+0.25)
   }
 
@@ -621,7 +623,7 @@ fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0) {
     hy += sz.y
   }
 
-  for i, child^ in el.children {
+  for i, child in el.children {
     ui.drawDebug2(child, hue+0.25, hy)
   }
 }
