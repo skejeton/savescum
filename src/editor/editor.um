@@ -1564,9 +1564,9 @@ fn (w: ^Window) display(ui: ^ui::UI) {
   ui.cellRect(w.rect)
   ui.col(|w| {
     ui.boxStyle(.window)
-    ui.pushIdStr("Win"+w.title)
     ui.cellJustify(1)
     ui.row(|w| {
+      ui.pushIdStr("Win"+w.title)
       ui.boxStyle(.titlebar)
       if ui.isActive() {
         delta := input::getMouseDelta()
@@ -1577,6 +1577,7 @@ fn (w: ^Window) display(ui: ^ui::UI) {
         w.rect.y += delta.y
       }
       ui.label(w.title)
+      ui.popId()
     }).padding = 5
 
     // ui.pushIdStr("Resize")
@@ -1594,7 +1595,6 @@ fn (w: ^Window) display(ui: ^ui::UI) {
     // })
     // ui.popId()
 
-    ui.popId()
   }).padding = 5
 }
 

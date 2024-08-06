@@ -374,7 +374,8 @@ fn (ui: ^UI) pushIdInt*(i: int) {
   id := fnv1::hash64i(ui.ids[len(ui.ids)-1], i)
   ui.retained[id].id = i
   ui.retained[id].life = 2
-  ui.ids = append(ui.ids, uint(i))
+  ui.ids = append(ui.ids, uint(id))
+  ui.lastEl().id = id
 }
 
 fn (ui: ^UI) pushIdStr*(s: str) {
@@ -382,6 +383,7 @@ fn (ui: ^UI) pushIdStr*(s: str) {
   ui.retained[id].id = s
   ui.retained[id].life = 2
   ui.ids = append(ui.ids, id)
+  ui.lastEl().id = id
 }
 
 fn (ui: ^UI) popId*() {
@@ -452,9 +454,8 @@ fn (ui: ^UI) label*(text: str) {
 
 fn (ui: ^UI) spring*(power: real)
 fn (ui: ^UI) button*(text: str): bool {
-  ui.pushIdStr(text)
   el := ui.pushEl()
-  el.id = ui.id()
+  ui.pushIdStr(text)
   ui.boxStyle(.button)
 
   el.layout = .row
@@ -473,16 +474,15 @@ fn (ui: ^UI) button*(text: str): bool {
     ui.attention.hovered == el.id &&
     ui.attention.focused == el.id
 
-  ui.popEl()
   ui.popId()
+  ui.popEl()
 
   return pressed
 }
 
 fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
-  ui.pushIdStr(name)
   el := ui.pushEl()
-  el.id = ui.id()
+  ui.pushIdStr(name)
   ui.boxStyle(.button)
 
   el.padding = 5
@@ -497,8 +497,8 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
     ui.attention.hovered == el.id &&
     ui.attention.focused == el.id
   
-  ui.popEl()
   ui.popId()
+  ui.popEl()
 
   return pressed
 }
