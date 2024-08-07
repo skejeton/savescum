@@ -1,0 +1,33 @@
+import (
+  "font.um"
+  "rect.um"
+  "image.um"
+)
+
+type (
+  RenderLabel* = struct {
+    font: font::Font
+    text: str
+  }
+
+  RenderImage* = struct {
+    image: image::Image
+  }
+
+  RenderImageCrop* = struct {
+    image: image::Image
+    crop: rect::Rect
+  }
+)
+
+fn (r: ^RenderLabel) draw*(rect: rect::Rect) {
+  r.font.draw(r.text, rect.getPos(), 0x000000FF)
+}
+
+fn (r: ^RenderImage) draw*(rect: rect::Rect) {
+  r.image.draw({p: rect.getPos(), s: {1, 1}})
+}
+
+fn (r: ^RenderImageCrop) draw*(rect: rect::Rect) {
+  r.image.blit(r.crop, rect)
+}

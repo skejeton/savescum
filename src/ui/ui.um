@@ -14,6 +14,7 @@ import (
   "image.um"
   "color.um"
   "window.um"
+  "render.um"
   "../misc/immcursor.um"
   "../misc/util.um"
   "../misc/fnv1.um"
@@ -86,9 +87,7 @@ type (
     padding: real
 
     // Rendering info @TODO: Move to an interface instead.
-    crop: rect::Rect
-    img: image::Image
-    text: str
+    renderObject: BoxRenderer
     boxStyle: BoxStyle
   }
 
@@ -107,7 +106,6 @@ type (
   }
 
   UI* = struct {
-    uniq: uint
     font: font::Font
     retained: map[uint]Retained
     theme: [int(BoxStyle._count)]BoxTheme
@@ -272,12 +270,8 @@ fn (ui: ^UI) render(el: ^El) {
     theme.normal.draw(el.cell.rect)
   }
 
-  if el.img.validate() {
-    el.img.blit(el.crop, el.cell.rect)
-  }
-
-  if el.text != "" {
-    ui.font.draw(el.text, {el.cell.rect.x+el.padding, el.cell.rect.y+el.padding}, 0x000000FF)
+  if selfhasptr(el.renderObject) {
+    el.renderObject.draw(el.cell.rect)
   }
 
   for i, child in el.children {
@@ -297,7 +291,6 @@ fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0)
 fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0)
 
 fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
-  ui.uniq = 0
   ui.root = new(El)
   ui.parents = {ui.root}
   ui.ids = {fnv1::INIT}
@@ -394,7 +387,6 @@ fn (ui: ^UI) pushIdStr*(s: str) {
 }
 
 fn (ui: ^UI) popId*() {
-  ui.uniq++
   ui.ids = delete(ui.ids, len(ui.ids)-1)
 }
 
@@ -441,22 +433,20 @@ fn (ui: ^UI) isActive*(): bool {
 
 fn (ui: ^UI) img*(img: image::Image) {
   el := ui.addEl()
-  el.img = img
   el.size = img.getDims()
-  el.crop = {0, 0, el.size.x, el.size.y}
+  el.renderObject = render::RenderImage{img}
 }
 
 fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
   el := ui.addEl()
-  el.img = img
-  el.crop = r
   el.size = r.getDims()
+  el.renderObject = render::RenderImageCrop{img, r}
 }
 
 fn (ui: ^UI) label*(text: str) {
   el := ui.addEl()
   el.size = ui.font.measure(text)
-  el.text = text
+  el.renderObject = render::RenderLabel{font: ui.font, text: text}
 }
 
 fn (ui: ^UI) spring*(power: real)
