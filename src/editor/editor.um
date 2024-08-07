@@ -1563,10 +1563,10 @@ fn toggleWindow(title: str, rect: rect::Rect) {
 fn (w: ^Window) display(ui: ^ui::UI) {
   ui.cellRect(w.rect)
   ui.col(|w| {
+    ui.pushIdStr("Win"+w.title)
     ui.boxStyle(.window)
-    ui.cellJustify(1)
     ui.row(|w| {
-      ui.pushIdStr("Win"+w.title)
+      ui.pushIdStr("Titlebar")
       ui.boxStyle(.titlebar)
       if ui.isActive() {
         delta := input::getMouseDelta()
@@ -1580,21 +1580,21 @@ fn (w: ^Window) display(ui: ^ui::UI) {
       ui.popId()
     }).padding = 5
 
-    // ui.pushIdStr("Resize")
-    // ui.cellRect({w.rect.x+w.rect.w-10, w.rect.y+w.rect.h-10, 10, 10})
-    // ui.row(|w| {
-    //   ui.boxStyle(.button)
-    //   if ui.isActive() {
-    //     delta := input::getMouseDelta()
+    ui.cellRect({w.rect.x+w.rect.w-10, w.rect.y+w.rect.h-10, 10, 10})
+    ui.row(|w| {
+      ui.pushIdStr("Resize")
+      ui.boxStyle(.button)
+      if ui.isActive() {
+        delta := input::getMouseDelta()
 
-    //     w.order = lastOrder+1
-    //     lastOrder++
-    //     w.rect.w += delta.x
-    //     w.rect.h += delta.y
-    //   }
-    // })
-    // ui.popId()
-
+        w.order = lastOrder+1
+        lastOrder++
+        w.rect.w += delta.x
+        w.rect.h += delta.y
+      }
+      ui.popId()
+    })
+    ui.popId()
   }).padding = 5
 }
 

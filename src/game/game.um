@@ -123,15 +123,15 @@ fn initTagSetFromString*(s: str): TagSet {
 }
 
 type ChumState = struct {
-  time: real
-  dir: int
-  rotTime: real
-  walkTime: real
-  loadTime: real
-  visRect: rect::Rect
-  ent: Character
+  time:               real
+  dir:                int
+  rotTime:            real
+  walkTime:           real
+  loadTime:           real
+  visRect:            rect::Rect
+  ent:                Character
   toggleActiveStatic: bool
-  toggleActiveWater: bool
+  toggleActiveWater:  bool
 }
 
 var (
@@ -577,6 +577,8 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn start*(worldData: world_data::WorldData) {
+  printf("%v\n", &pal.ent)
+
   stopPreview = false
   previewingLoad = false
   if firstTime {

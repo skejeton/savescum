@@ -127,11 +127,6 @@ fn mk*(): UI {
 }
 
 fn (ui: ^UI) layout1(node: ^El): th::Vf2 {
-  if node.cell.kind == .rect {
-    node.size.x = node.cell.rect.w
-    node.size.y = node.cell.rect.h
-  }
-
   // Calculate the natural size unless the size is already known.
   size := th::Vf2{0, 0}
   for i, child in node.children {
@@ -156,6 +151,11 @@ fn (ui: ^UI) layout1(node: ^El): th::Vf2 {
 
   node.size = size.addf(node.padding*2)
 
+  if node.cell.kind == .rect {
+    node.size.x = node.cell.rect.w
+    node.size.y = node.cell.rect.h
+  }
+
   return node.size
 }
 
@@ -178,7 +178,7 @@ fn (ui: ^UI) layout2(node: ^El, pos: th::Vf2) {
     contentDiff := node.size.sub(node.contentSize)
 
     if child.cell.kind == .justify {
-      if node.layout == .row  {
+      if node.layout == .row {
         child.size.x = contentDiff.x * (child.cell.justify / totalJustify)
         child.size.y = node.size.y - node.padding * 2
       } else if node.layout == .col {
@@ -187,7 +187,14 @@ fn (ui: ^UI) layout2(node: ^El, pos: th::Vf2) {
       }
     }
 
-    ui.layout2(child, pos)
+    alignedPos := pos
+    if node.layout == .row  {
+      alignedPos.y += (node.size.y - node.padding*2 - child.size.y) * node.cell.align
+    } else if node.layout == .col {
+      alignedPos.x += (node.size.x - node.padding*2 - child.size.x) * node.cell.align
+    }
+
+    ui.layout2(child, alignedPos)
     if node.layout == .row {
       pos.x += child.size.x
     } else if node.layout == .col {
