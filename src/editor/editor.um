@@ -1561,9 +1561,22 @@ fn toggleWindow(title: str, rect: rect::Rect) {
 }
 
 fn (w: ^Window) display(ui: ^ui::UI) {
-  ui.cellRect(w.rect)
+  rect := w.rect
+  if rect.w < 100 { rect.w = 100 }
+  if rect.h < 100 { rect.h = 100 }
+  if rect.x < 0 { rect.x = 0 }
+  if rect.y < 0 { rect.y = 0 }
+  if rect.x+rect.w > global::screen.w { rect.x = global::screen.w-rect.w }
+  if rect.y+rect.h > global::screen.h { rect.y = global::screen.h-rect.h }
+
+ 
+  if input::isJustReleased(.mouse1) {
+    w.rect = rect
+  }
+
+  ui.cellRect(rect)
   ui.cellClip()
-  ui.col(|w| {
+  ui.col(|w, rect| {
     ui.pushIdStr("Win"+w.title)
     ui.boxStyle(.window)
     ui.row(|w| {
@@ -1581,7 +1594,7 @@ fn (w: ^Window) display(ui: ^ui::UI) {
       ui.popId()
     }).padding = 5
 
-    ui.cellRect({w.rect.x+w.rect.w-10, w.rect.y+w.rect.h-10, 10, 10})
+    ui.cellRect({rect.x+rect.w-10, rect.y+rect.h-10, 10, 10})
     ui.row(|w| {
       ui.pushIdStr("Resize")
       ui.boxStyle(.button)
