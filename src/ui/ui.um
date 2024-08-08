@@ -73,6 +73,7 @@ type (
     justify: real
     align: real
     rect: rect::Rect
+    clipped: bool
   }
 
   El* = struct {
@@ -217,9 +218,9 @@ fn findClosestRetainedAncestorId(el: ^El): uint {
   return el.id
 }
 
-fn (ui: ^UI) processAttentionRec(el: ^El) {
+fn (ui: ^UI) processAttentionRec(el: ^El, r: rect::Rect) {
   // @MARK(DirectInput)
-  if coll::vf2ToRect(input::getMousePos(), el.cell.rect) {
+  if coll::vf2ToRect(input::getMousePos(), el.cell.rect) && coll::vf2ToRect(input::getMousePos(), r) {
     id := findClosestRetainedAncestorId(el)
     ui.attention.hovered = id
     // @MARK(DirectInput)
@@ -229,8 +230,12 @@ fn (ui: ^UI) processAttentionRec(el: ^El) {
     }
   }
 
+  if el.cell.clipped {
+    r = coll::rectIntersect(r, el.cell.rect)
+  }
+
   for i, child in el.children {
-    ui.processAttentionRec(child)
+    ui.processAttentionRec(child, r)
   }
 }
 
@@ -247,7 +252,7 @@ fn (ui: ^UI) processAttention(el: ^El) {
     ui.attention.active = 0
   }
 
-  ui.processAttentionRec(el)
+  ui.processAttentionRec(el, {0, 0, window::w, window::h})
 }
 
 fn (ui: ^UI) input(el: ^El) {
@@ -274,8 +279,16 @@ fn (ui: ^UI) render(el: ^El) {
     el.renderObject.draw(el.cell.rect)
   }
 
+  if el.cell.clipped {
+    canvas::beginScissorRect(el.cell.rect.shrink({el.padding, el.padding}))
+  }
+
   for i, child in el.children {
     ui.render(child)
+  }
+
+  if el.cell.clipped {
+    canvas::endScissor()
   }
 }
 
@@ -413,6 +426,10 @@ fn (ui: ^UI) setBoxCursor*(style: BoxStyle, cursor: window::Cursor) {
 
 fn (ui: ^UI) cellRect*(r: rect::Rect) {
   ui.cell = Cell{kind: .rect, rect: r}
+}
+
+fn (ui: ^UI) cellClip*() {
+  ui.cell.clipped = true
 }
 
 fn (ui: ^UI) cellJustify*(j: real) {

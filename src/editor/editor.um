@@ -1562,6 +1562,7 @@ fn toggleWindow(title: str, rect: rect::Rect) {
 
 fn (w: ^Window) display(ui: ^ui::UI) {
   ui.cellRect(w.rect)
+  ui.cellClip()
   ui.col(|w| {
     ui.pushIdStr("Win"+w.title)
     ui.boxStyle(.window)
