@@ -1541,8 +1541,9 @@ type Window* = struct {
 
 var lastOrder: int
 var windows: map[str]Window
+var lastWindow: ^Window
 
-fn toggleWindow(title: str, rect: rect::Rect) {
+fn toggleWindow2(title: str, rect: rect::Rect) {
   if !validkey(windows, title) {
     w := &windows[title]
     w ^= {
@@ -1552,12 +1553,22 @@ fn toggleWindow(title: str, rect: rect::Rect) {
     }
     w.order = lastOrder+1
     lastOrder++
+    lastWindow = w
   } else {
     w := &windows[title]
     w.order = lastOrder+1
     lastOrder++
     w.visible = !w.visible
+    lastWindow = w
   }
+}
+
+fn toggleWindow(title: str, size: th::Vf2) {
+  pos := th::Vf2{0, 0}
+  if lastWindow != null {
+    pos = lastWindow.rect.getPos().addf(20)
+  }
+  toggleWindow2(title, {pos.x, pos.y, size.x, size.y})
 }
 
 fn (w: ^Window) display(ui: ^ui::UI) {
@@ -1589,6 +1600,7 @@ fn (w: ^Window) display(ui: ^ui::UI) {
         lastOrder++
         w.rect.x += delta.x
         w.rect.y += delta.y
+        lastWindow = w
       }
       ui.label(w.title)
       ui.popId()
@@ -1606,6 +1618,7 @@ fn (w: ^Window) display(ui: ^ui::UI) {
           lastOrder++
           w.rect.w += delta.x
           w.rect.h += delta.y
+          lastWindow = w
         }
         ui.popId()
       })
@@ -1615,8 +1628,6 @@ fn (w: ^Window) display(ui: ^ui::UI) {
   }).padding = 5
 }
 
-logs := ""
-
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.row(|editor| {
     ui.cellJustify(1)
@@ -1625,8 +1636,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       // @TODO: Remove the hardcoded window positions.
       windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
         if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
-          toggleWindow(name, {300, 600, 400, 200})
-          logs += name+"\n"
+          toggleWindow(name, {400, 200})
         }
       }
 
@@ -1665,7 +1675,6 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
 fn (editor: ^Editor) putUi(ui: ^ui::UI) {
   ui.col(|editor| {
-    ui.label(logs)
     ui.spring(1)
     ui.row(|editor| {
       editor.putToolbar(ui)
