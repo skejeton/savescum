@@ -1608,10 +1608,21 @@ fn (w: ^Window) display(ui: ^ui::UI) {
       lastWindow = w
     }
 
+    ui.cellStretch()
     ui.row(|w| {
-      ui.boxStyle(.titlebar)
-      ui.label(w.title)
-    }).padding = 5
+      ui.cellStretch()
+      ui.cellSameSize()
+      if ui.button(" - ") {
+        w.visible = false
+      }
+      ui.cellJustify(1.0)
+      ui.row(|w| {
+        ui.boxStyle(.titlebar)
+        ui.spring(1.0)
+        ui.label(w.title)
+        ui.spring(1.0)
+      }).padding = 5
+    })
 
     ui.cellRect({rect.x+rect.w-10, rect.y+rect.h-10, 10, 10})
     if ui.beginRoot() {
@@ -1658,8 +1669,10 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.spring(1)
     
     ui.cellJustify(0.3)
+    ui.cellStretch()
     ui.button("Load")
     ui.cellJustify(0.3)
+    ui.cellStretch()
     ui.button("Save")
   }).padding = 5
 

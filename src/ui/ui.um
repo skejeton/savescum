@@ -73,7 +73,7 @@ type (
     justify: real
     align: real
     rect: rect::Rect
-    clipped: bool
+    flags: uint
   }
 
   El* = struct {
@@ -126,6 +126,12 @@ type (
 
     io: IO
   }
+)
+
+const (
+  cellClipped = 1<<0
+  cellStretched = 1<<1
+  cellSameSize = 1<<2
 )
 
 // >>> FUNCTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -193,10 +199,24 @@ fn (ui: ^UI) layout2(node: ^El, pos: th::Vf2) {
     if child.cell.kind == .justify {
       if node.layout == .row {
         child.size.x = contentDiff.x * (child.cell.justify / totalJustify)
-        child.size.y = node.size.y - node.padding * 2
       } else if node.layout == .col {
         child.size.y = contentDiff.y * (child.cell.justify / totalJustify)
+      }
+    }
+    if child.cell.flags & cellStretched != 0 {
+      if node.layout == .row {
+        child.size.y = node.size.y - node.padding * 2
+      } else if node.layout == .col {
         child.size.x = node.size.x - node.padding * 2
+      }
+    }
+    if child.cell.flags & cellSameSize != 0 {
+      if node.layout == .row {
+        node.contentSize.x += child.size.y-child.size.x
+        child.size.x = child.size.y
+      } else if node.layout == .col {
+        node.contentSize.y += child.size.x-child.size.y
+        child.size.y = child.size.x
       }
     }
 
@@ -247,7 +267,7 @@ fn (ui: ^UI) processAttentionRec(el: ^El, r: rect::Rect) {
     }
   }
 
-  if el.cell.clipped {
+  if el.cell.flags & cellClipped != 0 {
     r = coll::rectIntersect(r, el.cell.rect)
   }
 
@@ -296,7 +316,7 @@ fn (ui: ^UI) render(el: ^El) {
     el.renderObject.draw(el.cell.rect)
   }
 
-  if el.cell.clipped {
+  if el.cell.flags & cellClipped != 0 {
     canvas::beginScissorRect(el.cell.rect.shrink({el.padding, el.padding}))
   }
 
@@ -304,7 +324,7 @@ fn (ui: ^UI) render(el: ^El) {
     ui.render(child)
   }
 
-  if el.cell.clipped {
+  if el.cell.flags & cellClipped != 0 {
     canvas::endScissor()
   }
 }
@@ -448,16 +468,26 @@ fn (ui: ^UI) setBoxCursor*(style: BoxStyle, cursor: window::Cursor) {
 
 // >>> CELLS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+fn (ui: ^UI) cellStretch*() {
+  ui.cell.flags |= cellStretched
+}
+
+fn (ui: ^UI) cellSameSize*() {
+  ui.cell.flags |= cellSameSize
+}
+
 fn (ui: ^UI) cellRect*(r: rect::Rect) {
-  ui.cell = Cell{kind: .rect, rect: r}
+  ui.cell.kind = .rect
+  ui.cell.rect = r
 }
 
 fn (ui: ^UI) cellClip*() {
-  ui.cell.clipped = true
+  ui.cell.flags |= cellClipped
 }
 
 fn (ui: ^UI) cellJustify*(j: real) {
-  ui.cell = Cell{kind: .justify, justify: j}
+  ui.cell.kind = .justify
+  ui.cell.justify = j
 }
 
 // >>> EVENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -499,10 +529,7 @@ fn (ui: ^UI) button*(text: str): bool {
   el.layout = .row
   el.padding = 10
   el.cell.align = 0.5
-
-  ui.spring(1)
-  ui.label(text)
-  ui.spring(1)
+  el.renderObject = render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale}
 
   retained := ui.retained[el.id].rect
 

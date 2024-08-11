@@ -1,4 +1,5 @@
 import (
+  "th.um"
   "font.um"
   "rect.um"
   "image.um"
@@ -22,7 +23,9 @@ type (
 )
 
 fn (r: ^RenderLabel) draw*(rect: rect::Rect) {
-  r.font.draw(r.text, rect.getPos(), 0x000000FF, r.scale)
+  size := r.font.measure(r.text).mulf(r.scale)
+  pos := th::Vf2{rect.x+(rect.w-size.x)/2, rect.y+(rect.h-size.y)/2}
+  r.font.draw(r.text, pos, 0x000000FF, r.scale)
 }
 
 fn (r: ^RenderImage) draw*(rect: rect::Rect) {
