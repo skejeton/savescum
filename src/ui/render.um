@@ -8,6 +8,7 @@ type (
   RenderLabel* = struct {
     font: font::Font
     text: str
+    scale: real
   }
 
   RenderImage* = struct {
@@ -21,7 +22,7 @@ type (
 )
 
 fn (r: ^RenderLabel) draw*(rect: rect::Rect) {
-  r.font.draw(r.text, rect.getPos(), 0x000000FF)
+  r.font.draw(r.text, rect.getPos(), 0x000000FF, r.scale)
 }
 
 fn (r: ^RenderImage) draw*(rect: rect::Rect) {

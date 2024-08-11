@@ -16,7 +16,7 @@
 
 			"name": "savescum",
 			"working_dir": "$project_path",	
-			"shell_cmd": "$project_path/tophat.exe"
+			"shell_cmd": "$project_path/tophat.exe -dpiaware"
 		}
 	]
 }

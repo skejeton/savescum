@@ -1,0 +1,20 @@
+type (
+  Window = struct {
+    rect: rect::Rect
+    title: str
+    order: int
+    visible: bool
+  }
+
+  WindowManager* = struct {
+    windows: []Window
+  }
+)
+
+fn mk*(): WindowManager {
+  return {}
+}
+
+fn (it: ^WindowManager) put(title: str, rect: rect::Rect, ) {
+  i 
+}
