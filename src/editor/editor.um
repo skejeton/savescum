@@ -1589,21 +1589,21 @@ fn (w: ^Window) display(ui: ^ui::UI) {
   ui.cellClip()
   ui.col(|w, rect| {
     ui.pushIdStr("Win"+w.title)
+    
+    if ui.isActive() {
+      delta := input::getMouseDelta()
+
+      w.order = lastOrder+1
+      lastOrder++
+      w.rect.x += delta.x
+      w.rect.y += delta.y
+      lastWindow = w
+    }
+
     ui.boxStyle(.window)
     ui.row(|w| {
-      ui.pushIdStr("Titlebar")
       ui.boxStyle(.titlebar)
-      if ui.isActive() {
-        delta := input::getMouseDelta()
-
-        w.order = lastOrder+1
-        lastOrder++
-        w.rect.x += delta.x
-        w.rect.y += delta.y
-        lastWindow = w
-      }
       ui.label(w.title)
-      ui.popId()
     }).padding = 5
 
     ui.cellRect({rect.x+rect.w-10, rect.y+rect.h-10, 10, 10})
