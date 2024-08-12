@@ -73,3 +73,7 @@ fn drawRenderGuide*(renderGuide: RenderGuide, color: uint32, thickness: real) {
     canvas::drawLine(color, renderGuide.starth.add(sp), renderGuide.endh.add(sp), thickness)
   }
 }
+
+fn (grid: ^Grid) draw*(color: uint32, thickness: real) {
+  drawRenderGuide(mkRenderGuideFromBoundingBox(grid^), color, thickness)
+}

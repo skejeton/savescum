@@ -711,7 +711,6 @@ fn editorLoadRoom(editor: ^Editor, room: str): bool {
   dbg::logt("ed: loading world")
   if data, err := util::readFileStr(roomToPath(room)); err.code == 0 {
     worldData := world_data::load(editor.world, data)
-
     editor.world = worldData.world
     editor.entities.list = worldData.entities
     return true
@@ -865,7 +864,7 @@ fn (d: ^WorldEditCmd) draw(props: drawcmd::DrawProperties) {
   }
 
   // background.draw(d.rect)
-  canvas::drawRect(0x777777FF, global::screen)
+  canvas::drawRect(0x777777FF, d.rect)
   colors := []uint32{getcolor(d.showLayers&1>0), getcolor(d.showLayers&2>0), getcolor(d.showLayers&4>0)}
 
   offset := d.grid.toScreen(th::Vf2{0, 0})
@@ -1596,7 +1595,7 @@ fn (w: ^Window) display(ui: ^ui::UI) {
   ui.cellClip()
   ui.col(|w, rect| {
     ui.boxStyle(.window)
-    ui.pushIdStr("Win"+w.title)
+    ui.pushIdStr("Window "+w.title)
     
     if ui.isActive() {
       delta := ui.io.mouseDelta
@@ -1626,11 +1625,22 @@ fn (w: ^Window) display(ui: ^ui::UI) {
       }).padding = 5
     })
 
+    ui.cellStretch()
+    ui.cellJustify(1)
+    ui.row(|w| {
+      if w.title == "Console" {
+        ui.drawCustom(|ui| {
+          dbg::drawConsole(dest, ui.font)
+        })
+      }
+    })
+
+    // Resize handle
     ui.cellRect({rect.x+rect.w-10, rect.y+rect.h-10, 10, 10})
     if ui.beginRoot() {
       ui.row(|w| {
         ui.pushIdStr("Resize")
-        ui.boxStyle(.button)
+        ui.boxStyle(.resizer)
         if ui.isActive() {
           delta := ui.io.mouseDelta
 
@@ -1654,7 +1664,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.boxStyle(.toolbar)
     windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
       if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
-        toggleWindow(name, {400, 200})
+        toggleWindow(name, {300, 300})
       }
     }
 
@@ -1694,7 +1704,25 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
 fn (editor: ^Editor) putUi(ui: ^ui::UI) {
   ui.col(|editor| {
-    ui.spring(1)
+    ui.cellJustify(1)
+    ui.row(|editor| {
+      ui.pushIdStr("Tilemap Editor")
+      if ui.isActive() {
+        grid::gridPan(&editor.tilemapGrid, input::getMouseDelta())
+      }
+
+      if ui.isHovered() {
+        wheel := input::getMouseScroll().y
+        grid::gridZoomInto(&editor.tilemapGrid, updateZoom(editor.tilemapGrid.s.x, wheel/10.0), input::getMousePos())
+      }
+
+      ui.drawCustom(|editor| {
+        WorldEditCmd{0x7, editor.resources.toolbarIcons, dest, editor.tilemapGrid, &editor.world}.draw({})
+        editor.tilemapGrid.bb = dest
+        editor.tilemapGrid.draw(0xFFFFFF11, 1)
+      })
+      ui.popId()
+    }, ui.io.screen.w)
     ui.row(|editor| {
       editor.putToolbar(ui)
     }, ui.io.screen.w)
@@ -1831,11 +1859,16 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
   }
 
   editor.ui.setBoxTheme(.button, {
-    normal: themer::mkNinepatch(resources.bevelImage, {0, 0, 30, 30}, {4, 4, 21, 21}),
+    normal: themer::mkNinepatch(resources.bevelImage, {0, 0, 30, 30}, {5, 5, 19, 19}),
     pressed: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21})
   })
-
   editor.ui.setBoxCursor(.button, .finger)
+
+  editor.ui.setBoxTheme(.resizer, {
+    normal: themer::mkBlit(resources.bevelImage, {91, 1, 7, 7})
+  })
+  editor.ui.setBoxCursor(.resizer, .sizeNWSE)
+
   editor.ui.setBoxTheme(.toolbar, {
     normal: themer::mkNinepatch(resources.bevelImage, {90, 30, 30, 30}, {4, 4, 21, 21})
   })

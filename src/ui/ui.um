@@ -38,6 +38,7 @@ type (
     input
     highlighted
     toolbar
+    resizer
     _count
   }
 
@@ -402,14 +403,15 @@ fn (ui: ^UI) endRoot*(): bool {
   return true
 }
 
-
 fn (ui: ^UI) addEl*(): ^El {
   el := &El{
     parent: ui.parents[len(ui.parents)-1],
     cell: ui.cell
   }
   ui.cell = {}
-  el.cell.color = el.parent.cell.color
+  if el.cell.color == 0 {
+    el.cell.color = el.parent.cell.color
+  }
   el.parent.children = append(el.parent.children, el)
   return el
 }
@@ -422,7 +424,9 @@ fn (ui: ^UI) pushEl*(): ^El {
     cell: ui.cell
   }
   ui.cell = {}
-  el.cell.color = el.parent.cell.color
+  if el.cell.color == 0 {
+    el.cell.color = el.parent.cell.color
+  }
   parent.children = append(parent.children, el)
   ui.parents = append(ui.parents, el)
 
@@ -511,7 +515,7 @@ fn (ui: ^UI) cellJustify*(j: real) {
 // >>> EVENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 fn (ui: ^UI) isHovered*(): bool {
-  return ui.attention.hovered == ui.lastEl().id && ui.attention.active != 0
+  return ui.attention.hovered == ui.lastEl().id
 }
 
 fn (ui: ^UI) isActive*(): bool {
@@ -519,6 +523,10 @@ fn (ui: ^UI) isActive*(): bool {
 }
 
 // >>> WIDGETS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+fn (ui: ^UI) drawCustom*(draw: fn (dest: rect::Rect)) {
+  ui.lastEl().renderObject = themer::mkCustom(draw)
+}
 
 fn (ui: ^UI) img*(img: image::Image) {
   el := ui.addEl()
