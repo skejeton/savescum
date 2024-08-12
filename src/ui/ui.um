@@ -322,6 +322,9 @@ fn (ui: ^UI) render(el: ^El) {
 
   if selfhasptr(el.renderObject) {
     el.renderObject.draw(el.cell.rect)
+    // @NOTE: Remove any possible circular references to UI 
+    // @TODO: This shouldn't be here ideally.
+    el.renderObject = null
   }
 
   if el.cell.flags & cellClipped != 0 {
@@ -463,6 +466,13 @@ fn (ui: ^UI) popId*() {
 
 fn (ui: ^UI) id*(): uint {
   return ui.ids[len(ui.ids)-1]
+}
+
+// >>> UTILS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+fn (ui: ^UI) partiallyOob*(rect: rect::Rect): bool {
+  return rect.x < 0 || rect.y < 0 || 
+         rect.x+rect.w > ui.io.screen.x+ui.io.screen.w || rect.y+rect.h > ui.io.screen.y+ui.io.screen.h
 }
 
 // >>> STYLING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
