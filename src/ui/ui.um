@@ -15,6 +15,7 @@ import (
   "color.um"
   "window.um"
   "render.um"
+  "themer.um"
   "../misc/immcursor.um"
   "../misc/util.um"
   "../misc/fnv1.um"
@@ -27,10 +28,6 @@ type (
     col
     row
     spring
-  }
-
-  BoxRenderer* = interface {
-    draw(rect: rect::Rect)
   }
 
   BoxStyle* = enum {
@@ -51,10 +48,10 @@ type (
   }
 
   BoxTheme* = struct {
-    normal: BoxRenderer
-    hovered: BoxRenderer
-    pressed: BoxRenderer
-    focused: BoxRenderer
+    normal: themer::BoxRenderer
+    hovered: themer::BoxRenderer
+    pressed: themer::BoxRenderer
+    focused: themer::BoxRenderer
   }
 
   RenderCall* = struct {
@@ -74,6 +71,7 @@ type (
     align: real
     rect: rect::Rect
     flags: uint
+    color: uint32
   }
 
   El* = struct {
@@ -88,7 +86,7 @@ type (
     padding: real
 
     // Rendering info @TODO: Move to an interface instead.
-    renderObject: BoxRenderer
+    renderObject: themer::BoxRenderer
     boxStyle: BoxStyle
   }
 
@@ -132,6 +130,7 @@ const (
   cellClipped = 1<<0
   cellStretched = 1<<1
   cellSameSize = 1<<2
+  cellClamped = 1<<3
 )
 
 // >>> FUNCTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -154,10 +153,10 @@ fn (ui: ^UI) layout1(node: ^El): th::Vf2 {
       continue
     }
     if node.layout == .row {
-      if child.cell.kind != .justify { size.x += childSize.x }
+      if child.cell.kind != .justify || child.cell.flags & cellClamped != 0 { size.x += childSize.x }
       size.y = util::max(size.y, childSize.y)
     } else if node.layout == .col {
-      if child.cell.kind != .justify { size.y += childSize.y }
+      if child.cell.kind != .justify || child.cell.flags & cellClamped != 0 { size.y += childSize.y }
       size.x = util::max(size.x, childSize.x)
     }
   }
@@ -197,10 +196,18 @@ fn (ui: ^UI) layout2(node: ^El, pos: th::Vf2) {
     contentDiff := node.size.sub(node.contentSize)
 
     if child.cell.kind == .justify {
-      if node.layout == .row {
-        child.size.x = contentDiff.x * (child.cell.justify / totalJustify)
-      } else if node.layout == .col {
-        child.size.y = contentDiff.y * (child.cell.justify / totalJustify)
+      if child.cell.flags & cellClamped != 0 {
+        if node.layout == .row {
+          child.size.x += contentDiff.x * (child.cell.justify / totalJustify)
+        } else if node.layout == .col {
+          child.size.y += contentDiff.y * (child.cell.justify / totalJustify)
+        }
+      } else {
+        if node.layout == .row {
+          child.size.x = contentDiff.x * (child.cell.justify / totalJustify)
+        } else if node.layout == .col {
+          child.size.y = contentDiff.y * (child.cell.justify / totalJustify)
+        }
       }
     }
     if child.cell.flags & cellStretched != 0 {
@@ -348,7 +355,8 @@ fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0)
 
 fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   ui.updateIO()
-  ui.root = new(El)
+  ui.root = new(El, {cell: {color: 0x000000FF}})
+
   ui.parents = {ui.root}
   ui.ids = {fnv1::INIT}
   cb(ui)
@@ -401,6 +409,7 @@ fn (ui: ^UI) addEl*(): ^El {
     cell: ui.cell
   }
   ui.cell = {}
+  el.cell.color = el.parent.cell.color
   el.parent.children = append(el.parent.children, el)
   return el
 }
@@ -413,6 +422,7 @@ fn (ui: ^UI) pushEl*(): ^El {
     cell: ui.cell
   }
   ui.cell = {}
+  el.cell.color = el.parent.cell.color
   parent.children = append(parent.children, el)
   ui.parents = append(ui.parents, el)
 
@@ -485,6 +495,14 @@ fn (ui: ^UI) cellClip*() {
   ui.cell.flags |= cellClipped
 }
 
+fn (ui: ^UI) cellColor*(color: uint32) {
+  ui.cell.color = color
+}
+
+fn (ui: ^UI) cellClamp*() {
+  ui.cell.flags |= cellClamped
+}
+
 fn (ui: ^UI) cellJustify*(j: real) {
   ui.cell.kind = .justify
   ui.cell.justify = j
@@ -517,7 +535,7 @@ fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
 fn (ui: ^UI) label*(text: str) {
   el := ui.addEl()
   el.size = ui.font.measure(text)
-  el.renderObject = render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale}
+  el.renderObject = render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale, color: el.cell.color}
 }
 
 fn (ui: ^UI) spring*(power: real)
@@ -529,7 +547,10 @@ fn (ui: ^UI) button*(text: str): bool {
   el.layout = .row
   el.padding = 10
   el.cell.align = 0.5
-  el.renderObject = render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale}
+
+  ui.spring(1)
+  ui.label(text)
+  ui.spring(1)
 
   retained := ui.retained[el.id].rect
 
@@ -550,6 +571,7 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
   ui.pushIdStr(name)
   ui.boxStyle(.button)
 
+  el.layout = .row
   el.padding = 5
 
   cb(ui)

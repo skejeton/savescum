@@ -4,6 +4,14 @@ import (
 )
 
 type (
+  BoxRenderer* = interface {
+    draw(rect: rect::Rect)
+  }
+
+  Custom* = struct {
+    drawfn: fn(dest: rect::Rect)
+  }
+
   BoxNinepatch* = struct {
     img: image::Image
     outer, inner: rect::Rect
@@ -16,5 +24,13 @@ fn mkNinepatch*(img: image::Image, outer, inner: rect::Rect): BoxNinepatch {
 
 fn (b: ^BoxNinepatch) draw*(dest: rect::Rect) {
   b.img.drawNinepatch(b.outer, b.inner, dest)
+}
+
+fn mkCustom*(draw: fn(dest: rect::Rect)): Custom {
+  return Custom{draw}
+}
+
+fn (c: ^Custom) draw*(dest: rect::Rect) {
+  c.drawfn(dest)
 }
 

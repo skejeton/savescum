@@ -1612,10 +1612,12 @@ fn (w: ^Window) display(ui: ^ui::UI) {
     ui.row(|w| {
       ui.cellStretch()
       ui.cellSameSize()
-      if ui.button(" - ") {
+      if ui.button2("Close", {ui.spring(1); ui.label("-"); ui.spring(1)}) {
         w.visible = false
       }
       ui.cellJustify(1.0)
+      ui.cellClip()
+      ui.cellColor(0xFFFFFFFF)
       ui.row(|w| {
         ui.boxStyle(.titlebar)
         ui.spring(1.0)
@@ -1668,10 +1670,8 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.cellJustify(0.3)
     ui.spring(1)
     
-    ui.cellJustify(0.3)
     ui.cellStretch()
     ui.button("Load")
-    ui.cellJustify(0.3)
     ui.cellStretch()
     ui.button("Save")
   }).padding = 5
@@ -1843,7 +1843,10 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
     normal: themer::mkNinepatch(resources.bevelImage, {0, 30, 30, 30}, {1, 1, 28, 28})
   })
   editor.ui.setBoxTheme(.window, {
-    normal: themer::mkNinepatch(resources.bevelImage, {30, 30, 30, 30}, {6, 6, 18, 18})
+    normal: themer::mkCustom(|editor| {
+      editor.resources.glow.drawNinepatch({0, 0, 48, 48}, {16, 16, 16, 16}, dest.shrink({-16,-16}), 0x00005555) // Shadow
+      editor.resources.bevelImage.drawNinepatch({30, 30, 30, 30}, {6, 6, 18, 18}, dest)
+    })
   })
 
   // TODO: Should we handle the session loading here really?

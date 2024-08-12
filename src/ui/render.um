@@ -10,6 +10,7 @@ type (
     font: font::Font
     text: str
     scale: real
+    color: uint32
   }
 
   RenderImage* = struct {
@@ -25,7 +26,7 @@ type (
 fn (r: ^RenderLabel) draw*(rect: rect::Rect) {
   size := r.font.measure(r.text).mulf(r.scale)
   pos := th::Vf2{rect.x+(rect.w-size.x)/2, rect.y+(rect.h-size.y)/2}
-  r.font.draw(r.text, pos, 0x000000FF, r.scale)
+  r.font.draw(r.text, pos, r.color, r.scale)
 }
 
 fn (r: ^RenderImage) draw*(rect: rect::Rect) {
