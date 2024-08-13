@@ -1642,9 +1642,18 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   }
 
   wm.window("Console", {
+    // @TODO: This will block the window dragging, to fix that I should implement a way to mask which events are handled by the element.
+    ui.pushIdStr("Console")
+
+    if ui.isHovered() {
+      dbg::scrollConsole(input::getMouseScroll().y)
+    }
+
     ui.drawCustom(|ui| {
       dbg::drawConsole(dest, ui.font, ui.io.scale)
     })
+
+    ui.popId()
   })
 }
 

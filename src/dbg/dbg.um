@@ -31,7 +31,7 @@ fn getConsole*(): ^console::Console {
 }
 
 fn scrollConsole*(by: real) {
-  visualConsole.scrollBy(by*64)
+  visualConsole.scrollBy(by*10)
 }
 
 // draws fullscreen console.
