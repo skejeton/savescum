@@ -76,54 +76,55 @@ type (
   }
 
   El* = struct {
-    parent: weak ^El
+    parent:   weak ^El
     children: []^El
-    id: uint
+    id:       uint
 
-    layout: LayoutType
-    size: th::Vf2
+    layout:      LayoutType
+    size:        th::Vf2
     contentSize: th::Vf2
-    cell: Cell
-    padding: real
+    cell:        Cell
+    padding:     real
 
     // Rendering info @TODO: Move to an interface instead.
     renderObject: themer::BoxRenderer
-    boxStyle: BoxStyle
+    boxStyle:     BoxStyle
   }
 
   Retained* = struct {
-    life: int
-    id: any
-    rect: rect::Rect
-    state: BoxState
+    life:     int
+    id:       any
+    rect:     rect::Rect
+    state:    BoxState
     boxStyle: BoxStyle
   }
 
   Attention* = struct {
     focused: uint
-    active: uint
+    active:  uint
     hovered: uint
   }
 
   IO* = struct {
-    screen: rect::Rect
-    mousePos: th::Vf2
+    screen:     rect::Rect
+    mousePos:   th::Vf2
     mouseDelta: th::Vf2
-    scale: real
+    scale:      real
   }
 
   UI* = struct {
-    font: font::Font
-    retained: map[uint]Retained
-    theme: [int(BoxStyle._count)]BoxTheme
-    cursors: [int(BoxStyle._count)]window::Cursor
-    ids: []uint
-    attention: Attention
-    parents: []^El
-    root: ^El
-    cell: Cell
+    font:      font::Font
+    theme:     [int(BoxStyle._count)]BoxTheme
+    cursors:   [int(BoxStyle._count)]window::Cursor
 
     io: IO
+    retained:  map[uint]Retained
+    attention: Attention
+
+    ids:       []uint
+    parents:   []^El
+    root:      ^El
+    cell:      Cell
   }
 )
 
@@ -131,7 +132,6 @@ const (
   cellClipped = 1<<0
   cellStretched = 1<<1
   cellSameSize = 1<<2
-  cellClamped = 1<<3
 )
 
 // >>> FUNCTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -154,10 +154,10 @@ fn (ui: ^UI) layout1(node: ^El): th::Vf2 {
       continue
     }
     if node.layout == .row {
-      if child.cell.kind != .justify || child.cell.flags & cellClamped != 0 { size.x += childSize.x }
+      if child.cell.kind != .justify { size.x += childSize.x }
       size.y = util::max(size.y, childSize.y)
     } else if node.layout == .col {
-      if child.cell.kind != .justify || child.cell.flags & cellClamped != 0 { size.y += childSize.y }
+      if child.cell.kind != .justify { size.y += childSize.y }
       size.x = util::max(size.x, childSize.x)
     }
   }
@@ -191,26 +191,6 @@ fn (ui: ^UI) layout2(node: ^El, pos: th::Vf2) {
   totalJustify := 0.0
   for i, child in node.children {
     totalJustify += child.cell.justify
-  }
-
-  for i, child in node.children {
-    contentDiff := node.size.sub(node.contentSize)
-
-    if child.cell.kind == .justify {
-      if child.cell.flags & cellClamped != 0 {
-        if node.layout == .row {
-          child.size.x += contentDiff.x * (child.cell.justify / totalJustify)
-        } else if node.layout == .col {
-          child.size.y += contentDiff.y * (child.cell.justify / totalJustify)
-        }
-      } else {
-        if node.layout == .row {
-          child.size.x = contentDiff.x * (child.cell.justify / totalJustify)
-        } else if node.layout == .col {
-          child.size.y = contentDiff.y * (child.cell.justify / totalJustify)
-        }
-      }
-    }
     if child.cell.flags & cellStretched != 0 {
       if node.layout == .row {
         child.size.y = node.size.y - node.padding * 2
@@ -227,6 +207,19 @@ fn (ui: ^UI) layout2(node: ^El, pos: th::Vf2) {
         child.size.y = child.size.x
       }
     }
+  }
+
+  for i, child in node.children {
+    contentDiff := node.size.sub(node.contentSize)
+
+    if child.cell.kind == .justify {
+      if node.layout == .row {
+        child.size.x = contentDiff.x * (child.cell.justify / totalJustify)
+      } else if node.layout == .col {
+        child.size.y = contentDiff.y * (child.cell.justify / totalJustify)
+      }
+    }
+
 
     alignedPos := pos
     if node.layout == .row  {
@@ -328,7 +321,7 @@ fn (ui: ^UI) render(el: ^El) {
   }
 
   if el.cell.flags & cellClipped != 0 {
-    canvas::beginScissorRect(el.cell.rect.shrink({el.padding, el.padding}))
+    canvas::beginScissorRect(el.cell.rect.shrink({el.padding*ui.io.scale, el.padding*ui.io.scale}))
   }
 
   for i, child in el.children {
@@ -513,10 +506,6 @@ fn (ui: ^UI) cellColor*(color: uint32) {
   ui.cell.color = color
 }
 
-fn (ui: ^UI) cellClamp*() {
-  ui.cell.flags |= cellClamped
-}
-
 fn (ui: ^UI) cellJustify*(j: real) {
   ui.cell.kind = .justify
   ui.cell.justify = j
@@ -558,6 +547,7 @@ fn (ui: ^UI) label*(text: str) {
 
 fn (ui: ^UI) spring*(power: real)
 fn (ui: ^UI) button*(text: str): bool {
+  ui.cellClip()
   el := ui.pushEl()
   ui.pushIdStr(text)
   ui.boxStyle(.button)

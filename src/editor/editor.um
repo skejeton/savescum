@@ -883,7 +883,7 @@ fn getShownLayersBitmap(layerSelected: int, showAllLayers: bool): uint {
   return 1<<(layerSelected+1)|(int(showAllLayers)*0x7)
 }
 
-fn drawLayerIcon(ctx: ^drawcmd::DrawContext, position: th::Vf2, layer: int, showAllLayers: bool) {
+fn drawLayerIcon(rect: rect::Rect, layer: int, showAllLayers: bool) {
   fills := [3]bool{layer == -1, layer == 0, layer == 1}
 
   // NOTE: If we choose to show all layers, the icon will show all boxes filled in
@@ -891,19 +891,23 @@ fn drawLayerIcon(ctx: ^drawcmd::DrawContext, position: th::Vf2, layer: int, show
     fills = [3]bool{true, true, true}
   }
 
-  position.x += 26*1.5
+  scale := rect.h/48.0
+
+  position := rect.centerWithinRect({0, 0, 24*scale, 36*scale}).getPos()
+
+  position.x += 26*scale
 
   for i, l in fills {
-    rec := rect::Rect{position.x-30+3, position.y+3, 30, 18}
-    position.x -= 3
-    position.y += 6
+    rec := rect::Rect{position.x-27*scale, position.y+3*scale, 30*scale, 18*scale}
+    position.x -= 3*scale
+    position.y += 6*scale
 
     if l {
-      ctx.drawRect(0xf0b5afFF, rec)
-      ctx.drawRectLines(0xFFFFFFFF, rec)
+      canvas::drawRect(0xf0b5afFF, rec)
+      canvas::drawRectLines(0xFFFFFFFF, rec, 1)
     } else {
-      ctx.drawRect(0x99a9a9a9, rec)
-      ctx.drawRectLines(0xFFFFFFFF, rec)
+      canvas::drawRect(0x99a9a9a9, rec)
+      canvas::drawRectLines(0xFFFFFFFF, rec, 1)
     }
   }
 }
@@ -1536,38 +1540,44 @@ type Window* = struct {
   title: str
   rect: rect::Rect
   order: int
+  cb: fn (ui: ^ui::UI)
 }
 
 var lastOrder: int
 var windows: map[str]Window
 var lastWindow: ^Window
 
-fn toggleWindow2(title: str, rect: rect::Rect) {
+
+fn window(title: str, cb: fn (ui: ^ui::UI)) {
+  pos := th::Vf2{0, 0}
+  if lastWindow != null {
+    pos = lastWindow.rect.getPos().addf(20)
+  }
+
   if !validkey(windows, title) {
     w := &windows[title]
     w ^= {
       visible: true,
       title: title,
-      rect: rect
+      rect: {pos.x, pos.y, 300, 300},
+      cb: cb
     }
-    w.order = lastOrder+1
-    lastOrder++
     lastWindow = w
   } else {
+    w := &windows[title]
+    w.cb = cb
+    lastWindow = w
+  }
+}
+
+fn toggleWindow(title: str) {
+  if validkey(windows, title) {
     w := &windows[title]
     w.order = lastOrder+1
     lastOrder++
     w.visible = !w.visible
     lastWindow = w
   }
-}
-
-fn toggleWindow(title: str, size: th::Vf2) {
-  pos := th::Vf2{0, 0}
-  if lastWindow != null {
-    pos = lastWindow.rect.getPos().addf(20)
-  }
-  toggleWindow2(title, {pos.x, pos.y, size.x, size.y})
 }
 
 fn clipWindowRect(rect: rect::Rect, parent: rect::Rect): rect::Rect {
@@ -1627,12 +1637,13 @@ fn (w: ^Window) display(ui: ^ui::UI) {
 
     ui.cellStretch()
     ui.cellJustify(1)
-    ui.row(|w| {
-      if w.title == "Console" {
-        ui.drawCustom(|ui| {
-          dbg::drawConsole(dest, ui.font)
-        })
-      }
+    ui.cellClip()
+    ui.col(|w| {
+      ui.cellStretch()
+      ui.cellJustify(1)
+      ui.col(|w| {
+        w.cb(ui)
+      }).padding = 5
     })
 
     // Resize handle
@@ -1664,7 +1675,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.boxStyle(.toolbar)
     windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
       if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
-        toggleWindow(name, {300, 300})
+        toggleWindow(name)
       }
     }
 
@@ -1677,14 +1688,80 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     windowBtn("Entity List", {48*0, 48*2, 48, 48})
 
     ui.spring(1)
-    ui.cellJustify(0.3)
+    ui.cellStretch()
+    ui.cellSameSize()
+    ui.button("🔒")
+    ui.cellStretch()
+    ui.cellSameSize()
+    ui.button2("Layers", |editor| {
+      ui.drawCustom(|editor, ui| {
+        drawLayerIcon(dest, editor.tilemapLayer, editor.tilemapShowAllLayers)
+      })
+    })
+    ui.cellStretch()
+    ui.cellSameSize()
+    ui.button("FG")
+    ui.cellStretch()
+    ui.cellSameSize()
+    ui.button("MG")
+    ui.cellStretch()
+    ui.cellSameSize()
+    ui.button("BG")
+    ui.cellStretch()
+    ui.cellSameSize()
+    ui.button("> <")
+    ui.cellStretch()
+    ui.cellSameSize()
+    ui.button("R/U")
     ui.spring(1)
-    
+
     ui.cellStretch()
     ui.button("Load")
     ui.cellStretch()
     ui.button("Save")
   }).padding = 5
+
+  window("Player Placer", |editor| {
+    playerPos := editor.world.playerSpawnPos
+    ui.cellStretch()
+    if ui.button("Relocate") {
+      editor.isRelocatingPlayer = !editor.isRelocatingPlayer
+    }
+    ui.spring(1)
+    ui.cellColor(0x000077FF)
+    ui.label(sprintf("x %g y %g", playerPos.x, playerPos.y))
+    if editor.isRelocatingPlayer {
+      ui.label("Click on the grid\nTo place player.")
+    }
+  })
+
+  window("Tile Picker", |editor| {
+    ui.pushIdStr("Picker")
+    if ui.isActive() {
+      grid::gridPan(&editor.tilesetGrid, input::getMouseDelta())
+    }
+
+    if ui.isHovered() {
+      wheel := input::getMouseScroll().y
+      grid::gridZoomInto(&editor.tilesetGrid, updateZoom(editor.tilesetGrid.s.x, wheel/10.0), input::getMousePos())
+    }
+
+    ui.drawCustom(|ui, editor| {
+      // @TODO: Tilemap scaling is not proportional to UI
+      canvas::drawRect(0x222222FF, dest)
+      editor.tilesetGrid.bb = dest
+      editor.tileset.i.crop(th::Vf2{0, 0}, th::Vf2{1, 1})
+      editor.tileset.i.draw({p: editor.tilesetGrid.toScreen({0, 0}), s: editor.tilesetGrid.s.divf(64)})
+      editor.tilesetGrid.draw(0xFFFFFF11, 1)
+    })
+    ui.popId()
+  })
+
+  window("Console", {
+    ui.drawCustom(|ui| {
+      dbg::drawConsole(dest, ui.font, ui.io.scale)
+    })
+  })
 
   if ui.beginRoot() {
     ordered := []^Window{}
@@ -1825,11 +1902,13 @@ fn setup*() {
   window::setup("Editor", trunc(global::screen.w), trunc(global::screen.h))
 }
 
+
 fn mk*(rl: ^resources::ResourceLoader): ^Editor {
   // HACK: This shouldn't be handled in the editor.
   background::init(rl)
   game::init(rl)
 
+  // @TODO: Since we update DPI, we need to also update the resources.
   resources := EditorResources {
     bevelImage: resources::loadImage(rl, "data/img/ui/1_5x/base.png", .linear),
     tilesetImage: resources::loadImage(rl, "data/img/ts_sky.png", .linear),
@@ -1841,7 +1920,6 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
 
   tileset := atlas::mk(resources.tilesetImage, {4, 9})
   ui := new(ui::UI, ui::mk())
-  ui.io.scale = window::getDpiScaleFactor()/1.5
 
   editor := &Editor{
     mode: .editor,
@@ -1877,7 +1955,7 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
   })
   editor.ui.setBoxTheme(.window, {
     normal: themer::mkCustom(|editor| {
-      editor.resources.glow.drawNinepatch({0, 0, 48, 48}, {16, 16, 16, 16}, dest.shrink({-16,-16}), 0x00005555) // Shadow
+      editor.resources.glow.drawNinepatch({0, 0, 48, 48}, {16, 16, 16, 16}, dest.shrink({-16,-16}), 0x00005588) // Shadow
       editor.resources.bevelImage.drawNinepatch({30, 30, 30, 30}, {6, 6, 18, 18}, dest)
     })
   })
@@ -1915,6 +1993,7 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
   global::screen = rect::Rect{0, 0, window::w, window::h}
   window::setViewport(global::screen.getDims())
 
+  editor.ui.io.scale = window::getDpiScaleFactor()/1.5
   editor.ui.font = editor.resources.mainFont
   editor.ui.pass(|editor| {
     editor.putUi(ui)

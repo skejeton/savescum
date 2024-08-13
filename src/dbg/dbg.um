@@ -35,10 +35,6 @@ fn scrollConsole*(by: real) {
 }
 
 // draws fullscreen console.
-fn drawConsole*(r: rect::Rect, font: font::Font) {
-  console::render(&console, &visualConsole, font, r) 
-}
-
-fn (c: ^ConsoleDrawCmd) draw*(props: drawcmd::DrawProperties) {
-  drawConsole(c.r, c.font)
+fn drawConsole*(r: rect::Rect, font: font::Font, scale: real) {
+  console::render(&console, &visualConsole, font, r, scale) 
 }

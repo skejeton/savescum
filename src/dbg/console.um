@@ -51,25 +51,25 @@ type RenderPass = struct {
   font: font::Font
 }
 
-fn blockRect*(pass: ^RenderPass, block: str): rect::Rect {
-  height := pass.font.measure(block).y
+fn blockRect*(pass: ^RenderPass, block: str, scale: real): rect::Rect {
+  height := pass.font.measure(block).y*scale
 
   return rect::Rect{pass.rect.x, pass.pos.y-height, pass.rect.w, height}
 }
 
 // renders a single block and moves upwards
 
-fn allocBlock*(pass: ^RenderPass, block: str): rect::Rect {
-  r := blockRect(pass, block)
+fn allocBlock*(pass: ^RenderPass, block: str, scale: real): rect::Rect {
+  r := blockRect(pass, block, scale)
   pass.pos.y -= r.h
   return r
 }
 
-fn renderBlock*(pass: ^RenderPass, vc: ^VisualConsole, r: rect::Rect, block: str, bg, fg: uint32) {
+fn renderBlock*(pass: ^RenderPass, vc: ^VisualConsole, r: rect::Rect, block: str, bg, fg: uint32, scale: real) {
   pos := r.getPos().add(th::Vf2{0, vc.visualScroll})
   if pos.y > pass.rect.y-r.h && pos.y < pass.rect.y+pass.rect.h {
     canvas::drawRect(bg, {pos.x, pos.y, r.w, r.h})
-    pass.font.draw(block, pos, fg)
+    pass.font.draw(block, pos, fg, scale)
   }
 }
 
@@ -78,7 +78,7 @@ fn (vc: ^VisualConsole) scrollBy*(delta: real) {
 }
 
 // NOTE: this function does not clip
-fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect) { 
+fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect, scale: real) { 
   pass := RenderPass{r, th::Vf2{r.x, r.y+r.h}, font}
   startY := pass.pos.y
 
@@ -99,9 +99,9 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect) {
       bg = 0x000000FF
     }
 
-    blockRect := allocBlock(&pass, block)
+    blockRect := allocBlock(&pass, block, scale)
     
-    renderBlock(&pass, vc, blockRect, block, color::alpha(bg, alpha*0.05), color::alpha(th::white, alpha))
+    renderBlock(&pass, vc, blockRect, block, color::alpha(bg, alpha*0.05), color::alpha(th::white, alpha), scale)
   }
   canvas::endScissor()
 
