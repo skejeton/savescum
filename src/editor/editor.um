@@ -1536,11 +1536,12 @@ fn putLevelSelect(editor: ^Editor) {
 }
 
 type Window* = struct {
+  handled: bool
   visible: bool
-  title: str
-  rect: rect::Rect
-  order: int
-  cb: fn (ui: ^ui::UI)
+  title:   str
+  rect:    rect::Rect
+  order:   int
+  cb:      fn (ui: ^ui::UI)
 }
 
 var lastOrder: int
@@ -1557,6 +1558,7 @@ fn window(title: str, cb: fn (ui: ^ui::UI)) {
   if !validkey(windows, title) {
     w := &windows[title]
     w ^= {
+      handled: true,
       visible: true,
       title: title,
       rect: {pos.x, pos.y, 300, 300},
@@ -1566,6 +1568,7 @@ fn window(title: str, cb: fn (ui: ^ui::UI)) {
   } else {
     w := &windows[title]
     w.cb = cb
+    w.handled = true
     lastWindow = w
   }
 }
@@ -1595,6 +1598,12 @@ fn clipWindowRect(rect: rect::Rect, parent: rect::Rect): rect::Rect {
 }
 
 fn (w: ^Window) display(ui: ^ui::UI) {
+  if !w.handled {
+    return
+  }
+
+  w.handled = false
+
   rect := clipWindowRect(w.rect, ui.io.screen)
 
   if input::isJustReleased(.mouse1) {
@@ -1672,16 +1681,29 @@ fn (w: ^Window) display(ui: ^ui::UI) {
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.cellJustify(1)
   ui.row(|editor| {
-    ui.boxStyle(.toolbar)
+    if !editor.isPlaying {
+      ui.boxStyle(.toolbar)
+    }
+
     windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
       if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
         toggleWindow(name)
       }
     }
+    iconBtn := fn (name: str, rect: rect::Rect): bool |ui, editor| {
+      return ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)})
+    }
 
     // @TODO: Remove the hardcoded texture regions.
-    windowBtn("Play", {48, 48, 48, 48})
+    if iconBtn("Play", {48, 48, 48, 48}) {
+      editorToggleGame(editor)
+    }
+
     windowBtn("Console", {48, 0, 48, 48})
+    if editor.isPlaying {
+      return
+    }
+
     windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
     windowBtn("Tile Picker", {48*0, 48, 48, 48}) 
     windowBtn("Player Placer", {48*3, 48, 48, 48}) 
@@ -1721,41 +1743,43 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.button("Save")
   }).padding = 5
 
-  window("Player Placer", |editor| {
-    playerPos := editor.world.playerSpawnPos
-    ui.cellStretch()
-    if ui.button("Relocate") {
-      editor.isRelocatingPlayer = !editor.isRelocatingPlayer
-    }
-    ui.spring(1)
-    ui.cellColor(0x000077FF)
-    ui.label(sprintf("x %g y %g", playerPos.x, playerPos.y))
-    if editor.isRelocatingPlayer {
-      ui.label("Click on the grid\nTo place player.")
-    }
-  })
-
-  window("Tile Picker", |editor| {
-    ui.pushIdStr("Picker")
-    if ui.isActive() {
-      grid::gridPan(&editor.tilesetGrid, input::getMouseDelta())
-    }
-
-    if ui.isHovered() {
-      wheel := input::getMouseScroll().y
-      grid::gridZoomInto(&editor.tilesetGrid, updateZoom(editor.tilesetGrid.s.x, wheel/10.0), input::getMousePos())
-    }
-
-    ui.drawCustom(|ui, editor| {
-      // @TODO: Tilemap scaling is not proportional to UI
-      canvas::drawRect(0x222222FF, dest)
-      editor.tilesetGrid.bb = dest
-      editor.tileset.i.crop(th::Vf2{0, 0}, th::Vf2{1, 1})
-      editor.tileset.i.draw({p: editor.tilesetGrid.toScreen({0, 0}), s: editor.tilesetGrid.s.divf(64)})
-      editor.tilesetGrid.draw(0xFFFFFF11, 1)
+  if !editor.isPlaying {
+    window("Player Placer", |editor| {
+      playerPos := editor.world.playerSpawnPos
+      ui.cellStretch()
+      if ui.button("Relocate") {
+        editor.isRelocatingPlayer = !editor.isRelocatingPlayer
+      }
+      ui.spring(1)
+      ui.cellColor(0x000077FF)
+      ui.label(sprintf("x %g y %g", playerPos.x, playerPos.y))
+      if editor.isRelocatingPlayer {
+        ui.label("Click on the grid\nTo place player.")
+      }
     })
-    ui.popId()
-  })
+
+    window("Tile Picker", |editor| {
+      ui.pushIdStr("Picker")
+      if ui.isActive() {
+        grid::gridPan(&editor.tilesetGrid, input::getMouseDelta())
+      }
+
+      if ui.isHovered() {
+        wheel := input::getMouseScroll().y
+        grid::gridZoomInto(&editor.tilesetGrid, updateZoom(editor.tilesetGrid.s.x, wheel/10.0), input::getMousePos())
+      }
+
+      ui.drawCustom(|ui, editor| {
+        // @TODO: Tilemap scaling is not proportional to UI
+        canvas::drawRect(0x222222FF, dest)
+        editor.tilesetGrid.bb = dest
+        editor.tileset.i.crop(th::Vf2{0, 0}, th::Vf2{1, 1})
+        editor.tileset.i.draw({p: editor.tilesetGrid.toScreen({0, 0}), s: editor.tilesetGrid.s.divf(64)})
+        editor.tilesetGrid.draw(0xFFFFFF11, 1)
+      })
+      ui.popId()
+    })
+  }
 
   window("Console", {
     ui.drawCustom(|ui| {
@@ -1782,24 +1806,35 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 fn (editor: ^Editor) putUi(ui: ^ui::UI) {
   ui.col(|editor| {
     ui.cellJustify(1)
-    ui.row(|editor| {
-      ui.pushIdStr("Tilemap Editor")
-      if ui.isActive() {
-        grid::gridPan(&editor.tilemapGrid, input::getMouseDelta())
-      }
+    if !editor.isPlaying {
+      ui.row(|editor| {
+        ui.pushIdStr("Tilemap Editor")
+        if ui.isActive() {
+          grid::gridPan(&editor.tilemapGrid, input::getMouseDelta())
+        }
 
-      if ui.isHovered() {
-        wheel := input::getMouseScroll().y
-        grid::gridZoomInto(&editor.tilemapGrid, updateZoom(editor.tilemapGrid.s.x, wheel/10.0), input::getMousePos())
-      }
+        if ui.isHovered() {
+          wheel := input::getMouseScroll().y
+          grid::gridZoomInto(&editor.tilemapGrid, updateZoom(editor.tilemapGrid.s.x, wheel/10.0), input::getMousePos())
+        }
 
-      ui.drawCustom(|editor| {
-        WorldEditCmd{0x7, editor.resources.toolbarIcons, dest, editor.tilemapGrid, &editor.world}.draw({})
-        editor.tilemapGrid.bb = dest
-        editor.tilemapGrid.draw(0xFFFFFF11, 1)
+        ui.drawCustom(|editor| {
+          WorldEditCmd{0x7, editor.resources.toolbarIcons, dest, editor.tilemapGrid, &editor.world}.draw({})
+          editor.tilemapGrid.bb = dest
+          editor.tilemapGrid.draw(0xFFFFFF11, 1)
+        })
+        ui.popId()
+      }, ui.io.screen.w)
+    } else {
+      ui.row(|editor| {
+        ui.pushIdStr("Gameplay")
+        ui.drawCustom({
+          game::update()
+          GameCmd{}.draw({})
+        })
+        ui.popId()
       })
-      ui.popId()
-    }, ui.io.screen.w)
+    }
     ui.row(|editor| {
       editor.putToolbar(ui)
     }, ui.io.screen.w)

@@ -19,3 +19,14 @@ fn console*(wm: ^wm::WM) {
     wm.setWindowVisible("Console (Aux)", !wm.isWindowVisible("Console (Aux)"))
   }
 }
+
+fn scale*(v: ^real) {
+  if input::isPressed(.alt) && input::isJustPressed(.up) {
+    input::clear(.up)
+    v^ += 0.1
+  }
+  if input::isPressed(.alt) && input::isJustPressed(.down) {
+    input::clear(.down)
+    v^ -= 0.1
+  }
+}
