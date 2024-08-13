@@ -3,7 +3,6 @@ import (
   "console.um"
   "../../umbox/fmt/fmt.um"
   "font.um"
-  "../gfx/drawcmd.um"
 )
 
 var (

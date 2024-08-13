@@ -560,8 +560,6 @@ fn (ui: ^UI) button*(text: str): bool {
   ui.label(text)
   ui.spring(1)
 
-  retained := ui.retained[el.id].rect
-
   // @ROOT(DirectInput): Don't use `input` directly. 
   pressed := 
     input::isJustReleased(.mouse1) && 
@@ -583,8 +581,6 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
   el.padding = 5
 
   cb(ui)
-
-  retained := ui.retained[el.id].rect
 
   // @MARK(DirectInput)
   pressed := 

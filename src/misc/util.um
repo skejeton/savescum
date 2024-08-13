@@ -3,7 +3,6 @@ import (
   "th.um"
   "rect.um"
   "canvas.um"
-  "font.um"
 )
 
 fn posTrans*(x, y: th::fu): th::Transform {
