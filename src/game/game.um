@@ -577,8 +577,6 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn start*(worldData: world_data::WorldData) {
-  printf("%v\n", &pal.ent)
-
   stopPreview = false
   previewingLoad = false
   if firstTime {

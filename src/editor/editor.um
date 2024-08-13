@@ -19,6 +19,7 @@ import (
   "../ui/core.um"
   "../ui/atoms.um"
   "../ui/wm.um"
+  "../ui/windows.um"
   "../ui/notification.um"
   "../ui/ui.um"
   "../ui/themer.um"
@@ -1535,148 +1536,7 @@ fn putLevelSelect(editor: ^Editor) {
   })
 }
 
-type Window* = struct {
-  handled: bool
-  visible: bool
-  title:   str
-  rect:    rect::Rect
-  order:   int
-  cb:      fn (ui: ^ui::UI)
-}
-
-var lastOrder: int
-var windows: map[str]Window
-var lastWindow: ^Window
-
-
-fn window(title: str, cb: fn (ui: ^ui::UI)) {
-  pos := th::Vf2{0, 0}
-  if lastWindow != null {
-    pos = lastWindow.rect.getPos().addf(20)
-  }
-
-  if !validkey(windows, title) {
-    w := &windows[title]
-    w ^= {
-      handled: true,
-      visible: true,
-      title: title,
-      rect: {pos.x, pos.y, 300, 300},
-      cb: cb
-    }
-    lastWindow = w
-  } else {
-    w := &windows[title]
-    w.cb = cb
-    w.handled = true
-    lastWindow = w
-  }
-}
-
-fn toggleWindow(title: str) {
-  if validkey(windows, title) {
-    w := &windows[title]
-    w.order = lastOrder+1
-    lastOrder++
-    w.visible = !w.visible
-    lastWindow = w
-  }
-}
-
-fn clipWindowRect(rect: rect::Rect, parent: rect::Rect): rect::Rect {
-  // @TODO: Opinionated values for width and height.
-  if rect.w < 100 { rect.w = 100 }
-  if rect.h < 100 { rect.h = 100 }
-  if rect.w > parent.w { rect.w = parent.w }
-  if rect.h > parent.h { rect.h = parent.h }
-  if rect.x < parent.x { rect.x = parent.x }
-  if rect.y < parent.y { rect.y = parent.y }
-  if rect.x+rect.w > parent.x+parent.w { rect.x = parent.x+parent.w-rect.w }
-  if rect.y+rect.h > parent.y+parent.h { rect.y = parent.y+parent.h-rect.h }
-
-  return rect
-}
-
-fn (w: ^Window) display(ui: ^ui::UI) {
-  if !w.handled {
-    return
-  }
-
-  w.handled = false
-
-  rect := clipWindowRect(w.rect, ui.io.screen)
-
-  if input::isJustReleased(.mouse1) {
-    w.rect = rect
-  }
-
-  ui.cellRect(rect)
-  ui.cellClip()
-  ui.col(|w, rect| {
-    ui.boxStyle(.window)
-    ui.pushIdStr("Window "+w.title)
-    
-    if ui.isActive() {
-      delta := ui.io.mouseDelta
-
-      w.order = lastOrder+1
-      lastOrder++
-      w.rect.x += delta.x
-      w.rect.y += delta.y
-      lastWindow = w
-    }
-
-    ui.cellStretch()
-    ui.row(|w| {
-      ui.cellStretch()
-      ui.cellSameSize()
-      if ui.button2("Close", {ui.spring(1); ui.label("-"); ui.spring(1)}) {
-        w.visible = false
-      }
-      ui.cellJustify(1.0)
-      ui.cellClip()
-      ui.cellColor(0xFFFFFFFF)
-      ui.row(|w| {
-        ui.boxStyle(.titlebar)
-        ui.spring(1.0)
-        ui.label(w.title)
-        ui.spring(1.0)
-      }).padding = 5
-    })
-
-    ui.cellStretch()
-    ui.cellJustify(1)
-    ui.cellClip()
-    ui.col(|w| {
-      ui.cellStretch()
-      ui.cellJustify(1)
-      ui.col(|w| {
-        w.cb(ui)
-      }).padding = 5
-    })
-
-    // Resize handle
-    ui.cellRect({rect.x+rect.w-10, rect.y+rect.h-10, 10, 10})
-    if ui.beginRoot() {
-      ui.row(|w| {
-        ui.pushIdStr("Resize")
-        ui.boxStyle(.resizer)
-        if ui.isActive() {
-          delta := ui.io.mouseDelta
-
-          w.order = lastOrder+1
-          lastOrder++
-          w.rect.w += delta.x
-          w.rect.h += delta.y
-          lastWindow = w
-        }
-        ui.popId()
-      })
-      ui.endRoot()
-    }
-    ui.popId()
-  }).padding = 5
-}
+var wm: windows::WindowManager
 
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.cellJustify(1)
@@ -1687,7 +1547,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
     windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
       if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}) {
-        toggleWindow(name)
+        wm.toggle(name)
       }
     }
     iconBtn := fn (name: str, rect: rect::Rect): bool |ui, editor| {
@@ -1744,7 +1604,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   }).padding = 5
 
   if !editor.isPlaying {
-    window("Player Placer", |editor| {
+    wm.window("Player Placer", |editor| {
       playerPos := editor.world.playerSpawnPos
       ui.cellStretch()
       if ui.button("Relocate") {
@@ -1758,7 +1618,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       }
     })
 
-    window("Tile Picker", |editor| {
+    wm.window("Tile Picker", |editor| {
       ui.pushIdStr("Picker")
       if ui.isActive() {
         grid::gridPan(&editor.tilesetGrid, input::getMouseDelta())
@@ -1781,26 +1641,11 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     })
   }
 
-  window("Console", {
+  wm.window("Console", {
     ui.drawCustom(|ui| {
       dbg::drawConsole(dest, ui.font, ui.io.scale)
     })
   })
-
-  if ui.beginRoot() {
-    ordered := []^Window{}
-    for _, w^ in windows {
-      ordered = append(ordered, w)
-    }
-    sort(ordered, {return a^.order - b^.order})
-    
-    for _, w in ordered {
-      if w.visible {
-        w.display(ui)
-      }
-    }
-    ui.endRoot()
-  }
 }
 
 fn (editor: ^Editor) putUi(ui: ^ui::UI) {
@@ -1839,6 +1684,8 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
       editor.putToolbar(ui)
     }, ui.io.screen.w)
   }, ui.io.screen.h)
+
+  wm.display(ui)
 }
 
 fn editorSaveSession(editor: ^Editor): session::Session {
@@ -1881,6 +1728,8 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
 }
 
 fn (editor: ^Editor) handleShortcuts*() {
+  shortcuts::console(&editor.wm)
+  shortcuts::fullscreen()
   if input::isPressed(.ctrl) {
     if input::isJustPressedc('s') {
       input::clearc('s')
@@ -2022,8 +1871,6 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
   }
   
   std::srand(std::time())
-  shortcuts::console(&editor.wm)
-  shortcuts::fullscreen()
 
   global::screen = rect::Rect{0, 0, window::w, window::h}
   window::setViewport(global::screen.getDims())

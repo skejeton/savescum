@@ -1,13 +1,26 @@
+import (
+  "rect.um"
+  "th.um"
+  "input.um"
+  "../ui/ui.um"
+)
+
 type (
-  Window = struct {
-    rect: rect::Rect
-    title: str
-    order: int
-    visible: bool
+  WindowCallback* = fn(ui: ^ui::UI)
+
+  Window* = struct {
+    handled: bool
+    hidden:  bool
+    title:   str
+    rect:    rect::Rect
+    order:   int
+    cb:      WindowCallback
   }
 
   WindowManager* = struct {
-    windows: []Window
+    windows:    map[str]Window
+    lastWindow: ^Window
+    lastOrder:  int
   }
 )
 
@@ -15,6 +28,149 @@ fn mk*(): WindowManager {
   return {}
 }
 
-fn (it: ^WindowManager) put(title: str, rect: rect::Rect) {
-  i 
+fn (it: ^WindowManager) allocateRect(): rect::Rect {
+  pos := th::Vf2{0, 0}
+
+  if it.lastWindow != null {
+    pos = it.lastWindow.rect.getPos().addf(20)
+  }
+
+  return {pos.x, pos.y, 300, 300}
+}
+
+fn (it: ^WindowManager) touchWindow(title: str) {
+  if validkey(it.windows, title) {
+    w := &it.windows[title]
+    w.handled = true
+    w.order = it.lastOrder+1
+    it.lastOrder++
+    it.lastWindow = w
+  }
+}
+
+fn (it: ^WindowManager) window*(title: str, cb: WindowCallback) {
+  didExist := validkey(it.windows, title)
+
+  w := &it.windows[title]
+  w.title = title
+  w.cb = cb
+  w.handled = true
+  if !didExist {
+    w.rect = it.allocateRect()
+    it.touchWindow(title)
+  }
+}
+
+fn (it: ^WindowManager) toggle*(title: str) {
+  if validkey(it.windows, title) {
+    w := &it.windows[title]
+    w.hidden = !w.hidden
+    w.order = it.lastOrder+1
+    it.lastOrder++
+    it.lastWindow = w
+  }
+}
+
+fn clipWindowRect(rect: rect::Rect, parent: rect::Rect): rect::Rect {
+  // @TODO: Opinionated values for width and height.
+  if rect.w < 100 { rect.w = 100 }
+  if rect.h < 100 { rect.h = 100 }
+  if rect.w > parent.w { rect.w = parent.w }
+  if rect.h > parent.h { rect.h = parent.h }
+  if rect.x < parent.x { rect.x = parent.x }
+  if rect.y < parent.y { rect.y = parent.y }
+  if rect.x+rect.w > parent.x+parent.w { rect.x = parent.x+parent.w-rect.w }
+  if rect.y+rect.h > parent.y+parent.h { rect.y = parent.y+parent.h-rect.h }
+
+  return rect
+}
+
+fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
+  if !w.handled {
+    return
+  }
+
+  rect := clipWindowRect(w.rect, ui.io.screen)
+
+  if input::isJustReleased(.mouse1) {
+    w.rect = rect
+  }
+
+  ui.cellRect(rect)
+  ui.cellClip()
+  ui.col(|it, w, rect| {
+    ui.boxStyle(.window)
+    ui.pushIdStr("Window "+w.title)
+    
+    if ui.isActive() {
+      w.rect.x += ui.io.mouseDelta.x
+      w.rect.y += ui.io.mouseDelta.y
+      it.touchWindow(w.title)
+    }
+
+    ui.cellStretch()
+    ui.row(|w| {
+      ui.cellStretch()
+      ui.cellSameSize()
+      if ui.button2("Close", {ui.spring(1); ui.label("-"); ui.spring(1)}) {
+        w.hidden = true
+      }
+      ui.cellJustify(1.0)
+      ui.cellClip()
+      ui.cellColor(0xFFFFFFFF)
+      ui.row(|w| {
+        ui.boxStyle(.titlebar)
+        ui.spring(1.0)
+        ui.label(w.title)
+        ui.spring(1.0)
+      }).padding = 5
+    })
+
+    ui.cellStretch()
+    ui.cellJustify(1)
+    ui.cellClip()
+    ui.col(|w| {
+      ui.cellStretch()
+      ui.cellJustify(1)
+      ui.col(|w| {
+        w.cb(ui)
+      }).padding = 5
+    })
+
+    // Resize handle
+    ui.cellRect({rect.x+rect.w-10, rect.y+rect.h-10, 10, 10})
+    if ui.beginRoot() {
+      ui.row(|it, w| {
+        ui.pushIdStr("Resize")
+        ui.boxStyle(.resizer)
+        if ui.isActive() {
+          w.rect.w += ui.io.mouseDelta.x
+          w.rect.h += ui.io.mouseDelta.y
+          it.touchWindow(w.title)
+        }
+        ui.popId()
+      })
+      ui.endRoot()
+    }
+    ui.popId()
+  }).padding = 5
+
+  w.handled = false
+}
+
+fn (it: ^WindowManager) display*(ui: ^ui::UI) {
+  if ui.beginRoot() {
+    ordered := []^Window{}
+    for _, w^ in it.windows {
+      ordered = append(ordered, w)
+    }
+    sort(ordered, {return a^.order - b^.order})
+    
+    for _, w in ordered {
+      if !w.hidden {
+        it.displayWindow(w, ui)
+      }
+    }
+    ui.endRoot()
+  }
 }
