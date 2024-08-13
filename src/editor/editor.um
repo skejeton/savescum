@@ -1538,6 +1538,57 @@ fn putLevelSelect(editor: ^Editor) {
 
 var wm: windows::WindowManager
 
+type GridInteraction = struct {
+  placed:  bool
+  removed: bool
+  pos:     th::Vf2
+}
+
+fn putGrid2(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
+  ps := &GridInteraction{}
+
+  ui.col(|ps, grid| {
+    ui.pushIdStr("Grid")
+
+    // @TODO: Panning with middle mouse btn.
+    if ui.isActive() {
+      if input::isPressed(.mouse2) {
+        grid::gridPan(grid, input::getMouseDelta())
+      }
+      if input::isPressed(.mouse1) {
+        ps.placed = true
+        ps.pos = grid.toGrid(input::getMousePos()).floor()
+      }
+      if input::isPressed(.mouse3) {
+        ps.removed = true
+        ps.pos = grid.toGrid(input::getMousePos()).floor()
+      }
+    }
+
+    hovered := false
+    if ui.isHovered() {
+      hovered = true
+      wheel := input::getMouseScroll().y
+      grid::gridZoomInto(grid, updateZoom(grid.s.x, wheel/10.0), input::getMousePos())
+    }
+
+    ui.drawCustom(|hovered, grid| {
+      // @TODO: Scaling is not proportional to UI
+      grid.bb = dest
+      grid.draw(0xFFFFFF11, 1)
+      if hovered {
+        gridPos := grid.toGrid(input::getMousePos()).floor()
+        screenPos1 := grid.toScreen(gridPos)
+        screenPos2 := grid.toScreen(gridPos.add({1, 1}))
+        canvas::drawRect(0xFFFFFF22, {screenPos1.x, screenPos1.y, screenPos2.x-screenPos1.x, screenPos2.y-screenPos1.y})
+      }
+    })
+    ui.popId()
+  })
+
+  return ps^
+}
+
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.cellJustify(1)
   ui.row(|editor| {
@@ -1619,25 +1670,22 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     })
 
     wm.window("Tile Picker", |editor| {
-      ui.pushIdStr("Picker")
-      if ui.isActive() {
-        grid::gridPan(&editor.tilesetGrid, input::getMouseDelta())
+      ui.cellJustify(1)
+      ui.cellStretch()
+      interaction := putGrid2(&editor.tilesetGrid, ui)
+
+      if interaction.placed {
+        editor.tileSelected = interaction.pos
       }
 
-      if ui.isHovered() {
-        wheel := input::getMouseScroll().y
-        grid::gridZoomInto(&editor.tilesetGrid, updateZoom(editor.tilesetGrid.s.x, wheel/10.0), input::getMousePos())
-      }
-
-      ui.drawCustom(|ui, editor| {
-        // @TODO: Tilemap scaling is not proportional to UI
+      ui.drawCustom(|editor| {
         canvas::drawRect(0x222222FF, dest)
-        editor.tilesetGrid.bb = dest
         editor.tileset.i.crop(th::Vf2{0, 0}, th::Vf2{1, 1})
         editor.tileset.i.draw({p: editor.tilesetGrid.toScreen({0, 0}), s: editor.tilesetGrid.s.divf(64)})
-        editor.tilesetGrid.draw(0xFFFFFF11, 1)
+
+        p := editor.tilesetGrid.toScreen(editor.tileSelected)
+        canvas::drawRectLines(0x00FF0099, {p.x, p.y, editor.tilesetGrid.s.x, editor.tilesetGrid.s.y}, 1)
       })
-      ui.popId()
     })
   }
 
@@ -1663,20 +1711,39 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
     if !editor.isPlaying {
       ui.row(|editor| {
         ui.pushIdStr("Tilemap Editor")
-        if ui.isActive() {
-          grid::gridPan(&editor.tilemapGrid, input::getMouseDelta())
+
+        ui.cellStretch()
+        ui.cellJustify(1)
+        interaction := putGrid2(&editor.tilemapGrid, ui)
+
+        // @TODO: Deduplicate
+        if interaction.placed {
+          sx, sy := floor(interaction.pos.x), floor(interaction.pos.y)
+          if editor.isRelocatingPlayer {
+            editor.world.playerSpawnPos = interaction.pos
+          } else {
+            tile := editor.tileset.index(editor.tileSelected)
+            // @TODO: I don't understand the "2" offset here.
+            if tile > -2 {
+              editor.world.setTile(editor.tilemapLayer, sx, sy, tile+2)
+            }
+          }
         }
 
-        if ui.isHovered() {
-          wheel := input::getMouseScroll().y
-          grid::gridZoomInto(&editor.tilemapGrid, updateZoom(editor.tilemapGrid.s.x, wheel/10.0), input::getMousePos())
+        if input::isJustReleased(.mouse1) {
+          editor.isRelocatingPlayer = false
+        }
+
+        if interaction.removed {
+          sx, sy := floor(interaction.pos.x), floor(interaction.pos.y)
+          tile := editor.tileset.index(editor.tileSelected)
+          editor.world.setTile(editor.tilemapLayer, sx, sy, 0)
         }
 
         ui.drawCustom(|editor| {
           WorldEditCmd{0x7, editor.resources.toolbarIcons, dest, editor.tilemapGrid, &editor.world}.draw({})
-          editor.tilemapGrid.bb = dest
-          editor.tilemapGrid.draw(0xFFFFFF11, 1)
         })
+
         ui.popId()
       }, ui.io.screen.w)
     } else {
@@ -1695,6 +1762,18 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
   }, ui.io.screen.h)
 
   wm.display(ui)
+
+  ui.cellRect({0, 0, 0, 0})
+  ui.row(|editor| {
+    // @TODO: Figure out a right place for cursor rendering and things like that.
+    ui.drawCustom(|editor| {
+      window::showCursor(!editor.isRelocatingPlayer)
+      if editor.isRelocatingPlayer {
+        editor.resources.toolbarIcons.crop(th::Vf2{2.0/4.0, 0.0/4.0}, th::Vf2{3.0/4.0, 1.0/4.0})
+        editor.resources.toolbarIcons.draw({s: {1, 1}, p: input::getMousePos()})
+      }
+    })
+  })
 }
 
 fn editorSaveSession(editor: ^Editor): session::Session {

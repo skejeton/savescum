@@ -262,7 +262,7 @@ fn (ui: ^UI) processAttentionRec(el: ^El, r: rect::Rect) {
     id := findClosestRetainedAncestorId(el)
     ui.attention.hovered = id
     // @MARK(DirectInput)
-    if input::isJustPressed(.mouse1) {
+    if input::isJustPressed(.mouse1) || input::isJustPressed(.mouse2) || input::isJustPressed(.mouse3) {
       ui.attention.active = id
       ui.attention.focused = id
     }
@@ -281,12 +281,12 @@ fn (ui: ^UI) processAttention(el: ^El) {
   ui.attention.hovered = 0
 
   // @MARK(DirectInput)
-  if input::isJustPressed(.mouse1) {
+  if input::isJustPressed(.mouse1) || input::isJustPressed(.mouse2) || input::isJustPressed(.mouse3) {
     ui.attention.focused = 0
   }
 
   // @MARK(DirectInput)
-  if input::isJustReleased(.mouse1) {
+  if input::isJustReleased(.mouse1) || input::isJustReleased(.mouse2) || input::isJustReleased(.mouse3) {
     ui.attention.active = 0
   }
 
