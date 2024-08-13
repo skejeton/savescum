@@ -711,12 +711,13 @@ fn createEditorEntities(): EditorEntities {
 fn editorLoadRoom(editor: ^Editor, room: str): bool {
   dbg::logt("ed: loading world")
   if data, err := util::readFileStr(roomToPath(room)); err.code == 0 {
+    // @TODO: Figure out why the foreground and background layers don't overwrite the world.
     worldData := world_data::load(editor.world, data)
     editor.world = worldData.world
     editor.entities.list = worldData.entities
     return true
   } else {
-    // TODO(skejeton): maybe I shouldn't initialize empty world like that??!
+    // @TODO: maybe I shouldn't initialize empty world like that??!
     editor.world = world::fromTileset(editor.world.tileset)
     editor.entities = createEditorEntities()
   }
@@ -1623,35 +1624,51 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.spring(1)
     ui.cellStretch()
     ui.cellSameSize()
-    ui.button("🔒")
+    if editor.entityBypass { ui.cellColor(0x777777FF) }
+    if ui.button("🔒") {
+      editor.entityBypass = !editor.entityBypass
+    }
     ui.cellStretch()
     ui.cellSameSize()
-    ui.button2("Layers", |editor| {
+    layersPressed := ui.button2("Layers", |editor| {
       ui.drawCustom(|editor, ui| {
         drawLayerIcon(dest, editor.tilemapLayer, editor.tilemapShowAllLayers)
       })
     })
+    if layersPressed {
+      editor.tilemapShowAllLayers = !editor.tilemapShowAllLayers
+    }
     ui.cellStretch()
     ui.cellSameSize()
-    ui.button("FG")
+    if editor.tilemapLayer == 1 { ui.cellColor(0x777777FF) }
+    if ui.button("FG") { editor.tilemapLayer = 1 }
     ui.cellStretch()
     ui.cellSameSize()
-    ui.button("MG")
+    if editor.tilemapLayer == 0 { ui.cellColor(0x777777FF) }
+    if ui.button("MG") { editor.tilemapLayer = 0 }
     ui.cellStretch()
     ui.cellSameSize()
-    ui.button("BG")
+    if editor.tilemapLayer == -1 { ui.cellColor(0x777777FF) }
+    if ui.button("BG") { editor.tilemapLayer = -1 }
     ui.cellStretch()
     ui.cellSameSize()
-    ui.button("> <")
+    if ui.button("> <") {
+      editor.tilemapGrid.p = {0, 0}
+      editor.tilemapGrid.s = {48, 48}
+    }
     ui.cellStretch()
     ui.cellSameSize()
-    ui.button("R/U")
+    if ui.button("R/U") { wm.reset() }
     ui.spring(1)
 
     ui.cellStretch()
-    ui.button("Load")
+    if ui.button("Load") {
+      editorLoadRoom(editor, editor.currentRoom)
+    }
     ui.cellStretch()
-    ui.button("Save")
+    if ui.button("Save") {
+      editorSaveRoom(editor)
+    }
   }).padding = 5
 
   if !editor.isPlaying {
