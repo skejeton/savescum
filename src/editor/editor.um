@@ -848,8 +848,14 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
 
   for i, ent^ in editor.entities.list {
     entVisRect := util::rectScale(ent.rect, editor.tilemapGrid.s.x/32).shift(editor.tilemapGrid.toScreen(th::Vf2{0, 0}))
+    uiVisRect := entVisRect
 
-    if !coll::rectToRect(entVisRect, ui.io.screen) {
+    uiVisRect.x /= ui.io.scale
+    uiVisRect.y /= ui.io.scale
+    uiVisRect.w /= ui.io.scale
+    uiVisRect.h /= ui.io.scale
+
+    if !coll::rectToRect(uiVisRect, ui.io.screen) {
       continue
     }
 
@@ -858,8 +864,8 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
     tags := new(game::TagSet, tags_)
     ignore := tags.isSet("Guide") && editor.entityBypass && !isEntitySelected(&editor.entities, i)
 
-    ui.cellRect(entVisRect)
-    ui.row(|i, ignore, editor, ent, entVisRect, tags, delPtr| {
+    ui.cellRect(uiVisRect)
+    ui.row(|i, ignore, editor, ent, uiVisRect, entVisRect, tags, delPtr| {
       hovered := false
       focused := false
 
@@ -929,7 +935,7 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
         }
 
         if editor.entities.entitySelected == i {
-          rectCmd := editor.putRectGrips(ui, entVisRect)
+          rectCmd := editor.putRectGrips(ui, uiVisRect)
           delta := input::getMouseDelta().div(editor.tilemapGrid.s).mulf(32)
 
           ent.rect = applyRectResizeCommand(rectCmd, ent.rect, delta)
