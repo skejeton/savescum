@@ -3,7 +3,6 @@
 // WAR CRIME: THIS FILE IS A MESS.
 
 import (
-  "color.um"
   "window.um"
   "rect.um"
   "th.um"
@@ -36,7 +35,6 @@ import (
   "../game/world.um"
   "atlas.um"
   "../misc/util.um"
-  "../misc/mouseinput.um"
   "../game/game.um"
   "../game/script.um"
   "../misc/immcursor.um"
@@ -135,45 +133,6 @@ type (
 
 var wm: windows::WindowManager
 
-fn drawBevelRect(editor: ^Editor, r: rect::Rect, pushed: bool = false, color: uint32 = th::white) {
-  if payload_trigger::aprilFools() {
-    color = color::hsv(th::time/5000.0, 0.9, 1.0)
-  }
-
-  const (
-    bevelOuterRect = rect::Rect{0, 0, 30, 30}
-    bevelInnerRect = rect::Rect{5, 5, 20, 20}
-
-    bevelPushedOuterRect = rect::Rect{30, 0, 30, 30}
-    bevelPushedInnerRect = rect::Rect{5, 5, 20, 20}
-  )
-
-  if pushed {
-    editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, bevelPushedOuterRect, bevelPushedInnerRect, r, color)
-  } else {
-    editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, bevelOuterRect, bevelInnerRect, r, color)
-  }
-}
-
-fn centerTextWithinRect(font: font::Font, text: str, r: rect::Rect): th::Vf2 {
-  sz := font.measure(text)
-
-  return {(r.w-sz.x)/2+r.x, (r.h-sz.y)/2+r.y}
-}
-
-
-fn drawButtonInactive(editor: ^Editor, r: rect::Rect, text: str, color: uint32 = 0x999999FF) {
-  editor.uicore.beginTool(text, r)
-  if (editor.uicore.isCurrentToolActive()) {
-    immcursor::setCursor(.no)
-  }
-  events := editor.uicore.endTool()
-  events.queryMouse(.left, mouseinput::pressed)
-  text = strings::splitBy(text, '#')[0]
-  editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {60, 30, 30, 30}, {10, 10, 10, 10}, r, 0xFFFFFFFF)
-  editor.uicore.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), 0x000000FF)
-}
-
 fn widgetWindow(editor: ^Editor, title: str, rect: rect::Rect, handler: fn (winfo: WindowInfo): void, transparent: bool = false) {
  
 }
@@ -182,11 +141,6 @@ fn updateZoom(init: real, plus: real): th::Vf2 {
   zoom := util::clamp(init+(init*plus), 8, 128)
 
   return {zoom, zoom}
-}
-
-// @returns Is dirty
-fn putTextEditOneLine(editor: ^Editor, r: rect::Rect, name: str, value: ^str): bool {
-  return false
 }
 
 fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2): (bool, ScrollAreaInfo) {
@@ -328,11 +282,6 @@ type GameCmd = struct {}
 fn (gc: ^GameCmd) draw(props: drawcmd::DrawProperties) {
   game::draw()
   script::draw()
-}
-
-fn putLabelY(editor: ^Editor, text: str, color: uint32, position: ^th::Vf2) {
-  editor.uicore.ctx.drawText(editor.resources.mainFont, text, position^, color)
-  position.y += editor.resources.mainFont.measure(text).y
 }
 
 fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, selected: bool): EntityListAction {
@@ -538,34 +487,6 @@ fn putEntityList(editor: ^Editor) {
   }
 }
 
-fn putEntityEditor(editor: ^Editor) {
-  entitySelected := getEntitySelected(&editor.entities)
-
-  if entitySelected != null {
-    widgetWindow(editor, "Entity Editor", {595, 210, 300, 330}, |editor, entitySelected| {
-      contentRect := util::rectShrink(winfo.contentRect, 5)
-
-      editor.uicore.ctx.beginScissorRect(contentRect)
-      position := contentRect.getPos()
-      putLabelY(editor, "Name", th::black, &position)
-      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 46}, "Name", &entitySelected.name) || editor.dirty
-      position.y += 46
-      putLabelY(editor, "Id", th::black, &position)
-      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 46}, "Id", &entitySelected.id) || editor.dirty
-      position.y += 46
-      putLabelY(editor, "Tags", th::black, &position)
-      editor.dirty = putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 46}, "Tags", &entitySelected.tags) || editor.dirty
-      position.y += 46
-      position.y += 10
-      if editor.ui.buttonOLD("Delete", {position.x, position.y, contentRect.w, 40}) {
-        removeEntity(&editor.entities, getEntitySelectedIndex(&editor.entities))
-        editor.dirty = true
-      }
-      editor.uicore.ctx.endScissor()
-    })
-  }
-}
-
 type RectResizeCommand = struct {
   posFactor: th::Vf2   // Factor to multiply MouseDelta by to move the rectangle
   sizeFactor: th::Vf2  // Factor to multiply MouseDelta by to resize the rectangle
@@ -625,44 +546,6 @@ fn loadRoom(editor: ^Editor, room: str) {
   editor.tilemapGrid.p = editor.world.playerSpawnPos
 }
 
-fn putRoomEditor(editor: ^Editor) {
-  widgetWindow(editor, "Load Room", {180*1.5, 5*1.5, 200*1.5, 100*1.5}, |editor| {
-    contentRect := util::rectShrink(winfo.contentRect, 5)
-    position := contentRect.getPos()
-
-    putTextEditOneLine(editor, {position.x, position.y, contentRect.w, 40}, "Room name", &editor.potentialRoom)
-
-    position.y += 50
-    if input::isPressed(.shift) {
-      if editor.ui.buttonOLD("Load", {position.x, position.y, contentRect.w, 40}) {
-        loadRoom(editor, editor.potentialRoom)
-      }
-    } else {
-      drawButtonInactive(editor, {position.x, position.y, contentRect.w, 40}, "Hold shift!")
-    }
-  })
-}
-
-fn putNotifications(editor: ^Editor) {
-  ns := notification::get()
-
-  y := 0.0
-  for i in ns {
-    n := ns[len(ns^)-i-1]
-    t := 1-util::clamp(n.time, 0, 1)
-    ts := editor.resources.mainFont.measure(n.info.message)
-    w := ts.x+30+20
-    h := ts.y + 20
-    y -= h
-
-    editor.resources.toolbarIcons.cropRect({24*int(n.info.icon), 144, 24, 24})
-    drawBevelRect(editor, {10-t*500, global::screen.h-58+y, w, h}, true, 0xFFFFFFBB)
-    editor.uicore.ctx.drawImage(editor.resources.toolbarIcons, th::Transform{p: th::Vf2{10-t*500+10, global::screen.h-58+y+10}, s: th::Vf2{1, 1}})
-    editor.uicore.ctx.drawText(editor.resources.mainFont, n.info.message, {50-t*500, global::screen.h-58+y+9}, th::black)
-    y -= 10
-  }
-}
-
 type GridInteraction = struct {
   placed:  bool
   removed: bool
@@ -712,6 +595,70 @@ fn putGrid2(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
   })
 
   return ps^
+}
+
+fn (editor: ^Editor) putNotifications(ui: ^ui::UI) {
+  // @TODO: Instead of having a zerowidth cell, I should have cellPos
+  ui.cellRect({0, 0, 0, 0})
+  ui.row(|editor| {
+
+    ns := notification::get()
+
+    for i in ns {
+      n := ns[len(ns^)-i-1]
+      ui.row(|n, editor| {
+        ui.boxStyle(.window)
+        // @MARK(UiResourceManagment)
+        ui.img2(editor.resources.toolbarIcons, {24*int(n.info.icon), 144, 24, 24})
+        // @HACK Padding
+        ui.label(" ")
+        ui.label(n.info.message)
+      }).padding = 10
+    }
+  }).padding = 5
+}
+
+fn (editor: ^Editor) putEntityEditor(ui: ^ui::UI) {
+  entitySelected := getEntitySelected(&editor.entities)
+
+  if entitySelected != null {
+    wm.window("Entity Editor", |editor, entitySelected| {
+      ui.cellStretch()
+      ui.cellAlign(0.5)
+      ui.row(|editor, entitySelected| {
+        ui.cellJustify(0.5)
+        ui.label("Name")
+        ui.cellJustify(1)
+        editor.dirty = textedit::putSingleLine(ui, "Name", &entitySelected.name) || editor.dirty
+      })
+
+      ui.cellStretch()
+      ui.cellAlign(0.5)
+      ui.row(|editor, entitySelected| {
+        ui.cellJustify(0.5)
+        ui.label("Id")
+        ui.cellJustify(1)
+        editor.dirty = textedit::putSingleLine(ui, "Id", &entitySelected.id) || editor.dirty
+      })
+
+      ui.cellStretch()
+      ui.cellAlign(0.5)
+      ui.row(|editor, entitySelected| {
+        ui.cellJustify(0.5)
+        ui.label("Tags")
+        ui.cellJustify(1)
+        editor.dirty = textedit::putSingleLine(ui, "Tags", &entitySelected.tags) || editor.dirty
+      })
+
+      ui.spring(1)
+
+      ui.cellStretch()
+      if editor.ui.button("Delete") {
+        removeEntity(&editor.entities, getEntitySelectedIndex(&editor.entities))
+        editor.dirty = true
+      }
+    })
+  }
 }
 
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
@@ -799,6 +746,8 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   }).padding = 5
 
   if !editor.isPlaying {
+    editor.putEntityEditor(ui)
+
     wm.window("Load Room", |editor| {
       ui.label("Room name: ")
       
@@ -1122,6 +1071,8 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
   }, ui.io.screen.h)
 
   wm.display(ui)
+  
+  editor.putNotifications(ui)
 
   ui.cellRect({0, 0, 0, 0})
   ui.row(|editor| {
@@ -1260,6 +1211,7 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
     wm: wm::create()
   }
 
+  // @TODO: Re add the april fools joke :V
   editor.ui.setBoxTheme(.button, {
     normal: themer::mkNinepatch(resources.bevelImage, {0, 0, 30, 30}, {5, 5, 19, 19}),
     pressed: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21})

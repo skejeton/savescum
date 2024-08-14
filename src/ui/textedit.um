@@ -138,10 +138,13 @@ fn putSingleLine*(ui: ^ui::UI, name: str, value: ^str): bool {
     ui.drawCustom(|focused, edit, ui| {
       // Draw the inside white
       canvas::drawRect(th::white, dest.shrink({4, 4}))
+      canvas::beginScissorRect(dest.shrink({4, 4}))
 
       fontHeight := ui.font.measure(" ").y
       textRect := rect::Rect{dest.x+5, dest.y+(dest.h-fontHeight)/2.0, dest.w-10, fontHeight}
       drawSingleLineEdit(ui, edit, textRect, focused)
+
+      canvas::endScissor()
     })
 
     value ^= getFirstLineOfBuffer(&edit.buffer)
