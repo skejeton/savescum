@@ -700,7 +700,9 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       ui.row(|editor| {
         ui.cellJustify(1)
         textedit::putSingleLine(ui, "Room name", &editor.potentialRoom)
-        ui.button("Load")
+        if ui.button("Load") {
+          loadRoom(editor, editor.potentialRoom)
+        }
       })
     })
 
