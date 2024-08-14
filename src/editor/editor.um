@@ -57,16 +57,6 @@ type (
     gameplay
   }
 
-  WindowInfo = struct {
-    contentRect: rect::Rect
-    titlebarRect: rect::Rect
-  }
-
-  ScrollAreaInfo = struct {
-    areaRect: rect::Rect
-    contentRect: rect::Rect
-  }
-
   EntityListAction = enum {
     none
     remove
@@ -133,21 +123,10 @@ type (
 
 var wm: windows::WindowManager
 
-fn widgetWindow(editor: ^Editor, title: str, rect: rect::Rect, handler: fn (winfo: WindowInfo): void, transparent: bool = false) {
- 
-}
-
 fn updateZoom(init: real, plus: real): th::Vf2 {
   zoom := util::clamp(init+(init*plus), 8, 128)
 
   return {zoom, zoom}
-}
-
-fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2): (bool, ScrollAreaInfo) {
-  return true, ScrollAreaInfo{}
-}
-
-fn endScrollArea(editor: ^Editor) {
 }
 
 fn roomToPath(room: str): str {
@@ -284,49 +263,6 @@ fn (gc: ^GameCmd) draw(props: drawcmd::DrawProperties) {
   script::draw()
 }
 
-fn putEntityEntry(editor: ^Editor, ent: world_data::EntityDesc, r: rect::Rect, selected: bool): EntityListAction {
-  r.w -= 45*2
-  action := EntityListAction.none
-
-  editor.uicore.beginTool(ent.id, r)
-  {
-    if editor.ui.buttonOLD(ent.name, r) {
-      action = .edit
-    }
-    if selected {
-      editor.uicore.ctx.drawRectLines(th::white, util::rectShrink(r, 1))
-      editor.uicore.ctx.moveLayer(1)
-      editor.uicore.ctx.drawNinepatch(editor.resources.glow, {0, 0, 48, 48}, {16, 16, 16, 16}, util::rectShrink(r, -16), 0xFFFF00FF)
-      editor.uicore.ctx.moveLayer(-1)
-    }
-    r.x += r.w
-    r.w = 45
-    r.h = 22.5
-    if editor.ui.buttonOLD("▲", r) {
-      action = .moveUp
-    }
-    r.y += 22.5
-    if editor.ui.buttonOLD("▼", r) {
-      action = .moveDown
-    }
-    r.y -= 22.5
-    r.h = 45
-    r.x += 45
-    if input::isPressed(.shift) {
-      if editor.ui.buttonOLD("␡", r) {
-        action = .remove
-      }
-    } else {
-      if editor.ui.buttonOLD("⎘", r) {
-        action = .duplicate
-      }
-    }
-  }
-  editor.uicore.endTool()
-
-  return action
-}
-
 fn appendEntity(editorEntities: ^EditorEntities, entity: world_data::EntityDesc) {
   editorEntities.list = append(editorEntities.list, entity)
 }
@@ -429,61 +365,6 @@ fn doEntityAction(editor: ^Editor, action: EntityListAction, i: int) {
   if entryRemoveIndex != -1 {
     removeEntity(&editor.entities, entryRemoveIndex)
     editor.dirty = true
-  }
-}
-
-fn putEntityList(editor: ^Editor) {
-  _actions := map[int]EntityListAction{}
-  actions := &_actions
-
-  widgetWindow(editor, "Entity List", {595*1.5, 5*1.5, 200*1.5, 300*1.5}, |editor, actions| {
-    // Apply padding.
-    contentRect := util::rectShrink(winfo.contentRect, 5)
-
-    // Put add button.
-    {
-      buttonRect := util::rectCutRight(winfo.titlebarRect, winfo.titlebarRect.h)
-
-      if editor.ui.buttonOLD("+", buttonRect) {
-        appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
-        selectEntity(&editor.entities, len(editor.entities.list)-1)
-      }
-    }
-
-    // Put entries.
-    {
-      // Get content size.
-      contentSize := ^th::Vf2(editor.uicore.getProperty("ContentSize", th::Vf2{0, 0}))
-
-      if ok, scrollAreaInfo := beginScrollArea(editor, contentRect, contentSize^); ok {
-        editor.uicore.ctx.beginScissorRect(scrollAreaInfo.areaRect)
-        entryRect := scrollAreaInfo.contentRect
-        entryRect.h = 45
-        for i, ent in editor.entities.list {
-          if entryRect.y < scrollAreaInfo.areaRect.y-45 || entryRect.y > scrollAreaInfo.areaRect.y+scrollAreaInfo.areaRect.h {
-            entryRect.y += 45
-            continue
-          }
-          action := putEntityEntry(editor, ent, entryRect, isEntitySelected(&editor.entities, i))
-          if action != .none {
-            actions[i] = action
-          }
-          entryRect.y += 45
-        }
-
-        contentSize ^= th::Vf2{entryRect.w, entryRect.y-scrollAreaInfo.contentRect.y}
-        editor.uicore.ctx.endScissor()
-        endScrollArea(editor)
-      }
-    }
-  })
-
-  // For now, only one action can be applied at a time, due to indexing.
-  std::assert(len(_actions) < 2)
-
-  // Apply actions.
-  for i, action in actions {
-    doEntityAction(editor, action, i)
   }
 }
 
@@ -661,6 +542,67 @@ fn (editor: ^Editor) putEntityEditor(ui: ^ui::UI) {
   }
 }
 
+fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
+  wm.window("Entity List", |editor| {
+    _actions := map[int]EntityListAction{}
+    actions := &_actions
+
+    ui.cellStretch()
+    ui.cellJustify(1)
+    scrollbar::putScrollbarArea(ui, |editor, actions| {
+      for i, ent in editor.entities.list {
+        ui.cellStretch()
+        ui.row(|editor, actions, ent, i| {
+          action := EntityListAction.none
+
+          if i == editor.entities.entitySelected {
+            ui.drawCustom({
+              // @TODO: This isn't very visible now since the other cover it.
+              canvas::drawRectLines(0xFFFF00FF, dest, 4)
+            })
+          }
+
+          ui.pushIdStr(ent.id)
+          ui.cellStretch()
+          ui.cellJustify(1)
+          if ui.button(ent.name) { action = .edit }
+          if ui.button("▲") { action = .moveUp }
+          if ui.button("▼") { action = .moveDown }
+
+          if input::isPressed(.shift) {
+            if ui.button("␡") { action = .remove }
+          } else {
+            if ui.button("⎘") { action = .duplicate }
+          }
+          ui.popId()
+
+          if action != .none {
+            actions[i] = action
+          }
+        })
+      }
+    })
+
+    // @HACK There should be a better way to put elements on the titlebar.
+    r := wm.windows["Entity List"].rect
+    buttonRect := rect::Rect{r.x+r.w-34-5, r.y+5, 34, 34}
+    ui.cellUnclip()
+    ui.cellRect(buttonRect)
+    if ui.button("+") {
+      appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
+      editor.dirty = true
+    }
+
+
+    // For now, only one action can be applied at a time, due to indexing.
+    std::assert(len(_actions) < 2)
+
+    for i, action in actions {
+      doEntityAction(editor, action, i)
+    }
+  })
+}
+
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.cellJustify(1)
   ui.row(|editor| {
@@ -690,6 +632,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       return
     }
 
+    // @TODO: Gray out of window is open.
     windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
     windowBtn("Tile Picker", {48*0, 48, 48, 48}) 
     windowBtn("Player Placer", {48*3, 48, 48, 48}) 
@@ -747,6 +690,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
   if !editor.isPlaying {
     editor.putEntityEditor(ui)
+    editor.putEntityList(ui)
 
     wm.window("Load Room", |editor| {
       ui.label("Room name: ")
@@ -897,6 +841,9 @@ fn (editor: ^Editor) putRectGrips(ui: ^ui::UI, r: rect::Rect): RectResizeCommand
 }
 
 fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
+  del := -1
+  delPtr := &del
+
   for i, ent^ in editor.entities.list {
     entVisRect := util::rectScale(ent.rect, editor.tilemapGrid.s.x/32).shift(editor.tilemapGrid.toScreen(th::Vf2{0, 0}))
 
@@ -910,7 +857,7 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
     ignore := tags.isSet("Guide") && editor.entityBypass && !isEntitySelected(&editor.entities, i)
 
     ui.cellRect(entVisRect)
-    ui.row(|i, ignore, editor, ent, entVisRect, tags| {
+    ui.row(|i, ignore, editor, ent, entVisRect, tags, delPtr| {
       hovered := false
       focused := false
 
@@ -972,6 +919,10 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
             }
           }
 
+          if input::isJustPressed(.delete) {
+            delPtr ^= i
+          }
+
           editor.entities.entitySelected = i
         }
 
@@ -1004,6 +955,10 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
         }
       })
     })
+  }
+
+  if del != -1 {
+    removeEntity(&editor.entities, del)
   }
 }
 

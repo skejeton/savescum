@@ -133,8 +133,9 @@ type (
 
 const (
   cellClipped = 1<<0
-  cellStretched = 1<<1
-  cellSameSize = 1<<2
+  cellUnclipped = 1<<1
+  cellStretched = 1<<2
+  cellSameSize = 1<<3
 )
 
 // >>> FUNCTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -263,6 +264,14 @@ fn findClosestRetainedAncestorId(el: ^El): uint {
 }
 
 fn (ui: ^UI) processAttentionRec(el: ^El, r: rect::Rect) {
+  if el.cell.flags & cellUnclipped != 0 {
+    r = ui.io.screen
+  }
+
+  if !coll::rectToRect(el.cell.rect, r) {
+    return
+  }
+
   // @MARK(DirectInput)
   if el.interactive && coll::vf2ToRect(input::getMousePos(), el.cell.rect) && coll::vf2ToRect(input::getMousePos(), r) {
     id := findClosestRetainedAncestorId(el)
@@ -308,7 +317,11 @@ fn (ui: ^UI) input(el: ^El) {
   }
 }
 
-fn (ui: ^UI) render(el: ^El) {
+fn (ui: ^UI) render(el: ^El, depth: int, scissor: rect::Rect) {
+  if !coll::rectToRect(el.cell.rect, scissor) {
+    return
+  }
+
   theme := ui.theme[int(el.boxStyle)]
 
   retained := ui.retained[el.id]
@@ -327,11 +340,25 @@ fn (ui: ^UI) render(el: ^El) {
   }
 
   if el.cell.flags & cellClipped != 0 {
-    canvas::beginScissorRect(el.cell.rect.shrink({el.padding*ui.io.scale, el.padding*ui.io.scale}))
+    depth++
+    r := el.cell.rect.shrink({el.padding*ui.io.scale, el.padding*ui.io.scale})
+    scissor = coll::rectIntersect(scissor, r)
+    canvas::beginScissorRect(r)
   }
 
   for i, child in el.children {
-    ui.render(child)
+    // @TODO: This is really cumbersome, tophat's scissor rect implementation automatically keeps track of intersections, but I can't break out of it.
+    if child.cell.flags & cellUnclipped != 0 {
+      for i := 0; i < depth; i++ {
+        canvas::endScissor()
+      }
+
+      ui.render(child, 0, ui.io.screen)
+
+      canvas::beginScissorRect(scissor)
+    } else {
+      ui.render(child, depth, scissor)
+    }
   }
 
   if el.cell.flags & cellClipped != 0 {
@@ -371,7 +398,7 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   ui.processAttention(ui.root)
   ui.input(ui.root)
   ui.updateCursor()
-  ui.render(ui.root)
+  ui.render(ui.root, 0, ui.io.screen)
 
   if debug {
     ui.drawDebug(ui.root)
@@ -524,6 +551,10 @@ fn (ui: ^UI) cellRect*(r: rect::Rect) {
 
 fn (ui: ^UI) cellClip*() {
   ui.cell.flags |= cellClipped
+}
+
+fn (ui: ^UI) cellUnclip*() {
+  ui.cell.flags |= cellUnclipped
 }
 
 fn (ui: ^UI) cellColor*(color: uint32) {

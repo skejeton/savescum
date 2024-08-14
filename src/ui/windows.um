@@ -103,15 +103,17 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
     w.rect = rect
   }
 
+  newRect := w.rect
+  newRectPtr := &newRect
+
   ui.cellRect(rect)
-  ui.cellClip()
-  ui.col(|it, w, rect| {
+  ui.col(|it, w, rect, newRectPtr| {
     ui.boxStyle(.window)
     ui.pushIdStr("Window "+w.title)
     
     if ui.isActive() {
-      w.rect.x += ui.io.mouseDelta.x
-      w.rect.y += ui.io.mouseDelta.y
+      newRectPtr.x += ui.io.mouseDelta.x
+      newRectPtr.y += ui.io.mouseDelta.y
       it.touchWindow(w.title)
     }
 
@@ -133,9 +135,9 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
       }).padding = 5
     })
 
+    ui.cellClip()
     ui.cellStretch()
     ui.cellJustify(1)
-    ui.cellClip()
     ui.row(|w| {
       ui.cellStretch()
       ui.cellJustify(1)
@@ -147,12 +149,12 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
     // Resize handle
     ui.cellRect({rect.x+rect.w-10, rect.y+rect.h-10, 10, 10})
     if ui.beginRoot() {
-      ui.row(|it, w| {
+      ui.row(|it, w, newRectPtr| {
         ui.pushIdStr("Resize")
         ui.boxStyle(.resizer)
         if ui.isActive() {
-          w.rect.w += ui.io.mouseDelta.x
-          w.rect.h += ui.io.mouseDelta.y
+          newRectPtr.w += ui.io.mouseDelta.x
+          newRectPtr.h += ui.io.mouseDelta.y
           it.touchWindow(w.title)
         }
         ui.popId()
@@ -161,6 +163,8 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
     }
     ui.popId()
   }).padding = 5
+
+  w.rect = newRect
 
   w.handled = false
 }
