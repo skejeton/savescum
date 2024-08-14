@@ -2,7 +2,6 @@ import (
   "rect.um"
   "th.um"
   "input.um"
-  "scrollbar.um"
   "../ui/ui.um"
 )
 
@@ -135,7 +134,7 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
       ui.cellJustify(1)
       ui.col(|w| {
         w.cb(ui)
-      })
+      }).padding = 5
     })
 
     // Resize handle

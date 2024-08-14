@@ -538,6 +538,11 @@ fn (ui: ^UI) isHovered*(): bool {
   return ui.attention.hovered == ui.lastEl().id
 }
 
+fn (ui: ^UI) isFocused*(): bool {
+  ui.lastEl().interactive = true
+  return ui.attention.focused == ui.lastEl().id
+}
+
 fn (ui: ^UI) isActive*(): bool {
   ui.lastEl().interactive = true
   return ui.attention.active == ui.lastEl().id && ui.attention.active != 0

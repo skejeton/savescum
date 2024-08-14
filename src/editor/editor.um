@@ -807,65 +807,6 @@ type EditGrip = struct {
   resizeCommand: RectResizeCommand
 }
 
-fn putRectGrips(editor: ^Editor, r: rect::Rect): RectResizeCommand {
-  // Grips positions are initialized as relative here.
-  // Will be multiplied by rect.w/h and added rect.x/y to them.
-  const eightGrips = []EditGrip{
-    {{0.0, 0.0}, {{1, 1}, {-1, -1}}}, // x
-    {{0.5, 0.0}, {{0, 1}, { 0, -1}}}, // x
-    {{1.0, 0.0}, {{0, 1}, { 1, -1}}}, // x
-
-    {{0.0, 0.5}, {{1, 0}, {-1,  0}}},
-    {{1.0, 0.5}, {{0, 0}, { 1,  0}}},
-
-    {{0.0, 1.0}, {{1, 0}, {-1,  1}}}, // x
-    {{0.5, 1.0}, {{0, 0}, { 0,  1}}}, // x
-    {{1.0, 1.0}, {{0, 0}, { 1,  1}}}  // x
-  }
-
-  activeGrip := -1
-
-  for i, grip in eightGrips {
-    gripPos := r.getDims().mul(grip.position).add(r.getPos())
-    gripRect := rect::Rect{gripPos.x-6, gripPos.y-6, 12, 12}
-    gripDrawRect := util::rectShrink(gripRect, 2)
-
-    editor.uicore.beginTool(sprintf("Grip%d", i), gripRect)
-
-    if editor.uicore.isCurrentToolActive() {
-      cursor := window::Cursor.sizeAll
-      switch i {
-      case 0, 7: cursor = .sizeNWSE
-      case 2, 5: cursor = .sizeSWNE
-      case 1, 6: cursor = .sizeNS
-      case 3, 4: cursor = .sizeEW
-      }
-      immcursor::setCursor(cursor)
-    }
-
-    color := th::blue
-
-    if editor.uicore.isCurrentToolActive() {
-      color = th::cyan
-    }
-
-    editor.uicore.ctx.drawRect(color, gripDrawRect)
-    editor.uicore.ctx.drawRectLines(th::black, gripDrawRect)
-
-    events := editor.uicore.endTool()
-
-    if events.queryMouse(.left, mouseinput::down) {
-      activeGrip = i
-    }
-  }
-
-  if activeGrip == -1 {
-    return RectResizeCommand{}
-  }
-
-  return eightGrips[activeGrip].resizeCommand
-}
-
 fn applyRectResizeCommand(resizeCommand: RectResizeCommand, r: rect::Rect, delta: th::Vf2): rect::Rect {
   r.x += delta.x * resizeCommand.posFactor.x
   r.y += delta.y * resizeCommand.posFactor.y
@@ -874,29 +815,18 @@ fn applyRectResizeCommand(resizeCommand: RectResizeCommand, r: rect::Rect, delta
   return r
 }
 
-type DrawEntityCmd = struct {
-  entity: world_data::EntityDesc
-  r: rect::Rect
-  tags: ^game::TagSet
-  scale: real
-}
-
-fn (cmd: ^DrawEntityCmd) draw(props: drawcmd::DrawProperties) {
-  if !game::drawEntityObject(cmd.entity.name, cmd.tags, cmd.r, cmd.scale) {
-    canvas::drawRect(th::red, cmd.r)
-  }
-}
-
 fn drawTaggedEntityRect(editor: ^Editor, entity: ^world_data::EntityDesc, r: rect::Rect, tags: ^game::TagSet) {
   if tags.isSet("Guide") {
-    editor.uicore.ctx.drawRectLines(th::yellow, r)
+    canvas::drawRectLines(th::yellow, r)
   } else if tags.isSet("Comment") {
     size := editor.resources.mainFont.measure(entity.name)
     entity.rect.w = size.x
     entity.rect.h = size.y
-    editor.uicore.ctx.drawText(editor.resources.mainFont, entity.name, th::Vf2{r.x, r.y}, th::white, editor.tilemapGrid.s.x/32)
+    editor.resources.mainFont.draw(entity.name, th::Vf2{r.x, r.y}, th::white, editor.tilemapGrid.s.x/32)
   } else {
-    editor.uicore.ctx.drawCustom(DrawEntityCmd{entity^, r, tags, editor.tilemapGrid.s.x/32})
+    if !game::drawEntityObject(entity.name, tags, r, editor.tilemapGrid.s.x/32) {
+      canvas::drawRect(th::red, r)
+    }
   }
 }
 
@@ -917,115 +847,6 @@ fn adjustEntityRect(editor: ^Editor, tags: ^game::TagSet, ent: ^world_data::Enti
   }
 
   return r
-}
-
-fn putWorldEntities(editor: ^Editor) {
-  for i in editor.entities.list {
-    ent := &editor.entities.list[i]
-
-    entVisRect := util::rectScale(ent.rect, editor.tilemapGrid.s.x/32).shift(editor.tilemapGrid.toScreen(th::Vf2{0, 0}))
-
-    if !coll::rectToRect(entVisRect, {0, 0, global::screen.w, global::screen.h}) {
-      continue
-    }
-
-    // FIXME: Initializing tag set every time we render an entity is not efficient at all.
-    tags_ := game::initTagSetFromString(ent.tags)
-    tags := new(game::TagSet, tags_)
-    ignore := tags.isSet("Guide") && editor.entityBypass && !isEntitySelected(&editor.entities, i)
-
-    drawTaggedEntityRect(editor, ent, entVisRect, tags)
-
-    if !ignore {
-      editor.uicore.beginTool("Ent"+ent.id, entVisRect)
-
-      if editor.uicore.isCurrentToolActive() {
-        immcursor::setCursor(.sizeAll)
-      }
-
-      if editor.uicore.isCurrentToolFocused() {
-        editor.uicore.ctx.drawRectLines(th::blue, util::rectShrink(entVisRect, -1))
-      } else if editor.uicore.isCurrentToolActive() {
-        editor.uicore.ctx.drawRectLines(th::yellow, util::rectShrink(entVisRect, -1))
-      }
-
-      if isEntitySelected(&editor.entities, i) {
-        if editor.uicore.isCurrentToolFocused() {
-          dx, dy := 0, 0
-          if input::isPressedRepeat(.up) {
-            dy += -1
-            input::clear(.up)
-          }
-          if input::isPressedRepeat(.down) {
-            dy += 1
-            input::clear(.down)
-          }
-          if input::isPressedRepeat(.right) {
-            dx += 1
-            input::clear(.right)
-          }
-          if input::isPressedRepeat(.left) {
-            dx += -1
-            input::clear(.left)
-          }
-          if input::isPressed(.alt) {
-            if dx != 0 {
-              ent.rect.w += dx*32
-              ent.rect.w = 32*round(ent.rect.w/32)
-              editor.dirty = true
-            }
-            if dy != 0 {
-              ent.rect.h += dy*32
-              ent.rect.h = 32*round(ent.rect.h/32)
-              editor.dirty = true
-            }
-          } else {
-            if dx != 0 {
-              ent.rect.x += dx*32
-              ent.rect.x = 32*round(ent.rect.x/32)
-              editor.dirty = true
-            }
-            if dy != 0 {
-              ent.rect.y += dy*32
-              ent.rect.y = 32*round(ent.rect.y/32)
-              editor.dirty = true
-            }
-          }
-        }
-
-        editor.uicore.ctx.drawRectLines(th::yellow, util::rectShrink(entVisRect, 0))
-
-        rectCmd := putRectGrips(editor, entVisRect)
-        delta := editor.uicore.mouseState.delta.div(editor.tilemapGrid.s).mulf(32)
-
-        ent.rect = applyRectResizeCommand(rectCmd, ent.rect, delta)
-
-        adjusted := adjustEntityRect(editor, tags, ent)
-        sizeD := adjusted.getDims().sub(ent.rect.getDims())
-        ent.rect = adjusted
-
-        ent.rect.x -= rectCmd.posFactor.x*sizeD.x
-        ent.rect.y -= rectCmd.posFactor.y*sizeD.y
-      }
-
-      events := editor.uicore.endTool()
-
-      if events.queryMouse(.left, mouseinput::pressed) {
-        selectEntity(&editor.entities, i)
-        editor.wm.setWindowVisible("Entity Editor", true)
-        editor.wm.putWindowOnFront("Entity Editor")
-      }
-      if events.queryMouse(.left, mouseinput::down) {
-        ent.rect.x += events.mouseState.delta.x/editor.tilemapGrid.s.x*32
-        ent.rect.y += events.mouseState.delta.y/editor.tilemapGrid.s.y*32
-        editor.dirty = true
-      }
-    }
-  }
-}
-
-fn deselectEntity(entities: ^EditorEntities) {
-  entities.entitySelected = -1
 }
 
 fn loadRoom(editor: ^Editor, room: str) {
@@ -1071,44 +892,6 @@ fn putNotifications(editor: ^Editor) {
     editor.uicore.ctx.drawText(editor.resources.mainFont, n.info.message, {50-t*500, global::screen.h-58+y+9}, th::black)
     y -= 10
   }
-}
-
-fn putLevelSelect(editor: ^Editor) {
-  widgetWindow(editor, "Level Select", {0, 0, 300, 450}, |editor| {
-    contentRect := util::rectShrink(winfo.contentRect, 5)
-
-    type Level = struct { id, name: str }
-
-    levels := []Level{}
-
-    for i, ent in editor.entities.list {
-      if strings::startsWith(ent.id, "stage") {
-        levels = append(levels, Level{ent.id, ent.name})
-      }
-    }
-
-    sort(levels, true, id)
-    
-    contentSize := ^th::Vf2(editor.uicore.getProperty("ContentSize", th::Vf2{0, 0}))
-    if ok, scrollAreaInfo := beginScrollArea(editor, contentRect, contentSize^); ok {
-      editor.uicore.ctx.beginScissorRect(scrollAreaInfo.areaRect)
-      position := scrollAreaInfo.contentRect.getPos()
-      y := 0.0
-
-      for i, level in levels {
-        p := th::Vf2{position.x+(i%2)*((contentRect.w-30)/2), position.y+(i/2)*45}
-        if editor.ui.buttonOLD(level.name, {p.x, p.y, (contentRect.w-30)/2, 45}) {
-          game::tele(level.id)
-        }
-        y = p.y-position.y+45.0
-      }
-
-      contentSize ^= th::Vf2{contentRect.w, y}
-
-      editor.uicore.ctx.endScissor()
-      endScrollArea(editor)
-    }
-  })
 }
 
 var wm: windows::WindowManager
@@ -1176,7 +959,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
         wm.toggle(name)
       }
     }
-    
+
     iconBtn := fn (name: str, rect: rect::Rect): bool |ui, editor| {
       return ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)})
     }
@@ -1324,6 +1107,178 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   })
 }
 
+fn (editor: ^Editor) putRectGrips(ui: ^ui::UI, r: rect::Rect): RectResizeCommand {
+  // Grips positions are initialized as relative here.
+  // Will be multiplied by rect.w/h and added rect.x/y to them.
+  const eightGrips = []EditGrip{
+    {{0.0, 0.0}, {{1, 1}, {-1, -1}}}, // x
+    {{0.5, 0.0}, {{0, 1}, { 0, -1}}}, // x
+    {{1.0, 0.0}, {{0, 1}, { 1, -1}}}, // x
+
+    {{0.0, 0.5}, {{1, 0}, {-1,  0}}},
+    {{1.0, 0.5}, {{0, 0}, { 1,  0}}},
+
+    {{0.0, 1.0}, {{1, 0}, {-1,  1}}}, // x
+    {{0.5, 1.0}, {{0, 0}, { 0,  1}}}, // x
+    {{1.0, 1.0}, {{0, 0}, { 1,  1}}}  // x
+  }
+
+  activeGrip := -1
+  activeGripPtr := &activeGrip
+
+  for i, grip in eightGrips {
+    gripPos := r.getDims().mul(grip.position).add(r.getPos())
+    gripRect := rect::Rect{gripPos.x-6, gripPos.y-6, 12, 12}
+
+    ui.cellRect(gripRect)
+    ui.row(|i, activeGripPtr| {
+      ui.pushIdStr(sprintf("Grip%d", i))
+
+      if ui.isHovered() {
+        cursor := window::Cursor.sizeAll
+        switch i {
+        case 0, 7: cursor = .sizeNWSE
+        case 2, 5: cursor = .sizeSWNE
+        case 1, 6: cursor = .sizeNS
+        case 3, 4: cursor = .sizeEW
+        }
+        immcursor::setCursor(cursor)
+      }
+    
+      color := th::blue
+
+      if ui.isActive() {
+        color = th::cyan
+        activeGripPtr ^= i
+      }
+
+      ui.drawCustom(|color| {
+        canvas::drawRect(color, dest.shrink({2, 2}))
+        canvas::drawRectLines(th::black, dest.shrink({2, 2}))
+      })
+
+      ui.popId()
+    })
+  }
+
+  if activeGrip == -1 {
+    return RectResizeCommand{}
+  }
+
+  return eightGrips[activeGrip].resizeCommand
+}
+
+fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
+  for i, ent^ in editor.entities.list {
+    entVisRect := util::rectScale(ent.rect, editor.tilemapGrid.s.x/32).shift(editor.tilemapGrid.toScreen(th::Vf2{0, 0}))
+
+    if !coll::rectToRect(entVisRect, ui.io.screen) {
+      continue
+    }
+
+    // @FIXME: Initializing tag set every time we render an entity is not efficient at all.
+    tags_ := game::initTagSetFromString(ent.tags)
+    tags := new(game::TagSet, tags_)
+    ignore := tags.isSet("Guide") && editor.entityBypass && !isEntitySelected(&editor.entities, i)
+
+    ui.cellRect(entVisRect)
+    ui.row(|i, ignore, editor, ent, entVisRect, tags| {
+      hovered := false
+      focused := false
+
+      if !ignore {
+        ui.pushIdStr(sprintf("Ent%v", ent))
+
+        if ui.isActive() {
+          if input::isPressed(.mouse2) {
+            // @HACK: This is a hack to have the tilemap editor pan.
+            grid::gridPan(&editor.tilemapGrid, input::getMouseDelta())
+          }
+          if input::isPressed(.mouse1) {
+            editor.dirty = true
+            ent.rect = ent.rect.shift(input::getMouseDelta().divf(editor.tilemapGrid.s.x/32))
+          }
+        }
+
+        if ui.isFocused() {
+          focused = true
+
+          dx, dy := 0, 0
+          if input::isPressedRepeat(.up) {
+            dy += -1
+            input::clear(.up)
+          }
+          if input::isPressedRepeat(.down) {
+            dy += 1
+            input::clear(.down)
+          }
+          if input::isPressedRepeat(.right) {
+            dx += 1
+            input::clear(.right)
+          }
+          if input::isPressedRepeat(.left) {
+            dx += -1
+            input::clear(.left)
+          }
+          if input::isPressed(.alt) {
+            if dx != 0 {
+              ent.rect.w += dx*32
+              ent.rect.w = 32*round(ent.rect.w/32)
+              editor.dirty = true
+            }
+            if dy != 0 {
+              ent.rect.h += dy*32
+              ent.rect.h = 32*round(ent.rect.h/32)
+              editor.dirty = true
+            }
+          } else {
+            if dx != 0 {
+              ent.rect.x += dx*32
+              ent.rect.x = 32*round(ent.rect.x/32)
+              editor.dirty = true
+            }
+            if dy != 0 {
+              ent.rect.y += dy*32
+              ent.rect.y = 32*round(ent.rect.y/32)
+              editor.dirty = true
+            }
+          }
+
+          editor.entities.entitySelected = i
+        }
+
+        if editor.entities.entitySelected == i {
+          rectCmd := editor.putRectGrips(ui, entVisRect)
+          delta := input::getMouseDelta().div(editor.tilemapGrid.s).mulf(32)
+
+          ent.rect = applyRectResizeCommand(rectCmd, ent.rect, delta)
+
+          adjusted := adjustEntityRect(editor, tags, ent)
+          sizeD := adjusted.getDims().sub(ent.rect.getDims())
+          ent.rect = adjusted
+
+          ent.rect.x -= rectCmd.posFactor.x*sizeD.x
+          ent.rect.y -= rectCmd.posFactor.y*sizeD.y
+        }
+
+        hovered = ui.isHovered()
+
+        ui.popId()
+      }
+
+      ui.drawCustom(|focused, hovered, editor, ent, entVisRect, tags| {
+        drawTaggedEntityRect(editor, ent, entVisRect, tags)
+        if hovered {
+          canvas::drawRectLines(0xFFFF00FF, entVisRect)
+        }
+        if focused {
+          canvas::drawRectLines(0x00FFFFFF, entVisRect.shrink({-1, -1}))
+        }
+      })
+    })
+  }
+}
+
 fn (editor: ^Editor) putUi(ui: ^ui::UI) {
   ui.col(|editor| {
     ui.cellJustify(1)
@@ -1334,6 +1289,8 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
         ui.cellStretch()
         ui.cellJustify(1)
         interaction := putGrid2(&editor.tilemapGrid, ui)
+        
+        editor.putWorldEntities(ui)
 
         // @TODO: Deduplicate
         if interaction.placed {
