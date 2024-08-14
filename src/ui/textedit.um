@@ -53,7 +53,7 @@ fn drawSingleLineEdit(ui: ^ui::UI, edit: ^SingleLineEdit, r: rect::Rect, drawCur
 
   firstLine := getFirstLineOfBuffer(&edit.buffer)
   precursor := strings::uniSlice(firstLine, 0, edit.cursor.column)
-  precursorMeasured := ui.font.measure(precursor)
+  precursorMeasured := ui.font.measure(precursor).mulf(ui.io.scale)
   cursorRect := rect::Rect{precursorMeasured.x, 0, 1, precursorMeasured.y}
 
   // Make sure the cursor is visible on the screen
@@ -76,7 +76,7 @@ fn drawSingleLineEdit(ui: ^ui::UI, edit: ^SingleLineEdit, r: rect::Rect, drawCur
     canvas::drawRect(th::black, cursorRect)
   }
   
-  ui.font.draw(firstLine, r.getPos().add(th::Vf2{edit.scrollX, 0}), th::black)
+  ui.font.draw(firstLine, r.getPos().add(th::Vf2{edit.scrollX, 0}), th::black, ui.io.scale)
 }
 
 // @returns Is dirty
@@ -140,7 +140,7 @@ fn putSingleLine*(ui: ^ui::UI, name: str, value: ^str): bool {
       canvas::drawRect(th::white, dest.shrink({4, 4}))
       canvas::beginScissorRect(dest.shrink({4, 4}))
 
-      fontHeight := ui.font.measure(" ").y
+      fontHeight := ui.font.measure(" ").y*ui.io.scale
       textRect := rect::Rect{dest.x+5, dest.y+(dest.h-fontHeight)/2.0, dest.w-10, fontHeight}
       drawSingleLineEdit(ui, edit, textRect, focused)
 

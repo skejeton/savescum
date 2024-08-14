@@ -34,6 +34,10 @@ fn put*(ui: ^ui::UI, scrollbar: ^Scrollbar) {
       })
 
       thumbRect := ui.getRect()
+      thumbRect.x /= ui.io.scale
+      thumbRect.y /= ui.io.scale
+      thumbRect.w /= ui.io.scale
+      thumbRect.h /= ui.io.scale
       thumbHeight := (scrollbar.viewportSize/scrollbar.contentSize)*thumbRect.h
       thumbRect.y += thumbRect.h*(scrollbar.scrolling/scrollbar.contentSize)
       thumbRect.h = thumbHeight
