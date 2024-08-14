@@ -22,6 +22,7 @@ import (
   "../ui/windows.um"
   "../ui/notification.um"
   "../ui/ui.um"
+  "../ui/scrollbar.um"
   "../ui/themer.um"
   "session.um"
 
@@ -1175,6 +1176,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
         wm.toggle(name)
       }
     }
+    
     iconBtn := fn (name: str, rect: rect::Rect): bool |ui, editor| {
       return ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)})
     }
@@ -1187,6 +1189,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     windowBtn("Console", {48, 0, 48, 48})
     // @TODO: Add level list
     if editor.isPlaying {
+      windowBtn("Level Select", {48*3, 48*3, 48, 48}) 
       return
     }
 
@@ -1276,6 +1279,31 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
         p := editor.tilesetGrid.toScreen(editor.tileSelected)
         canvas::drawRectLines(0x00FF0099, {p.x, p.y, editor.tilesetGrid.s.x, editor.tilesetGrid.s.y}, 1)
+      })
+    })
+  } else {
+    wm.window("Level Select", |editor| {
+      ui.cellStretch()
+      ui.cellJustify(1)
+      scrollbar::putScrollbarArea(ui, |editor| {
+        type Level = struct { id, name: str }
+
+        levels := []Level{}
+
+        for i, ent in editor.entities.list {
+          if strings::startsWith(ent.id, "stage") {
+            levels = append(levels, Level{ent.id, ent.name})
+          }
+        }
+
+        sort(levels, true, id)
+
+        for i, level in levels {
+          ui.cellStretch()
+          if ui.button(level.name) {
+            game::tele(level.id)
+          }
+        }
       })
     })
   }

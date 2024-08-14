@@ -1,0 +1,93 @@
+import (
+  "../ui/ui.um"
+  "canvas.um"
+  "../misc/util.um"
+)
+
+type (
+  Scrollbar* = struct {
+    scrolling:    real
+    viewportSize: real
+    contentSize:  real
+  }
+)
+
+fn put*(ui: ^ui::UI, scrollbar: ^Scrollbar) {
+  ui.col(|scrollbar| {
+    if scrollbar.contentSize <= scrollbar.viewportSize {
+      return
+    }
+
+    ui.pushIdStr("Scrollbar")
+    ui.cellStretch()
+    ui.cellSameSize()
+    if ui.button("⮝") {
+      scrollbar.scrolling -= 10
+    }
+    ui.cellJustify(1)
+    ui.cellStretch()
+
+    ui.row(|scrollbar| {
+      ui.pushIdStr("ThumbArea")
+      ui.drawCustom({
+        canvas::drawRect(0x777777FF, dest)
+      })
+
+      thumbRect := ui.getRect()
+      thumbHeight := (scrollbar.viewportSize/scrollbar.contentSize)*thumbRect.h
+      thumbRect.y += thumbRect.h*(scrollbar.scrolling/scrollbar.contentSize)
+      thumbRect.h = thumbHeight
+
+      ui.cellRect(thumbRect)
+      ui.row(|scrollbar| {
+        ui.boxStyle(.button)
+        ui.pushIdStr("Thumb")
+        if ui.isActive() {
+          scrollbar.scrolling += ui.io.mouseDelta.y*(scrollbar.contentSize/scrollbar.viewportSize)
+        }
+        ui.popId()
+      })
+      ui.popId()
+    })
+    ui.cellStretch()
+    ui.cellSameSize()
+    if ui.button("⮟") {
+      scrollbar.scrolling += 10
+    }
+    ui.popId()
+  })
+
+  if scrollbar.scrolling < 0 {
+    scrollbar.scrolling = 0
+  } else if scrollbar.scrolling > scrollbar.contentSize-scrollbar.viewportSize {
+    scrollbar.scrolling = util::max(scrollbar.contentSize-scrollbar.viewportSize, 0)
+  }
+}
+
+fn putScrollbarArea*(ui: ^ui::UI, cb: fn (ui: ^ui::UI)) {
+  ui.row(|cb| {
+    ui.pushIdStr("ScrollbarArea")
+
+    scrollbar := ^Scrollbar(ui.getData()^)
+    if scrollbar == null {
+      ui.getData() ^= Scrollbar{}
+      scrollbar = ^Scrollbar(ui.getData()^)
+    }
+
+    ui.cellScroll({0, -scrollbar.scrolling})
+    ui.cellJustify(1)
+    ui.col(|cb, scrollbar| {
+      ui.pushIdStr("ContentArea")
+      scrollbar.contentSize = ui.getRect().h
+      cb(ui)
+      ui.popId()
+    })
+
+    scrollbar.viewportSize = ui.getRect().h
+
+    ui.cellStretch()
+    put(ui, scrollbar)
+
+    ui.popId()
+  })
+}

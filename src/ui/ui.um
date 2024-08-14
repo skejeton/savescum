@@ -73,12 +73,14 @@ type (
     rect: rect::Rect
     flags: uint
     color: uint32
+    scroll: th::Vf2
   }
 
   El* = struct {
-    parent:   weak ^El
-    children: []^El
-    id:       uint
+    parent:      weak ^El
+    children:    []^El
+    id:          uint
+    interactive: bool
 
     layout:      LayoutType
     size:        th::Vf2
@@ -97,6 +99,7 @@ type (
     rect:     rect::Rect
     state:    BoxState
     boxStyle: BoxStyle
+    data:     any
   }
 
   Attention* = struct {
@@ -228,6 +231,8 @@ fn (ui: ^UI) layout2(node: ^El, pos: th::Vf2) {
       alignedPos.x += (node.size.x - node.padding*2 - child.size.x) * node.cell.align
     }
 
+    alignedPos = alignedPos.add(child.cell.scroll)
+
     ui.layout2(child, alignedPos)
     if node.layout == .row {
       pos.x += child.size.x
@@ -242,6 +247,7 @@ fn (ui: ^UI) layout3(node: ^El) {
   node.cell.rect.y *= ui.io.scale
   node.cell.rect.w = node.size.x*ui.io.scale
   node.cell.rect.h = node.size.y*ui.io.scale
+  ui.retained[node.id].rect = node.cell.rect
 
   for i, child in node.children {
     ui.layout3(child)
@@ -258,7 +264,7 @@ fn findClosestRetainedAncestorId(el: ^El): uint {
 
 fn (ui: ^UI) processAttentionRec(el: ^El, r: rect::Rect) {
   // @MARK(DirectInput)
-  if coll::vf2ToRect(input::getMousePos(), el.cell.rect) && coll::vf2ToRect(input::getMousePos(), r) {
+  if el.interactive && coll::vf2ToRect(input::getMousePos(), el.cell.rect) && coll::vf2ToRect(input::getMousePos(), r) {
     id := findClosestRetainedAncestorId(el)
     ui.attention.hovered = id
     // @MARK(DirectInput)
@@ -468,6 +474,16 @@ fn (ui: ^UI) partiallyOob*(rect: rect::Rect): bool {
          rect.x+rect.w > ui.io.screen.x+ui.io.screen.w || rect.y+rect.h > ui.io.screen.y+ui.io.screen.h
 }
 
+// @NOTE: Doesn't work on elements without an ID.
+fn (ui: ^UI) getRect*(): rect::Rect {
+  return ui.retained[ui.lastEl().id].rect
+}
+
+// @NOTE: Doesn't work on elements without an ID.
+fn (ui: ^UI) getData*(): ^any {
+  return &ui.retained[ui.lastEl().id].data
+}
+
 // >>> STYLING >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 fn (ui: ^UI) boxStyle*(style: BoxStyle) {
@@ -484,6 +500,10 @@ fn (ui: ^UI) setBoxCursor*(style: BoxStyle, cursor: window::Cursor) {
 }
 
 // >>> CELLS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+fn (ui: ^UI) cellScroll*(scroll: th::Vf2) {
+  ui.cell.scroll = scroll
+}
 
 fn (ui: ^UI) cellStretch*() {
   ui.cell.flags |= cellStretched
@@ -514,10 +534,12 @@ fn (ui: ^UI) cellJustify*(j: real) {
 // >>> EVENTS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 fn (ui: ^UI) isHovered*(): bool {
+  ui.lastEl().interactive = true
   return ui.attention.hovered == ui.lastEl().id
 }
 
 fn (ui: ^UI) isActive*(): bool {
+  ui.lastEl().interactive = true
   return ui.attention.active == ui.lastEl().id && ui.attention.active != 0
 }
 
@@ -552,6 +574,8 @@ fn (ui: ^UI) button*(text: str): bool {
   ui.pushIdStr(text)
   ui.boxStyle(.button)
 
+  // @HACK
+  el.interactive = true
   el.layout = .row
   el.padding = 10
   el.cell.align = 0.5
@@ -559,6 +583,7 @@ fn (ui: ^UI) button*(text: str): bool {
   ui.spring(1)
   ui.label(text)
   ui.spring(1)
+  
 
   // @ROOT(DirectInput): Don't use `input` directly. 
   pressed := 
@@ -577,6 +602,8 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
   ui.pushIdStr(name)
   ui.boxStyle(.button)
 
+  // @HACK
+  el.interactive = true
   el.layout = .row
   el.padding = 5
 

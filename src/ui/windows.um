@@ -2,6 +2,7 @@ import (
   "rect.um"
   "th.um"
   "input.um"
+  "scrollbar.um"
   "../ui/ui.um"
 )
 
@@ -129,12 +130,12 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
     ui.cellStretch()
     ui.cellJustify(1)
     ui.cellClip()
-    ui.col(|w| {
+    ui.row(|w| {
       ui.cellStretch()
       ui.cellJustify(1)
       ui.col(|w| {
         w.cb(ui)
-      }).padding = 5
+      })
     })
 
     // Resize handle
@@ -165,7 +166,7 @@ fn (it: ^WindowManager) display*(ui: ^ui::UI) {
       ordered = append(ordered, w)
     }
     sort(ordered, {return a^.order - b^.order})
-    
+
     for _, w in ordered {
       if !w.hidden {
         it.displayWindow(w, ui)
