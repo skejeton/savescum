@@ -505,6 +505,10 @@ fn (ui: ^UI) cellScroll*(scroll: th::Vf2) {
   ui.cell.scroll = scroll
 }
 
+fn (ui: ^UI) cellAlign*(align: real) {
+  ui.cell.align = align
+}
+
 fn (ui: ^UI) cellStretch*() {
   ui.cell.flags |= cellStretched
 }

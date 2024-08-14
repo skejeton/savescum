@@ -1,0 +1,155 @@
+import (
+  "canvas.um"
+  "rect.um"
+  "utf8.um"
+  "th.um"
+  "input.um"
+  "../misc/immcursor.um"
+  "../ui/ui.um"
+  "../txt/buffer.um"
+  "../misc/strings.um"
+)
+
+type (
+  SingleLineEdit = struct {
+    scrollX: real
+    buffer: buffer::Buffer
+    cursor: buffer::Cursor
+  }
+)
+
+fn insertInputTextIntoOneLineBuffer(buffer: ^buffer::Buffer, cursor: ^buffer::Cursor, text: str): bool {
+  runes := utf8::decode(text)
+  dirty := false
+
+  for index, rune in runes {
+    buffer.insert(cursor, rune.encode())
+    dirty = true
+  }
+
+  return dirty
+}
+
+fn getFirstLineOfBuffer(buffer: ^buffer::Buffer): str {
+  if len(buffer.lines) == 0 {
+    return ""
+  }
+
+  return buffer.lines[0]
+}
+
+fn initSingleLineEdit(from: str): SingleLineEdit {
+  buf :=  buffer::Buffer{lines: []str{from}}
+  // NOTE: Maxout cursor
+  cursor := buf.sanitizeCursor(buffer::Cursor{10000, 10000})
+
+  return SingleLineEdit{0, buf, cursor}
+}
+
+fn initBufferFromString(s: str): buffer::Buffer {
+  return buffer::Buffer{lines: []str{s}}
+}
+
+fn drawSingleLineEdit(ui: ^ui::UI, edit: ^SingleLineEdit, r: rect::Rect, drawCursor: bool) {
+
+  firstLine := getFirstLineOfBuffer(&edit.buffer)
+  precursor := strings::uniSlice(firstLine, 0, edit.cursor.column)
+  precursorMeasured := ui.font.measure(precursor)
+  cursorRect := rect::Rect{precursorMeasured.x, 0, 1, precursorMeasured.y}
+
+  // Make sure the cursor is visible on the screen
+  // NOTE: Maybe I shouldn't modify the editor state while drawing eh?
+  if (cursorRect.x+cursorRect.w) > (r.w-edit.scrollX) {
+    edit.scrollX = -(cursorRect.x+cursorRect.w-r.w)
+  }
+  if cursorRect.x < -edit.scrollX {
+    edit.scrollX = -cursorRect.x
+  }
+
+  if r.w > cursorRect.x {
+    edit.scrollX = 0
+  }
+
+  cursorRect.x += r.x+edit.scrollX
+  cursorRect.y += r.y
+
+  if drawCursor {
+    canvas::drawRect(th::black, cursorRect)
+  }
+  
+  ui.font.draw(firstLine, r.getPos().add(th::Vf2{edit.scrollX, 0}), th::black)
+}
+
+// @returns Is dirty
+fn putSingleLine*(ui: ^ui::UI, name: str, value: ^str): bool {
+  dirty := false
+  dirtyPtr := &dirty
+
+  ui.row(|dirtyPtr, name, value| {
+    ui.boxStyle(.button)
+    ui.pushIdStr(name)
+
+    // @HACK: Adjust the height automatically.
+    ui.label(" ")
+
+    edit := ^SingleLineEdit(ui.getData()^)
+    if edit == null {
+      ui.getData() ^= initSingleLineEdit(value^)
+      edit = ^SingleLineEdit(ui.getData()^)
+    }
+    edit.buffer = initBufferFromString(value^)
+    edit.cursor = edit.buffer.sanitizeCursor(edit.cursor)
+
+    focused := false
+
+    // @TODO: Figure out why this makes the cursor flicker.
+    // if ui.isHovered() {
+    //   immcursor::setCursor(.iBeam)
+    // }
+
+    if ui.isFocused() {
+      focused = true
+
+      dirtyPtr ^= insertInputTextIntoOneLineBuffer(&edit.buffer, &edit.cursor, input::getStr())
+      if input::isPressedRepeat(.backspace) {
+        edit.buffer.erase(&edit.cursor)
+        dirtyPtr ^= true
+        input::clear(.backspace)
+      }
+      if input::isPressedRepeat(.delete) {
+        cursorNext := edit.cursor
+        cursorNext.column += 1
+        if cursorNext.column <= len(edit.buffer.lines[0]) {
+          cursorNext = edit.buffer.sanitizeCursor(cursorNext)
+          edit.buffer.erase(&cursorNext)
+        }
+        dirtyPtr ^= true
+        input::clear(.delete)
+      }
+      if input::isPressedRepeat(.left) {
+        edit.cursor = edit.buffer.moveCursor(edit.cursor, -1, 0)
+        input::clear(.left)
+      }
+      if input::isPressedRepeat(.right) {
+        edit.cursor = edit.buffer.moveCursor(edit.cursor, 1, 0)
+        input::clear(.right)
+      }
+    }
+
+    ui.drawCustom(|focused, edit, ui| {
+      // Draw the inside white
+      canvas::drawRect(th::white, dest.shrink({4, 4}))
+
+      fontHeight := ui.font.measure(" ").y
+      textRect := rect::Rect{dest.x+5, dest.y+(dest.h-fontHeight)/2.0, dest.w-10, fontHeight}
+      drawSingleLineEdit(ui, edit, textRect, focused)
+    })
+
+    value ^= getFirstLineOfBuffer(&edit.buffer)
+
+    ui.popId()
+  }).padding = 10
+
+  return dirty
+}
+
