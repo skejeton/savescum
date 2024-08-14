@@ -4,15 +4,11 @@ import (
   "th.um"
   "rect.um"
 
+  "../ui/windows.um"
+
   "../../umbox/jsonenc/jsonenc.um"
   "../../umbox/json/json.um"
 )
-
-type Window* = struct {
-  name: str
-  visible: bool
-  rect: rect::Rect
-}
 
 type Session* = struct {
   pan: th::Vf2
@@ -23,7 +19,7 @@ type Session* = struct {
   layerSelected: int
   tileSelected: th::Vf2
   plainBiscuit: bool
-  windows: []Window
+  windows: []windows::WindowState
   showUiDebug: bool
 }
 
@@ -97,6 +93,8 @@ fn save*(session: Session): str {
             enc.putVal(window.rect.h)
           }
           enc.endArray()
+          enc.putKey("order")
+          enc.putVal(window.order)
         }
         enc.endObject()
       }
@@ -138,10 +136,12 @@ fn load*(sourceStr: str): Session {
   for _, window_ in windows  {
     window := map[str]any(window_)
 
-    win := Window{}
+    win := windows::WindowState{}
     win.name = str(window["name"])
     win.visible = bool(window["visible"])
     win.rect = decRect(window["rect"])
+    win.order = valid(window["order"]) ? trunc(decNumber(window["order"])) : 0
+
     session.windows = append(session.windows, win)
   }
 

@@ -133,6 +133,8 @@ type (
   }
 ) 
 
+var wm: windows::WindowManager
+
 fn drawBevelRect(editor: ^Editor, r: rect::Rect, pushed: bool = false, color: uint32 = th::white) {
   if payload_trigger::aprilFools() {
     color = color::hsv(th::time/5000.0, 0.9, 1.0)
@@ -661,8 +663,6 @@ fn putNotifications(editor: ^Editor) {
   }
 }
 
-var wm: windows::WindowManager
-
 type GridInteraction = struct {
   placed:  bool
   removed: bool
@@ -1147,12 +1147,7 @@ fn editorSaveSession(editor: ^Editor): session::Session {
   session.tileSelected  = editor.tileSelected
   session.showUiDebug = editor.showUiDebugInfo
   session.plainBiscuit = global::plainBiscuit
-
-  for name, win in editor.wm.windows {
-    isVisible := editor.wm.windowVisibility[name]
-
-    session.windows = append(session.windows, session::Window{name, isVisible, win.rect})
-  }
+  session.windows = wm.saveState()
 
   return session
 }
@@ -1169,10 +1164,7 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
   editor.showUiDebugInfo = session.showUiDebug
   global::plainBiscuit = session.plainBiscuit
 
-  for i, win in session.windows {
-    editor.wm.setWindowVisible(win.name, win.visible)
-    editor.wm.getWindowRect(win.name, win.rect)
-  }
+  wm.loadState(session.windows)
 }
 
 fn (editor: ^Editor) handleShortcuts*() {

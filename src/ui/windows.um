@@ -8,6 +8,13 @@ import (
 type (
   WindowCallback* = fn(ui: ^ui::UI)
 
+  WindowState* = struct{
+    name: str
+    visible: bool
+    rect: rect::Rect
+    order: int
+  }
+
   Window* = struct {
     handled: bool
     hidden:  bool
@@ -182,5 +189,24 @@ fn (it: ^WindowManager) reset*() {
     w.rect = it.allocateRect()
     w.order = 0
     it.touchWindow(w.title)
+  }
+}
+
+fn (it: ^WindowManager) saveState*(): []WindowState {
+  states := []WindowState{}
+
+  for _, w^ in it.windows {
+    states = append(states, WindowState{name: w.title, visible: !w.hidden, rect: w.rect, order: w.order})
+  }
+
+  return states
+}
+
+fn (it: ^WindowManager) loadState*(states: []WindowState) {
+  for _, state in states {
+    w := &it.windows[state.name]
+    w.hidden = !state.visible
+    w.rect = state.rect
+    w.order = state.order
   }
 }
