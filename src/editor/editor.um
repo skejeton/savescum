@@ -11,8 +11,6 @@ import (
   "canvas.um"
   "input.um"
   "coll.um"
-
-  "utf8.um"
   "std.um"
 
 
@@ -46,7 +44,6 @@ import (
   debug_info = "../dbg/info.um"
   render_debug_info = "../dbg/render.um"
   "../gfx/drawcmd.um"
-  "../txt/buffer.um"
   "grid.um"
 
   "font.um"
@@ -62,13 +59,6 @@ type (
     gameplay
   }
 
-  ButtonState = struct {
-    isOver: bool
-    isDown: bool
-    isPressed: bool
-    isReleased: bool
-  }
-  
   WindowInfo = struct {
     contentRect: rect::Rect
     titlebarRect: rect::Rect
@@ -169,16 +159,6 @@ fn centerTextWithinRect(font: font::Font, text: str, r: rect::Rect): th::Vf2 {
   return {(r.w-sz.x)/2+r.x, (r.h-sz.y)/2+r.y}
 }
 
-fn drawButton(editor: ^Editor, r: rect::Rect, buttonState: ButtonState, revert: bool = false, color: uint32 = 0xFFFFFFFF) {
-  pushed := buttonState.isDown != revert
-
-  colorMod := 0xFFFFFFFF
-  if pushed {
-    colorMod = 0xCCCCCCFF
-  }
-
-  drawBevelRect(editor, r, pushed, colorMod&color)
-}
 
 fn drawButtonInactive(editor: ^Editor, r: rect::Rect, text: str, color: uint32 = 0x999999FF) {
   editor.uicore.beginTool(text, r)
@@ -190,31 +170,6 @@ fn drawButtonInactive(editor: ^Editor, r: rect::Rect, text: str, color: uint32 =
   text = strings::splitBy(text, '#')[0]
   editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {60, 30, 30, 30}, {10, 10, 10, 10}, r, 0xFFFFFFFF)
   editor.uicore.ctx.drawText(editor.resources.mainFont, text, centerTextWithinRect(editor.resources.mainFont, text, r), 0x000000FF)
-}
-
-fn putButton(editor: ^Editor, r: rect::Rect, name: str): ButtonState {
-  editor.uicore.beginTool(name, r)
-
-  buttonState := ButtonState{}
-  toolState := editor.uicore.getCurrentToolState()
-  events := editor.uicore.endTool()
-
-  if (toolState.active) {
-    buttonState.isOver = true
-    buttonState.isDown = events.queryMouse(.left, mouseinput::down) || events.queryMouse(.left, mouseinput::released)
-    buttonState.isPressed = events.queryMouse(.left, mouseinput::pressed)
-    buttonState.isReleased = events.queryMouse(.left, mouseinput::released) && toolState.hovered
-
-    immcursor::setCursor(.finger)
-  }
-
-  return buttonState
-}
-
-fn putButtonBase(editor: ^Editor, r: rect::Rect, name: str, revert: bool = false, color: uint32 = 0xFFFFFFFF): ButtonState {
-  bs := putButton(editor, r, name)
-  drawButton(editor, r, bs, revert, color)
-  return bs
 }
 
 fn widgetWindow(editor: ^Editor, title: str, rect: rect::Rect, handler: fn (winfo: WindowInfo): void, transparent: bool = false) {
@@ -233,80 +188,10 @@ fn putTextEditOneLine(editor: ^Editor, r: rect::Rect, name: str, value: ^str): b
 }
 
 fn beginScrollArea(editor: ^Editor, areaRect: rect::Rect, contentSize: th::Vf2): (bool, ScrollAreaInfo) {
-  const (
-    handleSize = 27
-  )
-
-  editor.uicore.ctx.drawNinepatch(editor.resources.bevelImage, {30*2, 0, 30, 30}, {10, 10, 10, 10}, areaRect, 0xFFFFFFFF)
-
-  areaRect.x += 5
-  areaRect.y += 5
-  areaRect.w -= 10
-  areaRect.h -= 10
-
-  editor.uicore.beginTool("ScrollArea", areaRect)
-
-  scroll := ^real(editor.uicore.getProperty("ScrollAreaScroll", 0.0))
-  overflow := util::clamp(contentSize.y-areaRect.h, 0, contentSize.y)
-  scrollValue := util::clamp(scroll^, 0, overflow)
-  yScrollOverflowFactor := 0.0
-  if areaRect.h != 0 {
-    yScrollOverflowFactor = contentSize.y/areaRect.h
-  }
-  doNotTruncateScroll := false
-
-  rightHandleRect := util::rectCutRight(areaRect, handleSize)
-  editor.uicore.ctx.drawRect(0x777777FF, rightHandleRect)
-
-  // If there's yknow, some overflow..
-  if yScrollOverflowFactor > 1 {
-    thumbHeight := rightHandleRect.h/yScrollOverflowFactor
-    thumbGap := (rightHandleRect.h-thumbHeight)
-    thumbOffset := thumbGap*(scrollValue/overflow)
-    thumbRect := rightHandleRect
-    thumbRect.h = thumbHeight
-    thumbRect.y += thumbOffset
-
-    if thumbRect.h < 10 {
-      thumbRect.h = 10
-    }
-
-    thumbState := putButtonBase(editor, util::rectShrink(thumbRect, 1), "ScrollbarThumb")
-    if thumbState.isDown {
-      doNotTruncateScroll = true
-      scroll ^+= editor.uicore.mouseState.delta.y*yScrollOverflowFactor
-    }
-
-  }
-
-  if editor.showDebugInfo {
-    // Show where the content ends.
-    editor.uicore.ctx.moveLayer(1)
-    editor.uicore.ctx.drawRect(th::magenta, {areaRect.x, areaRect.y+contentSize.y, contentSize.x, 1})
-    editor.uicore.ctx.moveLayer(-1)
-  }
-
-  if !doNotTruncateScroll {
-    // Clamp the scroll to the valid scroll range.
-    scroll^ = util::clamp(scroll^, 0, overflow)
-  }
-
-  areaRect.w -= handleSize
-  areaRect.w += 1 // Account for uneven padding between content and border
-  contentRect := areaRect
-  contentRect.w -= 1
-  contentRect.y -= scrollValue
-
-
-  return true, ScrollAreaInfo{areaRect: areaRect, contentRect: contentRect}
+  return true, ScrollAreaInfo{}
 }
 
 fn endScrollArea(editor: ^Editor) {
-  scroll := ^real(editor.uicore.getProperty("ScrollAreaScroll", 0.0))
-
-  events := editor.uicore.endTool()
-
-  scroll ^-= events.queryScroll()*20.0
 }
 
 fn roomToPath(room: str): str {

@@ -4,7 +4,6 @@ import (
   "utf8.um"
   "th.um"
   "input.um"
-  "../misc/immcursor.um"
   "../ui/ui.um"
   "../txt/buffer.um"
   "../misc/strings.um"
