@@ -945,6 +945,12 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
 
         hovered = ui.isHovered()
 
+        if hovered {
+          // @HACK: This should be done in UI event interception.
+          wheel := input::getMouseScroll().y
+          grid::gridZoomInto(&editor.tilemapGrid, updateZoom(editor.tilemapGrid.s.x, wheel/10.0), input::getMousePos())
+        }
+
         ui.popId()
       }
 
