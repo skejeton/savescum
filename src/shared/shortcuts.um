@@ -1,7 +1,7 @@
 import (
 	"input.um"
 	"window.um"
-  "../ui/wm.um"
+  "../ui/windows.um"
 )
 
 // Enables: alt+enter: Enter/Leave fullscreen
@@ -12,11 +12,10 @@ fn fullscreen*() {
 	}
 }
 
-fn console*(wm: ^wm::WM) {
+fn console*(wm: ^windows::WindowManager) {
   if input::isPressed(.alt) && input::isJustPressed(.t) {
     input::clear(.t)
-    wm.putWindowOnFront("Console (Aux)")
-    wm.setWindowVisible("Console (Aux)", !wm.isWindowVisible("Console (Aux)"))
+    wm.toggle("Console")
   }
 }
 

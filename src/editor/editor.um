@@ -13,9 +13,6 @@ import (
   "std.um"
 
 
-  "../ui/core.um"
-  "../ui/atoms.um"
-  "../ui/wm.um"
   "../ui/windows.um"
   "../ui/notification.um"
   "../ui/ui.um"
@@ -112,11 +109,9 @@ type (
     // UI misc.
     currentWindow: str
     currentWindowLayer: int
-    wm: wm::WM
     keepActive: bool
 
     // UI state
-    uicore: ^core::Core
     ui: ^ui::UI
   }
 ) 
@@ -166,7 +161,6 @@ fn editorSaveRoom(editor: ^Editor) {
 
 fn editorToggleGame(editor: ^Editor) {
   if (!editor.isPlaying) {
-    editor.wm.setWindowVisible("Level Select", true)
     editor.debugTimerStarted = true
     editor.debugTimerOrigin = th::time
     editor.debugTimer = 0
@@ -337,8 +331,7 @@ fn doEntityAction(editor: ^Editor, action: EntityListAction, i: int) {
       editor.dirty = true
     case .edit:
       selectEntity(&editor.entities, i)
-      editor.wm.setWindowVisible("Entity Editor", true)
-      editor.wm.putWindowOnFront("Entity Editor")
+      wm.show("Entity Editor")
     case .duplicate:
       appendEntity(&editor.entities, cloneEntity(editor.entities.list, editor.entities.list[i]))
       pmoveFrom ^= len(editor.entities.list)-1
@@ -1060,7 +1053,7 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
 }
 
 fn (editor: ^Editor) handleShortcuts*() {
-  shortcuts::console(&editor.wm)
+  shortcuts::console(&wm)
   shortcuts::fullscreen()
   if input::isPressed(.ctrl) {
     if input::isJustPressedc('s') {
@@ -1069,8 +1062,8 @@ fn (editor: ^Editor) handleShortcuts*() {
     }
     if input::isJustPressedc('q') {
       input::clearc('q')
-      for w in editor.wm.windows {
-        editor.wm.setWindowVisible(w, false)
+      for _, w^ in wm.windows {
+        w.hidden = true
       }
     }
     if input::isJustPressedc('d') {
@@ -1140,7 +1133,6 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
   editor := &Editor{
     mode: .editor,
     ui: ui,
-    uicore: new(core::Core, core::mk()),
     tilemapGrid: grid::Grid{s: {48, 48}},
     tilesetGrid: grid::Grid{s: {48, 48}},
     tilemapShowAllLayers: false,
@@ -1148,8 +1140,7 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
     tileset: tileset,
     world: world::fromTileset(tileset),
     resources: resources,
-    entities: createEditorEntities(),
-    wm: wm::create()
+    entities: createEditorEntities()
   }
 
   // @TODO: Re add the april fools joke :V
@@ -1255,5 +1246,4 @@ fn (editor: ^Editor) destroy*() {
   if err.code != 0 {
     dbg::logt("Failed to save session!")
   }
-  atoms::disconnectAllNodes(editor.uicore.tools)
 }
