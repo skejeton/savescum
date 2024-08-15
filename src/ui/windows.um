@@ -55,7 +55,7 @@ fn (it: ^WindowManager) touchWindow(title: str) {
   }
 }
 
-fn (it: ^WindowManager) window*(title: str, cb: WindowCallback) {
+fn (it: ^WindowManager) window*(title: str, cb: WindowCallback, hidden: bool = false) {
   didExist := validkey(it.windows, title)
 
   w := &it.windows[title]
@@ -63,6 +63,7 @@ fn (it: ^WindowManager) window*(title: str, cb: WindowCallback) {
   w.cb = cb
   w.handled = true
   if !didExist {
+    w.hidden = hidden
     w.rect = it.allocateRect()
     it.touchWindow(title)
   }
@@ -192,7 +193,9 @@ fn (it: ^WindowManager) reset*() {
   for k, w^ in it.windows {
     w.rect = it.allocateRect()
     it.touchWindow(k)
-    w.handled = false
+    if !valid(w.cb) {
+      w.handled = false
+    }
   }
 }
 

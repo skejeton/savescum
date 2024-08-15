@@ -673,9 +673,6 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       editor.tilemapGrid.p = {0, 0}
       editor.tilemapGrid.s = {48, 48}
     }
-    ui.cellStretch()
-    ui.cellSameSize()
-    if ui.button("R/U") { wm.reset() }
     ui.spring(1)
 
     ui.cellStretch()
@@ -686,11 +683,19 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     if ui.button("Save") {
       editorSaveRoom(editor)
     }
+    windowBtn("Settings", {96, 192, 48, 48})
   }).padding = 5
 
   if !editor.isPlaying {
     editor.putEntityEditor(ui)
     editor.putEntityList(ui)
+
+    wm.window("Settings", |editor| {
+      ui.cellStretch()
+      if ui.button("Reset UI") {
+        wm.reset()
+      }
+    }, true)
 
     wm.window("Load Room", |editor| {
       ui.label("Room name: ")
@@ -1043,7 +1048,7 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
     ui.drawCustom(|editor| {
       window::showCursor(!editor.isRelocatingPlayer)
       if editor.isRelocatingPlayer {
-        editor.resources.toolbarIcons.crop(th::Vf2{2.0/4.0, 0.0/4.0}, th::Vf2{3.0/4.0, 1.0/4.0})
+        editor.resources.toolbarIcons.cropRect({96, 0, 48, 48})
         editor.resources.toolbarIcons.draw({s: {1, 1}, p: input::getMousePos()})
       }
     })
