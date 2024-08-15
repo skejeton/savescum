@@ -105,11 +105,7 @@ type (
     currentRoom: str
     dirty: bool
     mode: EditorMode
-
-    // UI misc.
-    currentWindow: str
-    currentWindowLayer: int
-    keepActive: bool
+    entitySearch: str
 
     // UI state
     ui: ^ui::UI
@@ -529,15 +525,27 @@ fn (editor: ^Editor) putEntityEditor(ui: ^ui::UI) {
   }
 }
 
+fn matchSearch(needle: str, haystack: str): bool {
+  return strings::search(strings::toLowerS(needle), strings::toLowerS(haystack))
+}
+
 fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
   wm.window("Entity List", |editor| {
     _actions := map[int]EntityListAction{}
     actions := &_actions
 
     ui.cellStretch()
+    textedit::putSingleLine(ui, "Search", &editor.entitySearch)
+
+    ui.cellStretch()
     ui.cellJustify(1)
+    ui.cellClip()
     scrollbar::putScrollbarArea(ui, |editor, actions| {
       for i, ent in editor.entities.list {
+        if !matchSearch(editor.entitySearch, ent.name) && !matchSearch(editor.entitySearch, ent.id) && !matchSearch(editor.entitySearch, ent.tags) {
+          continue
+        }
+
         ui.cellStretch()
         ui.row(|editor, actions, ent, i| {
           action := EntityListAction.none

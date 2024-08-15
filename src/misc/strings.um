@@ -134,3 +134,25 @@ fn toUpperS*(s: str): str {
   }
   return res
 }
+
+fn toLowerS*(s: str): str {
+  res := ""
+  for i, c in s {
+    if c >= 'A' && c <= 'Z' {
+      res += char(int(c) + int('a')-int('A'))
+    } else {
+      res += c
+    }
+  }
+  return res
+}
+
+fn search*(needle: str, haystack: str): bool {
+  for i := 0; i < len(haystack); i++ {
+    if startsWith(slice(haystack, i), needle) {
+      return true
+    }
+  }
+  return false
+}
+

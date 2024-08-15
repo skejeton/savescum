@@ -82,7 +82,7 @@ fn (it: ^WindowManager) toggle*(title: str) {
 fn (it: ^WindowManager) show*(title: str) {
   if validkey(it.windows, title) {
     w := &it.windows[title]
-    w.hidden = true
+    w.hidden = false
     w.order = it.lastOrder+1
     it.lastOrder++
     it.lastWindow = w

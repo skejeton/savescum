@@ -49,7 +49,7 @@ fn initBufferFromString(s: str): buffer::Buffer {
   return buffer::Buffer{lines: []str{s}}
 }
 
-fn drawSingleLineEdit(ui: ^ui::UI, edit: ^SingleLineEdit, r: rect::Rect, drawCursor: bool) {
+fn drawSingleLineEdit(ui: ^ui::UI, edit: ^SingleLineEdit, r: rect::Rect, drawCursor: bool, name: str) {
 
   firstLine := getFirstLineOfBuffer(&edit.buffer)
   precursor := strings::uniSlice(firstLine, 0, edit.cursor.column)
@@ -75,8 +75,12 @@ fn drawSingleLineEdit(ui: ^ui::UI, edit: ^SingleLineEdit, r: rect::Rect, drawCur
   if drawCursor {
     canvas::drawRect(th::black, cursorRect)
   }
-  
-  ui.font.draw(firstLine, r.getPos().add(th::Vf2{edit.scrollX, 0}), th::black, ui.io.scale)
+
+  if firstLine == "" {
+    ui.font.draw(name, r.getPos().add(th::Vf2{edit.scrollX, 0}), 0x777777FF, ui.io.scale)
+  } else {
+    ui.font.draw(firstLine, r.getPos().add(th::Vf2{edit.scrollX, 0}), th::black, ui.io.scale)
+  }
 }
 
 // @returns Is dirty
@@ -135,14 +139,14 @@ fn putSingleLine*(ui: ^ui::UI, name: str, value: ^str): bool {
       }
     }
 
-    ui.drawCustom(|focused, edit, ui| {
+    ui.drawCustom(|name, focused, edit, ui| {
       // Draw the inside white
       canvas::drawRect(th::white, dest.shrink({4, 4}))
       canvas::beginScissorRect(dest.shrink({4, 4}))
 
       fontHeight := ui.font.measure(" ").y*ui.io.scale
       textRect := rect::Rect{dest.x+5, dest.y+(dest.h-fontHeight)/2.0, dest.w-10, fontHeight}
-      drawSingleLineEdit(ui, edit, textRect, focused)
+      drawSingleLineEdit(ui, edit, textRect, focused, name)
 
       canvas::endScissor()
     })
