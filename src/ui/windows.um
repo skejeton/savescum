@@ -2,6 +2,8 @@ import (
   "rect.um"
   "th.um"
   "input.um"
+  "canvas.um"
+  "color.um"
   "../ui/ui.um"
 )
 
@@ -16,12 +18,13 @@ type (
   }
 
   Window* = struct {
-    handled: bool
-    hidden:  bool
-    title:   str
-    rect:    rect::Rect
-    order:   int
-    cb:      WindowCallback
+    handled:   bool
+    hidden:    bool
+    title:     str
+    rect:      rect::Rect
+    order:     int
+    highlight: real
+    cb:        WindowCallback
   }
 
   WindowManager* = struct {
@@ -74,6 +77,7 @@ fn (it: ^WindowManager) toggle*(title: str) {
     w := &it.windows[title]
     w.hidden = !w.hidden
     w.order = it.lastOrder+1
+    w.highlight = 1
     it.lastOrder++
     it.lastWindow = w
   }
@@ -84,6 +88,7 @@ fn (it: ^WindowManager) show*(title: str) {
     w := &it.windows[title]
     w.hidden = false
     w.order = it.lastOrder+1
+    w.highlight = 1
     it.lastOrder++
     it.lastWindow = w
   }
@@ -117,8 +122,14 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
   newRect := w.rect
   newRectPtr := &newRect
 
+  w.highlight /= 1.1
+
   ui.cellRect(rect)
   ui.col(|it, w, rect, newRectPtr| {
+    ui.drawCustom(|w| {
+      canvas::drawRectLines(color::alpha(0xFFFF00FF, w.highlight), w.rect, 4)
+    })
+
     ui.boxStyle(.window)
     ui.pushIdStr("Window "+w.title)
     
@@ -225,6 +236,9 @@ fn (it: ^WindowManager) loadState*(states: []WindowState) {
     w.hidden = !state.visible
     w.rect = state.rect
     w.order = state.order
+    if w.order > it.lastOrder {
+      it.lastOrder = w.order
+    }
   }
 }
 
