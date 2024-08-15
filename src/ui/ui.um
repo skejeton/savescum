@@ -40,6 +40,7 @@ type (
     highlighted
     toolbar
     resizer
+    notification
     _count
   }
 

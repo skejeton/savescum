@@ -471,7 +471,7 @@ fn (editor: ^Editor) putNotifications(ui: ^ui::UI) {
     for i in ns {
       n := ns[len(ns^)-i-1]
       ui.row(|n, editor| {
-        ui.boxStyle(.window)
+        ui.boxStyle(.notification)
         // @MARK(UiResourceManagment)
         ui.img2(editor.resources.toolbarIcons, {24*int(n.info.icon), 144, 24, 24})
         // @HACK Padding
@@ -1190,6 +1190,15 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
       editor.resources.bevelImage.drawNinepatch({30, 30, 30, 30}, {6, 6, 18, 18}, dest)
     })
   })
+
+  editor.ui.setBoxTheme(.notification, {
+    normal: themer::mkCustom(|editor| {
+      editor.resources.glow.drawNinepatch({0, 0, 48, 48}, {16, 16, 16, 16}, dest.shrink({-16,-16}), 0x00005588) // Shadow
+      editor.resources.bevelImage.drawNinepatch({0, 60, 30, 30}, {6, 6, 18, 18}, dest)
+    })
+  })
+
+
 
   // TODO: Should we handle the session loading here really?
   if sessionFile, err := util::readFileStr(th::convPath("data://SAVESCUM/session.json")); err.code == 0 {
