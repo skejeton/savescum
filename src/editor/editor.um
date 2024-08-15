@@ -489,12 +489,17 @@ fn (editor: ^Editor) putEntityEditor(ui: ^ui::UI) {
     wm.window("Entity Editor", |editor, entitySelected| {
       ui.cellStretch()
       ui.cellAlign(0.5)
-      ui.row(|editor, entitySelected| {
-        ui.cellJustify(0.5)
-        ui.label("Name")
-        ui.cellJustify(1)
-        editor.dirty = textedit::putSingleLine(ui, "Name", &entitySelected.name) || editor.dirty
-      })
+
+      tags := game::initTagSetFromString(entitySelected.tags)
+
+      if tags.isSet("Comment") {
+        ui.row(|editor, entitySelected| {
+          ui.cellJustify(0.5)
+          ui.label("Comment")
+          ui.cellJustify(1)
+          editor.dirty = textedit::putSingleLine(ui, "Comment", &entitySelected.name) || editor.dirty
+        })
+      }
 
       ui.cellStretch()
       ui.cellAlign(0.5)
@@ -560,7 +565,7 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
           ui.pushIdStr(ent.id)
           ui.cellStretch()
           ui.cellJustify(1)
-          if ui.button(ent.name) { action = .edit }
+          if ui.button(ent.id) { action = .edit }
           if ui.button("▲") { action = .moveUp }
           if ui.button("▼") { action = .moveDown }
 
@@ -920,7 +925,7 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
           }
 
           if input::isPressed(.mouse1) {
-            editor.entities.entitySelected = i
+            doEntityAction(editor, .edit, i)
           }
         }
 
