@@ -189,10 +189,10 @@ fn (it: ^WindowManager) display*(ui: ^ui::UI) {
 fn (it: ^WindowManager) reset*() {
   it.lastWindow = null
   it.lastOrder = 0
-  for _, w^ in it.windows {
+  for k, w^ in it.windows {
     w.rect = it.allocateRect()
-    w.order = 0
-    it.touchWindow(w.title)
+    it.touchWindow(k)
+    w.handled = false
   }
 }
 
