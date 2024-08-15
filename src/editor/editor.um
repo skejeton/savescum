@@ -633,7 +633,6 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }
 
     // @TODO: Gray out of window is open.
-    windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
     windowBtn("Tile Picker", {48*0, 48, 48, 48}) 
     windowBtn("Player Placer", {48*3, 48, 48, 48}) 
     windowBtn("Entity List", {48*0, 48*2, 48, 48})
@@ -676,13 +675,14 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.spring(1)
 
     ui.cellStretch()
-    if ui.button("Load") {
-      editorLoadRoom(editor, editor.currentRoom)
-    }
-    ui.cellStretch()
     if ui.button("Save") {
       editorSaveRoom(editor)
     }
+    ui.cellStretch()
+    if ui.button("Reload") {
+      editorLoadRoom(editor, editor.currentRoom)
+    }
+    windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
     windowBtn("Settings", {96, 192, 48, 48})
   }).padding = 5
 
