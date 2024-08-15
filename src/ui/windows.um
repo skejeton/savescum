@@ -213,8 +213,9 @@ fn (it: ^WindowManager) reset*() {
   it.lastOrder = 0
   for k, w^ in it.windows {
     w.rect = it.allocateRect()
+    handled := w.handled
     it.touchWindow(k)
-    if !valid(w.cb) {
+    if !valid(w.cb) || !handled {
       w.handled = false
     }
   }
