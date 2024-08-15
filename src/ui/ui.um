@@ -33,6 +33,7 @@ type (
   BoxStyle* = enum {
     none
     button
+    buttonPushed
     window
     titlebar
     input
@@ -136,6 +137,8 @@ const (
   cellUnclipped = 1<<1
   cellStretched = 1<<2
   cellSameSize = 1<<3
+
+  buttonFlagPushed* = 1<<0
 )
 
 // >>> FUNCTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -608,11 +611,15 @@ fn (ui: ^UI) label*(text: str) {
 }
 
 fn (ui: ^UI) spring*(power: real)
-fn (ui: ^UI) button*(text: str): bool {
+fn (ui: ^UI) button*(text: str, flags: uint = 0): bool {
   ui.cellClip()
   el := ui.pushEl()
   ui.pushIdStr(text)
-  ui.boxStyle(.button)
+  if flags & buttonFlagPushed > 0 {
+    ui.boxStyle(.buttonPushed)
+  } else {
+    ui.boxStyle(.button)
+  }
 
   // @HACK
   el.interactive = true
@@ -637,10 +644,14 @@ fn (ui: ^UI) button*(text: str): bool {
   return pressed
 }
 
-fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI)): bool {
+fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0): bool {
   el := ui.pushEl()
   ui.pushIdStr(name)
-  ui.boxStyle(.button)
+  if flags & buttonFlagPushed > 0 {
+    ui.boxStyle(.buttonPushed)
+  } else {
+    ui.boxStyle(.button)
+  }
 
   // @HACK
   el.interactive = true

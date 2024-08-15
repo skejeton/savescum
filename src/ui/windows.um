@@ -217,3 +217,10 @@ fn (it: ^WindowManager) loadState*(states: []WindowState) {
     w.order = state.order
   }
 }
+
+fn (it: ^WindowManager) isOpen*(title: str): bool {
+  if validkey(it.windows, title) {
+    return !it.windows[title].hidden
+  }
+  return false
+}
