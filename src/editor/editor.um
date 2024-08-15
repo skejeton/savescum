@@ -919,7 +919,9 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
             delPtr ^= i
           }
 
-          editor.entities.entitySelected = i
+          if input::isPressed(.mouse1) {
+            editor.entities.entitySelected = i
+          }
         }
 
         if editor.entities.entitySelected == i {
@@ -1063,6 +1065,9 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
 fn (editor: ^Editor) handleShortcuts*() {
   shortcuts::console(&wm)
   shortcuts::fullscreen()
+  if input::isJustPressed(.escape) {
+    editor.entities.entitySelected = -1
+  }
   if input::isPressed(.ctrl) {
     if input::isJustPressedc('s') {
       input::clearc('s')
