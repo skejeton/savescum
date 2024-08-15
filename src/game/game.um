@@ -593,7 +593,6 @@ fn start*(worldData: world_data::WorldData) {
 
   world = worldData.world
 
-  pal.ent = Character{id: ">>player", tags: initTagSetFromString("Player"), rect: rect::Rect{world.playerSpawnPos.x*(world.tileset.cs.x/2), world.playerSpawnPos.y*(world.tileset.cs.y/2), world.tileset.cs.x/2.4, world.tileset.cs.y/2}}
 
   resetPoint.x = pal.ent.rect.x
   resetPoint.y = pal.ent.rect.y
@@ -607,6 +606,19 @@ fn start*(worldData: world_data::WorldData) {
   for i, ent in worldData.entities {
     chr := convertEntityDescToCharacter(ent)
     chr.originalRect = chr.rect
+    if chr.tags.isSet("player") {
+      r := rect::Rect{
+        chr.rect.x,
+        chr.rect.y,
+        world.tileset.cs.x/2.4,
+        world.tileset.cs.y/2
+      }
+      chr.originalRect = r
+      chr.rect = r
+      pal.ent = chr
+      pal.dir = 1
+      continue
+    }
     if chr.tags.isSet("Comment") {
       if chr.tags.isSet("Show") {
         dbg::logt(sprintf("Comment: %v", chr.name))
@@ -700,8 +712,27 @@ const (
   cropControls = rect::Rect{0, 128, 256, 256}
 )
 
+const (
+  chumStateStand = 0
+  chumStateJump = 1
+  chumStateFall = 2
+  chumStandRect = rect::Rect{128, 0, 128, 128}
+  chumFaceRect = rect::Rect{0, 0, 128, 128}
+  chumOnlyFaceRect = rect::Rect{25, 16, 54, 54}
+  chumMouthRect = rect::Rect{41, 52, 22, 7}
+)
+
+fn drawChum(state: int)
+
 fn drawEntityObject*(name: str, tags: ^TagSet, rect: rect::Rect, scale: real): bool {
-  if tags.isSet("lever") {
+  if tags.isSet("player") {
+    rect.w *= 2
+    rect.h *= 2
+    rect.y -= rect.h/2.2
+    rect.x -= rect.w/6
+    imgChum.blit(chumStandRect, rect)
+    imgChum.blit(chumFaceRect, rect)
+  } else if tags.isSet("lever") {
     if toggleActive {
       imgObj.blit(cropLeverOn, rect)
     } else {
@@ -750,14 +781,6 @@ fn drawEntity(ent: ^Character) {
     drawEntityCustomRect(ent, ent.rect)
   }
 }
-
-const (
-  chumStateStand = 0
-  chumStateJump = 1
-  chumStateFall = 2
-  chumFaceRect = rect::Rect{0, 0, 128, 128}
-  chumMouthRect = rect::Rect{41, 52, 22, 7}
-)
 
 fn drawChumState(state: int, chum: ^ChumState, tint: uint32) {
   chum.loadTime -= th::delta/1000.0

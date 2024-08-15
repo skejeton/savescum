@@ -31,7 +31,6 @@ type (
   }
 
   World* = struct {
-    playerSpawnPos: th::Vf2
     tileProperties: map[int]TileProperties
     tileset: atlas::Atlas
     tilemap: [3]map[ChunkPos]tilemap::Tilemap

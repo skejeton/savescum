@@ -43,7 +43,7 @@ fn save*(wd: WorldData): str {
   }
 
   // player pos
-  data = append(data, []str{std::itoa(trunc(world.playerSpawnPos.x)), std::itoa(trunc(world.playerSpawnPos.y))})
+  data = append(data, []str{})
 
   // Start from -1, because that's the background layer, which maps to index 0
   layerNo := -1
@@ -89,9 +89,6 @@ fn load*(world: world::World, data: str): WorldData {
     entities = append(entities, loadEntityDesc(csvData[i+row]))
   }
   row += entityCount
-
-  world.playerSpawnPos = th::Vf2{real(std::atoi(csvData[row][0])), real(std::atoi(csvData[row][1]))}
-
   row += 1
 
   length := len(csvData)
