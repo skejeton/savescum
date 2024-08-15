@@ -82,12 +82,12 @@ fn putScrollbarArea*(ui: ^ui::UI, cb: fn (ui: ^ui::UI)) {
     ui.cellJustify(1)
     ui.col(|cb, scrollbar| {
       ui.pushIdStr("ContentArea")
-      scrollbar.contentSize = ui.getRect().h
+      scrollbar.contentSize = ui.getRect().h/ui.io.scale
       cb(ui)
       ui.popId()
     })
 
-    scrollbar.viewportSize = ui.getRect().h
+    scrollbar.viewportSize = ui.getRect().h/ui.io.scale
 
     ui.cellStretch()
     put(ui, scrollbar)
