@@ -464,13 +464,13 @@ fn putGrid2(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
 fn (editor: ^Editor) putNotifications(ui: ^ui::UI) {
   // @TODO: Instead of having a zerowidth cell, I should have cellPos
   ui.cellRect({0, 0, 0, 0})
-  ui.row(|editor| {
+  ui.col(|editor| {
 
     ns := notification::get()
 
     for i in ns {
       n := ns[len(ns^)-i-1]
-      ui.col(|n, editor| {
+      ui.row(|n, editor| {
         ui.boxStyle(.notification)
         // @MARK(UiResourceManagment)
         ui.img2(editor.resources.toolbarIcons, {24*int(n.info.icon), 144, 24, 24})
