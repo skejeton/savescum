@@ -1125,6 +1125,7 @@ fn (editor: ^Editor) handleShortcuts*() {
   if input::isJustPressed(.fn3) {
     editor.showDebugInfo = !editor.showDebugInfo
   }
+  game::showDebug = editor.showDebugInfo
   if input::isJustPressed(.fn2) {
     global::plainBiscuit = !global::plainBiscuit
   }
