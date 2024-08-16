@@ -65,47 +65,47 @@ type (
 
   EditorResources = struct {
     toolbarIcons: image::Image
-    bevelImage: image::Image
+    bevelImage:   image::Image
     tilesetImage: image::Image
     superHotFire: image::Image
-    glow: image::Image
-    mainFont: font::Font
+    glow:         image::Image
+    mainFont:     font::Font
   }
 
   EditorEntities = struct {
     entitySelected: int
-    list: []world_data::EntityDesc
+    list:           []world_data::EntityDesc
   }
 
   Editor = struct {
     // Misc
     debugTimerStarted: bool
-    debugTimerOrigin: int
-    debugTimer: int
-    showDebugInfo: bool
-    showUiDebugInfo: bool
-    dimDebugInfo: bool
+    debugTimerOrigin:  int
+    debugTimer:        int
+    showDebugInfo:     bool
+    showUiDebugInfo:   bool
+    dimDebugInfo:      bool
 
     // Visual data
     resources: EditorResources
 
     // Editors
-    tilemapGrid: grid::Grid
-    tilesetGrid: grid::Grid
-    tilemapLayer: int
+    tilemapGrid:          grid::Grid
+    tilesetGrid:          grid::Grid
+    tilemapLayer:         int
     tilemapShowAllLayers: bool
-    tileSelected: th::Vf2
-    tileset: atlas::Atlas
-    world: world::World
-    isPlaying: bool
-    isRelocatingPlayer: bool
-    entityBypass: bool
-    entities: EditorEntities
-    potentialRoom: str // the room which is in the text box
-    currentRoom: str
-    dirty: bool
-    mode: EditorMode
-    entitySearch: str
+    tileSelected:         th::Vf2
+    tileset:              atlas::Atlas
+    world:                world::World
+    isPlaying:            bool
+    isRelocatingPlayer:   bool
+    entityBypass:         bool
+    entities:             EditorEntities
+    potentialRoom:        str // the room which is in the text box
+    currentRoom:          str
+    dirty:                bool
+    mode:                 EditorMode
+    entitySearch:         str
 
     // UI state
     ui: ^ui::UI
@@ -470,7 +470,7 @@ fn (editor: ^Editor) putNotifications(ui: ^ui::UI) {
 
     for i in ns {
       n := ns[len(ns^)-i-1]
-      ui.row(|n, editor| {
+      ui.col(|n, editor| {
         ui.boxStyle(.notification)
         // @MARK(UiResourceManagment)
         ui.img2(editor.resources.toolbarIcons, {24*int(n.info.icon), 144, 24, 24})

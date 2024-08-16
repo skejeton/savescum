@@ -4,6 +4,7 @@ import (
   "input.um"
   "canvas.um"
   "color.um"
+  "../misc/util.um"
   "../ui/ui.um"
 )
 
@@ -122,7 +123,7 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
   newRect := w.rect
   newRectPtr := &newRect
 
-  w.highlight /= 1.1
+  w.highlight = util::max(0, w.highlight-th::delta/1000.0)
 
   ui.cellRect(rect)
   ui.col(|it, w, rect, newRectPtr| {
