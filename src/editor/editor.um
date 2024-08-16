@@ -534,6 +534,11 @@ fn matchSearch(needle: str, haystack: str): bool {
   return strings::search(strings::toLowerS(needle), strings::toLowerS(haystack))
 }
 
+fn matchEnt(ent: ^world_data::EntityDesc, query: str): bool {
+  return matchSearch(query, ent.id) ||
+         matchSearch(query, ent.tags)
+}
+
 fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
   wm.window("Entity List", |editor| {
     _actions := map[int]EntityListAction{}
@@ -547,7 +552,7 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
     ui.cellClip()
     scrollbar::putScrollbarArea(ui, |editor, actions| {
       for i, ent in editor.entities.list {
-        if !matchSearch(editor.entitySearch, ent.name) && !matchSearch(editor.entitySearch, ent.id) && !matchSearch(editor.entitySearch, ent.tags) {
+        if !matchEnt(&ent, editor.entitySearch) {
           continue
         }
 
