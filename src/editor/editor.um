@@ -136,6 +136,7 @@ fn editorLoadRoom(editor: ^Editor, room: str): bool {
     worldData := world_data::load(editor.world, data)
     editor.world = worldData.world
     editor.entities.list = worldData.entities
+    editor.entities.entitySelected = -1
     return true
   } else {
     // @TODO: maybe I shouldn't initialize empty world like that??!
