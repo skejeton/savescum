@@ -22,6 +22,7 @@ type (
     handled:   bool
     hidden:    bool
     title:     str
+    viewRect:  rect::Rect
     rect:      rect::Rect
     order:     int
     highlight: real
@@ -115,6 +116,7 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
   }
 
   rect := clipWindowRect(w.rect, ui.io.screen)
+  w.viewRect = rect
 
   if input::isJustReleased(.mouse1) {
     w.rect = rect

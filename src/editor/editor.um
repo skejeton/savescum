@@ -589,7 +589,7 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
     })
 
     // @HACK There should be a better way to put elements on the titlebar.
-    r := wm.windows["Entity List"].rect
+    r := wm.windows["Entity List"].viewRect
     buttonRect := rect::Rect{r.x+r.w-34-5, r.y+5, 34, 34}
     ui.cellUnclip()
     ui.cellRect(buttonRect)
