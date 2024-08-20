@@ -682,15 +682,8 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }
     ui.spring(1)
 
-    ui.cellStretch()
-    if ui.button("Save") {
-      editorSaveRoom(editor)
-    }
-    ui.cellStretch()
-    if ui.button("Reload") {
-      editorLoadRoom(editor, editor.currentRoom)
-    }
-    windowBtn("Load Room", {48*2, 48*2, 48, 48}) 
+
+    windowBtn("Room", {48*2, 48*2, 48, 48}) 
     windowBtn("Settings", {96, 192, 48, 48})
   }).padding = 5
 
@@ -705,7 +698,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       }
     }, true)
 
-    wm.window("Load Room", |editor| {
+    wm.window("Room", |editor| {
       ui.label("Room name: ")
       
       ui.cellAlign(0.5)
@@ -717,6 +710,16 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
           loadRoom(editor, editor.potentialRoom)
         }
       })
+
+      ui.cellStretch()
+      if ui.button("Save") {
+        editorSaveRoom(editor)
+      }
+      ui.cellStretch()
+      if ui.button("Reload") {
+        editorLoadRoom(editor, editor.currentRoom)
+      }
+
     })
 
     wm.window("Tile Picker", |editor| {
