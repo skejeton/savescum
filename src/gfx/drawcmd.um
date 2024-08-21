@@ -86,7 +86,7 @@ fn (l: ^Layer) appendCommand(cmd: CustomCommand) {
 fn (ctx: ^DrawContext) acquireLayer(layer: int) {
   // Insert the layer ordering at the correct spot.
 
-  if (validkey(ctx.layers, layer)) {
+  if validkey(ctx.layers, layer) {
     return
   }
 

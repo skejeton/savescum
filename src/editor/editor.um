@@ -157,7 +157,7 @@ fn editorSaveRoom(editor: ^Editor) {
 }
 
 fn editorToggleGame(editor: ^Editor) {
-  if (!editor.isPlaying) {
+  if !editor.isPlaying {
     editor.debugTimerStarted = true
     editor.debugTimerOrigin = th::time
     editor.debugTimer = 0

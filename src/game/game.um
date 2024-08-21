@@ -877,7 +877,7 @@ fn canActivateLever(): bool {
   can := true
   toggleActive = !toggleActive
 
-  if (entCheckCollision(&pal.ent)) {
+  if entCheckCollision(&pal.ent) {
     can = false
   }
 
@@ -889,7 +889,7 @@ fn canActivateStaticLever(): bool {
   can := true
   pal.toggleActiveStatic = !pal.toggleActiveStatic
 
-  if (entCheckCollision(&pal.ent)) {
+  if entCheckCollision(&pal.ent) {
     can = false
   }
 
@@ -901,7 +901,7 @@ fn canActivateWaterLever(): bool {
   can := true
   pal.toggleActiveWater = !pal.toggleActiveWater
 
-  if (entCheckCollision(&pal.ent)) {
+  if entCheckCollision(&pal.ent) {
     can = false
   }
 
