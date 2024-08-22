@@ -1,7 +1,5 @@
 // (C) skejeton
 
-// WAR CRIME: THIS FILE IS A MESS.
-
 import (
   "window.um"
   "rect.um"
@@ -11,7 +9,6 @@ import (
   "input.um"
   "coll.um"
   "std.um"
-
 
   "../ui/windows.um"
   "../ui/notification.um"
@@ -691,7 +688,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     editor.putEntityEditor(ui)
     editor.putEntityList(ui)
 
-    wm.window("Settings", |editor| {
+    wm.window("Settings", {
       ui.cellStretch()
       if ui.button("Reset UI") {
         wm.reset()
@@ -719,7 +716,6 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       if ui.button("Reload") {
         editorLoadRoom(editor, editor.currentRoom)
       }
-
     })
 
     wm.window("Tile Picker", |editor| {

@@ -719,7 +719,6 @@ const (
   chumStateFall = 2
   chumStandRect = rect::Rect{128, 0, 128, 128}
   chumFaceRect = rect::Rect{0, 0, 128, 128}
-  chumOnlyFaceRect = rect::Rect{25, 16, 54, 54}
   chumMouthRect = rect::Rect{41, 52, 22, 7}
 )
 
