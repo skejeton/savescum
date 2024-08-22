@@ -91,6 +91,10 @@ fn load*(world: world::World, data: str): WorldData {
   row += entityCount
   row += 1
 
+  world.tilemap[0] = {}
+  world.tilemap[1] = {}
+  world.tilemap[2] = {}
+
   length := len(csvData)
   // NOTE: I check first column of the csv data because csv parser adds bogus row with empty string
   for row < length && csvData[row][0] != "" {
@@ -114,6 +118,8 @@ fn load*(world: world::World, data: str): WorldData {
     // If all tiles are empty, don't store the chunk
     if sum != 0 {
       world.tilemap[layer][chunkPos] = chunk
+    } else {
+      world.tilemap[layer][chunkPos] = tilemap::mk2(make([]th::uu, world::chunkW*world::chunkH), world::chunkW, world.tileset, 1)
     }
   }
 

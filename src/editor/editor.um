@@ -129,7 +129,6 @@ fn createEditorEntities(): EditorEntities {
 fn editorLoadRoom(editor: ^Editor, room: str): bool {
   dbg::logt("ed: loading world")
   if data, err := util::readFileStr(roomToPath(room)); err.code == 0 {
-    // @TODO: Figure out why the foreground and background layers don't overwrite the world.
     worldData := world_data::load(editor.world, data)
     editor.world = worldData.world
     editor.entities.list = worldData.entities
