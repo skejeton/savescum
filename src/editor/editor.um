@@ -12,9 +12,8 @@ import (
 
   "../ui/windows.um"
   "../ui/notification.um"
+  "../ui/implvtbl.um"
   "../ui/ui.um"
-  "../ui/scrollbar.um"
-  "../ui/textedit.um"
   "../ui/themer.um"
   "session.um"
 
@@ -108,8 +107,6 @@ type (
     ui: ^ui::UI
   }
 ) 
-
-var wm: windows::WindowManager
 
 fn updateZoom(init: real, plus: real): th::Vf2 {
   zoom := util::clamp(init+(init*plus), 8, 128)
@@ -301,7 +298,7 @@ fn cloneEntity(entities: []world_data::EntityDesc, ent: world_data::EntityDesc):
   return ent
 }
 
-fn doEntityAction(editor: ^Editor, action: EntityListAction, i: int) {
+fn doEntityAction(ui: ^ui::UI, editor: ^Editor, action: EntityListAction, i: int) {
   entryRemoveIndex := -1
   moveFrom := -1
   moveTo := -1
@@ -324,7 +321,7 @@ fn doEntityAction(editor: ^Editor, action: EntityListAction, i: int) {
       editor.dirty = true
     case .edit:
       selectEntity(&editor.entities, i)
-      wm.show("Entity Editor")
+      implvtbl::VTBLImpl(ui.vtbl).wm.show("Entity Editor")
     case .duplicate:
       appendEntity(&editor.entities, cloneEntity(editor.entities.list, editor.entities.list[i]))
       pmoveFrom ^= len(editor.entities.list)-1
@@ -483,7 +480,7 @@ fn (editor: ^Editor) putEntityEditor(ui: ^ui::UI) {
   entitySelected := getEntitySelected(&editor.entities)
 
   if entitySelected != null {
-    wm.window("Entity Editor", |editor, entitySelected| {
+    ui.window("Entity Editor", |editor, entitySelected| {
       ui.cellStretch()
       ui.cellAlign(0.5)
 
@@ -494,7 +491,7 @@ fn (editor: ^Editor) putEntityEditor(ui: ^ui::UI) {
           ui.cellJustify(0.5)
           ui.label("Comment")
           ui.cellJustify(1)
-          editor.dirty = textedit::putSingleLine(ui, "Comment", &entitySelected.name) || editor.dirty
+          editor.dirty = ui.textEditSingle("Comment", &entitySelected.name) || editor.dirty
         })
       }
 
@@ -504,7 +501,7 @@ fn (editor: ^Editor) putEntityEditor(ui: ^ui::UI) {
         ui.cellJustify(0.5)
         ui.label("Id")
         ui.cellJustify(1)
-        editor.dirty = textedit::putSingleLine(ui, "Id", &entitySelected.id) || editor.dirty
+        editor.dirty = ui.textEditSingle("Id", &entitySelected.id) || editor.dirty
       })
 
       ui.cellStretch()
@@ -513,7 +510,7 @@ fn (editor: ^Editor) putEntityEditor(ui: ^ui::UI) {
         ui.cellJustify(0.5)
         ui.label("Tags")
         ui.cellJustify(1)
-        editor.dirty = textedit::putSingleLine(ui, "Tags", &entitySelected.tags) || editor.dirty
+        editor.dirty = ui.textEditSingle("Tags", &entitySelected.tags) || editor.dirty
       })
 
       ui.spring(1)
@@ -537,17 +534,17 @@ fn matchEnt(ent: ^world_data::EntityDesc, query: str): bool {
 }
 
 fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
-  wm.window("Entity List", |editor| {
+  ui.window("Entity List", |editor| {
     _actions := map[int]EntityListAction{}
     actions := &_actions
 
     ui.cellStretch()
-    textedit::putSingleLine(ui, "Search", &editor.entitySearch)
+    ui.textEditSingle("Search", &editor.entitySearch)
 
     ui.cellStretch()
     ui.cellJustify(1)
     ui.cellClip()
-    scrollbar::putScrollbarArea(ui, |editor, actions| {
+    ui.scrollArea( |editor, actions| {
       for i, ent in editor.entities.list {
         if !matchEnt(&ent, editor.entitySearch) {
           continue
@@ -586,7 +583,7 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
     })
 
     // @HACK There should be a better way to put elements on the titlebar.
-    r := wm.windows["Entity List"].viewRect
+    r := implvtbl::VTBLImpl(ui.vtbl).wm.windows["Entity List"].viewRect
     buttonRect := rect::Rect{r.x+r.w-34-5, r.y+5, 34, 34}
     ui.cellUnclip()
     ui.cellRect(buttonRect)
@@ -599,7 +596,7 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
     std::assert(len(_actions) < 2)
 
     for i, action in actions {
-      doEntityAction(editor, action, i)
+      doEntityAction(ui, editor, action, i)
     }
   })
 }
@@ -612,8 +609,8 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }
 
     windowBtn := fn (name: str, rect: rect::Rect) |ui, editor| {
-      if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}, wm.isOpen(name) ? ui::buttonFlagPushed : 0) {
-        wm.toggle(name)
+      if ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}, implvtbl::VTBLImpl(ui.vtbl).wm.isOpen(name) ? ui::buttonFlagPushed : 0) {
+        implvtbl::VTBLImpl(ui.vtbl).wm.toggle(name)
       }
     }
 
@@ -687,21 +684,21 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     editor.putEntityEditor(ui)
     editor.putEntityList(ui)
 
-    wm.window("Settings", {
+    ui.window("Settings", {
       ui.cellStretch()
       if ui.button("Reset UI") {
-        wm.reset()
+        implvtbl::VTBLImpl(ui.vtbl).wm.reset()
       }
     }, true)
 
-    wm.window("Room", |editor| {
+    ui.window("Room", |editor| {
       ui.label("Room name: ")
       
       ui.cellAlign(0.5)
       ui.cellStretch()
       ui.row(|editor| {
         ui.cellJustify(1)
-        textedit::putSingleLine(ui, "Room name", &editor.potentialRoom)
+        ui.textEditSingle("Room name", &editor.potentialRoom)
         if ui.button("Load") {
           loadRoom(editor, editor.potentialRoom)
         }
@@ -717,7 +714,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       }
     })
 
-    wm.window("Tile Picker", |editor| {
+    ui.window("Tile Picker", |editor| {
       ui.cellJustify(1)
       ui.cellStretch()
       interaction := putGrid2(&editor.tilesetGrid, ui)
@@ -736,10 +733,10 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       })
     })
   } else {
-    wm.window("Level Select", |editor| {
+    ui.window("Level Select", |editor| {
       ui.cellStretch()
       ui.cellJustify(1)
-      scrollbar::putScrollbarArea(ui, |editor| {
+      ui.scrollArea(|editor| {
         type Level = struct { id, name: str }
 
         levels := []Level{}
@@ -762,7 +759,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     })
   }
 
-  wm.window("Console", {
+  ui.window("Console", {
     // @TODO: This will block the window dragging, to fix that I should implement a way to mask which events are handled by the element.
     ui.pushIdStr("Console")
 
@@ -929,7 +926,7 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
           }
 
           if input::isPressed(.mouse1) {
-            doEntityAction(editor, .edit, i)
+            doEntityAction(ui, editor, .edit, i)
           }
         }
 
@@ -1029,8 +1026,6 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
     }, ui.io.screen.w)
   }, ui.io.screen.h)
 
-  wm.display(ui)
-  
   editor.putNotifications(ui)
 
   ui.cellRect({0, 0, 0, 0})
@@ -1057,7 +1052,7 @@ fn editorSaveSession(editor: ^Editor): session::Session {
   session.tileSelected  = editor.tileSelected
   session.showUiDebug = editor.showUiDebugInfo
   session.plainBiscuit = global::plainBiscuit
-  session.windows = wm.saveState()
+  session.windows = implvtbl::VTBLImpl(editor.ui.vtbl).wm.saveState()
 
   return session
 }
@@ -1074,11 +1069,11 @@ fn editorLoadSession(editor: ^Editor, session: session::Session) {
   editor.showUiDebugInfo = session.showUiDebug
   global::plainBiscuit = session.plainBiscuit
 
-  wm.loadState(session.windows)
+  implvtbl::VTBLImpl(editor.ui.vtbl).wm.loadState(session.windows)
 }
 
 fn (editor: ^Editor) handleShortcuts*() {
-  shortcuts::console(&wm)
+  shortcuts::console(&implvtbl::VTBLImpl(editor.ui.vtbl).wm)
   shortcuts::fullscreen()
   if input::isJustPressed(.escape) {
     editor.entities.entitySelected = -1
@@ -1090,7 +1085,7 @@ fn (editor: ^Editor) handleShortcuts*() {
     }
     if input::isJustPressedc('q') {
       input::clearc('q')
-      for _, w^ in wm.windows {
+      for _, w^ in implvtbl::VTBLImpl(editor.ui.vtbl).wm.windows {
         w.hidden = true
       }
     }
@@ -1098,7 +1093,7 @@ fn (editor: ^Editor) handleShortcuts*() {
       input::clearc('d')
       idx := getEntitySelectedIndex(&editor.entities)
       if idx != -1 {
-        doEntityAction(editor, .duplicate, idx)
+        doEntityAction(editor.ui, editor, .duplicate, idx)
       }
     }
   }
@@ -1157,19 +1152,19 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
   }
 
   tileset := atlas::mk(resources.tilesetImage, {4, 9})
-  ui := new(ui::UI, ui::mk())
+  ui := new(ui::UI, ui::mk(implvtbl::mk()))
 
   editor := &Editor{
-    mode: .editor,
-    ui: ui,
-    tilemapGrid: grid::Grid{s: {48, 48}},
-    tilesetGrid: grid::Grid{s: {48, 48}},
+    mode:                 .editor,
+    ui:                   ui,
+    tilemapGrid:          grid::Grid{s: {48, 48}},
+    tilesetGrid:          grid::Grid{s: {48, 48}},
     tilemapShowAllLayers: false,
-    entityBypass: true,
-    tileset: tileset,
-    world: world::fromTileset(tileset),
-    resources: resources,
-    entities: createEditorEntities()
+    entityBypass:         true,
+    tileset:              tileset,
+    world:                world::fromTileset(tileset),
+    resources:            resources,
+    entities:             createEditorEntities()
   }
 
   // @TODO: Re add the april fools joke :V

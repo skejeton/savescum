@@ -117,12 +117,20 @@ type (
     scale:      real
   }
 
+  VTBL* = interface {
+    doDisplayWM(ui: ^UI)
+    doWindow(title: str, cb: fn(ui: ^UI), hidden: bool)
+    doScrollArea(ui: ^UI, cb: fn(ui: ^UI))
+    doTextEditSingle(ui: ^UI, name: str, value: ^str): bool
+  }
+
   UI* = struct {
     font:      font::Font
     theme:     [int(BoxStyle._count)]BoxTheme
     cursors:   [int(BoxStyle._count)]window::Cursor
 
-    io: IO
+    io:        IO
+    vtbl:      VTBL
     retained:  map[uint]Retained
     attention: Attention
 
@@ -144,8 +152,9 @@ const (
 
 // >>> FUNCTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-fn mk*(): UI {
+fn mk*(vtbl: VTBL): UI {
   return {
+    vtbl: vtbl,
     font: canvas::pixelFont,
     io: {
       scale: 1.0
@@ -394,6 +403,7 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   ui.parents = {ui.root}
   ui.ids = {fnv1::INIT}
   cb(ui)
+  ui.vtbl.doDisplayWM(ui)
 
   // calculate layout
   ui.layout1(ui.root)
@@ -671,6 +681,18 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0): bool {
   ui.popEl()
 
   return pressed
+}
+
+fn (ui: ^UI) window*(title: str, cb: fn(ui: ^UI), hidden: bool = false) {
+  ui.vtbl.doWindow(title, cb, hidden)
+}
+
+fn (ui: ^UI) scrollArea*(cb: fn(ui: ^UI)) {
+  ui.vtbl.doScrollArea(ui, cb)
+}
+
+fn (ui: ^UI) textEditSingle*(name: str, value: ^str): bool {
+  return ui.vtbl.doTextEditSingle(ui, name, value)
 }
 
 fn (ui: ^UI) spring*(power: real) {

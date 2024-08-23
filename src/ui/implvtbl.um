@@ -1,0 +1,30 @@
+import (
+  "../ui/ui.um"
+  "windows.um"
+  "scrollbar.um"
+  "textedit.um"
+)
+
+type VTBLImpl* = struct {
+  wm: windows::WindowManager
+}
+
+fn mk*(): VTBLImpl {
+  return {}
+}
+
+fn (it: ^VTBLImpl) doDisplayWM*(ui: ^ui::UI) {
+  it.wm.display(ui)
+}
+
+fn (it: ^VTBLImpl) doWindow*(title: str, cb: fn(ui: ^ui::UI), hidden: bool) {
+  it.wm.window(title, cb, hidden)
+}
+
+fn (it: ^VTBLImpl) doScrollArea*(ui: ^ui::UI, cb: fn(ui: ^ui::UI)) {
+  scrollbar::putScrollbarArea(ui, cb)
+}
+
+fn (it: ^VTBLImpl) doTextEditSingle*(ui: ^ui::UI, name: str, value: ^str): bool {
+  return textedit::putSingleLine(ui, name, value)
+}
