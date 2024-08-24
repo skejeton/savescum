@@ -1,0 +1,54 @@
+import (
+  "../ui/ui.um"
+  "implvtbl.um"
+  "image.um"
+  "themer.um"
+)
+
+type UiResources* = struct {
+  bevelImage: image::Image
+  glow:       image::Image
+}
+
+fn setup*(resources: UiResources): ^ui::UI {
+  ui := new(ui::UI, ui::mk(implvtbl::mk()))
+
+  // @TODO: Re add the april fools joke :V
+  ui.setBoxTheme(.button, {
+    normal: themer::mkNinepatch(resources.bevelImage, {0, 0, 30, 30}, {5, 5, 19, 19}),
+    pressed: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21})
+  })
+  ui.setBoxCursor(.button, .finger)
+  ui.setBoxTheme(.buttonPushed, {
+    normal: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21}),
+    pressed: themer::mkNinepatch(resources.bevelImage, {0, 0, 30, 30}, {5, 5, 19, 19})
+  })
+  ui.setBoxCursor(.buttonPushed, .finger)
+
+  ui.setBoxTheme(.resizer, {
+    normal: themer::mkBlit(resources.bevelImage, {91, 1, 7, 7})
+  })
+  ui.setBoxCursor(.resizer, .sizeNWSE)
+
+  ui.setBoxTheme(.toolbar, {
+    normal: themer::mkNinepatch(resources.bevelImage, {90, 30, 30, 30}, {4, 4, 21, 21})
+  })
+  ui.setBoxTheme(.titlebar, {
+    normal: themer::mkNinepatch(resources.bevelImage, {0, 30, 30, 30}, {1, 1, 28, 28})
+  })
+  ui.setBoxTheme(.window, {
+    normal: themer::mkCustom(|resources| {
+      resources.glow.drawNinepatch({0, 0, 48, 48}, {16, 16, 16, 16}, dest.shrink({-16,-16}), 0x00005588) // Shadow
+      resources.bevelImage.drawNinepatch({30, 30, 30, 30}, {6, 6, 18, 18}, dest)
+    })
+  })
+
+  ui.setBoxTheme(.notification, {
+    normal: themer::mkCustom(|resources| {
+      resources.glow.drawNinepatch({0, 0, 48, 48}, {16, 16, 16, 16}, dest.shrink({-16,-16}), 0x00005588) // Shadow
+      resources.bevelImage.drawNinepatch({0, 60, 30, 30}, {6, 6, 18, 18}, dest)
+    })
+  })
+
+  return ui
+}

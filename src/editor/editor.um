@@ -14,6 +14,7 @@ import (
   "../ui/implvtbl.um"
   "../ui/ui.um"
   "../ui/themer.um"
+  setup_ui = "../ui/setup.um"
   "session.um"
 
   "../dbg/dbg.um"
@@ -1172,7 +1173,11 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
   }
 
   tileset := atlas::mk(resources.tilesetImage, {4, 9})
-  ui := new(ui::UI, ui::mk(implvtbl::mk()))
+
+  ui := setup_ui::setup({
+    bevelImage: resources.bevelImage,
+    glow:       resources.glow
+  })
 
   editor := &Editor{
     mode:                 .editor,
@@ -1186,43 +1191,6 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
     resources:            resources,
     entities:             createEditorEntities()
   }
-
-  // @TODO: Re add the april fools joke :V
-  editor.ui.setBoxTheme(.button, {
-    normal: themer::mkNinepatch(resources.bevelImage, {0, 0, 30, 30}, {5, 5, 19, 19}),
-    pressed: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21})
-  })
-  editor.ui.setBoxCursor(.button, .finger)
-  editor.ui.setBoxTheme(.buttonPushed, {
-    normal: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21}),
-    pressed: themer::mkNinepatch(resources.bevelImage, {0, 0, 30, 30}, {5, 5, 19, 19})
-  })
-  editor.ui.setBoxCursor(.buttonPushed, .finger)
-
-  editor.ui.setBoxTheme(.resizer, {
-    normal: themer::mkBlit(resources.bevelImage, {91, 1, 7, 7})
-  })
-  editor.ui.setBoxCursor(.resizer, .sizeNWSE)
-
-  editor.ui.setBoxTheme(.toolbar, {
-    normal: themer::mkNinepatch(resources.bevelImage, {90, 30, 30, 30}, {4, 4, 21, 21})
-  })
-  editor.ui.setBoxTheme(.titlebar, {
-    normal: themer::mkNinepatch(resources.bevelImage, {0, 30, 30, 30}, {1, 1, 28, 28})
-  })
-  editor.ui.setBoxTheme(.window, {
-    normal: themer::mkCustom(|editor| {
-      editor.resources.glow.drawNinepatch({0, 0, 48, 48}, {16, 16, 16, 16}, dest.shrink({-16,-16}), 0x00005588) // Shadow
-      editor.resources.bevelImage.drawNinepatch({30, 30, 30, 30}, {6, 6, 18, 18}, dest)
-    })
-  })
-
-  editor.ui.setBoxTheme(.notification, {
-    normal: themer::mkCustom(|editor| {
-      editor.resources.glow.drawNinepatch({0, 0, 48, 48}, {16, 16, 16, 16}, dest.shrink({-16,-16}), 0x00005588) // Shadow
-      editor.resources.bevelImage.drawNinepatch({0, 60, 30, 30}, {6, 6, 18, 18}, dest)
-    })
-  })
 
   // TODO: Should we handle the session loading here really?
   if sessionFile, err := util::readFileStr(th::convPath("data://SAVESCUM/session.json")); err.code == 0 {

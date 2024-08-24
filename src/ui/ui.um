@@ -51,7 +51,7 @@ type (
   }
 
   BoxTheme* = struct {
-    normal: themer::BoxRenderer
+    normal:  themer::BoxRenderer
     hovered: themer::BoxRenderer
     pressed: themer::BoxRenderer
     focused: themer::BoxRenderer
@@ -69,13 +69,13 @@ type (
   }
 
   Cell* = struct {
-    kind: CellKind
+    kind:    CellKind
     justify: real
-    align: real
-    rect: rect::Rect
-    flags: uint
-    color: uint32
-    scroll: th::Vf2
+    align:   real
+    rect:    rect::Rect
+    flags:   uint
+    color:   uint32
+    scroll:  th::Vf2
   }
 
   El* = struct {
