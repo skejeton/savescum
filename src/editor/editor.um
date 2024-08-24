@@ -10,7 +10,6 @@ import (
   "coll.um"
   "std.um"
 
-  "../ui/windows.um"
   "../ui/notification.um"
   "../ui/implvtbl.um"
   "../ui/ui.um"
@@ -410,7 +409,7 @@ type GridInteraction = struct {
   pos:     th::Vf2
 }
 
-fn putGrid2(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
+fn putGrid(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
   ps := &GridInteraction{}
 
   ui.col(|ps, grid| {
@@ -438,15 +437,22 @@ fn putGrid2(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
       grid::gridZoomInto(grid, updateZoom(grid.s.x, wheel/10.0), input::getMousePos())
     }
 
-    ui.drawCustom(|hovered, grid| {
+    ui.drawCustom(|ui, hovered, grid| {
       // @TODO: Scaling is not proportional to UI
       grid.bb = dest
+      grid.o = dest.getDims().divf(2)
       grid.draw(0xFFFFFF11, 1)
       if hovered {
         gridPos := grid.toGrid(input::getMousePos()).floor()
         screenPos1 := grid.toScreen(gridPos)
         screenPos2 := grid.toScreen(gridPos.add({1, 1}))
         canvas::drawRect(0xFFFFFF22, {screenPos1.x, screenPos1.y, screenPos2.x-screenPos1.x, screenPos2.y-screenPos1.y})
+
+        // Draw hovered over coordinates.
+        coordinates := sprintf("%v, %v", gridPos.x, gridPos.y)
+        coordinatesTxtSz := ui.font.measure(coordinates)
+        coordinatesTxtPos := th::Vf2{dest.x+10, dest.y+(dest.h-coordinatesTxtSz.y-10)}
+        ui.font.draw(coordinates, coordinatesTxtPos, th::white, 1)
       }
     })
     ui.popId()
@@ -717,7 +723,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.window("Tile Picker", |editor| {
       ui.cellJustify(1)
       ui.cellStretch()
-      interaction := putGrid2(&editor.tilesetGrid, ui)
+      interaction := putGrid(&editor.tilesetGrid, ui)
 
       if interaction.placed {
         editor.tileSelected = interaction.pos
@@ -981,7 +987,7 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
 
         ui.cellStretch()
         ui.cellJustify(1)
-        interaction := putGrid2(&editor.tilemapGrid, ui)
+        interaction := putGrid(&editor.tilemapGrid, ui)
         
         editor.putWorldEntities(ui)
 

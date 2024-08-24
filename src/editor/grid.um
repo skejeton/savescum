@@ -7,6 +7,7 @@ import (
 // NODE: by default each grid cell is exactly 1 unit, you can fix that by simply scaling it
 type Grid* = struct {
   bb: rect::Rect
+  o: th::Vf2
   p: th::Vf2
   s: th::Vf2
 }
@@ -22,15 +23,15 @@ type RenderGuide* = struct {
 }
 
 fn (grid: ^Grid) toGridRel*(screen: th::Vf2): th::Vf2 {
-  return screen.div(grid.s).sub(grid.p)
+  return screen.sub(grid.o).div(grid.s).sub(grid.p)
 }
 
 fn (grid: ^Grid) toGrid*(screen: th::Vf2): th::Vf2 {
-  return screen.sub(grid.bb.getPos()).div(grid.s).sub(grid.p)
+  return screen.sub(grid.o).sub(grid.bb.getPos()).div(grid.s).sub(grid.p)
 }
 
 fn (grid: ^Grid) toScreen*(gridp: th::Vf2): th::Vf2 {
-  return gridp.add(grid.p).mul(grid.s).add(grid.bb.getPos())
+  return gridp.add(grid.p).mul(grid.s).add(grid.bb.getPos()).add(grid.o)
 }
 
 fn gridPan*(grid: ^Grid, delta: th::Vf2) {
@@ -47,18 +48,19 @@ fn gridZoomInto*(grid: ^Grid, newScale: th::Vf2, into: th::Vf2) {
 
 fn mkRenderGuideFromBoundingBox*(grid: Grid): RenderGuide {
   bb := grid.bb
-  starters := th::Vf2{(grid.p.x % 1.0)*grid.s.x, (grid.p.y % 1.0)*grid.s.y}
+  ofs := th::Vf2{grid.p.x+grid.o.x/grid.s.x, grid.p.y+grid.o.y/grid.s.y}
+  starters := th::Vf2{(ofs.x % 1.0)*grid.s.x, (ofs.y % 1.0)*grid.s.y}
 
   return RenderGuide {
     startv: th::Vf2{starters.x+bb.x, bb.y},
     starth: th::Vf2{bb.x, starters.y+bb.y},
-    endv: th::Vf2{starters.x+bb.x, bb.h+bb.y},
+    endv:   th::Vf2{starters.x+bb.x, bb.h+bb.y},
 
-    endh: th::Vf2{bb.w+bb.x, starters.y+bb.y},
+    endh:     th::Vf2{bb.w+bb.x, starters.y+bb.y},
     spacingv: th::Vf2{grid.s.x, 0},
     spacingh: th::Vf2{0, grid.s.y},
-    nv: floor((bb.w-starters.x)/grid.s.x)+1,
-    nh: floor((bb.h-starters.y)/grid.s.y)+1
+    nv:       floor((bb.w-starters.x)/grid.s.x)+1,
+    nh:       floor((bb.h-starters.y)/grid.s.y)+1
   }
 }
 
@@ -75,5 +77,7 @@ fn drawRenderGuide*(renderGuide: RenderGuide, color: uint32, thickness: real) {
 }
 
 fn (grid: ^Grid) draw*(color: uint32, thickness: real) {
-  drawRenderGuide(mkRenderGuideFromBoundingBox(grid^), color, thickness)
+  renderGuide := mkRenderGuideFromBoundingBox(grid^)
+
+  drawRenderGuide(renderGuide, color, thickness)
 }
