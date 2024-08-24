@@ -450,9 +450,9 @@ fn putGrid(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
 
         // Draw hovered over coordinates.
         coordinates := sprintf("%v, %v", gridPos.x, gridPos.y)
-        coordinatesTxtSz := ui.font.measure(coordinates)
-        coordinatesTxtPos := th::Vf2{dest.x+10, dest.y+(dest.h-coordinatesTxtSz.y-10)}
-        ui.font.draw(coordinates, coordinatesTxtPos, th::white, 1)
+        coordinatesTxtSz := ui.font.measure(coordinates).mulf(ui.io.scale)
+        coordinatesTxtPos := th::Vf2{dest.x+10*ui.io.scale, dest.y+(dest.h-coordinatesTxtSz.y-10*ui.io.scale)}
+        ui.font.draw(coordinates, coordinatesTxtPos, th::white, ui.io.scale)
       }
     })
     ui.popId()
