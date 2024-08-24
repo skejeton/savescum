@@ -1155,16 +1155,12 @@ fn setup*() {
 
 
 fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^Editor {
-  // HACK: This shouldn't be handled in the editor.
-  background::init(rl)
-  game::init(rl)
-
   // @TODO: Since we update DPI, we need to also update the resources.
   resources := EditorResources {
     tilesetImage: resources::loadImage(rl, "data/img/ts_sky.png", .linear),
     toolbarIcons: resources::loadImage(rl, "data/img/ui/1_5x/icons.png", .linear),
     superHotFire: resources::loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
-    mainFont: resources::loadFont(rl, "data/font/FairfaxHD.ttf", 24, .linear)
+    mainFont:     ui.font
   }
 
   tileset := atlas::mk(resources.tilesetImage, {4, 9})
@@ -1214,7 +1210,6 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
   window::setViewport(global::screen.getDims())
 
   editor.ui.io.scale = window::getDpiScaleFactor()/1.5
-  editor.ui.font = editor.resources.mainFont
   editor.ui.pass(|editor| {
     editor.putUi(ui)
   }, editor.showUiDebugInfo)

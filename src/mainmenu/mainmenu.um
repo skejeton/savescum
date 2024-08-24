@@ -1,4 +1,99 @@
 import (
-  "ui.um"
+  "window.um"
+  "image.um"
+  "th.um"
+  "atlas.um"
+
+  "../data/resources.um"
+  "../data/problem_screen.um"
+  "../shared/global.um"
+  "../misc/immcursor.um"
+  "../gfx/background.um"
+  "../game/game.um"
+  "../editor/editor.um"
+  "../game/world.um"
+  "../game/world_data.um"
+  "../misc/util.um"
+
+  "../ui/ui.um"
 )
 
+type MainMenu* = struct {
+  tileset:   image::Image
+  rl:        ^resources::ResourceLoader
+  ui:        ^ui::UI
+  frameCb:   fn()
+  destroyCb: fn()
+}
+
+fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^MainMenu {
+  return new(MainMenu, {ui: ui, tileset: resources::loadImage(rl, "data/img/ts_sky.png", .linear), rl: rl})
+}
+
+fn setup*() {
+  dpi := window::getDpiScaleFactor()
+  global::screen = {0, 0, 800*dpi, 600*dpi}
+  window::setup("Savescum", trunc(global::screen.w), trunc(global::screen.h))
+}
+
+fn (menu: ^MainMenu) setupGame*() {
+  game::setup()
+  tileset := atlas::mk(menu.tileset, {4, 9})
+  world := world::fromTileset(tileset)
+  worldData := world_data::load(world, util::readFileStr("data/spiel/sc_testarea.csv").item0)
+  game::start(worldData)
+  editor::setup()
+  menu.frameCb   = { game::update(); game::draw() }
+  menu.destroyCb = {}
+}
+
+fn (menu: ^MainMenu) setupEditor*() {
+  editor::setup()
+  editor := editor::mk(menu.ui, menu.rl)
+  menu.frameCb = |editor| { editor.update(.editor) }
+  menu.destroyCb = |editor| { editor.destroy() }
+  game::setup()
+
+  if menu.rl.hasErrors() {
+    problem_screen::setup(menu.rl)
+  }
+}
+
+fn (menu: ^MainMenu) update*() {
+  if valid(menu.frameCb) {
+    menu.frameCb()
+    return
+  }
+
+  window::setViewport({window::w, window::h})
+  // @TODO: Somehow handle this automatically, because it's also handled in the editor.
+  immcursor::setCursor(.system)
+  menu.ui.io.scale = window::getDpiScaleFactor()/1.5
+  menu.ui.pass(|menu| {
+  background::drawBg({0, 0, 800, 600}, .advent, th::time/1000.0)
+    ui.row(|menu| {
+      ui.cellJustify(1.0)
+      ui.col(|menu| {
+        ui.cellColor(0xFFFFFFFF)
+        ui.heading("SAVESCUM")
+        ui.spring(1.0)
+        ui.cellStretch()
+        if ui.button("Play") {
+          menu.setupGame()
+        }
+        ui.spring(0.1)
+        ui.cellStretch()
+        if ui.button("Editor"){
+          menu.setupEditor()
+        }
+        ui.spring(1.0)
+      }, window::h)
+    }, 200).padding = 20
+  })
+}
+
+fn (menu: ^MainMenu) destroy*() {
+  if valid(menu.destroyCb) {
+    menu.destroyCb()
+  }
+}

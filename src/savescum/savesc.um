@@ -11,6 +11,7 @@ import (
   "../game/world.um"
   "../game/world_data.um"
   "../editor/editor.um"
+  "../mainmenu/mainmenu.um"
   "../data/resources.um"
   "../data/problem_screen.um"
   "../dbg/dbg.um"
@@ -37,16 +38,24 @@ fn init*(cfg: Config) {
   rl := new(resources::ResourceLoader, resources::mk())
 
   ui := setup_ui::setup({
-    bevelImage: resources::loadImage(rl, "data/img/ui/1_5x/base.png"),
-    glow:       resources::loadImage(rl, "data/img/ui/1_0x/glow.png")
+    mainFont:   resources::loadFont(rl, "data/font/FairfaxHD.ttf", 24, .linear),
+    bevelImage: resources::loadImage(rl, "data/img/ui/1_5x/base.png", .linear),
+    glow:       resources::loadImage(rl, "data/img/ui/1_0x/glow.png", .linear)
   })
 
   frameCb := signal::Callback{exit(1, "Invalid frame codepath")}
   destroyCb := signal::Callback{exit(1, "Invalid destroy codepath")}
+  
+  // @TODO: This is not needed everywhere.
+  background::init(rl)
+  game::init(rl)
 
   switch cfg.mode {
   case .mainmenu:
-    exit(1, "Main menu is not implemented yet")
+    mainmenu::setup()
+    menu := mainmenu::mk(ui, rl)
+    frameCb = |menu| { menu.update() }
+    destroyCb = |menu| { menu.destroy() }
   case .editor:
     editor::setup()
     editor := editor::mk(ui, rl)
@@ -54,9 +63,7 @@ fn init*(cfg: Config) {
     destroyCb = |editor| { editor.destroy() }
   case .game:
     // TODO: Make the initialization less hacky.
-    background::init(rl)
     game::setup()
-    game::init(rl)
     tileset := atlas::mk(resources::loadImage(rl, "data/img/ts_sky.png", .linear), {4, 9})
     world := world::fromTileset(tileset)
     worldData := world_data::load(world, util::readFileStr("data/spiel/sc_testarea.csv").item0)

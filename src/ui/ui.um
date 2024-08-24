@@ -615,6 +615,12 @@ fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
   el.renderObject = render::RenderImageCrop{img, r}
 }
 
+fn (ui: ^UI) heading*(text: str) {
+  el := ui.addEl()
+  el.size = ui.font.measure(text).mulf(3)
+  el.renderObject = render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale*3, color: el.cell.color}
+}
+
 fn (ui: ^UI) label*(text: str) {
   el := ui.addEl()
   el.size = ui.font.measure(text)

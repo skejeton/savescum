@@ -1,17 +1,22 @@
 import (
+  "image.um"
+  "font.um"
+
   "../ui/ui.um"
   "implvtbl.um"
-  "image.um"
   "themer.um"
 )
 
 type UiResources* = struct {
+  mainFont:   font::Font
   bevelImage: image::Image
   glow:       image::Image
 }
 
 fn setup*(resources: UiResources): ^ui::UI {
   ui := new(ui::UI, ui::mk(implvtbl::mk()))
+
+  ui.font = resources.mainFont
 
   // @TODO: Re add the april fools joke :V
   ui.setBoxTheme(.button, {
