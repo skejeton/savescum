@@ -209,8 +209,7 @@ fn (world: ^World) drawLayer*(pan: th::Vf2, layerId: int, scale: real = 1.0, tin
     offs := th::Vf2{p.x*chunkW*tsz.x, p.y*chunkH*tsz.y}
 
     if chunkVisible(world, chunk, offs, pan, scale) {
-      // @TODO: Add tint to tophat.
-      chunk.draw({s: {scale/2, scale/2}, p: pan.add(offs.mulf(scale))})
+      chunk.draw({s: {scale/2, scale/2}, p: pan.add(offs.mulf(scale))}, tint)
     }
   }
 }
