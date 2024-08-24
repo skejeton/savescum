@@ -847,7 +847,18 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
   delPtr := &del
 
   for i, ent^ in editor.entities.list {
-    entVisRect := util::rectScale(ent.rect, editor.tilemapGrid.s.x/32).shift(editor.tilemapGrid.toScreen(th::Vf2{0, 0}))
+    entSnappedRect := ent.rect
+    if input::isPressed(.ctrl) && (input::isPressed(.mouse1) || input::isJustReleased(.mouse1)) && editor.entities.entitySelected == i {
+      entSnappedRect = rect::Rect{
+        round(ent.rect.x/32.0)*32,
+        round(ent.rect.y/32.0)*32,
+        round(ent.rect.w/32.0)*32,
+        round(ent.rect.h/32.0)*32
+      }
+    }
+    
+    entVisRect := util::rectScale(entSnappedRect, editor.tilemapGrid.s.x/32).shift(editor.tilemapGrid.toScreen(th::Vf2{0, 0}))
+
     uiVisRect := entVisRect
 
     uiVisRect.x /= ui.io.scale
@@ -865,7 +876,7 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
     ignore := tags.isSet("Guide") && editor.entityBypass && !isEntitySelected(&editor.entities, i)
 
     ui.cellRect(uiVisRect)
-    ui.row(|i, ignore, editor, ent, uiVisRect, entVisRect, tags, delPtr| {
+    ui.row(|i, ignore, editor, ent, uiVisRect, entVisRect, tags, delPtr, entSnappedRect| {
       hovered := false
       focused := false
 
@@ -881,6 +892,9 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
             editor.dirty = true
             ent.rect = ent.rect.shift(input::getMouseDelta().divf(editor.tilemapGrid.s.x/32))
           }
+        }
+        if input::isJustReleased(.mouse1) {
+          ent.rect = entSnappedRect
         }
 
         if ui.isFocused() {
@@ -1209,8 +1223,6 @@ fn mk*(rl: ^resources::ResourceLoader): ^Editor {
       editor.resources.bevelImage.drawNinepatch({0, 60, 30, 30}, {6, 6, 18, 18}, dest)
     })
   })
-
-
 
   // TODO: Should we handle the session loading here really?
   if sessionFile, err := util::readFileStr(th::convPath("data://SAVESCUM/session.json")); err.code == 0 {
