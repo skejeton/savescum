@@ -14,7 +14,6 @@ import (
   "../ui/implvtbl.um"
   "../ui/ui.um"
   "../ui/themer.um"
-  setup_ui = "../ui/setup.um"
   "session.um"
 
   "../dbg/dbg.um"
@@ -61,10 +60,8 @@ type (
 
   EditorResources = struct {
     toolbarIcons: image::Image
-    bevelImage:   image::Image
     tilesetImage: image::Image
     superHotFire: image::Image
-    glow:         image::Image
     mainFont:     font::Font
   }
 
@@ -1157,27 +1154,20 @@ fn setup*() {
 }
 
 
-fn mk*(rl: ^resources::ResourceLoader): ^Editor {
+fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^Editor {
   // HACK: This shouldn't be handled in the editor.
   background::init(rl)
   game::init(rl)
 
   // @TODO: Since we update DPI, we need to also update the resources.
   resources := EditorResources {
-    bevelImage: resources::loadImage(rl, "data/img/ui/1_5x/base.png", .linear),
     tilesetImage: resources::loadImage(rl, "data/img/ts_sky.png", .linear),
     toolbarIcons: resources::loadImage(rl, "data/img/ui/1_5x/icons.png", .linear),
     superHotFire: resources::loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
-    glow: resources::loadImage(rl, "data/img/ui/1_0x/glow.png", .nearest),
     mainFont: resources::loadFont(rl, "data/font/FairfaxHD.ttf", 24, .linear)
   }
 
   tileset := atlas::mk(resources.tilesetImage, {4, 9})
-
-  ui := setup_ui::setup({
-    bevelImage: resources.bevelImage,
-    glow:       resources.glow
-  })
 
   editor := &Editor{
     mode:                 .editor,

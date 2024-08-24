@@ -3,6 +3,8 @@ import (
   "signal.um"
   "window.um"
 
+  setup_ui = "../ui/setup.um"
+
   "../gfx/background.um"
   "../misc/util.um"
   "../game/game.um"
@@ -34,6 +36,11 @@ fn init*(cfg: Config) {
 
   rl := new(resources::ResourceLoader, resources::mk())
 
+  ui := setup_ui::setup({
+    bevelImage: resources::loadImage(rl, "data/img/ui/1_5x/base.png"),
+    glow:       resources::loadImage(rl, "data/img/ui/1_0x/glow.png")
+  })
+
   frameCb := signal::Callback{exit(1, "Invalid frame codepath")}
   destroyCb := signal::Callback{exit(1, "Invalid destroy codepath")}
 
@@ -42,7 +49,7 @@ fn init*(cfg: Config) {
     exit(1, "Main menu is not implemented yet")
   case .editor:
     editor::setup()
-    editor := editor::mk(rl)
+    editor := editor::mk(ui, rl)
     frameCb = |editor| { editor.update(.editor) }
     destroyCb = |editor| { editor.destroy() }
   case .game:
