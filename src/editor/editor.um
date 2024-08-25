@@ -393,17 +393,38 @@ fn adjustEntityRect(editor: ^Editor, tags: ^game::TagSet, ent: ^world_data::Enti
   return r
 }
 
+fn (editor: ^Editor) zoomToCenter() {
+  bb := editor.world.getBoundingBox()
+  // @NOTE: Dont zoom too much, prevent 0 division.
+  if bb.w < 30 { bb.w = 30 }
+  if bb.h < 30 { bb.h = 30 }
+
+  scaleX := editor.tilemapGrid.bb.w/bb.w
+  scaleY := editor.tilemapGrid.bb.h/bb.h
+
+  scale := util::min(scaleX, scaleY)
+
+  if scale < 8 { scale = 8 }
+
+  editor.tilemapGrid.s = {scale, scale}
+  editor.tilemapGrid.p = bb.center().mulf(-1)
+}
+
+
 fn loadRoom(editor: ^Editor, room: str) {
   editor.currentRoom = room
   editor.potentialRoom = room
   editorLoadRoom(editor, room)
+  editor.zoomToCenter()
 }
+
 
 type GridInteraction = struct {
   placed:  bool
   removed: bool
   pos:     th::Vf2
 }
+
 
 fn putGrid(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
   ps := &GridInteraction{}
@@ -672,8 +693,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.cellStretch()
     ui.cellSameSize()
     if ui.button("> <") {
-      editor.tilemapGrid.p = {0, 0}
-      editor.tilemapGrid.s = {48, 48}
+      editor.zoomToCenter()
     }
     ui.spring(1)
 
@@ -1023,6 +1043,12 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
             editor.tilemapGrid,
             &editor.world
           }.draw({})
+
+          // Draw the bounding box
+          r := editor.world.getBoundingBox()
+          p1 := editor.tilemapGrid.toScreen(r.getPos())
+          p2 := editor.tilemapGrid.toScreen(r.getDims().add(r.getPos()))
+          canvas::drawRectLines(0xAAAAFF44, {p1.x, p1.y, p2.x-p1.x, p2.y-p1.y}, 2)
         })
 
         ui.popId()
@@ -1059,31 +1085,34 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
 
 fn editorSaveSession(editor: ^Editor): session::Session {
   session := session::Session{}
-  session.pan = editor.tilemapGrid.p
-  session.scale = editor.tilemapGrid.s.x
-  session.room = editor.currentRoom
-  session.allLayers = editor.tilemapShowAllLayers
-  session.entityBypass = editor.entityBypass
+
+  session.pan           = editor.tilemapGrid.p
+  session.scale         = editor.tilemapGrid.s.x
+  session.room          = editor.currentRoom
+  session.allLayers     = editor.tilemapShowAllLayers
+  session.entityBypass  = editor.entityBypass
   session.layerSelected = editor.tilemapLayer
   session.tileSelected  = editor.tileSelected
-  session.showUiDebug = editor.showUiDebugInfo
-  session.plainBiscuit = global::plainBiscuit
-  session.windows = implvtbl::VTBLImpl(editor.ui.vtbl).wm.saveState()
+  session.showUiDebug   = editor.showUiDebugInfo
+  session.plainBiscuit  = global::plainBiscuit
+  printf("%v\n", editor.ui)
+  session.windows       = implvtbl::VTBLImpl(editor.ui.vtbl).wm.saveState()
+  printf("Not executed, no error.\n")
 
   return session
 }
 
 fn editorLoadSession(editor: ^Editor, session: session::Session) {
   loadRoom(editor, session.room)
-  editor.tilemapGrid.p = session.pan
-  editor.tilemapGrid.s.x = session.scale
-  editor.tilemapGrid.s.y = session.scale
+  editor.tilemapGrid.p        = session.pan
+  editor.tilemapGrid.s.x      = session.scale
+  editor.tilemapGrid.s.y      = session.scale
   editor.tilemapShowAllLayers = session.allLayers
-  editor.entityBypass = session.entityBypass
-  editor.tilemapLayer = session.layerSelected
-  editor.tileSelected = session.tileSelected
-  editor.showUiDebugInfo = session.showUiDebug
-  global::plainBiscuit = session.plainBiscuit
+  editor.entityBypass         = session.entityBypass
+  editor.tilemapLayer         = session.layerSelected
+  editor.tileSelected         = session.tileSelected
+  editor.showUiDebugInfo      = session.showUiDebug
+  global::plainBiscuit        = session.plainBiscuit
 
   implvtbl::VTBLImpl(editor.ui.vtbl).wm.loadState(session.windows)
 }
@@ -1244,7 +1273,9 @@ fn (editor: ^Editor) destroy*() {
     os::mkdir(th::convPath("data://SAVESCUM"))
   }
 
-  err := util::writeFileStr(th::convPath("data://SAVESCUM/session.json"), session::save(editorSaveSession(editor)))
+  path := th::convPath("data://SAVESCUM/session.json")
+  session := session::save(editorSaveSession(editor))
+  err := util::writeFileStr(path, session)
   if err.code != 0 {
     dbg::logt("Failed to save session!")
   }

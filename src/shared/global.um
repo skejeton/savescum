@@ -1,9 +1,9 @@
 import "rect.um"
 
 var (
-  version*: str = "5%"
-  screen*: rect::Rect
+  version*:         str = "5%"
+  screen*:          rect::Rect
   caseSensetiveFS*: bool = true
-  plainBiscuit*: bool = false // removes all unnecessary visual elements
-  playTime*: int
+  plainBiscuit*:    bool = false // removes all unnecessary visual elements
+  playTime*:        int
 )

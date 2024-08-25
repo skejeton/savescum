@@ -118,8 +118,6 @@ fn load*(world: world::World, data: str): WorldData {
     // If all tiles are empty, don't store the chunk
     if sum != 0 {
       world.tilemap[layer][chunkPos] = chunk
-    } else {
-      world.tilemap[layer][chunkPos] = tilemap::mk2(make([]th::uu, world::chunkW*world::chunkH), world::chunkW, world.tileset, 1)
     }
   }
 
