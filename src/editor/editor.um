@@ -13,7 +13,6 @@ import (
   "../ui/notification.um"
   "../ui/implvtbl.um"
   "../ui/ui.um"
-  "../ui/themer.um"
   "session.um"
 
   "../dbg/dbg.um"
@@ -23,7 +22,6 @@ import (
   "../game/world_data.um"
   "../shared/global.um"
   "../data/resources.um"
-  "../gfx/background.um"
   "../game/world.um"
   "atlas.um"
   "../misc/util.um"

@@ -23,7 +23,7 @@ fn loadingError*(loader: ^ResourceLoader, path, why: str) {
   loader.errors = append(loader.errors, sprintf("Error loading %s: %s", path, why))
 }
 
-fn loadImage*(loader: ^ResourceLoader, path: str, filter: font::Filter = .linear): image::Image {
+fn loadImage*(loader: ^ResourceLoader, path: str, filter: image::Filter = .linear): image::Image {
   theImage, err := image::load(path)
 
   if i := ^image::Image(loader.cache[path]); i != null {
@@ -33,7 +33,7 @@ fn loadImage*(loader: ^ResourceLoader, path: str, filter: font::Filter = .linear
   if err.code != 0 {
     loadingError(loader, path, err.msg)
   } else {
-    theImage.setfilter(int(filter))
+    theImage.setfilter(filter)
   }
 
   loader.cache[path] = theImage
@@ -56,7 +56,7 @@ fn loadAudio*(loader: ^ResourceLoader, path: str): audio::Sound {
 }
 
 
-fn loadFont*(loader: ^ResourceLoader, path: str, size: real, filter: font::Filter): font::Font {
+fn loadFont*(loader: ^ResourceLoader, path: str, size: real, filter: image::Filter): font::Font {
   theFont, err := font::load(path, size, filter)
   
   if f := ^font::Font(loader.cache[path]); f != null {
