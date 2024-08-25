@@ -169,7 +169,7 @@ var (
 
   saves: []ChumState
   bufferState: ChumState
-  showDebug*: bool = true
+  showDebug*: bool
   lastUpdateTime: int = 0
   frameSkips*: int
 

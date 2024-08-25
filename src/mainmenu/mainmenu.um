@@ -3,6 +3,7 @@ import (
   "image.um"
   "th.um"
   "atlas.um"
+  "rect.um"
 
   "../data/resources.um"
   "../data/problem_screen.um"
@@ -37,22 +38,18 @@ fn setup*() {
 }
 
 fn (menu: ^MainMenu) setupGame*() {
-  game::setup()
   tileset := atlas::mk(menu.tileset, {4, 9})
   world := world::fromTileset(tileset)
   worldData := world_data::load(world, util::readFileStr("data/spiel/sc_testarea.csv").item0)
   game::start(worldData)
-  editor::setup()
   menu.frameCb   = { game::update(); game::draw() }
   menu.destroyCb = {}
 }
 
 fn (menu: ^MainMenu) setupEditor*() {
-  editor::setup()
   editor := editor::mk(menu.ui, menu.rl)
   menu.frameCb = |editor| { editor.update(.editor) }
   menu.destroyCb = |editor| { editor.destroy() }
-  game::setup()
 
   if menu.rl.hasErrors() {
     problem_screen::setup(menu.rl)
@@ -60,14 +57,16 @@ fn (menu: ^MainMenu) setupEditor*() {
 }
 
 fn (menu: ^MainMenu) update*() {
+  // @TODO: Somehow handle all this automatically, because it's also handled in the editor.
+  global::screen = rect::Rect{0, 0, window::w, window::h}
+  window::setViewport({window::w, window::h})
+  immcursor::setCursor(.system)
+  
   if valid(menu.frameCb) {
     menu.frameCb()
     return
   }
 
-  window::setViewport({window::w, window::h})
-  // @TODO: Somehow handle this automatically, because it's also handled in the editor.
-  immcursor::setCursor(.system)
   menu.ui.io.scale = window::getDpiScaleFactor()/1.5
   menu.ui.pass(|menu| {
   background::drawBg({0, 0, 800, 600}, .advent, th::time/1000.0)
