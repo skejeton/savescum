@@ -1095,9 +1095,7 @@ fn editorSaveSession(editor: ^Editor): session::Session {
   session.tileSelected  = editor.tileSelected
   session.showUiDebug   = editor.showUiDebugInfo
   session.plainBiscuit  = global::plainBiscuit
-  printf("%v\n", editor.ui)
   session.windows       = implvtbl::VTBLImpl(editor.ui.vtbl).wm.saveState()
-  printf("Not executed, no error.\n")
 
   return session
 }
@@ -1266,8 +1264,6 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
 }
 
 fn (editor: ^Editor) destroy*() {
-  // Reset all the references to editor.
-  editor.ui = null
   // HACK: Should the session managment be handled here?
   if !os::isdir(th::convPath("data://SAVESCUM")) {
     os::mkdir(th::convPath("data://SAVESCUM"))
@@ -1279,4 +1275,7 @@ fn (editor: ^Editor) destroy*() {
   if err.code != 0 {
     dbg::logt("Failed to save session!")
   }
+
+  // Reset all the references to editor.
+  editor.ui = null
 }
