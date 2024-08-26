@@ -60,12 +60,13 @@ fn (menu: ^MainMenu) update*() {
   // @TODO: Somehow handle all this automatically, because it's also handled in the editor.
   global::screen = rect::Rect{0, 0, window::w, window::h}
   window::setViewport({window::w, window::h})
-  immcursor::setCursor(.system)
   
   if valid(menu.frameCb) {
     menu.frameCb()
     return
   }
+  
+  immcursor::setCursor(.system)
 
   menu.ui.io.scale = window::getDpiScaleFactor()/1.5
   menu.ui.pass(|menu| {
