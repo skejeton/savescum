@@ -40,7 +40,7 @@ fn setup*() {
 fn (menu: ^MainMenu) setupGame*() {
   tileset := atlas::mk(menu.tileset, {4, 9})
   world := world::fromTileset(tileset)
-  worldData := world_data::load(world, util::readFileStr("data/spiel/sc_testarea.csv").item0)
+  worldData := world_data::load(world, util::readFileStr("data/spiel/sc_wip.csv").item0)
   game::start(worldData)
   menu.frameCb   = { game::update(); game::draw() }
   menu.destroyCb = {}

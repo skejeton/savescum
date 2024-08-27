@@ -1,0 +1,10 @@
+import (
+  "audio.um"
+  "std.um"
+)
+
+fn startAtRandomPitch*(sound: audio::Sound) {
+  snd, err := sound.start()
+  snd.setPitch(1.0+(std::rand()%10)/100.0)
+  snd.setVol(0.2+(std::rand()%10)/100.0)
+}

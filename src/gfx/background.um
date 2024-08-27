@@ -190,7 +190,7 @@ fn drawBg*(screen: rect::Rect, which: Background, time: real) {
 
   switch which {
     case .black: drawBackgroundSquare(global::screen, time, 0x000000FF, 0x040408FF, screenScale)
-    case .debug: drawClouds(screen, 0x99994400, 0x555555FF, global::screen.w/screen.w*0.5)
+    case .debug: drawClouds(screen, 0x77774400, 0x222222FF, global::screen.w/screen.w*0.5)
     case .clouds: drawClouds(screen, 0x7777FF00, 0xEEEEEEFF, global::screen.w/screen.w*0.5)
     case .advent: drawClouds(screen, 0x4444AA00, 0x000022FF, global::screen.w/screen.w*0.5);
     case .jazz: drawJazz(screen, {screen.x, screen.y}, screenScale)
@@ -200,5 +200,5 @@ fn drawBg*(screen: rect::Rect, which: Background, time: real) {
 }
 
 fn draw*(screen: rect::Rect, time: real) {
-  drawBg(screen, .cube, time)
+  drawBg(screen, .debug, time)
 }

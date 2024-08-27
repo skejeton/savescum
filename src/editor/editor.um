@@ -9,10 +9,12 @@ import (
   "input.um"
   "coll.um"
   "std.um"
+  "audio.um"
 
   "../ui/notification.um"
   "../ui/implvtbl.um"
   "../ui/ui.um"
+  "../sfx/sfx.um"
   "session.um"
 
   "../dbg/dbg.um"
@@ -61,6 +63,8 @@ type (
     tilesetImage: image::Image
     superHotFire: image::Image
     mainFont:     font::Font
+    pressFx:      audio::Sound
+    releaseFx:    audio::Sound
   }
 
   EditorEntities = struct {
@@ -1185,6 +1189,8 @@ fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^Editor {
     tilesetImage: resources::loadImage(rl, "data/img/ts_sky.png", .linear),
     toolbarIcons: resources::loadImage(rl, "data/img/ui/1_5x/icons.png", .linear),
     superHotFire: resources::loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
+    pressFx:      resources::loadAudio(rl, "data/audio/sfx/press.ogg"),
+    releaseFx:    resources::loadAudio(rl, "data/audio/sfx/release.ogg"),
     mainFont:     ui.font
   }
 
@@ -1207,7 +1213,7 @@ fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^Editor {
   if sessionFile, err := util::readFileStr(th::convPath("data://SAVESCUM/session.json")); err.code == 0 {
     editorLoadSession(editor, session::load(sessionFile))
   } else {
-    loadRoom(editor, "testarea")
+    loadRoom(editor, "wip")
   }
 
   return editor
@@ -1238,6 +1244,20 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
   editor.ui.pass(|editor| {
     editor.putUi(ui)
   }, editor.showUiDebugInfo)
+
+  for i, ev in editor.ui.events {
+    if ev.el.boxStyle == .button {
+      switch ev.kind {
+        case .pressed: sfx::startAtRandomPitch(editor.resources.pressFx)
+        case .released: sfx::startAtRandomPitch(editor.resources.releaseFx)
+      }
+    } else if ev.el.boxStyle == .buttonPushed {
+      switch ev.kind {
+        case .released: sfx::startAtRandomPitch(editor.resources.pressFx)
+        case .pressed: sfx::startAtRandomPitch(editor.resources.releaseFx)
+      }
+    }
+  }
 
   fpsNode := debug_info::Display{ "FPS", fps::getFps(), false }
   if payload_trigger::aprilFools() {

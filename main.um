@@ -1,5 +1,5 @@
 import savescum = "src/savescum/savesc.um"
 
 fn init*() {
-  savescum::init({mode: .mainmenu})
+  savescum::init({mode: .editor})
 }

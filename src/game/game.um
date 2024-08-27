@@ -486,7 +486,7 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
         shapeRect.h /= 2
       case 30: if toggleActive { shapeType = .block }
       case 31: if !toggleActive { shapeType = .block }
-      case 1, 5, 7, 29:   shapeType = .block
+      case 1, 5, 7, 29, 33, 34, 35:   shapeType = .block
       case 9:   shapeType = .leftUpSlope
       case 10:  shapeType = .rightUpSlope
       case 13:  shapeType = .leftDownSlope
@@ -660,7 +660,7 @@ fn init*(rl: ^resources::ResourceLoader) {
   palLand = resources::loadAudio(rl, "data/audio/sfx/pal_land.ogg")
 
   // bgAudio.setLooping(true)
-  defaultFont = resources::loadFont(rl, "data/font/FairFaxHD.ttf", 16, .linear)
+  defaultFont = resources::loadFont(rl, "data/font/FairFaxHD.ttf", 24*2, .linear)
   imgObj = resources::loadImage(rl, "data/img/obj_interactive.png", .linear)
   imgChum = resources::loadImage(rl, "data/img/chr_chum.png", .linear)
 }
@@ -765,9 +765,8 @@ fn drawEntityObject*(name: str, tags: ^TagSet, rect: rect::Rect, scale: real): b
   } else if tags.isSet("controls") {
     imgObj.blit(cropControls, rect)
   } else if tags.isSet("Comment") {
-    canvas::drawRect(0x000000FF, util::rectShrink(rect, -scale))
-    canvas::drawRect(0x00FFFFFF, rect)
-    defaultFont.draw(name, rect.getPos(), 0x000000FF, scale)
+    defaultFont.draw(name, rect.getPos().addf(1*cameraScale), 0x000000FF, scale/2)
+    defaultFont.draw(name, rect.getPos(), 0xFFFFFFFF, scale/2)
   } else {
     return false
   }

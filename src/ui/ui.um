@@ -96,6 +96,7 @@ type (
   }
 
   Retained* = struct {
+    el:      ^El
     life:     int
     id:       any
     rect:     rect::Rect
@@ -124,6 +125,16 @@ type (
     doTextEditSingle(ui: ^UI, name: str, value: ^str): bool
   }
 
+  EventKind* = enum {
+    pressed
+    released
+  }
+
+  Event* = struct {
+    kind: EventKind
+    el:   ^El
+  }
+
   UI* = struct {
     font:      font::Font
     theme:     [int(BoxStyle._count)]BoxTheme
@@ -138,6 +149,7 @@ type (
     parents:   []^El
     root:      ^El
     cell:      Cell
+    events:    []Event
   }
 )
 
@@ -315,10 +327,17 @@ fn (ui: ^UI) processAttention(el: ^El) {
 
   // @MARK(DirectInput)
   if input::isJustReleased(.mouse1) || input::isJustReleased(.mouse2) || input::isJustReleased(.mouse3) {
+    if ui.attention.active != 0 {
+      ui.events = append(ui.events, Event{kind: .released, el: ui.retained[ui.attention.active].el})
+    }
     ui.attention.active = 0
   }
 
   ui.processAttentionRec(el, {0, 0, window::w, window::h})
+
+  if input::isJustPressed(.mouse1) && ui.attention.active != 0 {
+    ui.events = append(ui.events, Event{kind: .pressed, el: ui.retained[ui.attention.active].el})
+  }
 }
 
 fn (ui: ^UI) input(el: ^El) {
@@ -397,6 +416,8 @@ fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0)
 fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0)
 
 fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
+  ui.events = {}
+
   ui.updateIO()
   ui.root = new(El, {cell: {color: 0x000000FF}})
 
@@ -486,6 +507,7 @@ fn (ui: ^UI) popEl*() {
 
 fn (ui: ^UI) pushIdInt*(i: int) {
   id := fnv1::hash64i(ui.ids[len(ui.ids)-1], i)
+  ui.retained[id].el = ui.lastEl()
   ui.retained[id].id = i
   ui.retained[id].life = 2
   ui.ids = append(ui.ids, uint(id))
@@ -494,6 +516,7 @@ fn (ui: ^UI) pushIdInt*(i: int) {
 
 fn (ui: ^UI) pushIdStr*(s: str) {
   id := fnv1::hash64s(ui.ids[len(ui.ids)-1], s)
+  ui.retained[id].el = ui.lastEl()
   ui.retained[id].id = s
   ui.retained[id].life = 2
   ui.ids = append(ui.ids, id)
