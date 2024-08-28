@@ -702,25 +702,21 @@ fn drawEntityCustomRect(ent: ^Character, r: rect::Rect) {
   canvas::drawRect(color, cameraOffsetRect(ent.rect))
 }
 
-const (
-  cropBoulder = rect::Rect{0, 0, 64, 128}
-  cropLeverOn  = rect::Rect{64, 64, 64, 64}
-  cropLeverOff = rect::Rect{64, 0, 64, 64}
-  cropLeverStaticOn  = rect::Rect{256, 64, 64, 64}
-  cropLeverStaticOff = rect::Rect{256, 0, 64, 64}
-  cropLeverWaterOn = rect::Rect{320, 128, 64, 64}
-  cropLeverWaterOff = rect::Rect{320, 192, 64, 64}
-  cropControls = rect::Rect{0, 128, 256, 256}
-)
+cropBoulder        := rect::Rect{0, 0, 64, 128}
+cropLeverOn        := rect::Rect{64, 64, 64, 64}
+cropLeverOff       := rect::Rect{64, 0, 64, 64}
+cropLeverStaticOn  := rect::Rect{256, 64, 64, 64}
+cropLeverStaticOff := rect::Rect{256, 0, 64, 64}
+cropLeverWaterOn   := rect::Rect{320, 128, 64, 64}
+cropLeverWaterOff  := rect::Rect{320, 192, 64, 64}
+cropControls       := rect::Rect{0, 128, 256, 256}
 
-const (
-  chumStateStand = 0
-  chumStateJump = 1
-  chumStateFall = 2
-  chumStandRect = rect::Rect{128, 0, 128, 128}
-  chumFaceRect = rect::Rect{0, 0, 128, 128}
-  chumMouthRect = rect::Rect{41, 52, 22, 7}
-)
+chumStateStand := 0
+chumStateJump  := 1
+chumStateFall  := 2
+chumStandRect  := rect::Rect{128, 0, 128, 128}
+chumFaceRect   := rect::Rect{0, 0, 128, 128}
+chumMouthRect  := rect::Rect{41, 52, 22, 7}
 
 fn drawChum(state: int)
 

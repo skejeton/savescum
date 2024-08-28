@@ -38,7 +38,7 @@ fn loadInt*(s: []str): int {
   return std::atoi(s[0])
 }
 
-const sign = [2]str{"-", "+"}
+sign := [2]str{"-", "+"}
 
 fn saveBool*(f: bool): []str {
   return []str{sign[int(f)]}

@@ -4,12 +4,10 @@
 
 import "std.um"
 
-const (
-  prefixes = []str{"MO", "NO", "NE", "BRE", "BOR", "BU", "BO", "RU", "DAL", "PER",
-  "SOR", "KO", "NOG", "KRO", "FER", "RAL", "LOA", "ROI", "FU", "YGG", "DRA"}
-  suffices = []str{"ETH", "YOR", "KKA", "TTU", "KIRK", "KER", "HAR", "KROK",
-  "ROT", "TER", "FI", "AKKEN", "FOK", "TROL", "VARG", "LYR", "SIR", "SIL"}
-) 
+prefixes := []str{"MO", "NO", "NE", "BRE", "BOR", "BU", "BO", "RU", "DAL", "PER",
+"SOR", "KO", "NOG", "KRO", "FER", "RAL", "LOA", "ROI", "FU", "YGG", "DRA"}
+suffices := []str{"ETH", "YOR", "KKA", "TTU", "KIRK", "KER", "HAR", "KROK",
+"ROT", "TER", "FI", "AKKEN", "FOK", "TROL", "VARG", "LYR", "SIR", "SIL"}
 
 fn xorshift(x: uint): uint {
   x = x ~ (x << 13)
