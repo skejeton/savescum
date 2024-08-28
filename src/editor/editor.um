@@ -777,7 +777,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
         for i, level in levels {
           ui.cellStretch()
-          if ui.button(level.name) {
+          if ui.button(level.id) {
             game::tele(level.id)
           }
         }
