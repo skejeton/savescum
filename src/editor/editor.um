@@ -647,6 +647,7 @@ fn (editor: ^Editor) putQuickAdd*(ui: ^ui::UI) {
   ui.window("Quick Add", |editor, options| {
     for i, option in options {
       ui.cellStretch()
+      ui.cellJustify(1)
       if ui.button(i) {
         ent := initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list)))
         ent.rect.w = option.size.x
