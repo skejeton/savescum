@@ -638,7 +638,10 @@ fn (editor: ^Editor) putQuickAdd*(ui: ^ui::UI) {
     "Player":   {"player", {32, 32}},
     "Guide":    {"Guide",  {640, 480}},
     "TeleFrom": {"tele",  {5*32, 5*32}},
-    "TeleTo":   {"tele_off",  {5*32, 5*32}}
+    "TeleTo":   {"tele_off",  {5*32, 5*32}},
+    "Boulder":  {"boulder", {32, 64}},
+    "Lever":    {"lever", {32, 32}},
+    "LeverS":   {"leverS", {32, 32}}
   }
 
   ui.window("Quick Add", |editor, options| {
