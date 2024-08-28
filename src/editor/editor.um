@@ -628,6 +628,36 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
   })
 }
 
+type Option = struct {
+  tags: str
+  size: th::Vf2
+}
+
+fn (editor: ^Editor) putQuickAdd*(ui: ^ui::UI) {
+  options := map[str]Option{
+    "Player":   {"player", {32, 32}},
+    "Guide":    {"Guide",  {640, 480}},
+    "TeleFrom": {"tele",  {5*32, 5*32}},
+    "TeleTo":   {"tele_off",  {5*32, 5*32}}
+  }
+
+  ui.window("Quick Add", |editor, options| {
+    for i, option in options {
+      ui.cellStretch()
+      if ui.button(i) {
+        ent := initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list)))
+        ent.rect.w = option.size.x
+        ent.rect.h = option.size.y
+        ent.tags = option.tags
+        appendEntity(&editor.entities, ent)
+        editor.entities.entitySelected = len(editor.entities.list)-1
+        editor.dirty = true
+        implvtbl::VTBLImpl(ui.vtbl).wm.toggle("Quick Add")
+      }
+    }
+  })
+}
+
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.cellJustify(1)
   ui.row(|editor| {
@@ -739,6 +769,8 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
         editorLoadRoom(editor, editor.currentRoom)
       }
     })
+
+    editor.putQuickAdd(ui)
 
     ui.window("Tile Picker", |editor| {
       ui.cellJustify(1)
@@ -1126,6 +1158,10 @@ fn (editor: ^Editor) handleShortcuts*() {
     editor.entities.entitySelected = -1
   }
   if input::isPressed(.ctrl) {
+    if input::isJustPressedc('a') {
+      input::clearc('a')
+      implvtbl::VTBLImpl(editor.ui.vtbl).wm.show("Quick Add")
+    }
     if input::isJustPressedc('s') {
       input::clearc('s')
       editorSaveRoom(editor)
@@ -1208,6 +1244,8 @@ fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^Editor {
     resources:            resources,
     entities:             createEditorEntities()
   }
+
+  implvtbl::VTBLImpl(ui.vtbl).wm.windows["Quick Add"].hidden = true
 
   // TODO: Should we handle the session loading here really?
   if sessionFile, err := util::readFileStr(th::convPath("data://SAVESCUM/session.json")); err.code == 0 {
