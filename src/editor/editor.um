@@ -641,7 +641,7 @@ fn (editor: ^Editor) putQuickAdd*(ui: ^ui::UI) {
     "TeleTo":   {"tele_off",  {5*32, 5*32}},
     "Boulder":  {"boulder", {32, 64}},
     "Lever":    {"lever", {32, 32}},
-    "LeverS":   {"leverS", {32, 32}}
+    "LeverS":   {"lever_s", {32, 32}}
   }
 
   ui.window("Quick Add", |editor, options| {
