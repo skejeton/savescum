@@ -28,6 +28,7 @@ type (
     col
     row
     spring
+    spacer
   }
 
   BoxStyle* = enum {
@@ -96,13 +97,13 @@ type (
   }
 
   Retained* = struct {
-    el:      ^El
-    life:     int
-    id:       any
-    rect:     rect::Rect
-    state:    BoxState
-    boxStyle: BoxStyle
-    data:     any
+    el:        ^El
+    life:      int
+    id:        any
+    rect:      rect::Rect
+    state:     BoxState
+    data:      any
+    isVisible: bool
   }
 
   Attention* = struct {
@@ -154,10 +155,10 @@ type (
 )
 
 const (
-  cellClipped = 1<<0
+  cellClipped   = 1<<0
   cellUnclipped = 1<<1
   cellStretched = 1<<2
-  cellSameSize = 1<<3
+  cellSameSize  = 1<<3
 
   buttonFlagPushed* = 1<<0
 )
@@ -350,25 +351,24 @@ fn (ui: ^UI) input(el: ^El) {
 }
 
 fn (ui: ^UI) render(el: ^El, depth: int, scissor: rect::Rect) {
-  if !coll::rectToRect(el.cell.rect, scissor) {
-    return
-  }
+  retained := &ui.retained[el.id]
+  retained.isVisible = false
 
-  theme := ui.theme[int(el.boxStyle)]
+  if coll::rectToRect(el.cell.rect, scissor) {
+    retained.isVisible = true
+    theme := ui.theme[int(el.boxStyle)]
+    if selfhasptr(theme.pressed) && retained.state.pressed {
+      theme.pressed.draw(el.cell.rect)
+    } else if selfhasptr(theme.normal) {
+      theme.normal.draw(el.cell.rect)
+    }
 
-  retained := ui.retained[el.id]
-
-  if selfhasptr(theme.pressed) && retained.state.pressed {
-    theme.pressed.draw(el.cell.rect)
-  } else if selfhasptr(theme.normal) {
-    theme.normal.draw(el.cell.rect)
-  }
-
-  if selfhasptr(el.renderObject) {
-    el.renderObject.draw(el.cell.rect)
-    // @NOTE: Remove any possible circular references to UI 
-    // @TODO: This shouldn't be here ideally.
-    el.renderObject = null
+    if selfhasptr(el.renderObject) {
+      el.renderObject.draw(el.cell.rect)
+      // @NOTE: Remove any possible circular references to UI 
+      // @TODO: This shouldn't be here ideally.
+      el.renderObject = null
+    }
   }
 
   if el.cell.flags & cellClipped != 0 {
@@ -400,9 +400,9 @@ fn (ui: ^UI) render(el: ^El, depth: int, scissor: rect::Rect) {
 
 fn (ui: ^UI) updateCursor() {
   if ui.attention.active != 0 {
-    immcursor::setCursor(ui.cursors[int(ui.retained[ui.attention.active].boxStyle)])
+    immcursor::setCursor(ui.cursors[int(ui.retained[ui.attention.active].el.boxStyle)])
   } else if ui.attention.hovered != 0 {
-    immcursor::setCursor(ui.cursors[int(ui.retained[ui.attention.hovered].boxStyle)])
+    immcursor::setCursor(ui.cursors[int(ui.retained[ui.attention.hovered].el.boxStyle)])
   }
 }
 
@@ -507,18 +507,24 @@ fn (ui: ^UI) popEl*() {
 
 fn (ui: ^UI) pushIdInt*(i: int) {
   id := fnv1::hash64i(ui.ids[len(ui.ids)-1], i)
-  ui.retained[id].el = ui.lastEl()
-  ui.retained[id].id = i
-  ui.retained[id].life = 2
+  isnew := !validkey(ui.retained, id)
+  retained := &ui.retained[id]
+  if isnew { retained.isVisible = true }
+  retained.el = ui.lastEl()
+  retained.id = i
+  retained.life = 2
   ui.ids = append(ui.ids, uint(id))
   ui.lastEl().id = id
 }
 
 fn (ui: ^UI) pushIdStr*(s: str) {
   id := fnv1::hash64s(ui.ids[len(ui.ids)-1], s)
-  ui.retained[id].el = ui.lastEl()
-  ui.retained[id].id = s
-  ui.retained[id].life = 2
+  isnew := !validkey(ui.retained, id)
+  retained := &ui.retained[id]
+  if isnew { retained.isVisible = true }
+  retained.el = ui.lastEl()
+  retained.id = s
+  retained.life = 2
   ui.ids = append(ui.ids, id)
   ui.lastEl().id = id
 }
@@ -529,6 +535,13 @@ fn (ui: ^UI) popId*() {
 
 fn (ui: ^UI) id*(): uint {
   return ui.ids[len(ui.ids)-1]
+}
+
+fn (ui: ^UI) isHidden*(): bool {
+  if last := ui.lastEl().id; last != 0 {
+    return !ui.retained[last].isVisible
+  }
+  return false
 }
 
 // >>> UTILS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -552,7 +565,6 @@ fn (ui: ^UI) getData*(): ^any {
 
 fn (ui: ^UI) boxStyle*(style: BoxStyle) {
   ui.lastEl().boxStyle = style
-  ui.retained[ui.lastEl().id].boxStyle = style
 }
 
 fn (ui: ^UI) setBoxTheme*(style: BoxStyle, theme: BoxTheme) {
@@ -651,6 +663,13 @@ fn (ui: ^UI) label*(text: str) {
 }
 
 fn (ui: ^UI) spring*(power: real)
+
+fn (ui: ^UI) buttonSpacer*() {
+  el := ui.addEl()
+  el.layout = .spacer
+  el.size.y = ui.font.measure(" ").y+20
+}
+
 fn (ui: ^UI) button*(text: str, flags: uint = 0): bool {
   ui.cellClip()
   el := ui.pushEl()
@@ -797,6 +816,7 @@ fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
 // NOTE: Step 2 in debug UI, draws the ID of hovered elements.
 fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0) {
   id := ui.retained[el.id].id
+  vis := ui.retained[el.id].isVisible
   rect := el.cell.rect
 
   // @MARK(DirectInput): Probably doesn't matter here.
@@ -811,7 +831,7 @@ fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0) {
       ui.font.draw(strId, rect.getPos().sub({0, sz.y}), text, 0.5*ui.io.scale)
     }
 
-    info := sprintf("Id:%20v | LayoutType:%v | Active:%5v | Parent:%20v", el.id, el.layout, ui.attention.active == el.id, el.parent == null ? uint(0) : el.parent.id)
+    info := sprintf("Id:%20v | LayoutType:%v | Active:%5v | Parent:%20v | Vis %v", el.id, el.layout, ui.attention.active == el.id, el.parent == null ? uint(0) : el.parent.id, vis)
     sz := ui.font.measure(info).mulf(0.5*ui.io.scale)
     canvas::drawRect(border, {0, hy, sz.x, sz.y})
     ui.font.draw(info, {0, hy}, 0x000000FF, 0.5*ui.io.scale)
