@@ -369,6 +369,8 @@ fn (ui: ^UI) render(el: ^El, depth: int, scissor: rect::Rect) {
       // @TODO: This shouldn't be here ideally.
       el.renderObject = null
     }
+  } else {
+    return
   }
 
   if el.cell.flags & cellClipped != 0 {
@@ -831,7 +833,7 @@ fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0) {
       ui.font.draw(strId, rect.getPos().sub({0, sz.y}), text, 0.5*ui.io.scale)
     }
 
-    info := sprintf("Id:%20v | LayoutType:%v | Active:%5v | Parent:%20v | Vis %v", el.id, el.layout, ui.attention.active == el.id, el.parent == null ? uint(0) : el.parent.id, vis)
+    info := sprintf("Id:%20v | LayoutType:%v | Active:%5v | Parent:%20v | Vis:%v", el.id, el.layout, ui.attention.active == el.id, el.parent == null ? uint(0) : el.parent.id, vis)
     sz := ui.font.measure(info).mulf(0.5*ui.io.scale)
     canvas::drawRect(border, {0, hy, sz.x, sz.y})
     ui.font.draw(info, {0, hy}, 0x000000FF, 0.5*ui.io.scale)

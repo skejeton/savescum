@@ -4,6 +4,8 @@ import (
   "th.um"
   "atlas.um"
   "rect.um"
+  "canvas.um"
+  "input.um"
 
   "../data/resources.um"
   "../data/problem_screen.um"
@@ -19,12 +21,17 @@ import (
   "../ui/ui.um"
 )
 
+type Callbacks* = struct {
+  frameCb:   fn()
+  destroyCb: fn()
+}
+
 type MainMenu* = struct {
   tileset:   image::Image
   rl:        ^resources::ResourceLoader
   ui:        ^ui::UI
-  frameCb:   fn()
-  destroyCb: fn()
+  callbacks: Callbacks
+  viewExit:  bool
 }
 
 fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^MainMenu {
@@ -42,18 +49,49 @@ fn (menu: ^MainMenu) setupGame*() {
   world := world::fromTileset(tileset)
   worldData := world_data::load(world, util::readFileStr("data/spiel/sc_wip.csv").item0)
   game::start(worldData)
-  menu.frameCb   = { game::update(); game::draw() }
-  menu.destroyCb = {}
+  menu.callbacks.frameCb   = { game::update(); game::draw() }
+  menu.callbacks.destroyCb = {}
 }
 
 fn (menu: ^MainMenu) setupEditor*() {
   editor := editor::mk(menu.ui, menu.rl)
-  menu.frameCb = |editor| { editor.update(.editor) }
-  menu.destroyCb = |editor| { editor.destroy() }
+  menu.callbacks.frameCb = |editor| { editor.update(.editor) }
+  menu.callbacks.destroyCb = |editor| { editor.destroy() }
 
   if menu.rl.hasErrors() {
     problem_screen::setup(menu.rl)
   }
+}
+
+fn (menu: ^MainMenu) showExit(ui: ^ui::UI) {
+  ui.cellRect(ui.io.screen)
+  ui.cellAlign(0.5)
+  ui.col(|menu| {
+    ui.drawCustom({
+      canvas::drawRect(0x00000044, dest)
+    })
+
+    ui.cellJustify(1.0)
+    ui.cellAlign(0.5)
+    ui.col(|menu| {
+      ui.spring(1)
+      ui.cellColor(0xFFFFFFFF)
+      ui.heading("SAVESCUM")
+      ui.cellStretch()
+      if ui.button("Return") {
+        menu.viewExit = false
+      }
+      ui.cellStretch()
+      if ui.button("Exit to main menu") {
+        if valid(menu.callbacks.destroyCb) {
+          menu.callbacks.destroyCb()
+        }
+        menu.callbacks = {}
+        menu.viewExit = false
+      }
+      ui.spring(1)
+    })
+  })
 }
 
 fn (menu: ^MainMenu) update*() {
@@ -61,8 +99,19 @@ fn (menu: ^MainMenu) update*() {
   global::screen = rect::Rect{0, 0, window::w, window::h}
   window::setViewport({window::w, window::h})
   
-  if valid(menu.frameCb) {
-    menu.frameCb()
+  if valid(menu.callbacks.frameCb) {
+    menu.callbacks.frameCb()
+
+    if input::isJustPressed(.escape) {
+      input::clear(.escape)
+      menu.viewExit = !menu.viewExit
+    }
+
+    if menu.viewExit {
+      menu.ui.pass(|menu| {
+        menu.showExit(menu.ui)
+      })
+    }
     return
   }
   
@@ -70,7 +119,7 @@ fn (menu: ^MainMenu) update*() {
 
   menu.ui.io.scale = window::getDpiScaleFactor()/1.5
   menu.ui.pass(|menu| {
-  background::drawBg({0, 0, 800, 600}, .advent, th::time/1000.0)
+    background::drawBg({0, 0, 800, 600}, .advent, th::time/1000.0)
     ui.row(|menu| {
       ui.cellJustify(1.0)
       ui.col(|menu| {
@@ -93,7 +142,7 @@ fn (menu: ^MainMenu) update*() {
 }
 
 fn (menu: ^MainMenu) destroy*() {
-  if valid(menu.destroyCb) {
-    menu.destroyCb()
+  if valid(menu.callbacks.destroyCb) {
+    menu.callbacks.destroyCb()
   }
 }

@@ -1165,7 +1165,10 @@ fn (editor: ^Editor) handleShortcuts*() {
   shortcuts::console(&implvtbl::VTBLImpl(editor.ui.vtbl).wm)
   shortcuts::fullscreen()
   if input::isJustPressed(.escape) {
-    editor.entities.entitySelected = -1
+    if editor.entities.entitySelected != -1 {
+      input::clear(.escape)
+      editor.entities.entitySelected = -1
+    }
   }
   if input::isPressed(.ctrl) {
     if input::isJustPressedc('a') {
