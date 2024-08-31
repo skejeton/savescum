@@ -59,7 +59,7 @@ fn init*(cfg: Config) {
   case .editor:
     editor::setup()
     editor := editor::mk(ui, rl)
-    frameCb = |editor| { editor.update(.editor) }
+    frameCb = |editor| { editor.update({}) }
     destroyCb = |editor| { editor.destroy() }
   case .game:
     // TODO: Make the initialization less hacky.

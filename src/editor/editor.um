@@ -43,12 +43,6 @@ import (
 )
 
 type (
-  // HACK: Should editor handle the gameplay?
-  EditorMode = enum {
-    editor
-    gameplay
-  }
-
   EntityListAction = enum {
     none
     remove
@@ -99,7 +93,6 @@ type (
     potentialRoom:        str // the room which is in the text box
     currentRoom:          str
     dirty:                bool
-    mode:                 EditorMode
     entitySearch:         str
 
     // UI state
@@ -1246,7 +1239,6 @@ fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^Editor {
   tileset := atlas::mk(resources.tilesetImage, {4, 9})
 
   editor := &Editor{
-    mode:                 .editor,
     ui:                   ui,
     tilemapGrid:          grid::Grid{s: {48, 48}},
     tilesetGrid:          grid::Grid{s: {48, 48}},
@@ -1270,11 +1262,7 @@ fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^Editor {
   return editor
 }
 
-fn (editor: ^Editor) update*(mode: EditorMode) {
-  if mode == .gameplay && !editor.isPlaying {
-    editorToggleGame(editor)
-  }
-
+fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
   // Subsystem updates
   notification::update()
   fps::update()
@@ -1292,8 +1280,9 @@ fn (editor: ^Editor) update*(mode: EditorMode) {
   window::setViewport(global::screen.getDims())
 
   editor.ui.io.scale = window::getDpiScaleFactor()/1.5
-  editor.ui.pass(|editor| {
+  editor.ui.pass(|uicb, editor| {
     editor.putUi(ui)
+    uicb(ui)
   }, editor.showUiDebugInfo)
 
   for i, ev in editor.ui.events {

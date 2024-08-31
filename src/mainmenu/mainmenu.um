@@ -22,7 +22,7 @@ import (
 )
 
 type Callbacks* = struct {
-  frameCb:   fn()
+  frameCb:   fn(uicb: fn (ui: ^ui::UI))
   destroyCb: fn()
 }
 
@@ -32,6 +32,7 @@ type MainMenu* = struct {
   ui:        ^ui::UI
   callbacks: Callbacks
   viewExit:  bool
+  doExit:    bool
 }
 
 fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^MainMenu {
@@ -49,13 +50,13 @@ fn (menu: ^MainMenu) setupGame*() {
   world := world::fromTileset(tileset)
   worldData := world_data::load(world, util::readFileStr("data/spiel/sc_wip.csv").item0)
   game::start(worldData)
-  menu.callbacks.frameCb   = { game::update(); game::draw() }
+  menu.callbacks.frameCb   = |menu| { game::update(); game::draw(); menu.ui.pass(uicb) }
   menu.callbacks.destroyCb = {}
 }
 
 fn (menu: ^MainMenu) setupEditor*() {
   editor := editor::mk(menu.ui, menu.rl)
-  menu.callbacks.frameCb = |editor| { editor.update(.editor) }
+  menu.callbacks.frameCb = |editor| { editor.update(uicb) }
   menu.callbacks.destroyCb = |editor| { editor.destroy() }
 
   if menu.rl.hasErrors() {
@@ -83,10 +84,7 @@ fn (menu: ^MainMenu) showExit(ui: ^ui::UI) {
       }
       ui.cellStretch()
       if ui.button("Exit to main menu") {
-        if valid(menu.callbacks.destroyCb) {
-          menu.callbacks.destroyCb()
-        }
-        menu.callbacks = {}
+        menu.doExit = true
         menu.viewExit = false
       }
       ui.spring(1)
@@ -100,18 +98,27 @@ fn (menu: ^MainMenu) update*() {
   window::setViewport({window::w, window::h})
   
   if valid(menu.callbacks.frameCb) {
-    menu.callbacks.frameCb()
+    if menu.viewExit {
+      menu.callbacks.frameCb(|menu| {
+        menu.showExit(menu.ui)
+      })
+    } else {
+      menu.callbacks.frameCb({})
+    }
+
+    if menu.doExit {
+      menu.doExit = false
+      if valid(menu.callbacks.destroyCb) {
+        menu.callbacks.destroyCb()
+      }
+      menu.callbacks = {}
+    }
 
     if input::isJustPressed(.escape) {
       input::clear(.escape)
       menu.viewExit = !menu.viewExit
     }
 
-    if menu.viewExit {
-      menu.ui.pass(|menu| {
-        menu.showExit(menu.ui)
-      })
-    }
     return
   }
   
