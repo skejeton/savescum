@@ -92,7 +92,7 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect, s
     block := con.blocks[len(con.blocks)-i-1]
 
     alpha := (pass.pos.y+vc.visualScroll)/r.h+0.4
-    if alpha > 1.0 { alpha = 1.0; }
+    if alpha > 1.0 { alpha = 1.0 }
 
     bg := 0xFFFFFFFF
     if i % 2 == 0 {
