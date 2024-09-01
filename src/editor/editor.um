@@ -734,11 +734,12 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }
     ui.spring(1)
 
-
     windowBtn("Room", {48*2, 48*2, 48, 48}) 
     windowBtn("Settings", {96, 192, 48, 48})
   }).padding = 5
+}
 
+fn (editor: ^Editor) putWindows(ui: ^ui::UI) {
   if !editor.isPlaying {
     editor.putEntityEditor(ui)
     editor.putEntityList(ui)
@@ -1107,6 +1108,7 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
     }, ui.io.screen.w)
   }, ui.io.screen.h)
 
+  editor.putWindows(ui)
   editor.putNotifications(ui)
 
   ui.cellRect({0, 0, 0, 0})

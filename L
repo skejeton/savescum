@@ -20,7 +20,6 @@ if [ -x "$(command -v ../tophat/cmd/th_emscripten_link)" ]; then
   TOPHAT_EMSCRIPTEN_VAR="../tophat/cmd/th_emscripten_link"
 fi
 
-
 if [[ ! -z "$BUTLER_VAR" ]]; then
   if [[ -f user/butler_env.sh ]]; then
     source user/butler_env.sh
@@ -100,7 +99,7 @@ target_test() {
 target_emscripten() {
   mv main.um main_temp.um
   mv main_game.um main.um
-  $TOPHAT_EMSCRIPTEN_VAR data src main.um user
+  $TOPHAT_EMSCRIPTEN_VAR data src umbox main.um
   mv main.um main_game.um
   mv main_temp.um main.um
 }
@@ -169,7 +168,7 @@ case `getarg 0` in
   publish)
     mkdir -p pkg
     mkdir -p pkg/native
-    cp -r ./src ./data ./tophat.exe ./main.um ./pkg/native 
+    cp -r ./src ./data ./umbox ./tophat.exe ./main.um ./pkg/native 
     if [[ -z "$BUTLER_VAR" ]]; then
       echo "Butler not found. Skipping publishing to itch.io"
     else 
@@ -179,7 +178,8 @@ case `getarg 0` in
             echo "Publishing to itch.io!"
             target_emscripten
             rm -rf pkg/wasm-out
-            mv wasm-out pkg
+            pwd
+            mv ../th_wasm_data/wasm-out pkg
             $BUTLER_VAR push pkg/wasm-out $BUTLER_USERNAME/$BUTLER_PROJECTNAME:index
             $BUTLER_VAR push pkg/native $BUTLER_USERNAME/$BUTLER_PROJECTNAME:windows
           else

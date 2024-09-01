@@ -50,7 +50,8 @@ fn (menu: ^MainMenu) setupGame*() {
   world := world::fromTileset(tileset)
   worldData := world_data::load(world, util::readFileStr("data/spiel/sc_wip.csv").item0)
   game::start(worldData)
-  menu.callbacks.frameCb   = |menu| { game::update(); game::draw(); menu.ui.pass(uicb) }
+  ui := menu.ui
+  menu.callbacks.frameCb   = |ui| { game::update(); game::draw(); ui.pass(uicb) }
   menu.callbacks.destroyCb = {}
 }
 
