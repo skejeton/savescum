@@ -39,7 +39,7 @@ import (
   "font.um"
   "../misc/strings.um"
 
-  // "../../umbox/os/os.um"
+  "../../umbox/os/os.um"
 )
 
 type (
@@ -1322,9 +1322,9 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
 
 fn (editor: ^Editor) destroy*() {
   // HACK: Should the session managment be handled here?
-  // if !os::isdir(th::convPath("data://SAVESCUM")) {
-  //   os::mkdir(th::convPath("data://SAVESCUM"))
-  // }
+  if !os::isdir(th::convPath("data://SAVESCUM")) {
+    os::mkdir(th::convPath("data://SAVESCUM"))
+  }
 
   path := th::convPath("data://SAVESCUM/session.json")
   session := session::save(editorSaveSession(editor))
