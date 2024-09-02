@@ -21,18 +21,73 @@ import (
   "../ui/ui.um"
 )
 
+levels := []str{
+  "advent1a",
+  "advent1b",
+  "advent2a",
+  "advent2b",
+  "advent3a",
+  "advent3b",
+  "advent4a",
+  "advent4b",
+  "advent5a",
+  "advent5b",
+  "advent6a",
+  "advent6b",
+  "advent7a",
+  "advent7b",
+  "advent8a",
+  "advent8b",
+  "advent9a",
+  "advent9b", 
+  "advent10a",
+  "advent10b",
+  "advent11a",
+  "advent11b",
+  "advent12a",
+  "advent12b",
+  "advent13a",
+  "advent13b",
+  "advent14a",
+  "advent14b",
+  "advent15a",
+  "advent15b",
+  "advent16a",
+  "advent16b",
+  "advent17a",
+  "advent17b",
+  "advent18a",
+  "advent18b",
+  "advent19a",
+  "advent19b", 
+  "advent20a", 
+  "advent20b", 
+  "advent21a", 
+  "advent21b", 
+  "advent22a", 
+  "advent22b", 
+  "advent23a", 
+  "advent23b", 
+  "advent24a", 
+  "advent24b", 
+  "advent25a", 
+  "advent25b", 
+  "testarea"
+}
+
 type Callbacks* = struct {
   frameCb:   fn(uicb: fn (ui: ^ui::UI))
   destroyCb: fn()
 }
 
 type MainMenu* = struct {
-  tileset:   image::Image
-  rl:        ^resources::ResourceLoader
-  ui:        ^ui::UI
-  callbacks: Callbacks
-  viewExit:  bool
-  doExit:    bool
+  levelSelect:   bool
+  tileset:       image::Image
+  rl:            ^resources::ResourceLoader
+  ui:            ^ui::UI
+  callbacks:     Callbacks
+  viewExit:      bool
+  doExit:        bool
 }
 
 fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^MainMenu {
@@ -45,10 +100,10 @@ fn setup*() {
   window::setup("Savescum", trunc(global::screen.w), trunc(global::screen.h))
 }
 
-fn (menu: ^MainMenu) setupGame*() {
+fn (menu: ^MainMenu) setupGame*(lvl: str) {
   tileset := atlas::mk(menu.tileset, {4, 9})
   world := world::fromTileset(tileset)
-  worldData := world_data::load(world, util::readFileStr("data/spiel/sc_wip.csv").item0)
+  worldData := world_data::load(world, util::readFileStr(sprintf("data/spiel/sc_%s.csv", lvl)).item0)
   game::start(worldData)
   ui := menu.ui
   menu.callbacks.frameCb   = |ui| { game::update(); game::draw(); ui.pass(uicb) }
@@ -66,31 +121,34 @@ fn (menu: ^MainMenu) setupEditor*() {
 }
 
 fn (menu: ^MainMenu) showExit(ui: ^ui::UI) {
-  ui.cellRect(ui.io.screen)
-  ui.cellAlign(0.5)
-  ui.col(|menu| {
-    ui.drawCustom({
-      canvas::drawRect(0x00000044, dest)
-    })
-
-    ui.cellJustify(1.0)
+  if ui.beginRoot() {
+    ui.cellRect(ui.io.screen)
     ui.cellAlign(0.5)
     ui.col(|menu| {
-      ui.spring(1)
-      ui.cellColor(0xFFFFFFFF)
-      ui.heading("SAVESCUM")
-      ui.cellStretch()
-      if ui.button("Return") {
-        menu.viewExit = false
-      }
-      ui.cellStretch()
-      if ui.button("Exit to main menu") {
-        menu.doExit = true
-        menu.viewExit = false
-      }
-      ui.spring(1)
+      ui.drawCustom({
+        canvas::drawRect(0x00000044, dest)
+      })
+
+      ui.cellJustify(1.0)
+      ui.cellAlign(0.5)
+      ui.col(|menu| {
+        ui.spring(1)
+        ui.cellColor(0xFFFFFFFF)
+        ui.heading("SAVESCUM")
+        ui.cellStretch()
+        if ui.button("Return") {
+          menu.viewExit = false
+        }
+        ui.cellStretch()
+        if ui.button("Exit to main menu") {
+          menu.doExit = true
+          menu.viewExit = false
+        }
+        ui.spring(1)
+      })
     })
-  })
+    ui.endRoot()
+  }
 }
 
 fn (menu: ^MainMenu) update*() {
@@ -107,7 +165,8 @@ fn (menu: ^MainMenu) update*() {
       menu.callbacks.frameCb({})
     }
 
-    if menu.doExit {
+    if menu.doExit || game::exited {
+      game::exited = false
       menu.doExit = false
       if valid(menu.callbacks.destroyCb) {
         menu.callbacks.destroyCb()
@@ -128,24 +187,55 @@ fn (menu: ^MainMenu) update*() {
   menu.ui.io.scale = window::getDpiScaleFactor()/1.5
   menu.ui.pass(|menu| {
     background::drawBg({0, 0, 800, 600}, .advent, th::time/1000.0)
-    ui.row(|menu| {
-      ui.cellJustify(1.0)
+    if menu.levelSelect {
+      ui.cellAlign(0.5)
+      ui.cellRect(ui.io.screen)
       ui.col(|menu| {
+        ui.spring(0.8)
         ui.cellColor(0xFFFFFFFF)
-        ui.heading("SAVESCUM")
-        ui.spring(1.0)
-        ui.cellStretch()
-        if ui.button("Play") {
-          menu.setupGame()
+        ui.heading("Level select")
+        ui.spring(0.2)
+        rows := len(levels)/8+1
+        for r := 0; r < rows; r++ {
+          ui.row(|menu, r| {
+            for c := 0; c < 8; c++ {
+              if r*8+c < len(levels) {
+                ui.row(|menu, r, c| {
+                  ui.cellJustify(1)
+                  if ui.button(levels[r*8+c]) {
+                    menu.setupGame(levels[r*8+c])
+                  }
+                }, 130)
+              }
+            }
+          })
         }
-        ui.spring(0.1)
-        ui.cellStretch()
-        if ui.button("Editor"){
-          menu.setupEditor()
+        ui.spring(0.2)
+        if ui.button("Back") {
+          menu.levelSelect = false
         }
-        ui.spring(1.0)
-      }, window::h)
-    }, 200).padding = 20
+        ui.spring(0.8)
+      })
+    } else {
+      ui.row(|menu| {
+        ui.cellJustify(1.0)
+        ui.col(|menu| {
+          ui.cellColor(0xFFFFFFFF)
+          ui.heading("SAVESCUM")
+          ui.spring(1.0)
+          ui.cellStretch()
+          if ui.button("Play") {
+            menu.levelSelect = true
+          }
+          ui.spring(0.1)
+          ui.cellStretch()
+          if ui.button("Editor"){
+            menu.setupEditor()
+          }
+          ui.spring(1.0)
+        }, ui.io.screen.h)
+      }, 200).padding = 20
+    }
   })
 }
 

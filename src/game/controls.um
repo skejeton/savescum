@@ -33,8 +33,8 @@ fn mk*(): Controls {
     {{.left,  .a     }},
     {{.right, .d     }},
     {{.space, .up, .w}},
-    {{.z,     .q     }},
     {{.x,     .e     }},
+    {{.z,     .q     }},
     {{.down,  .s     }},
     {{.c,     .tab   }},
     {{.r             }}

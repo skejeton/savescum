@@ -177,6 +177,7 @@ var (
 
   rumbling: real
   controls: controls::Controls
+  exited*:  bool
 )
 
 fn getCameraRect(): rect::Rect {
@@ -577,6 +578,7 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn start*(worldData: world_data::WorldData) {
+  exited = false
   stopPreview = false
   previewingLoad = false
   if firstTime {
@@ -752,6 +754,8 @@ fn drawEntityObject*(name: str, tags: ^TagSet, rect: rect::Rect, scale: real): b
     canvas::drawRect(0xFFFF0066, util::rectShrink(rect, -2*scale))
   } else if tags.isSet("boulder") {
     imgObj.blit(cropBoulder, rect)
+  } else if tags.isSet("exit") {
+    background::drawBackgroundSquare(rect, 1000000-time, 0x114411FF, 0x227722FF, {0.5*scale, 0.5*scale})
   } else if tags.isSet("tele") {
     rect = util::rectShrink(rect, 5*scale)
     background::drawBackgroundSquare(rect, 1000000-time, 0x111144FF, 0x222277FF, {0.5*scale, 0.5*scale})
@@ -1024,6 +1028,11 @@ fn update*() {
     for i := 0; i < len(entities); i++ {
       ent := &entities[i]
 
+      if ent.tags.isSet("exit") {
+        if coll::rectToRect(ent.rect, pal.ent.rect) && isActivated() {
+          exited = true
+        }
+      }
       if ent.tags.isSet("lever") {
         if coll::rectToRect(ent.rect, pal.ent.rect) {
           if isActivated() && pal.ent.onGround {
