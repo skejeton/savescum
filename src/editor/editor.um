@@ -295,30 +295,26 @@ fn doEntityAction(ui: ^ui::UI, editor: ^Editor, action: EntityListAction, i: int
   moveFrom := -1
   moveTo := -1
 
-  pmoveFrom := &moveFrom
-  pmoveTo := &moveTo
-  pentryRemoveIndex := &entryRemoveIndex
-
   switch action {
     case .moveUp:
-      pmoveFrom ^= i
-      pmoveTo ^= i-1
+      moveFrom = i
+      moveTo = i-1
       editor.dirty = true
     case .moveDown:
-      pmoveFrom ^= i
-      pmoveTo ^= i+1
+      moveFrom = i
+      moveTo = i+1
       editor.dirty = true
     case .remove:
-      pentryRemoveIndex ^= i
+      entryRemoveIndex = i
       editor.dirty = true
     case .edit:
       selectEntity(&editor.entities, i)
       implvtbl::VTBLImpl(ui.vtbl).wm.show("Entity Editor")
     case .duplicate:
       appendEntity(&editor.entities, cloneEntity(editor.entities.list, editor.entities.list[i]))
-      pmoveFrom ^= len(editor.entities.list)-1
-      pmoveTo ^= i+1
-      selectEntity(&editor.entities, pmoveFrom^)
+      moveFrom = len(editor.entities.list)-1
+      moveTo = i+1
+      selectEntity(&editor.entities, moveFrom)
       editor.dirty = true
   }
 
@@ -360,9 +356,6 @@ fn drawTaggedEntityRect(editor: ^Editor, entity: ^world_data::EntityDesc, r: rec
   if tags.isSet("Guide") {
     canvas::drawRectLines(th::yellow, r)
   } else if tags.isSet("Comment") {
-    size := editor.resources.mainFont.measure(entity.name)
-    entity.rect.w = size.x
-    entity.rect.h = size.y
     editor.resources.mainFont.draw(entity.name, th::Vf2{r.x, r.y}, th::white, editor.tilemapGrid.s.x/32)
   } else {
     if !game::drawEntityObject(entity.name, tags, r, editor.tilemapGrid.s.x/32) {
@@ -565,8 +558,8 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
     ui.cellJustify(1)
     ui.cellClip()
     ui.scrollArea(|editor, actions| {
-      for i, ent in editor.entities.list {
-        if !matchEnt(&ent, editor.entitySearch) {
+      for i, ent^ in editor.entities.list {
+        if !matchEnt(ent, editor.entitySearch) {
           continue
         }
 
@@ -949,6 +942,7 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
             ent.rect = ent.rect.shift(input::getMouseDelta().divf(editor.tilemapGrid.s.x/32))
           }
         }
+
         if input::isJustReleased(.mouse1) {
           ent.rect = entSnappedRect
         }
@@ -1031,8 +1025,9 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
         ui.popId()
       }
 
-      ui.drawCustom(|focused, hovered, editor, ent, entVisRect, tags| {
-        drawTaggedEntityRect(editor, ent, entVisRect, tags)
+      entCopy := ent^
+      ui.drawCustom(|focused, hovered, editor, entCopy, entVisRect, tags| {
+        drawTaggedEntityRect(editor, &entCopy, entVisRect, tags)
         if hovered {
           canvas::drawRectLines(0xFFFF00FF, entVisRect)
         }
