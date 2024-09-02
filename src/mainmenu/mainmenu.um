@@ -11,6 +11,7 @@ import (
   "../data/problem_screen.um"
   "../shared/global.um"
   "../misc/immcursor.um"
+  "../misc/strings.um"
   "../gfx/background.um"
   "../game/game.um"
   "../editor/editor.um"
@@ -71,7 +72,6 @@ levels := []str{
   "advent24a", 
   "advent24b", 
   "advent25a", 
-  "advent25b", 
   "testarea"
 }
 
@@ -103,7 +103,7 @@ fn setup*() {
 fn (menu: ^MainMenu) setupGame*(lvl: str) {
   tileset := atlas::mk(menu.tileset, {4, 9})
   world := world::fromTileset(tileset)
-  worldData := world_data::load(world, util::readFileStr(sprintf("data/spiel/sc_%s.csv", lvl)).item0)
+  worldData := world_data::load(world, util::readFileStr(sprintf("data/spiel/sc_%s.csv", lvl)).item0, strings::startsWith(lvl, "advent"))
   game::start(worldData)
   ui := menu.ui
   menu.callbacks.frameCb   = |ui| { game::update(); game::draw(); ui.pass(uicb) }

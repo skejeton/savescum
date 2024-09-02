@@ -66,7 +66,7 @@ fn init*(cfg: Config) {
     game::setup()
     tileset := atlas::mk(resources::loadImage(rl, "data/img/ts_sky.png", .linear), {4, 9})
     world := world::fromTileset(tileset)
-    worldData := world_data::load(world, util::readFileStr("data/spiel/sc_wip.csv").item0)
+    worldData := world_data::load(world, util::readFileStr("data/spiel/sc_wip.csv").item0, false)
     game::start(worldData)
     editor::setup()
     frameCb = { game::update(); game::draw() }

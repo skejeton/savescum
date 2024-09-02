@@ -17,8 +17,9 @@ type (
   }
 
   WorldData* = struct {
-    world: world::World
-    entities: []EntityDesc
+    world:       world::World
+    entities:    []EntityDesc
+    noSaveStack: bool
   }
 )
 
@@ -72,7 +73,7 @@ fn loadEntityDesc(s: []str): EntityDesc {
   return EntityDesc{id: s[0], name: s[1], tags: s[2], rect: csvutil::loadRect(slice(s, 3, 7))}
 }
 
-fn load*(world: world::World, data: str): WorldData {
+fn load*(world: world::World, data: str, noSaveStack: bool): WorldData {
   csvData := csv::parse(data)
 
   var (
@@ -136,6 +137,6 @@ fn load*(world: world::World, data: str): WorldData {
     }
   }
 
-  return WorldData{world, entities}
+  return WorldData{world, entities, noSaveStack}
 }
 

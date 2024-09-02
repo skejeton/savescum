@@ -153,6 +153,7 @@ var (
   previewingLoad: bool
   stopPreview: bool
 
+  noSaveStack: bool
   noSaveLoad: bool
   insideStatic: bool
   lockInput*: bool
@@ -580,6 +581,7 @@ fn findEntity*(id: str): ^Character {
 fn start*(worldData: world_data::WorldData) {
   exited = false
   stopPreview = false
+  noSaveStack = worldData.noSaveStack
   previewingLoad = false
   if firstTime {
     notification::put({.info, "Welcome to the demo!\nPress 'Z' to load the last save,\n      'X' to save the current state,\n      'R' to reset the level.\n      'C' to preview a load."})
@@ -662,7 +664,7 @@ fn init*(rl: ^resources::ResourceLoader) {
   palLand = resources::loadAudio(rl, "data/audio/sfx/pal_land.ogg")
 
   // bgAudio.setLooping(true)
-  defaultFont = resources::loadFont(rl, "data/font/FairFaxHD.ttf", 24*2, .linear)
+  defaultFont = resources::loadFont(rl, "data/font/FairfaxHD.ttf", 24*2, .linear)
   imgObj = resources::loadImage(rl, "data/img/obj_interactive.png", .linear)
   imgChum = resources::loadImage(rl, "data/img/chr_chum.png", .linear)
 }
@@ -1003,7 +1005,9 @@ fn update*() {
       }
 
       if controls.isJustPressed(.save) || input::gamepad().isJustPressed(.rb) {
-        saves = append(saves, pal)
+        if !(noSaveStack && len(saves) > 0) {
+          saves = append(saves, pal)
+        }
       }
 
       if controls.isJustPressed(.preview) || input::gamepad().isJustPressed(.y) {

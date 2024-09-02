@@ -39,7 +39,7 @@ import (
   "font.um"
   "../misc/strings.um"
 
-  "../../umbox/os/os.um"
+  // "../../umbox/os/os.um"
 )
 
 type (
@@ -118,7 +118,7 @@ fn createEditorEntities(): EditorEntities {
 fn editorLoadRoom(editor: ^Editor, room: str): bool {
   dbg::logt("ed: loading world")
   if data, err := util::readFileStr(roomToPath(room)); err.code == 0 {
-    worldData := world_data::load(editor.world, data)
+    worldData := world_data::load(editor.world, data, strings::startsWith(room, "advent"))
     editor.world = worldData.world
     editor.entities.list = worldData.entities
     editor.entities.entitySelected = -1
@@ -133,7 +133,7 @@ fn editorLoadRoom(editor: ^Editor, room: str): bool {
 
 fn editorSaveRoom(editor: ^Editor) {
   dbg::logt("ed: saving world")
-  err := util::writeFileStr(roomToPath(editor.currentRoom), world_data::save(world_data::WorldData{editor.world, editor.entities.list}))
+  err := util::writeFileStr(roomToPath(editor.currentRoom), world_data::save(world_data::WorldData{editor.world, editor.entities.list, false}))
   if err.code != 0 {
     dbg::logt("ed: save failed: "+err.msg)
     notification::put({.error, "Failed to save: "+err.msg})
@@ -146,7 +146,7 @@ fn editorToggleGame(editor: ^Editor) {
     editor.debugTimerStarted = true
     editor.debugTimerOrigin = th::time
     editor.debugTimer = 0
-    game::start(world_data::WorldData{editor.world, editor.entities.list})
+    game::start(world_data::WorldData{editor.world, editor.entities.list, false})
     script::init()
   } else {
     editor.debugTimerStarted = false
@@ -1322,9 +1322,9 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
 
 fn (editor: ^Editor) destroy*() {
   // HACK: Should the session managment be handled here?
-  if !os::isdir(th::convPath("data://SAVESCUM")) {
-    os::mkdir(th::convPath("data://SAVESCUM"))
-  }
+  // if !os::isdir(th::convPath("data://SAVESCUM")) {
+  //   os::mkdir(th::convPath("data://SAVESCUM"))
+  // }
 
   path := th::convPath("data://SAVESCUM/session.json")
   session := session::save(editorSaveSession(editor))
