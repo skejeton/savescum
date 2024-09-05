@@ -228,7 +228,7 @@ fn (world: ^World) getBoundingBox*(): rect::Rect {
   chunkBB := rect::Rect{}
 
   for i := -1; i <= 1; i++ {
-    for p, chunk^ in world.tilemap[i+1] {
+    for p in world.tilemap[i+1] {
       offs := th::Vf2{p.x*chunkW, p.y*chunkH}
       if offs.x < chunkBB.x { chunkBB.x = offs.x }
       if offs.y < chunkBB.y { chunkBB.y = offs.y }
