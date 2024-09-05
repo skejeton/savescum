@@ -451,8 +451,6 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   }
 
   ui.retained = filtered
-
-  delete(ui.retained, 0)
 }
 
 // >>> INTERNALS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
