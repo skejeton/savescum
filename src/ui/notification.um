@@ -45,5 +45,4 @@ fn get*(): ^[]Notification {
   return &notifications
 }
 
-// TODO: I can't render notifications here right now because I can't access the renderer from here.
-//       The rendering is in main.um right now.
+// @TODO: I can't render notifications here right now because I can't access the icons from here.
