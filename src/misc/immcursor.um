@@ -1,27 +1,21 @@
 import "window.um"
 
 cursor := window::Cursor.system
-cursorSet := false
+newCursor := window::Cursor.system
 
 /**
  * @brief Sets the cursor to the specified value.
- * @param newCursor The new cursor value.
+ * @param newCursor_ The new cursor value.
  * @note Refer to window.um for the cursor values. 0 represents the default 
  *       cursor. 
  */
-fn setCursor*(newCursor: window::Cursor) {
-  if newCursor == .system {
-    if !cursorSet {
-      cursor = .system
-      window::setCursor(.system)
-    }
-    cursorSet = false
-    return
-  }
+fn setCursor*(newCursor_: window::Cursor) {
+  newCursor = newCursor_
+}
 
-  cursorSet = true
-  if cursor != newCursor {
+fn update*() {
+  if newCursor != cursor {
     cursor = newCursor
-    window::setCursor(cursor)
+    window::setCursor(newCursor)
   }
 }

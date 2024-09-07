@@ -24,6 +24,10 @@ fn setup*(resources: UiResources): ^ui::UI {
     pressed: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21})
   })
   ui.setBoxCursor(.button, .finger)
+  ui.setBoxTheme(.input, {
+    normal: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21})
+  })
+  ui.setBoxCursor(.input, .iBeam)
   ui.setBoxTheme(.buttonPushed, {
     normal: themer::mkNinepatch(resources.bevelImage, {30, 0, 30, 30}, {4, 4, 21, 21}),
     pressed: themer::mkNinepatch(resources.bevelImage, {0, 0, 30, 30}, {5, 5, 19, 19})

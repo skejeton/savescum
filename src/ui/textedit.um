@@ -89,7 +89,7 @@ fn putSingleLine*(ui: ^ui::UI, name: str, value: ^str): bool {
   dirtyPtr := &dirty
 
   ui.row(|dirtyPtr, name, value| {
-    ui.boxStyle(.button)
+    ui.boxStyle(.input)
     ui.pushIdStr(name)
 
     // @HACK: Adjust the height automatically.
@@ -104,11 +104,6 @@ fn putSingleLine*(ui: ^ui::UI, name: str, value: ^str): bool {
     edit.cursor = edit.buffer.sanitizeCursor(edit.cursor)
 
     focused := false
-
-    // @TODO: Figure out why this makes the cursor flicker.
-    // if ui.isHovered() {
-    //   immcursor::setCursor(.iBeam)
-    // }
 
     if ui.isFocused() {
       focused = true

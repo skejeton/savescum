@@ -7,6 +7,7 @@ import (
 
   "../gfx/background.um"
   "../misc/util.um"
+  "../misc/immcursor.um"
   "../game/game.um"
   "../game/world.um"
   "../game/world_data.um"
@@ -76,7 +77,10 @@ fn init*(cfg: Config) {
   if rl.hasErrors() {
     problem_screen::setup(rl)
   } else {
-    window::onFrame.register(frameCb)
+    window::onFrame.register(|frameCb| {
+      frameCb({})
+      immcursor::update()
+    })
     window::onDestroy.register(destroyCb)
   }
 }
