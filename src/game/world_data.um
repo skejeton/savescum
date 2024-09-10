@@ -43,7 +43,7 @@ fn save*(wd: WorldData): str {
     data = append(data, saveEntityDesc(ent))
   }
 
-  // player pos
+  // (DEPRECATED) player pos
   data = append(data, []str{})
 
   // Start from -1, because that's the background layer, which maps to index 0
@@ -97,6 +97,7 @@ fn load*(world: world::World, data: str, noSaveStack: bool): WorldData {
 
   row += entityCount
 
+  // (DEPRECATED) parse player pos
   if len(csvData[row]) == 2 {
     px, py := std::atoi(csvData[row][0]), std::atoi(csvData[row][1])
 
