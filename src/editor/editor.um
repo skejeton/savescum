@@ -87,7 +87,6 @@ type (
     tileset:              atlas::Atlas
     world:                world::World
     isPlaying:            bool
-    isRelocatingPlayer:   bool
     entityBypass:         bool
     entities:             EditorEntities
     potentialRoom:        str // the room which is in the text box
@@ -1105,18 +1104,6 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
 
   editor.putWindows(ui)
   editor.putNotifications(ui)
-
-  ui.cellRect({0, 0, 0, 0})
-  ui.row(|editor| {
-    // @TODO: Figure out a right place for cursor rendering and things like that.
-    ui.drawCustom(|editor| {
-      window::showCursor(!editor.isRelocatingPlayer)
-      if editor.isRelocatingPlayer {
-        editor.resources.toolbarIcons.cropRect({96, 0, 48, 48})
-        editor.resources.toolbarIcons.draw({s: {1, 1}, p: input::getMousePos()})
-      }
-    })
-  })
 }
 
 fn editorSaveSession(editor: ^Editor): session::Session {
