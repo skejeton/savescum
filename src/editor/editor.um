@@ -187,7 +187,6 @@ fn (d: ^WorldEditCmd) draw(props: drawcmd::DrawProperties) {
 
   offset := d.grid.toScreen(th::Vf2{0, 0})
 
-  // TODO: 2D scaling?
   d.world.drawLayer(offset, -1, d.grid.s.x/32.0, colors[0])
   d.world.drawLayer(offset, 0, d.grid.s.x/32.0, colors[1])
   d.world.drawLayer(offset, 1, d.grid.s.x/32.0, colors[2])
