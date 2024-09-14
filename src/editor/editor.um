@@ -773,7 +773,12 @@ fn (editor: ^Editor) putWindows(ui: ^ui::UI) {
       interaction := putGrid(&editor.tilesetGrid, ui)
 
       if interaction.placed {
-        editor.tileSelected = interaction.pos
+        // check if the tile isn't ouside the tileset bounds
+        dims := editor.resources.tilesetImage.getDims().divf(64)
+        rect := rect::Rect{0, 0, dims.x, dims.y}
+        if coll::vf2ToRect(interaction.pos, rect) {
+          editor.tileSelected = interaction.pos
+        }
       }
 
       ui.drawCustom(|editor| {
