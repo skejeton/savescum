@@ -17,7 +17,10 @@ fn readFileStr*(path: str): (str, std::Err) {
 
   s, err := std::freadall(file)
   if err.code != 0 {
-    std::fclose(file)
+    err2 := std::fclose(file)
+    if err2.code != 0 {
+      return "", err2
+    }
     return "", err
   }
 
