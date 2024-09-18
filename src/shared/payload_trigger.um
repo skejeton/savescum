@@ -10,7 +10,6 @@ import (
   "th.um"
 )
 
-
 var date: std::DateTime
 var time: int
 
