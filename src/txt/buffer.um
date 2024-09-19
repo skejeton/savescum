@@ -111,7 +111,7 @@ fn (buf: ^Buffer) update*(cursor: ^Cursor, text: str) {
         buf.insert(cursor, "\n")
       case 9: // Tab key.
         buf.insert(cursor, "  ")
-      case 8, 27: 
+      case 8, 27: // Junk?
       default: // Printable character.
         buf.insert(cursor, rune.encode())
     }
