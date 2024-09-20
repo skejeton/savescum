@@ -135,12 +135,6 @@ fn clamp*(a, b, c: real): real {
          a
 }
 
-fn isprint*(c: uint32): bool {
-  // ASCII 0..31 control characters
-  // ASCII 127   control character (DEL)
-  return c >= 32 && c != 127
-}
-
 fn formatMillis*(ms: int): str {
   s := ms / 1000
   m := s / 60

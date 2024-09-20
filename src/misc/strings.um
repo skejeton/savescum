@@ -156,3 +156,8 @@ fn search*(needle: str, haystack: str): bool {
   return false
 }
 
+fn isprint*(c: uint32): bool {
+  // ASCII 0..31 control characters
+  // ASCII 127   control character (DEL)
+  return c >= 32 && c != 127
+}
