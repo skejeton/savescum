@@ -181,7 +181,6 @@ fn (d: ^WorldEditCmd) draw(props: drawcmd::DrawProperties) {
     return 0xFFFFFF33
   }
 
-  // background.draw(d.rect)
   canvas::drawRect(0x777777FF, d.rect)
   colors := []uint32{getcolor(d.showLayers&1>0), getcolor(d.showLayers&2>0), getcolor(d.showLayers&4>0)}
 
