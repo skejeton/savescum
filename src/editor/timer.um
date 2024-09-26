@@ -1,0 +1,32 @@
+import (
+  "th.um"
+)
+
+type (
+  Timer* = struct {
+    origin, now: int
+    started: bool
+  }
+)
+
+fn mk*(): Timer {
+  return Timer{}
+}
+
+fn (timer: ^Timer) start*() {
+  timer.started = true
+  timer.origin = th::time
+}
+
+fn (timer: ^Timer) stop*() {
+  timer.started = false
+  timer.now = th::time
+}
+
+fn (timer: ^Timer) duration*(): int {
+  if timer.started {
+    return th::time - timer.origin
+  }
+  
+  return timer.now - timer.origin
+}

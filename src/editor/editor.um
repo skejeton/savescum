@@ -36,6 +36,7 @@ import (
   "../gfx/drawcmd.um"
   "grid.um"
 
+  "timer.um"
   "font.um"
   "../misc/strings.um"
 
@@ -68,9 +69,7 @@ type (
 
   Editor = struct {
     // Misc
-    debugTimerStarted: bool
-    debugTimerOrigin:  int
-    debugTimer:        int
+    debugTimer:        timer::Timer
     showDebugInfo:     bool
     showUiDebugInfo:   bool
     dimDebugInfo:      bool
@@ -142,13 +141,11 @@ fn editorSaveRoom(editor: ^Editor) {
 
 fn editorToggleGame(editor: ^Editor) {
   if !editor.isPlaying {
-    editor.debugTimerStarted = true
-    editor.debugTimerOrigin = th::time
-    editor.debugTimer = 0
+    editor.debugTimer.start()
     game::start(world_data::WorldData{editor.world, editor.entities.list, false})
     script::init()
   } else {
-    editor.debugTimerStarted = false
+    editor.debugTimer.stop()
     game::stop()
   }
   editor.isPlaying = !editor.isPlaying
@@ -1179,13 +1176,6 @@ fn (editor: ^Editor) handleShortcuts*() {
   if input::isJustPressed(.pause) {
     editorToggleGame(editor)
   }
-  if input::isJustPressed(.fn6) {
-    editor.debugTimerStarted = !editor.debugTimerStarted
-    if editor.debugTimerStarted {
-      editor.debugTimerOrigin = th::time
-      editor.debugTimer = 0
-    }
-  }
   if input::isJustPressed(.fn5) {
     editorToggleGame(editor)
   }
@@ -1255,11 +1245,7 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
   fps::update()
   payload_trigger::update()
   immcursor::setCursor(.system)
-  editor.handleShortcuts()
-
-  if editor.debugTimerStarted {
-    editor.debugTimer = th::time-editor.debugTimerOrigin
-  }
+  editor.handleShortcuts() 
   
   std::srand(std::time())
 
@@ -1302,8 +1288,8 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
         { "Version", global::version, false },
         { "Scale", editor.tilemapGrid.s, false },
         { "Plain", global::plainBiscuit, false },
-        { "Playthrough (ms)", editor.debugTimer, false },
-        { "Playthrough Started", editor.debugTimerStarted, false },
+        { "Playthrough (ms)", editor.debugTimer.duration(), false },
+        { "Playthrough Started", editor.debugTimer.started, false },
         { "Memory usage", util::formatBytes(memusage()), false }
       }
     }, editor.dimDebugInfo)
