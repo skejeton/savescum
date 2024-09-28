@@ -4,8 +4,8 @@ import (
 
 type (
   Timer* = struct {
-    origin, now: int
-    started: bool
+    from, to: int
+    going: bool
   }
 )
 
@@ -14,19 +14,15 @@ fn mk*(): Timer {
 }
 
 fn (timer: ^Timer) start*() {
-  timer.started = true
-  timer.origin = th::time
+  timer.going = true
+  timer.from = th::time
 }
 
 fn (timer: ^Timer) stop*() {
-  timer.started = false
-  timer.now = th::time
+  timer.going = false
+  timer.to = th::time
 }
 
 fn (timer: ^Timer) duration*(): int {
-  if timer.started {
-    return th::time - timer.origin
-  }
-  
-  return timer.now - timer.origin
+  return timer.going ? th::time - timer.from : timer.to - timer.from
 }

@@ -1288,7 +1288,7 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
         { "Scale", editor.tilemapGrid.s, false },
         { "Plain", global::plainBiscuit, false },
         { "Playthrough (ms)", editor.debugTimer.duration(), false },
-        { "Playthrough Started", editor.debugTimer.started, false },
+        { "Playthrough Started", editor.debugTimer.going, false },
         { "Memory usage", util::formatBytes(memusage()), false }
       }
     }, editor.dimDebugInfo)
