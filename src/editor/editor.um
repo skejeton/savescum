@@ -671,13 +671,12 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }
 
     windowBtn("Console", {48, 0, 48, 48})
-    // @TODO: Add level list
+    
     if editor.isPlaying {
       windowBtn("Level Select", {48*3, 48*3, 48, 48}) 
       return
     }
 
-    // @TODO: Gray out of window is open.
     windowBtn("Tile Picker", {48*0, 48, 48, 48}) 
     windowBtn("Entity List", {48*0, 48*2, 48, 48})
 
