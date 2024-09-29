@@ -58,7 +58,6 @@ fn blockRect*(pass: ^RenderPass, block: str, scale: real): rect::Rect {
 }
 
 // renders a single block and moves upwards
-
 fn allocBlock*(pass: ^RenderPass, block: str, scale: real): rect::Rect {
   r := blockRect(pass, block, scale)
   pass.pos.y -= r.h

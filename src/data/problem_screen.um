@@ -34,16 +34,12 @@ fn init() {
   font = f
 }
 
-oldMousePos := th::Vf2{0, 0}
-
 fn setup*(loader: ^resources::ResourceLoader) {
   init()
   window::onFrame.clear()
   window::onFrame.register(|loader| {
-    newMousePos := input::getMousePos()
-
     if input::isPressed(.mouse2) {
-      scroll = scroll.add(newMousePos.sub(oldMousePos))
+      scroll = input::getMouseDelta()
     }
 
     restart()
@@ -51,6 +47,5 @@ fn setup*(loader: ^resources::ResourceLoader) {
     for i, error in loader.errors {
       pushText(" "+error, th::red)
     }
-    oldMousePos = newMousePos
   })
 }
