@@ -679,7 +679,7 @@ fn (ui: ^UI) button*(text: str, flags: uint = 0): bool {
     ui.boxStyle(.button)
   }
 
-  // @HACK
+  // @HACK: Hardcoded styling
   el.interactive = true
   el.layout = .row
   el.padding = 10
@@ -711,7 +711,7 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0): bool {
     ui.boxStyle(.button)
   }
 
-  // @HACK
+  // @HACK: Hardcoded styling
   el.interactive = true
   el.layout = .row
   el.padding = 5
@@ -769,14 +769,14 @@ fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: real = 0): ^El {
   return el
 }
 
-// HACK: Just to make the editor compile while there's old code.
+// @HACK: Just to make the editor compile while there's old code.
 fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool {
   return false
 }
 
 // >>> DEBUG >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-// NOTE: Step 1 in debug UI, draws the outlines.
+// @NOTE: Step 1 in debug UI, draws the outlines.
 fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
   for i, child in el.children {
     ui.drawDebug(child, hue+0.25)
@@ -812,7 +812,7 @@ fn (ui: ^UI) drawDebug(el: ^El, hue: real = 0) {
   }
 }
 
-// NOTE: Step 2 in debug UI, draws the ID of hovered elements.
+// @NOTE: Step 2 in debug UI, draws the ID of hovered elements.
 fn (ui: ^UI) drawDebug2(el: ^El, hue: real = 0, hy: real = 0) {
   id := ui.retained[el.id].id
   vis := ui.retained[el.id].isVisible

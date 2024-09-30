@@ -475,7 +475,6 @@ fn (editor: ^Editor) putNotifications(ui: ^ui::UI) {
         ui.boxStyle(.notification)
         // @MARK(UiResourceManagment)
         ui.img2(editor.resources.toolbarIcons, {24*int(n.info.icon), 144, 24, 24})
-        // @HACK Padding
         ui.label(" ")
         ui.label(n.info.message)
       }).padding = 10
@@ -595,7 +594,7 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
       }
     })
 
-    // @HACK There should be a better way to put elements on the titlebar.
+    // @HACK: There should be a better way to put elements on the titlebar.
     r := implvtbl::VTBLImpl(ui.vtbl).wm.windows["Entity List"].viewRect
     buttonRect := rect::Rect{r.x+r.w-34-5, r.y+5, 34, 34}
     ui.cellUnclip()
