@@ -7,19 +7,19 @@ import (
 // NODE: by default each grid cell is exactly 1 unit, you can fix that by simply scaling it
 type Grid* = struct {
   bb: rect::Rect
-  o: th::Vf2
-  p: th::Vf2
-  s: th::Vf2
+  o:  th::Vf2
+  p:  th::Vf2
+  s:  th::Vf2
 }
 
 type RenderGuide* = struct {
-  startv: th::Vf2 // offset at which first vertical line start
-  starth: th::Vf2 // offset at which first horizontal line start
-  endv: th::Vf2 // offset at which first vertical line ends
-  endh: th::Vf2 // offset at which first horizontal line ends
+  startv:   th::Vf2 // offset at which first vertical line start
+  starth:   th::Vf2 // offset at which first horizontal line start
+  endv:     th::Vf2 // offset at which first vertical line ends
+  endh:     th::Vf2 // offset at which first horizontal line ends
   spacingv: th::Vf2 // spacing between each vertical line
   spacingh: th::Vf2 // spacing beween each horizontal line
-  nv, nh: int // count of lines
+  nv, nh:   int     // count of lines
 }
 
 fn (grid: ^Grid) toGridRel*(screen: th::Vf2): th::Vf2 {

@@ -76,7 +76,6 @@ fn (vc: ^VisualConsole) scrollBy*(delta: real) {
   vc.scrolley.scrollTo(vc.scrolley.scroll+delta)
 }
 
-// NOTE: this function does not clip
 fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect, scale: real) { 
   pass := RenderPass{r, th::Vf2{r.x, r.y+r.h}, font}
   startY := pass.pos.y
@@ -106,7 +105,5 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect, s
 
   vc.scrolley.clientsz = r.h
   vc.scrolley.contentsz = startY-pass.pos.y
-
-  // TODO: use delta
   vc.visualScroll = rerp::iReal(vc.visualScroll, vc.scrolley.scroll, 0.2)
 }
