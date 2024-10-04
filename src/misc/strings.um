@@ -32,7 +32,6 @@ fn splitBy*(text: str, by: char): []str {
   return items
 }
 
-// inserts string `sub` at the end of every string in array except for last
 /**
  * @param strl The strings to intersperse.
  * @param sub The string to intersperse with.
@@ -62,6 +61,13 @@ fn startsWith*(text: str, prefix: str): bool {
     return false
   }
   return slice(text, 0, len(prefix)) == prefix
+}
+
+fn endsWith*(text: str, suffix: str): bool {
+  if len(text) < len(suffix) {
+    return false
+  }
+  return slice(text, len(text)-len(suffix)) == suffix
 }
 
 fn separateChar*(words: []str, c: char): []str {
@@ -114,6 +120,13 @@ fn uniInsert*(text: str, at: uint, other: str): str {
 
 fn windows2unix*(text: str): str {
   return joinBy(splitBy(text, '\r'), "")
+}
+
+fn toLower*(c: char): char {
+  if c >= 'A' && c <= 'Z' {
+    return char(int(c) + int('a')-int('A'))
+  }
+  return c
 }
 
 fn toUpper*(c: char): char {
