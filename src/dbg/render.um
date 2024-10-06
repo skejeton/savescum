@@ -13,13 +13,11 @@ import (
 
 type DisplayToLayout = struct {
   newLine: bool
-  btn: bool
   color: uint32
   text: str
 }
 
 type RenderCommand = struct {
-  btn: bool
   text: str
   color: uint32
   position: th::Vf2
@@ -83,9 +81,6 @@ fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool): bo
 
   for _, display in debugInfo.displays {
     val := valueToDisplay(display.value)
-    if display.mutable {
-      val.btn = true
-    }
 
     val.color &= and
 
@@ -126,7 +121,7 @@ fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool): bo
       size.x = alignment[column]+10
 
       textRect := wl.pushNode(size)
-      renderCommands = append(renderCommands, RenderCommand{btn: display.btn, text: text, color: color, position: textRect.getPos()})
+      renderCommands = append(renderCommands, RenderCommand{text: text, color: color, position: textRect.getPos()})
 
       column += 1
     }
@@ -136,9 +131,6 @@ fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool): bo
 
   for _, command in renderCommands {
     size := font.measure(command.text)
-    if command.btn {
-      canvas::drawRect(command.color&0xFFFFFF77&and, {command.position.x, command.position.y, size.x, size.y})
-    }
     font.draw(command.text, command.position, command.color)
   }
 

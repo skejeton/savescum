@@ -1269,25 +1269,25 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
     }
   }
 
-  fpsNode := debug_info::Display{ "FPS", fps::getFps(), false }
+  fpsNode := debug_info::Display{ "FPS", fps::getFps() }
   if payload_trigger::aprilFools() {
-    fpsNode = debug_info::Display{ "SPF", 1/fps::getFps(), false }
+    fpsNode = debug_info::Display{ "SPF", 1/fps::getFps() }
   }
 
   if editor.showDebugInfo {
     editor.dimDebugInfo = render_debug_info::renderDebugInfo(editor.resources.mainFont, {
       displays: {
         fpsNode,
-        { "TPS", 1000.0/game::updateStepMs, false },
-        { "Room", editor.currentRoom, false },
-        { "Frameskip", trunc(game::frameSkips), false },
-        { "Dirty?", editor.dirty, false },
-        { "Version", global::version, false },
-        { "Scale", editor.tilemapGrid.s, false },
-        { "Plain", global::plainBiscuit, false },
-        { "Playthrough (ms)", editor.debugTimer.duration(), false },
-        { "Playthrough Started", editor.debugTimer.going, false },
-        { "Memory usage", util::formatBytes(memusage()), false }
+        { "TPS", 1000.0/game::updateStepMs  },
+        { "Room", editor.currentRoom },
+        { "Frameskip", trunc(game::frameSkips) },
+        { "Dirty?", editor.dirty },
+        { "Version", global::version },
+        { "Scale", editor.tilemapGrid.s },
+        { "Plain", global::plainBiscuit },
+        { "Playthrough (ms)", editor.debugTimer.duration() },
+        { "Playthrough Started", editor.debugTimer.going },
+        { "Memory usage", util::formatBytes(memusage()) }
       }
     }, editor.dimDebugInfo)
   }
