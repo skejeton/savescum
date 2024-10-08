@@ -1082,15 +1082,6 @@ fn update*() {
         }
       }
 
-      if ent.tags.isSet("notify_end") {
-        if coll::rectToRect(ent.rect, pal.ent.rect) {
-          if isActivated() {
-            notification::put({.info, sprintf("--- Stats ---\nTotal time: %s\nLags: %d", util::formatMillis(global::playTime), frameSkips)})
-            notification::put({.info, "End of the demo. Thanks for playing!"})
-          }
-        }
-      }
-
       if ent.tags.isSet("tele") {
         if coll::rectToRect(ent.rect, pal.ent.rect) && isActivated() {
           dest := ent.tags.param("tele")
