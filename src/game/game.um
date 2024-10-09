@@ -583,10 +583,6 @@ fn start*(worldData: world_data::WorldData): std::Err {
   stopPreview = false
   noSaveStack = worldData.noSaveStack
   previewingLoad = false
-  if firstTime {
-    notification::put({.info, "Welcome to the demo!\nPress 'Z' to load the last save,\n      'X' to save the current state,\n      'R' to reset the level.\n      'C' to preview a load."})
-    firstTime = false
-  }
   bgAudio.seekToFrame(0)
   // bgAudio.play()
   lastUpdateTime = th::time
@@ -646,6 +642,11 @@ fn start*(worldData: world_data::WorldData): std::Err {
 
   if !hasPlayer {
     return std::error(1, "No player entity found")
+  }
+
+  if firstTime {
+    notification::put({.info, "Welcome to the demo!\nPress 'Z' to load the last save,\n      'X' to save the current state,\n      'R' to reset the level.\n      'C' to preview a load."})
+    firstTime = false
   }
 
   return {}
