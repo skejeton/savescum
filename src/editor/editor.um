@@ -141,9 +141,15 @@ fn editorSaveRoom(editor: ^Editor) {
 
 fn editorToggleGame(editor: ^Editor) {
   if !editor.isPlaying {
-    editor.debugTimer.start()
-    game::start(world_data::WorldData{editor.world, editor.entities.list, false})
-    script::init()
+    err := game::start(world_data::WorldData{editor.world, editor.entities.list, false})
+    if err.code != 0 {
+      dbg::logt("ed: game start failed: "+err.msg)
+      notification::put({.error, "Failed to start game: "+err.msg})
+      return
+    } else {
+      editor.debugTimer.start()
+      script::init()
+    }
   } else {
     editor.debugTimer.stop()
     game::stop()

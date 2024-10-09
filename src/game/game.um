@@ -578,7 +578,7 @@ fn findEntity*(id: str): ^Character {
   return null
 }
 
-fn start*(worldData: world_data::WorldData) {
+fn start*(worldData: world_data::WorldData): std::Err {
   exited = false
   stopPreview = false
   noSaveStack = worldData.noSaveStack
@@ -605,9 +605,12 @@ fn start*(worldData: world_data::WorldData) {
   entities = make([]Character, 0)
   guides = make([]rect::Rect, 0)
 
+  hasPlayer := false
+
   for i, ent in worldData.entities {
     chr := convertEntityDescToCharacter(ent)
     chr.originalRect = chr.rect
+
     if chr.tags.isSet("player") {
       r := rect::Rect{
         chr.rect.x,
@@ -621,20 +624,15 @@ fn start*(worldData: world_data::WorldData) {
       pal.dir = 1
       resetPoint.x = pal.ent.rect.x
       resetPoint.y = pal.ent.rect.y
-
-      continue
-    }
-    if chr.tags.isSet("Comment") {
+      hasPlayer = true
+    } else if chr.tags.isSet("Comment") {
       if chr.tags.isSet("Show") {
         dbg::logt(sprintf("Comment: %v", chr.name))
         entities = append(entities, chr)
       }
-      continue
-    }
-    if chr.tags.isSet("meta_boulders") {
+    } else if chr.tags.isSet("meta_boulders") {
       metaBoulders = chr.tags.param("meta_boulders") == "on"
-    }
-    if chr.tags.isSet("Guide") {
+    } else if chr.tags.isSet("Guide") {
       guides = append(guides, chr.rect)
     } else {
       entities = append(entities, chr)
@@ -645,6 +643,12 @@ fn start*(worldData: world_data::WorldData) {
   saves = []ChumState{}
   camera = getCameraProperties().pos
   cameraScale = getCameraProperties().scale
+
+  if !hasPlayer {
+    return std::error(1, "No player entity found")
+  }
+
+  return {}
 }
 
 fn stop*() {
