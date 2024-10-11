@@ -1,6 +1,7 @@
 import (
   "std.um"
   "window.um"
+  "canvas.um"
   "th.um"
   "rect.um"
   "font.um"
@@ -17,7 +18,7 @@ type OutlineRectCmd = struct {
 }
 
 fn (r: ^OutlineRectCmd) draw*(props: drawcmd::DrawProperties) {
-  util::drawRectLines(r.color, r.r)
+  canvas::drawRectLines(r.color, r.r)
 }
 
 var (
@@ -39,7 +40,7 @@ fn init*() {
   font2 = font::load("data/font/Roboto.ttf", 16).item0
   image1 = image::load("data/img/test.png").item0
   image2 = image::load("data/img/test.png").item0
-  image2.setfilter(0)
+  image2.setfilter(.linear)
   image3 = image::load("data/img/ui/1_0x/base.png").item0
 
   for i in colors {

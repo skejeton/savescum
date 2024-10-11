@@ -21,11 +21,11 @@ fn init*() {
 
   window::setup("Bg test", 800, 600)
 
-  rl := resources::initResourceLoader()
+  rl := resources::mk()
   background::init(&rl)
 
-  if resources::hasErrors(&rl) {
-    problem_screen::showResourceLoadingError(&rl)
+  if rl.hasErrors() {
+    problem_screen::setup(&rl)
     exit(1)
   }
 
@@ -48,8 +48,8 @@ fn init*() {
     oldMousePos = input::getMousePos()
 
     canvas::drawRect(th::black, screen)
-    content := util::rectCenterWithinRect({0, 0, 640, 480}, screen)
+    content := screen.centerWithinRect(rect::Rect{0, 0, 640, 480})
     background::drawCave(content, offset.mulf(-1), th::Vf2{scale, scale})
-    util::drawRectLines(th::red, content)
+    canvas::drawRectLines(th::red, content)
   })
 }

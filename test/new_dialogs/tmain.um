@@ -122,7 +122,7 @@ fn makeObjectArrayFromSpeechNodes(nodes: []speech::SpeechNode): []PushObj {
 
 fn drawTempDialogBackdrop(boundingBox: rect::Rect) {
   canvas::drawRect(th::black, util::rectShrink(boundingBox, -5))
-  util::drawRectLines(th::white, util::rectShrink(boundingBox, -4), 1)
+  canvas::drawRectLines(th::white, util::rectShrink(boundingBox, -4), 1)
   canvas::drawRect(0xFF8888FF, util::rectShrink(boundingBox, -3))
 }
 
@@ -228,7 +228,7 @@ fn booleanProperty(at: th::Vf2, name: str, isset: ^bool) {
 
   canvas::drawRect(color, rectangle)
 
-  if util::isMouseInRect(rectangle) {
+  if coll::vf2ToRect(input::getMousePos(), rectangle) {
     if input::isJustPressed(.mouse1) {
       isset^ = !isset^
     }

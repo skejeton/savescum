@@ -22,12 +22,17 @@ fn init*() {
   window::setup("title", 640, 480)
   screen = {0, 0, 640, 480}
 
-  grid = grid::Grid{{20, 20, 600, 440}, th::Vf2{0.5, 0.5}, th::Vf2{64, 64}}
+  grid = grid::Grid{
+    bb: {20, 20, 600, 440},
+    o: {0.0, 0.0},
+    s: {64, 64},
+    p: {0, 0}
+  }
 
   lastMousePos = input::getMousePos()
   targetScale = grid.s
   tileset = image::load("data/img/ts_sky.png").item0
-  tileset.setfilter(0)
+  tileset.setfilter(.linear)
 
   window::onFrame.register({
     window::setViewport(screen.getDims())

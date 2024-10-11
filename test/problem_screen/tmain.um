@@ -7,7 +7,7 @@ import (
 
 fn generateResourceLoadingErrors(): ^resources::ResourceLoader {
   loader := new(resources::ResourceLoader)
-  loader ^= resources::initResourceLoader()
+  loader ^= resources::mk()
   resources::loadingError(loader, "/home/bubsy/plok.txt", "Couldn't load document")
   resources::loadingError(loader, "/home/plok/bubsy.txt", "Couldn't load document")
 
@@ -18,5 +18,5 @@ fn init*() {
   test::isUnitTest(false)
   window::setup("Problem screen test", 800, 600)
 
-  problem_screen::showResourceLoadingError(generateResourceLoadingErrors())
+  problem_screen::setup(generateResourceLoadingErrors())
 }

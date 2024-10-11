@@ -96,7 +96,7 @@ type (
     // UI state
     ui: ^ui::UI
   }
-) 
+)
 
 fn updateZoom(init: real, plus: real): th::Vf2 {
   zoom := util::clamp(init+(init*plus), 8, 128)
@@ -675,13 +675,13 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }
 
     windowBtn("Console", {48, 0, 48, 48})
-    
+
     if editor.isPlaying {
-      windowBtn("Level Select", {48*3, 48*3, 48, 48}) 
+      windowBtn("Level Select", {48*3, 48*3, 48, 48})
       return
     }
 
-    windowBtn("Tile Picker", {48*0, 48, 48, 48}) 
+    windowBtn("Tile Picker", {48*0, 48, 48, 48})
     windowBtn("Entity List", {48*0, 48*2, 48, 48})
 
     if editor.entities.entitySelected != -1 {
@@ -724,7 +724,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }
     ui.spring(1)
 
-    windowBtn("Room", {48*2, 48*2, 48, 48}) 
+    windowBtn("Room", {48*2, 48*2, 48, 48})
     windowBtn("Settings", {96, 192, 48, 48})
   }).padding = 5
 }
@@ -743,7 +743,7 @@ fn (editor: ^Editor) putWindows(ui: ^ui::UI) {
 
     ui.window("Room", |editor| {
       ui.label("Room name: ")
-      
+
       ui.cellAlign(0.5)
       ui.cellStretch()
       ui.row(|editor| {
@@ -869,7 +869,7 @@ fn (editor: ^Editor) putRectGrips(ui: ^ui::UI, r: rect::Rect): RectResizeCommand
         }
         immcursor::setCursor(cursor)
       }
-    
+
       color := th::blue
 
       if ui.isActive() {
@@ -907,7 +907,7 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
         round(ent.rect.h/32.0)*32
       }
     }
-    
+
     entVisRect := util::rectScale(entSnappedRect, editor.tilemapGrid.s.x/32).shift(editor.tilemapGrid.toScreen(th::Vf2{0, 0}))
 
     uiVisRect := entVisRect
@@ -1055,7 +1055,7 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
         ui.cellStretch()
         ui.cellJustify(1)
         interaction := putGrid(&editor.tilemapGrid, ui)
-        
+
         editor.putWorldEntities(ui)
 
         // @TODO: Deduplicate
@@ -1248,8 +1248,8 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
   fps::update()
   payload_trigger::update()
   immcursor::setCursor(.system)
-  editor.handleShortcuts() 
-  
+  editor.handleShortcuts()
+
   std::srand(std::time())
 
   global::screen = rect::Rect{0, 0, window::w, window::h}

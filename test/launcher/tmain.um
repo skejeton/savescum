@@ -1,6 +1,7 @@
 import (
   "../test.um"
   "../../src/misc/util.um"
+  "../../src/misc/strings.um"
   "std.um"
 )
 
@@ -13,8 +14,8 @@ fn init*() {
   gf, err2 := util::readFileStr("data/misc/global.txt")
   std::exitif(err2)
   
-  std::assert(str(lf) == "I'm a local file!\n", "Invalid local file")
-  std::assert(str(gf) == "I'm a global file!\n", "Invalid global file")
+  std::assert(str(strings::windows2unix(lf)) == "I'm a local file!\n", "Invalid local file")
+  std::assert(str(strings::windows2unix(gf)) == "I'm a global file!\n", "Invalid global file")
 
   printf("Ok\n")
 }
