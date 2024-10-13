@@ -6,6 +6,7 @@ import (
 var (
   record: [60]real
   recordP: int
+  lastTimestamp: real
   fps: real
 )
 
@@ -23,13 +24,14 @@ fn limit*(to: int) {
 
 fn update*() {
   if th::delta > 0 {
-    record[recordP] = 1000.0/th::delta
+    record[recordP] = 1000.0/(th::time-lastTimestamp)
     recordP++
     if recordP >= 60 {
       recordP = 0
     }
     avgFps()
   }
+  lastTimestamp = th::time
 }
 
 fn getFps*(): real {
