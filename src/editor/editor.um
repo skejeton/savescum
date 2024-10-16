@@ -199,12 +199,9 @@ fn getShownLayersBitmap(layerSelected: int, showAllLayers: bool): uint {
 }
 
 fn drawLayerIcon(rect: rect::Rect, layer: int, showAllLayers: bool) {
-  fills := [3]bool{layer == -1, layer == 0, layer == 1}
-
-  // NOTE: If we choose to show all layers, the icon will show all boxes filled in
-  if showAllLayers {
-    fills = [3]bool{true, true, true}
-  }
+  fills := showAllLayers ? 
+    [3]bool{true, true, true} : 
+    [3]bool{layer == -1, layer == 0, layer == 1}
 
   scale := rect.h/48.0
 
