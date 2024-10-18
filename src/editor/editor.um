@@ -705,15 +705,18 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.cellStretch()
     ui.cellSameSize()
     if editor.tilemapLayer == 1 { ui.cellColor(0x777777FF) }
-    if ui.button("FG") { editor.tilemapLayer = 1 }
+    flags := editor.tilemapLayer == 1 ? ui::buttonFlagPushed : 0
+    if ui.button("FG", flags) { editor.tilemapLayer = 1 }
     ui.cellStretch()
     ui.cellSameSize()
+    flags = editor.tilemapLayer == 0 ? ui::buttonFlagPushed : 0
     if editor.tilemapLayer == 0 { ui.cellColor(0x777777FF) }
-    if ui.button("MG") { editor.tilemapLayer = 0 }
+    if ui.button("MG", flags) { editor.tilemapLayer = 0 }
     ui.cellStretch()
     ui.cellSameSize()
     if editor.tilemapLayer == -1 { ui.cellColor(0x777777FF) }
-    if ui.button("BG") { editor.tilemapLayer = -1 }
+    flags = editor.tilemapLayer == -1 ? ui::buttonFlagPushed : 0
+    if ui.button("BG", flags) { editor.tilemapLayer = -1 }
     ui.cellStretch()
     ui.cellSameSize()
     if ui.button("> <") {
