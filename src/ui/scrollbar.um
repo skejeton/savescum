@@ -68,7 +68,7 @@ fn put*(ui: ^ui::UI, scrollbar: ^Scrollbar) {
   }
 }
 
-fn putScrollbarArea*(ui: ^ui::UI, cb: fn (ui: ^ui::UI)) {
+fn putScrollbarArea*(ui: ^ui::UI, cb: fn (ui: ^ui::UI, scrollbar: ^Scrollbar)) {
   ui.row(|cb| {
     ui.pushIdStr("ScrollbarArea")
 
@@ -83,7 +83,7 @@ fn putScrollbarArea*(ui: ^ui::UI, cb: fn (ui: ^ui::UI)) {
     ui.col(|cb, scrollbar| {
       ui.pushIdStr("ContentArea")
       scrollbar.contentSize = ui.getRect().h/ui.io.scale
-      cb(ui)
+      cb(ui, scrollbar)
       ui.popId()
     })
 

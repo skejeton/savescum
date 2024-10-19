@@ -603,6 +603,7 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
     ui.cellRect(buttonRect)
     if ui.button("+") {
       appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
+      scrollbar.scrolling = scrollbar.contentSize-scrollbar.viewportSize
       editor.dirty = true
     }
 

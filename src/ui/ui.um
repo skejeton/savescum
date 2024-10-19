@@ -121,7 +121,7 @@ type (
   VTBL* = interface {
     doDisplayWM(ui: ^UI)
     doWindow(title: str, cb: fn(ui: ^UI), hidden: bool)
-    doScrollArea(ui: ^UI, cb: fn(ui: ^UI))
+    doScrollArea(ui: ^ui::UI, cb: fn(ui: ^ui::UI, scrollbar: ^scrollbar::Scrollbar))
     doTextEditSingle(ui: ^UI, name: str, value: ^str): bool
   }
 

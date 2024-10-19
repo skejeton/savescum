@@ -21,7 +21,7 @@ fn (it: ^VTBLImpl) doWindow*(title: str, cb: fn(ui: ^ui::UI), hidden: bool) {
   it.wm.window(title, cb, hidden)
 }
 
-fn (it: ^VTBLImpl) doScrollArea*(ui: ^ui::UI, cb: fn(ui: ^ui::UI)) {
+fn (it: ^VTBLImpl) doScrollArea*(ui: ^ui::UI, cb: fn(ui: ^ui::UI, scrollbar: ^scrollbar::Scrollbar)) {
   scrollbar::putScrollbarArea(ui, cb)
 }
 
