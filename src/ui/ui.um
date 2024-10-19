@@ -15,6 +15,7 @@ import (
   "window.um"
   "render.um"
   "themer.um"
+  "scrollbar.um"
   "../misc/immcursor.um"
   "../misc/util.um"
   "../misc/fnv1.um"
@@ -121,7 +122,7 @@ type (
   VTBL* = interface {
     doDisplayWM(ui: ^UI)
     doWindow(title: str, cb: fn(ui: ^UI), hidden: bool)
-    doScrollArea(ui: ^ui::UI, cb: fn(ui: ^ui::UI, scrollbar: ^scrollbar::Scrollbar))
+    doScrollArea(ui: ^UI, cb: fn(ui: ^UI, scrollbar: ^scrollbar::Scrollbar))
     doTextEditSingle(ui: ^UI, name: str, value: ^str): bool
   }
 
@@ -734,7 +735,7 @@ fn (ui: ^UI) window*(title: str, cb: fn(ui: ^UI), hidden: bool = false) {
   ui.vtbl.doWindow(title, cb, hidden)
 }
 
-fn (ui: ^UI) scrollArea*(cb: fn(ui: ^UI)) {
+fn (ui: ^UI) scrollArea*(cb: fn(ui: ^UI, scrollbar: ^scrollbar::Scrollbar)) {
   ui.vtbl.doScrollArea(ui, cb)
 }
 

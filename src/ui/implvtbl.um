@@ -1,6 +1,7 @@
 import (
   "../ui/ui.um"
   "windows.um"
+  "scrolling.um"
   "scrollbar.um"
   "textedit.um"
 )
@@ -22,7 +23,7 @@ fn (it: ^VTBLImpl) doWindow*(title: str, cb: fn(ui: ^ui::UI), hidden: bool) {
 }
 
 fn (it: ^VTBLImpl) doScrollArea*(ui: ^ui::UI, cb: fn(ui: ^ui::UI, scrollbar: ^scrollbar::Scrollbar)) {
-  scrollbar::putScrollbarArea(ui, cb)
+  scrolling::putScrollbarArea(ui, cb)
 }
 
 fn (it: ^VTBLImpl) doTextEditSingle*(ui: ^ui::UI, name: str, value: ^str): bool {

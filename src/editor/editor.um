@@ -13,6 +13,7 @@ import (
 
   "../ui/notification.um"
   "../ui/implvtbl.um"
+  "../ui/scrollbar.um"
   "../ui/ui.um"
   "../sfx/sfx.um"
   "session.um"
@@ -552,7 +553,11 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
     ui.cellStretch()
     ui.cellJustify(1)
     ui.cellClip()
-    ui.scrollArea(|editor, actions| {
+    var _scrollbar: ^scrollbar::Scrollbar = null
+    _scrollbar_ptr := &_scrollbar
+
+    ui.scrollArea(|_scrollbar_ptr, editor, actions| {
+      _scrollbar_ptr ^= scrollbar
       for i, ent^ in editor.entities.list {
         if !matchEnt(ent, editor.entitySearch) {
           continue
@@ -594,6 +599,7 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
           }
         })
       }
+
     })
 
     // @HACK: There should be a better way to put elements on the titlebar.
@@ -603,7 +609,7 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
     ui.cellRect(buttonRect)
     if ui.button("+") {
       appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
-      scrollbar.scrolling = scrollbar.contentSize-scrollbar.viewportSize
+      _scrollbar.scrolling = _scrollbar.contentSize-_scrollbar.viewportSize
       editor.dirty = true
     }
 
