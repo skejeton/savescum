@@ -579,8 +579,6 @@ fn findEntity*(id: str): ^Character {
 }
 
 fn start*(worldData: world_data::WorldData): std::Err {
-  printf("%v", &pal.ent)
-
   exited = false
   stopPreview = false
   noSaveStack = worldData.noSaveStack

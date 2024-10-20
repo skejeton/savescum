@@ -1,18 +1,19 @@
 import (
   "th.um"
   "window.um"
+  "../misc/util.um"
 )
 
 var (
   record: [60]real
-  recordP: int
+  recordP: uint
   lastTimestamp: real
   fps: real
 )
 
 fn avgFps() {
   fps = 0
-  for i, datum in record {
+  for _, datum in record {
     fps += datum
   }
   fps /= 60
@@ -23,17 +24,12 @@ fn limit*(to: int) {
 }
 
 fn update*() {
-  if th::delta > 0 {
-    record[recordP] = 1000.0/(th::time-lastTimestamp)
-    recordP++
-    if recordP >= 60 {
-      recordP = 0
-    }
-    avgFps()
-  }
+  record[recordP%60] = th::time-lastTimestamp
+  recordP++
+  avgFps()
   lastTimestamp = th::time
 }
 
 fn getFps*(): real {
-  return fps
+  return round(1000.0/util::max(fps, 1))
 }
