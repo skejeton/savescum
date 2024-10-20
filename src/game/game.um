@@ -374,8 +374,8 @@ fn collCalcRectSnap(r, along: rect::Rect): th::Vf2 {
 fn collSortShapesByProximity(shapes: ^[]Shape, along: th::Vf2) {
   sort(shapes^, |along| {
     distA := a.rect.center().distanceTo(along)
-    distB := a.rect.center().distanceTo(along)
-    return distA < distB ? -1 : 0
+    distB := b.rect.center().distanceTo(along)
+    return distA < distB ? -1 : 1
   })
 }
 
