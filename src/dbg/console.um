@@ -1,8 +1,3 @@
-// console 
-//
-// terms:
-//  block: block of text. similar to line in console, but can have multiple lines inside it
-
 import (
   "rect.um"
   "th.um"
