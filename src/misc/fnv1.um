@@ -18,14 +18,7 @@ fn hash64s*(h: uint, data: str): uint {
 fn hash64i*(h: uint, data: int): uint {
   b0, b1, b2, b3, b4, b5, b6, b7 := uint8(data), uint8(data >> 8), uint8(data >> 16), uint8(data >> 24), uint8(data >> 32), uint8(data >> 40), uint8(data >> 48), uint8(data >> 56) 
 
-  h = (h ~ b0) * PRIME
-  h = (h ~ b1) * PRIME
-  h = (h ~ b2) * PRIME
-  h = (h ~ b3) * PRIME
-  h = (h ~ b4) * PRIME
-  h = (h ~ b5) * PRIME
-  h = (h ~ b6) * PRIME
-  h = (h ~ b7) * PRIME
+  h = (((((((((h ~ b0) * PRIME) ~ (h ~ b1) * PRIME) ~ (h ~ b2) * PRIME) ~ (h ~ b3) * PRIME) ~ (h ~ b4) * PRIME) ~ (h ~ b5) * PRIME)) ~ (h ~ b6) * PRIME) ~ (h ~ b7) * PRIME
   
   return h
 }
