@@ -1,6 +1,5 @@
 // @TODO: Make the element struct smaller in size
 // @TODO: Hovering effects?
-// @TODO: Element pooling
 
 import (
   "std.um"

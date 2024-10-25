@@ -29,7 +29,6 @@ import (
   "atlas.um"
   "../misc/util.um"
   "../game/game.um"
-  "../game/script.um"
   "../misc/immcursor.um"
   "../shared/payload_trigger.um"
   debug_info = "../dbg/info.um"
@@ -149,7 +148,6 @@ fn editorToggleGame(editor: ^Editor) {
       return
     } else {
       editor.debugTimer.start()
-      script::init()
     }
   } else {
     editor.debugTimer.stop()
@@ -229,7 +227,6 @@ type GameCmd = struct {}
 
 fn (gc: ^GameCmd) draw(props: drawcmd::DrawProperties) {
   game::draw()
-  script::draw()
 }
 
 fn appendEntity(editorEntities: ^EditorEntities, entity: world_data::EntityDesc) {
