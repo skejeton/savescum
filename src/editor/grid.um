@@ -38,7 +38,7 @@ fn gridPan*(grid: ^Grid, delta: th::Vf2) {
   grid.p = grid.p.add(delta.div(grid.s))
 }
 
-// NOTE: into is a screen coordiante
+// NOTE: into is a screen coordinate
 fn gridZoomInto*(grid: ^Grid, newScale: th::Vf2, into: th::Vf2) {
   before := grid.toGrid(into)
   grid.s = newScale
