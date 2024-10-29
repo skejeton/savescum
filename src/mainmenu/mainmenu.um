@@ -152,8 +152,6 @@ fn (menu: ^MainMenu) showExit(ui: ^ui::UI) {
 }
 
 fn (menu: ^MainMenu) update*() {
-  // @TODO: Somehow handle all this automatically, because it's also handled in the editor.
-  global::screen = rect::Rect{0, 0, window::w, window::h}
   window::setViewport({window::w, window::h})
   
   if valid(menu.callbacks.frameCb) {

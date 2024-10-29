@@ -1256,9 +1256,6 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
 
   std::srand(std::time())
 
-  global::screen = rect::Rect{0, 0, window::w, window::h}
-  window::setViewport(global::screen.getDims())
-
   editor.ui.io.scale = window::getDpiScaleFactor()/1.5
   editor.ui.pass(|uicb, editor| {
     editor.putUi(ui)

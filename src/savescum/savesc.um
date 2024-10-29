@@ -2,9 +2,11 @@ import (
   "atlas.um"
   "signal.um"
   "window.um"
+  "rect.um"
 
   setup_ui = "../ui/setup.um"
 
+  "../shared/global.um"
   "../gfx/background.um"
   "../misc/util.um"
   "../misc/immcursor.um"
@@ -78,6 +80,8 @@ fn init*(cfg: Config) {
     problem_screen::setup(rl)
   } else {
     window::onFrame.register(|frameCb| {
+      global::screen = rect::Rect{0, 0, window::w, window::h}
+      window::setViewport({window::w, window::h})
       frameCb({})
       immcursor::update()
     })
