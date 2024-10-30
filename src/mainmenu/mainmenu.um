@@ -152,7 +152,6 @@ fn (menu: ^MainMenu) showExit(ui: ^ui::UI) {
 }
 
 fn (menu: ^MainMenu) update*() {
-  window::setViewport({window::w, window::h})
   
   if valid(menu.callbacks.frameCb) {
     if menu.viewExit {
