@@ -3,8 +3,8 @@
 //  The world is split up into layers, which contain chunks.
 //  There's 3 layers:
 //    -1: the background layer, no collision checks are performed on it
-//    0: the middleground layer, this is where the collisions are tested
-//    1: the foreground layer, this is drawn over the character, no collision checks
+//     0: the middleground layer, this is where the collisions are tested
+//     1: the foreground layer, this is drawn over the character, no collision checks
 
 import (
   "th.um"
