@@ -46,32 +46,28 @@ fn (wl: ^WrapLayout) newLine() {
 }
 
 fn valueToDisplay*(value: any): DisplayToLayout {
-  switch v := type(value) {
-    case bool:
-      return {text: v ? "true" : "false", color: v ? 0x99FF99FF : 0xFF9999FF}
-    case int:
-      return {text: sprintf("%v", v), color: 0x9999FFFF}
-    case int8:
-      return {text: sprintf("%v", v), color: 0x9999FFFF}
-    case int16:
-      return {text: sprintf("%v", v), color: 0x9999FFFF}
-    case int32:
-      return {text: sprintf("%v", v), color: 0x9999FFFF}
-    case uint8:
-      return {text: sprintf("%v", v), color: 0x9999FFFF}
-    case uint16:
-      return {text: sprintf("%v", v), color: 0x9999FFFF}
-    case uint32:
-      return {text: sprintf("%v", v), color: 0x9999FFFF}
-    case real32:
-      return {text: sprintf("%v", v), color: 0x9999FFFF}
-    case real:
-      return {text: sprintf("%v", v), color: 0x9999FFFF}
-    case str:
-      return {text: v, color: 0xFFFF99FF}
+  text := sprintf("%v", value)
+  if v := ^str(value); v != null {
+    text = v^
   }
 
-  return {text: sprintf("%v", value), color: 0xFF99FFFF}
+  color := 0xFF99FFFF
+
+  switch v := type(value) {
+    case bool:   color = v ? 0x99FF99FF : 0xFF9999FF
+    case int:    color = 0x9999FFFF
+    case int8:   color = 0x9999FFFF
+    case int16:  color = 0x9999FFFF
+    case int32:  color = 0x9999FFFF
+    case uint8:  color = 0x9999FFFF
+    case uint16: color = 0x9999FFFF
+    case uint32: color = 0x9999FFFF
+    case real32: color = 0x9999FFFF
+    case real:   color = 0x9999FFFF
+    case str:    color = 0xFFFF99FF
+  }
+
+  return {text: text, color: color}
 }
 
 fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool): bool {
