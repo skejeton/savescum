@@ -59,6 +59,7 @@ fn valueToDisplay*(value: any): DisplayToLayout {
     case int8:   color = 0x9999FFFF
     case int16:  color = 0x9999FFFF
     case int32:  color = 0x9999FFFF
+    case uint:   color = 0x9999FFFF
     case uint8:  color = 0x9999FFFF
     case uint16: color = 0x9999FFFF
     case uint32: color = 0x9999FFFF
