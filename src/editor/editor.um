@@ -234,12 +234,11 @@ fn appendEntity(editorEntities: ^EditorEntities, entity: world_data::EntityDesc)
 }
 
 fn removeEntity(editorEntities: ^EditorEntities, index: int) {
-  // Unselect the entity
   if index == editorEntities.entitySelected {
+    // Unselect the entity
     editorEntities.entitySelected = -1
-  }
-  // Shift the selected entity index down if entity below to be removed
-  if index < editorEntities.entitySelected {
+  } else if index < editorEntities.entitySelected {
+    // Shift the selected entity index down if entity below to be removed
     editorEntities.entitySelected -= 1
   }
   editorEntities.list = delete(editorEntities.list, index)
