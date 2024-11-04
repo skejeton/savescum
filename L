@@ -142,8 +142,6 @@ do
 done
 
 target_compile_extern
-# user data
-mkdir -p user
 
 case `getarg 0` in
   play)
