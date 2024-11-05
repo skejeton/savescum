@@ -2,3 +2,4 @@
 // Using ./L should automatically compile the needed C files 
 //  and put everything into the correct folder.
 
+fn localstorage_get(): str
