@@ -23,12 +23,6 @@ fn logt*(fmt: str, args: ..any) {
   console.write(fmt::vsfmt(fmt, args))
 }
 
-// don't use it unless you want to render the console in a special 
-// way or something.
-fn getConsole*(): ^console::Console {
-  return &console
-}
-
 fn scrollConsole*(by: real) {
   visualConsole.scrollBy(by*10)
 }

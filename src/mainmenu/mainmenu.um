@@ -3,7 +3,6 @@ import (
   "image.um"
   "th.um"
   "atlas.um"
-  "rect.um"
   "canvas.um"
   "input.um"
 
