@@ -3,6 +3,7 @@ import (
   "th.um"
   "canvas.um"
   "color.um"
+  "../misc/util.um"
   "../gfx/rerp.um"
   "font.um"
 )
@@ -25,13 +26,7 @@ type Scrolley* = struct {
 }
 
 fn (s: ^Scrolley) scrollTo(scroll: real) {
-  if scroll > (s.contentsz-s.clientsz) {
-    scroll = (s.contentsz-s.clientsz)
-  }
-  if scroll < 0 {
-    scroll = 0
-  }
-  s.scroll = scroll
+  s.scroll = util::clamp(scroll, 0, s.contentsz-s.clientsz)
 }
 
 type VisualConsole* = struct {
