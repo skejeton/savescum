@@ -26,7 +26,7 @@ type Scrolley* = struct {
 }
 
 fn (s: ^Scrolley) scrollTo(scroll: real) {
-  s.scroll = util::clamp(scroll, 0, s.contentsz-s.clientsz)
+  s.scroll = util::clamp(scroll, 0, util::max(s.contentsz-s.clientsz, 0))
 }
 
 type VisualConsole* = struct {
