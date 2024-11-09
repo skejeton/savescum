@@ -104,11 +104,6 @@ target_emscripten() {
   mv main_temp.um main.um
 }
 
-# Compiles external C code
-target_compile_extern() {
-  echo 
-}
-
 hasargs=1
 
 # Fetch all sparse args
@@ -140,8 +135,6 @@ do
     ;;
   esac
 done
-
-target_compile_extern
 
 case `getarg 0` in
   play)
