@@ -1,5 +1,3 @@
-// (C) skejeton
-
 import (
   "window.um"
   "rect.um"
@@ -462,10 +460,8 @@ fn putGrid(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
 }
 
 fn (editor: ^Editor) putNotifications(ui: ^ui::UI) {
-  // @TODO: Instead of having a zerowidth cell, I should have cellPos
-  ui.cellRect({0, 0, 0, 0})
+  ui.cellPos({0, 0})
   ui.col(|editor| {
-
     ns := notification::get()
 
     for i in ns {

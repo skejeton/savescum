@@ -592,6 +592,11 @@ fn (ui: ^UI) cellSameSize*() {
   ui.cell.flags |= cellSameSize
 }
 
+fn (ui: ^UI) cellPos*(pos: th::Vf2) {
+  ui.cell.kind = .rect
+  ui.cell.rect = {pos.x, pos.y, 0, 0}
+}
+
 fn (ui: ^UI) cellRect*(r: rect::Rect) {
   ui.cell.kind = .rect
   ui.cell.rect = r
