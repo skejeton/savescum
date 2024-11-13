@@ -109,14 +109,6 @@ fn rectKeepInBounds*(child, parent: rect::Rect): rect::Rect {
   return child
 } 
 
-// Creates a split of rect `r` at `by` starting from the right side.
-fn rectCutRight*(r: rect::Rect, by: real): rect::Rect {
-  result := r
-  result.x += r.w-by
-  result.w = by
-  return result
-}
-
 fn rectScale*(r: rect::Rect, by: real): rect::Rect {
   return {r.x*by, r.y*by, r.w*by, r.h*by}
 }

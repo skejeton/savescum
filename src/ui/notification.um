@@ -37,7 +37,7 @@ fn update*() {
       unexpired = append(unexpired, notifications[i])
     }
   }
-
+  
   notifications = unexpired
 }
 
