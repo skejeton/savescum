@@ -23,3 +23,13 @@ fn bottom*(rect: rect::Rect, amount: real): rect::Rect {
   return {x: rect.x, y: rect.y+amount, w: rect.w, h: rect.h-amount}
 }
 
+fn cut*(rect: rect::Rect, side: Side, amount: real): rect::Rect {
+  switch side {
+    case .top:    return top(rect, amount)
+    case .bottom: return bottom(rect, amount)
+    case .left:   return left(rect, amount)
+    case .right:  return right(rect, amount)
+  }
+
+  return rect
+}
