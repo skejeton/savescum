@@ -26,6 +26,7 @@ import (
   "../game/world.um"
   "atlas.um"
   "../misc/util.um"
+  "../misc/rectcut.um"
   "../game/game.um"
   "../misc/immcursor.um"
   "../shared/payload_trigger.um"

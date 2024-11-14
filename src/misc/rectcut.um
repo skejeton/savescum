@@ -1,5 +1,12 @@
 import "rect.um"
 
+type Side = enum {
+  top
+  bottom
+  left
+  right
+}
+
 fn right*(rect: rect::Rect, amount: real): rect::Rect {
   return {x: rect.x+amount, y: rect.y, w: rect.w-amount, h: rect.h}
 }
@@ -15,3 +22,4 @@ fn top*(rect: rect::Rect, amount: real): rect::Rect {
 fn bottom*(rect: rect::Rect, amount: real): rect::Rect {
   return {x: rect.x, y: rect.y+amount, w: rect.w, h: rect.h-amount}
 }
+
