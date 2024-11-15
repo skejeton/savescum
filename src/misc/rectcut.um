@@ -1,3 +1,5 @@
+// NOTE: all cutting functions return: (previous, new)
+
 import "rect.um"
 
 type Side = enum {
@@ -7,23 +9,32 @@ type Side = enum {
   right
 }
 
-fn right*(rect: rect::Rect, amount: real): rect::Rect {
-  return {x: rect.x+amount, y: rect.y, w: rect.w-amount, h: rect.h}
+fn left*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect)
+fn right*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect)
+fn top*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect)
+fn bottom*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect)
+
+fn right*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect) {
+  return {x: rect.x, y: rect.y, w: rect.w-amount, h: rect.h},
+         {x: rect.x+amount, y: rect.y, w: rect.w-amount, h: rect.h}
 }
 
-fn left*(rect: rect::Rect, amount: real): rect::Rect {
-  return {x: rect.x, y: rect.y, w: rect.w-amount, h: rect.h}
+fn left*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect) {
+  return {x: rect.x+amount, y: rect.y, w: rect.w-amount, h: rect.h},
+         {x: rect.x, y: rect.y, w: rect.w-amount, h: rect.h}
 }
 
-fn top*(rect: rect::Rect, amount: real): rect::Rect {
-  return {x: rect.x, y: rect.y, w: rect.w, h: rect.h-amount}
+fn top*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect) {
+  return {x: rect.x, y: rect.y+amount, w: rect.w, h: rect.h-amount},
+         {x: rect.x, y: rect.y, w: rect.w, h: rect.h-amount}
 }
 
-fn bottom*(rect: rect::Rect, amount: real): rect::Rect {
-  return {x: rect.x, y: rect.y+amount, w: rect.w, h: rect.h-amount}
+fn bottom*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect){
+  return {x: rect.x, y: rect.y, w: rect.w, h: rect.h-amount},
+         {x: rect.x, y: rect.y+amount, w: rect.w, h: rect.h-amount}
 }
 
-fn cut*(rect: rect::Rect, side: Side, amount: real): rect::Rect {
+fn cut*(rect: rect::Rect, side: Side, amount: real): (rect::Rect, rect::Rect) {
   switch side {
     case .top:    return top(rect, amount)
     case .bottom: return bottom(rect, amount)
@@ -31,5 +42,5 @@ fn cut*(rect: rect::Rect, side: Side, amount: real): rect::Rect {
     case .right:  return right(rect, amount)
   }
 
-  return rect
+  return rect, rect
 }
