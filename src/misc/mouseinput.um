@@ -19,13 +19,12 @@ type (
     lastPos: th::Vf2 
     delta: th::Vf2 // mousePos - lastMousePos
   }
-)
 
-const (
-  // Mouse states
-  down* = 0
-  pressed* = 1
-  released* = 2
+  ButtonState* = enum {
+    down
+    pressed
+    released
+  }
 )
 
 fn (prev: ^MouseButtonState) updated*(button: input::Key): MouseButtonState {
