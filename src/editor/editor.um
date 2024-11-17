@@ -26,7 +26,6 @@ import (
   "../game/world.um"
   "atlas.um"
   "../misc/util.um"
-  "../misc/rectcut.um"
   "../game/game.um"
   "../misc/immcursor.um"
   "../shared/payload_trigger.um"
@@ -1290,7 +1289,7 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
         { "Plain", global::plainBiscuit },
         { "Playthrough (ms)", editor.debugTimer.duration() },
         { "Playthrough Started", editor.debugTimer.going },
-        { "Memory usage", util::formatBytes(memusage()) }
+        { "Memory usage", strings::formatBytes(memusage()) }
       }
     }, editor.dimDebugInfo)
   }
