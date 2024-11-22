@@ -290,6 +290,16 @@ fn findClosestRetainedAncestorId(el: ^El): uint {
   return el.id
 }
 
+// @MARK(DirectInput)
+fn isInteactionKeyPressed(): bool {
+  return input::isJustPressed(.mouse1) || input::isJustPressed(.mouse2) || input::isJustPressed(.mouse3) || input::isJustPressed(.space)
+}
+
+// @MARK(DirectInput)
+fn isInteactionKeyReleased(): bool {
+  return input::isJustReleased(.mouse1) || input::isJustReleased(.mouse2) || input::isJustReleased(.mouse3) || input::isJustReleased(.space)
+}
+
 fn (ui: ^UI) processAttentionRec(el: ^El, r: rect::Rect) {
   if el.cell.flags & cellUnclipped != 0 {
     r = ui.io.screen
@@ -303,8 +313,7 @@ fn (ui: ^UI) processAttentionRec(el: ^El, r: rect::Rect) {
   if el.interactive && coll::vf2ToRect(input::getMousePos(), el.cell.rect) && coll::vf2ToRect(input::getMousePos(), r) {
     id := findClosestRetainedAncestorId(el)
     ui.attention.hovered = id
-    // @MARK(DirectInput)
-    if input::isJustPressed(.mouse1) || input::isJustPressed(.mouse2) || input::isJustPressed(.mouse3) || input::isJustPressed(.space) {
+    if isInteactionKeyPressed() {
       ui.attention.active = id
       ui.attention.focused = id
     }
@@ -322,13 +331,11 @@ fn (ui: ^UI) processAttentionRec(el: ^El, r: rect::Rect) {
 fn (ui: ^UI) processAttention(el: ^El) {
   ui.attention.hovered = 0
 
-  // @MARK(DirectInput)
-  if input::isJustPressed(.mouse1) || input::isJustPressed(.mouse2) || input::isJustPressed(.mouse3) {
+  if isInteactionKeyPressed() {
     ui.attention.focused = 0
   }
 
-  // @MARK(DirectInput)
-  if input::isJustReleased(.mouse1) || input::isJustReleased(.mouse2) || input::isJustReleased(.mouse3) {
+  if isInteactionKeyReleased() {
     if ui.attention.active != 0 {
       ui.events = append(ui.events, Event{kind: .released, el: ui.retained[ui.attention.active].el})
     }
