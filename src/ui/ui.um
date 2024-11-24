@@ -373,8 +373,7 @@ fn (ui: ^UI) render(el: ^El, depth: int, scissor: rect::Rect) {
 
     if selfhasptr(el.renderObject) {
       el.renderObject.draw(el.cell.rect)
-      // @NOTE: Remove any possible circular references to UI 
-      // @TODO: This shouldn't be here ideally.
+      // @TODO:  Remove any possible circular references to UI.
       el.renderObject = null
     }
   } else {
