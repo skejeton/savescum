@@ -435,7 +435,6 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   cb(ui)
   ui.vtbl.doDisplayWM(ui)
 
-  // calculate layout
   ui.layout1(ui.root)
   ui.layout2(ui.root, {0, 0})
   ui.layout3(ui.root)
