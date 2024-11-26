@@ -790,6 +790,7 @@ fn (editor: ^Editor) putWindows(ui: ^ui::UI) {
     ui.window("Level Select", |editor| {
       ui.cellStretch()
       ui.cellJustify(1)
+      ui.cellClip()
       ui.scrollArea(|editor| {
         type Level = struct { id, name: str }
 
