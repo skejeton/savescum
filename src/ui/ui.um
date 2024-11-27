@@ -655,6 +655,11 @@ fn (ui: ^UI) img*(img: image::Image) {
   el.renderObject = render::RenderImage{img}
 }
 
+fn (ui: ^UI) stub*(size: th::Vf2) {
+  el := ui.addEl()
+  el.size = size
+}
+
 fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
   el := ui.addEl()
   el.size = r.getDims()

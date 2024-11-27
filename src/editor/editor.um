@@ -659,6 +659,12 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       }
     }
 
+    windowBtnStub := fn (name: str, rect: rect::Rect) |ui, editor| {
+      ui.row(|rect| {
+        ui.stub(rect.getDims())
+      }).padding = 5
+    }
+
     iconBtn := fn (name: str, rect: rect::Rect, flags: uint = 0): bool |ui, editor| {
       return ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}, flags)
     }
@@ -680,6 +686,8 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
     if editor.entities.entitySelected != -1 {
       windowBtn("Entity Editor", {48*1, 48*2, 48, 48})
+    } else {
+      windowBtnStub("Entity Editor", {48*1, 48*2, 48, 48})
     }
 
     ui.spring(1)
