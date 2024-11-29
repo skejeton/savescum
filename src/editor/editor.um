@@ -599,8 +599,9 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
     ui.cellRect(buttonRect)
     if ui.button("+") {
       appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
-      _scrollbar.scrolling = _scrollbar.contentSize-_scrollbar.viewportSize
       editor.dirty = true
+      // @TODO: It will not scroll to the very bottom because the content size is not updated.
+      _scrollbar.scrolling = _scrollbar.contentSize - _scrollbar.viewportSize
     }
 
     // For now, only one action can be applied at a time, due to indexing.
