@@ -660,7 +660,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       }
     }
 
-    windowBtnStub := fn (name: str, rect: rect::Rect) |ui, editor| {
+    windowBtnStub := fn (name: str, rect: rect::Rect) |ui| {
       ui.row(|rect| {
         ui.stub(rect.getDims())
       }).padding = 5
