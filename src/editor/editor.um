@@ -666,6 +666,14 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       }).padding = 5
     }
 
+    windowBtnIf := fn (name: str, rect: rect::Rect, cond: bool) |ui, windowBtn, windowBtnStub| {
+      if cond {
+        windowBtn(name, rect)
+      } else {
+        windowBtnStub(name, rect)
+      }
+    }
+
     iconBtn := fn (name: str, rect: rect::Rect, flags: uint = 0): bool |ui, editor| {
       return ui.button2(name, |editor, rect| {ui.img2(editor.resources.toolbarIcons, rect)}, flags)
     }
@@ -685,11 +693,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     windowBtn("Tile Picker", {48*0, 48, 48, 48})
     windowBtn("Entity List", {48*0, 48*2, 48, 48})
 
-    if editor.entities.entitySelected != -1 {
-      windowBtn("Entity Editor", {48*1, 48*2, 48, 48})
-    } else {
-      windowBtnStub("Entity Editor", {48*1, 48*2, 48, 48})
-    }
+    windowBtnIf("Entity Editor", {48*1, 48*2, 48, 48}, editor.entities.entitySelected != -1)
 
     ui.spring(1)
     ui.cellStretch()
