@@ -666,7 +666,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       }).padding = 5
     }
 
-    windowBtnIf := fn (name: str, rect: rect::Rect, cond: bool) |ui, windowBtn, windowBtnStub| {
+    windowBtnIf := fn (name: str, rect: rect::Rect, cond: bool) |windowBtn, windowBtnStub| {
       if cond {
         windowBtn(name, rect)
       } else {

@@ -3,6 +3,5 @@ import "rect.um"
 var (
   version*:         str = "7.5%"
   screen*:          rect::Rect
-  caseSensetiveFS*: bool = true
   plainBiscuit*:    bool = false // removes all unnecessary visual elements
 )
