@@ -912,10 +912,10 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
     entSnappedRect := ent.rect
     if input::isPressed(.ctrl) && (input::isPressed(.mouse1) || input::isJustReleased(.mouse1)) && editor.entities.entitySelected == i {
       entSnappedRect = rect::Rect{
-        round(ent.rect.x/32.0)*32,
-        round(ent.rect.y/32.0)*32,
-        round(ent.rect.w/32.0)*32,
-        round(ent.rect.h/32.0)*32
+        round(ent.rect.x/16.0)*16,
+        round(ent.rect.y/16.0)*16,
+        round(ent.rect.w/16.0)*16,
+        round(ent.rect.h/16.0)*16
       }
     }
 
