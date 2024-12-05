@@ -695,11 +695,12 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
     windowBtnIf("Entity Editor", {48*1, 48*2, 48, 48}, editor.entities.entitySelected != -1)
 
+    flags := editor.entityBypass ? ui::buttonFlagPushed : 0
     ui.spring(1)
     ui.cellStretch()
     ui.cellSameSize()
     if editor.entityBypass { ui.cellColor(0x777777FF) }
-    if ui.button("🔒") {
+    if ui.button("🔒", flags) {
       editor.entityBypass = !editor.entityBypass
     }
     ui.cellStretch()
@@ -715,7 +716,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     ui.cellStretch()
     ui.cellSameSize()
     if editor.tilemapLayer == 1 { ui.cellColor(0x777777FF) }
-    flags := editor.tilemapLayer == 1 ? ui::buttonFlagPushed : 0
+    flags = editor.tilemapLayer == 1 ? ui::buttonFlagPushed : 0
     if ui.button("FG", flags) { editor.tilemapLayer = 1 }
     ui.cellStretch()
     ui.cellSameSize()
