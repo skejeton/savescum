@@ -946,15 +946,9 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
       if !ignore {
         ui.pushIdStr(sprintf("Ent%v", ent))
 
-        if ui.isActive() {
-          if input::isPressed(.mouse2) {
-            // @HACK: This is a hack to have the tilemap editor pan.
-            grid::gridPan(&editor.tilemapGrid, input::getMouseDelta())
-          }
-          if input::isPressed(.mouse1) {
-            editor.dirty = true
-            ent.rect = ent.rect.shift(input::getMouseDelta().divf(editor.tilemapGrid.s.x/32))
-          }
+        if ui.isActive() && input::isPressed(.mouse1) {
+          editor.dirty = true
+          ent.rect = ent.rect.shift(input::getMouseDelta().divf(editor.tilemapGrid.s.x/32))
         }
 
         if input::isJustReleased(.mouse1) {
