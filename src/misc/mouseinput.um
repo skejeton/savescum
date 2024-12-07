@@ -17,7 +17,7 @@ type (
     scroll: th::Vf2
     pos: th::Vf2
     lastPos: th::Vf2 
-    delta: th::Vf2 // mousePos - lastMousePos
+    delta: th::Vf2 // mousePos - lastMousePos not input::getMouseDelta
   }
 
   ButtonState* = enum {
