@@ -27,7 +27,6 @@ fn scrollConsole*(by: real) {
   visualConsole.scrollBy(by*10)
 }
 
-// draws fullscreen console.
 fn drawConsole*(r: rect::Rect, font: font::Font, scale: real) {
   console::render(&console, &visualConsole, font, r, scale) 
 }
