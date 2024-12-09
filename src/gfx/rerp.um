@@ -8,21 +8,13 @@ import (
 )
 
 fn iReal*(s, t, f: real): real {
-  if f > 1 {
-    f = 1
-  } else if f < 0 {
-    f = 0
-  }
+  f = f > 1 ? 1 : (f < 0 ? 0 : f)
   return s + (t-s)*f
 }
 
 
 fn iVf2*(s, t: th::Vf2, f: real): th::Vf2 {
-  if f > 1 {
-    f = 1
-  } else if f < 0 {
-    f = 0
-  }
+  f = f > 1 ? 1 : (f < 0 ? 0 : f)
   s.x += (t.x-s.x)*f
   s.y += (t.y-s.y)*f
   return s
@@ -30,11 +22,7 @@ fn iVf2*(s, t: th::Vf2, f: real): th::Vf2 {
 
 
 fn iRect*(s, t: rect::Rect, f: real): rect::Rect {
-  if f > 1 {
-    f = 1
-  } else if f < 0 {
-    f = 0
-  }
+  f = f > 1 ? 1 : (f < 0 ? 0 : f)
   s.x += (t.x-s.x)*f
   s.y += (t.y-s.y)*f
   s.w += (t.w-s.w)*f
