@@ -381,12 +381,13 @@ fn collSortShapesByProximity(shapes: ^[]Shape, along: th::Vf2) {
 
 fn entVsShape(ent: ^Character, s: Shape) {
   r := s.rect
-  snap := collCalcRectSnap(ent.rect, r)
 
   // Not a valid collision (probably pushed back by other blocks?)
   if coll::rectToRect(ent.rect, r) == false {
     return
   }
+  
+  snap := collCalcRectSnap(ent.rect, r)
 
   switch s.shape {
   case .leftUpSlope:
