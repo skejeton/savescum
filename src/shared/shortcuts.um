@@ -19,13 +19,3 @@ fn console*(wm: ^windows::WindowManager) {
   }
 }
 
-fn scale*(v: ^real) {
-  if input::isPressed(.alt) && input::isJustPressed(.up) {
-    input::clear(.up)
-    v^ += 0.1
-  }
-  if input::isPressed(.alt) && input::isJustPressed(.down) {
-    input::clear(.down)
-    v^ -= 0.1
-  }
-}
