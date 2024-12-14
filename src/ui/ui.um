@@ -686,39 +686,6 @@ fn (ui: ^UI) buttonSpacer*() {
   el.size.y = ui.font.measure(" ").y+20
 }
 
-fn (ui: ^UI) button*(text: str, flags: uint = 0): bool {
-  ui.cellClip()
-  el := ui.pushEl()
-  ui.pushIdStr(text)
-  if flags & buttonFlagPushed > 0 {
-    ui.boxStyle(.buttonPushed)
-  } else {
-    ui.boxStyle(.button)
-  }
-
-  // @HACK: Hardcoded styling
-  el.interactive = true
-  el.layout = .row
-  el.padding = 10
-  el.cell.align = 0.5
-
-  ui.spring(1)
-  ui.label(text)
-  ui.spring(1)
-  
-
-  // @ROOT(DirectInput): Don't use `input` directly. 
-  pressed := 
-    input::isJustReleased(.mouse1) && 
-    ui.attention.hovered == el.id &&
-    ui.attention.focused == el.id
-
-  ui.popId()
-  ui.popEl()
-
-  return pressed
-}
-
 fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0): bool {
   el := ui.pushEl()
   ui.pushIdStr(name)
@@ -745,6 +712,15 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0): bool {
   ui.popEl()
 
   return pressed
+}
+
+fn (ui: ^UI) button*(text: str, flags: uint = 0): bool {
+  ui.cellAlign(0.5)
+  return ui.button2(text, |text| {
+    ui.spring(1)
+    ui.label(text)
+    ui.spring(1)
+  }, flags)
 }
 
 fn (ui: ^UI) window*(title: str, cb: fn(ui: ^UI), hidden: bool = false) {
