@@ -686,7 +686,7 @@ fn (ui: ^UI) buttonSpacer*() {
   el.size.y = ui.font.measure(" ").y+20
 }
 
-fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0): bool {
+fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0, padding: real = 5): bool {
   el := ui.pushEl()
   ui.pushIdStr(name)
   if flags & buttonFlagPushed > 0 {
@@ -698,7 +698,7 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0): bool {
   // @HACK: Hardcoded styling
   el.interactive = true
   el.layout = .row
-  el.padding = 5
+  el.padding = padding
 
   cb(ui)
 
@@ -720,7 +720,7 @@ fn (ui: ^UI) button*(text: str, flags: uint = 0): bool {
     ui.spring(1)
     ui.label(text)
     ui.spring(1)
-  }, flags)
+  }, flags, 10)
 }
 
 fn (ui: ^UI) window*(title: str, cb: fn(ui: ^UI), hidden: bool = false) {
