@@ -128,6 +128,7 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
   w.highlight = util::max(0, w.highlight-th::delta/1000.0)
 
   ui.cellRect(rect)
+  ui.cellPadding(5)
   ui.col(|it, w, rect, newRectPtr| {
     ui.drawCustom(|w, ui| {
       canvas::drawRectLines(color::alpha(0xFFFF00FF, w.highlight), dest, 4*ui.io.scale)
@@ -152,23 +153,25 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
       ui.cellJustify(1.0)
       ui.cellClip()
       ui.cellColor(0xFFFFFFFF)
+      ui.cellPadding(5)
       ui.row(|w| {
         ui.boxStyle(.titlebar)
         ui.spring(1.0)
         ui.label(w.title)
         ui.spring(1.0)
-      }).padding = 5
+      })
     })
 
     ui.cellClip()
     ui.cellStretch()
     ui.cellJustify(1)
+    ui.cellPadding(5)
     ui.row(|w| {
       ui.cellStretch()
       ui.cellJustify(1)
       ui.col(|w| {
         w.cb(ui)
-      }).padding = 5
+      })
     })
 
     // Resize handle
@@ -187,7 +190,7 @@ fn (it: ^WindowManager) displayWindow(w: ^Window, ui: ^ui::UI) {
       ui.endRoot()
     }
     ui.popId()
-  }).padding = 5
+  })
 
   w.rect = newRect
 

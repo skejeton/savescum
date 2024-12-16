@@ -213,6 +213,7 @@ fn (menu: ^MainMenu) update*() {
         ui.spring(0.8)
       })
     } else {
+      ui.cellPadding(20)
       ui.row(|menu| {
         ui.cellJustify(1.0)
         ui.col(|menu| {
@@ -230,7 +231,7 @@ fn (menu: ^MainMenu) update*() {
           }
           ui.spring(1.0)
         }, ui.io.screen.h)
-      }, 200).padding = 20
+      }, 200)
     }
   })
 }

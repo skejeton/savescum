@@ -70,6 +70,7 @@ type (
 
   Cell* = struct {
     kind:    CellKind
+    padding: real
     justify: real
     align:   real
     rect:    rect::Rect
@@ -88,7 +89,6 @@ type (
     size:        th::Vf2
     contentSize: th::Vf2
     cell:        Cell
-    padding:     real
 
     // Rendering info @TODO: Move to an interface instead.
     renderObject: themer::BoxRenderer
@@ -193,13 +193,13 @@ fn (ui: ^UI) layout1(node: ^El): th::Vf2 {
     }
   }
 
-  node.contentSize = size.addf(node.padding*2)
+  node.contentSize = size.addf(node.cell.padding*2)
 
   // Apply size overrides
   if node.size.x != 0 { size.x = node.size.x }
   if node.size.y != 0 { size.y = node.size.y }
 
-  node.size = size.addf(node.padding*2)
+  node.size = size.addf(node.cell.padding*2)
 
   if node.cell.kind == .rect {
     node.size.x = node.cell.rect.w
@@ -216,17 +216,17 @@ fn (ui: ^UI) layout2(node: ^El, pos: th::Vf2) {
     pos.x, pos.y = node.cell.rect.x, node.cell.rect.y
   }
 
-  pos.x += node.padding
-  pos.y += node.padding
+  pos.x += node.cell.padding
+  pos.y += node.cell.padding
     
   totalJustify := 0.0
   for i, child in node.children {
     totalJustify += child.cell.justify
     if child.cell.flags & cellStretched != 0 {
       if node.layout == .row {
-        child.size.y = node.size.y - node.padding * 2
+        child.size.y = node.size.y - node.cell.padding * 2
       } else if node.layout == .col {
-        child.size.x = node.size.x - node.padding * 2
+        child.size.x = node.size.x - node.cell.padding * 2
       }
     }
     if child.cell.flags & cellSameSize != 0 {
@@ -254,9 +254,9 @@ fn (ui: ^UI) layout2(node: ^El, pos: th::Vf2) {
 
     alignedPos := pos
     if node.layout == .row  {
-      alignedPos.y += (node.size.y - node.padding*2 - child.size.y) * node.cell.align
+      alignedPos.y += (node.size.y - node.cell.padding*2 - child.size.y) * node.cell.align
     } else if node.layout == .col {
-      alignedPos.x += (node.size.x - node.padding*2 - child.size.x) * node.cell.align
+      alignedPos.x += (node.size.x - node.cell.padding*2 - child.size.x) * node.cell.align
     }
 
     alignedPos = alignedPos.add(child.cell.scroll)
@@ -382,7 +382,7 @@ fn (ui: ^UI) render(el: ^El, depth: int, scissor: rect::Rect) {
 
   if el.cell.flags & cellClipped != 0 {
     depth++
-    r := el.cell.rect.shrink({el.padding*ui.io.scale, el.padding*ui.io.scale})
+    r := el.cell.rect.shrink({el.cell.padding*ui.io.scale, el.cell.padding*ui.io.scale})
     scissor = coll::rectIntersect(scissor, r)
     canvas::beginScissorRect(r)
   }
@@ -604,6 +604,10 @@ fn (ui: ^UI) cellPos*(pos: th::Vf2) {
   ui.cell.rect = {pos.x, pos.y, 0, 0}
 }
 
+fn (ui: ^UI) cellPadding*(p: real) {
+  ui.cell.padding = p
+}
+
 fn (ui: ^UI) cellRect*(r: rect::Rect) {
   ui.cell.kind = .rect
   ui.cell.rect = r
@@ -687,6 +691,7 @@ fn (ui: ^UI) buttonSpacer*() {
 }
 
 fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0, padding: real = 5): bool {
+  ui.cellPadding(padding)
   el := ui.pushEl()
   ui.pushIdStr(name)
   if flags & buttonFlagPushed > 0 {
@@ -698,7 +703,6 @@ fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0, padding: real
   // @HACK: Hardcoded styling
   el.interactive = true
   el.layout = .row
-  el.padding = padding
 
   cb(ui)
 

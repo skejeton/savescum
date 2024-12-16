@@ -459,20 +459,22 @@ fn putGrid(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
 
 fn (editor: ^Editor) putNotifications(ui: ^ui::UI) {
   ui.cellPos({0, 0})
+  ui.cellPadding(5)
   ui.col(|editor| {
     ns := notification::get()
 
     for i in ns {
       n := ns[len(ns^)-i-1]
+      ui.cellPadding(10)
       ui.row(|n, editor| {
         ui.boxStyle(.notification)
         // @MARK(UiResourceManagment)
         ui.img2(editor.resources.toolbarIcons, {24*int(n.info.icon), 144, 24, 24})
         ui.label(" ")
         ui.label(n.info.message)
-      }).padding = 10
+      })
     }
-  }).padding = 5
+  })
 }
 
 fn (editor: ^Editor) putEntityEditor(ui: ^ui::UI) {
@@ -649,6 +651,7 @@ fn (editor: ^Editor) putQuickAdd*(ui: ^ui::UI) {
 
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
   ui.cellJustify(1)
+  ui.cellPadding(5)
   ui.row(|editor| {
     if !editor.isPlaying {
       ui.boxStyle(.toolbar)
@@ -661,9 +664,10 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }
 
     windowBtnStub := fn (name: str, rect: rect::Rect) |ui| {
+      ui.cellPadding(5)
       ui.row(|rect| {
         ui.stub(rect.getDims())
-      }).padding = 5
+      })
     }
 
     windowBtnIf := fn (name: str, rect: rect::Rect, cond: bool) |windowBtn, windowBtnStub| {
@@ -737,7 +741,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
     windowBtn("Room", {48*2, 48*2, 48, 48})
     windowBtn("Settings", {96, 192, 48, 48})
-  }).padding = 5
+  })
 }
 
 fn (editor: ^Editor) putWindows(ui: ^ui::UI) {
