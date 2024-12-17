@@ -473,6 +473,19 @@ fn (ui: ^UI) endRoot*(): bool {
   return true
 }
 
+fn (ui: ^UI) addElV*(v: El): ^El {
+  el := new(El, v)
+  el.parent = ui.parents[len(ui.parents)-1]
+  el.cell = ui.cell
+  ui.cell = {}
+  if el.cell.color == 0 {
+    el.cell.color = el.parent.cell.color
+  }
+  el.parent.children = append(el.parent.children, el)
+  return el
+
+}
+
 fn (ui: ^UI) addEl*(): ^El {
   el := &El{
     parent: ui.parents[len(ui.parents)-1],
@@ -654,40 +667,45 @@ fn (ui: ^UI) drawCustom*(draw: fn (dest: rect::Rect)) {
 }
 
 fn (ui: ^UI) img*(img: image::Image) {
-  el := ui.addEl()
-  el.size = img.getDims()
-  el.renderObject = render::RenderImage{img}
+  ui.addElV({
+    size: img.getDims(),
+    renderObject: render::RenderImage{img}
+  })
 }
 
 fn (ui: ^UI) stub*(size: th::Vf2) {
-  el := ui.addEl()
-  el.size = size
+  ui.addElV({size: size})
 }
 
 fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
-  el := ui.addEl()
-  el.size = r.getDims()
-  el.renderObject = render::RenderImageCrop{img, r}
+  ui.addElV({
+    size: r.getDims(),
+    renderObject: render::RenderImageCrop{img, r}
+  })
 }
 
 fn (ui: ^UI) heading*(text: str) {
-  el := ui.addEl()
-  el.size = ui.font.measure(text).mulf(3)
-  el.renderObject = render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale*3, color: el.cell.color}
+  ui.addElV({
+    size: ui.font.measure(text).mulf(3),
+    renderObject: render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale*3, color: ui.lastEl().cell.color}
+  })
 }
 
 fn (ui: ^UI) label*(text: str) {
-  el := ui.addEl()
-  el.size = ui.font.measure(text)
-  el.renderObject = render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale, color: el.cell.color}
+  
+  ui.addElV({
+    size: ui.font.measure(text),
+    renderObject: render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale, color: ui.lastEl().cell.color}
+  })
 }
 
 fn (ui: ^UI) spring*(power: real)
 
 fn (ui: ^UI) buttonSpacer*() {
-  el := ui.addEl()
-  el.layout = .spacer
-  el.size.y = ui.font.measure(" ").y+20
+  ui.addElV({
+    layout: .spacer,
+    size: {0, ui.font.measure(" ").y+20}
+  })
 }
 
 fn (ui: ^UI) button2*(name: str, cb: fn(ui: ^UI), flags: uint = 0, padding: real = 5): bool {
@@ -740,10 +758,10 @@ fn (ui: ^UI) textEditSingle*(name: str, value: ^str): bool {
 }
 
 fn (ui: ^UI) spring*(power: real) {
-  el := ui.addEl()
-  el.layout = .spring
-  el.cell.kind = .justify
-  el.cell.justify = power
+  ui.addElV({
+    layout: .spring,
+    cell: {kind: .justify, justify: power}
+  })
 }
 
 fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: real = 0): ^El {
