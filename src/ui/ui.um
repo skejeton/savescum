@@ -758,10 +758,10 @@ fn (ui: ^UI) textEditSingle*(name: str, value: ^str): bool {
 }
 
 fn (ui: ^UI) spring*(power: real) {
-  ui.addElV({
-    layout: .spring,
-    cell: {kind: .justify, justify: power}
-  })
+  el := ui.addEl()
+  el.layout = .spring
+  el.cell.kind = .justify
+  el.cell.justify = power
 }
 
 fn (ui: ^UI) row*(cb: fn(ui: ^UI), width: real = 0): ^El {
