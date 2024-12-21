@@ -15,7 +15,7 @@ fn put*(ui: ^ui::UI, scrollbar: ^scrollbar::Scrollbar) {
     ui.cellStretch()
     ui.cellSameSize()
     if ui.button("⮝") {
-      scrollbar.scrolling -= 10
+      scrollbar.scrolling -= 20
     }
     ui.cellJustify(1)
     ui.cellStretch()
@@ -53,7 +53,7 @@ fn put*(ui: ^ui::UI, scrollbar: ^scrollbar::Scrollbar) {
     ui.cellStretch()
     ui.cellSameSize()
     if ui.button("⮟") {
-      scrollbar.scrolling += 10
+      scrollbar.scrolling += 20
     }
     ui.popId()
   })
