@@ -478,12 +478,12 @@ fn (ui: ^UI) addElV*(v: El): ^El {
   el.parent = ui.parents[len(ui.parents)-1]
   el.cell = ui.cell
   ui.cell = {}
+  ui.cell.color = 0x000000FF
   if el.cell.color == 0 {
     el.cell.color = el.parent.cell.color
   }
   el.parent.children = append(el.parent.children, el)
   return el
-
 }
 
 fn (ui: ^UI) addEl*(): ^El {
@@ -687,16 +687,14 @@ fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
 fn (ui: ^UI) heading*(text: str) {
   ui.addElV({
     size: ui.font.measure(text).mulf(3),
-    renderObject: render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale*3, color: ui.lastEl().cell.color}
+    renderObject: render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale*3, color: ui.cell.color}
   })
 }
 
 fn (ui: ^UI) label*(text: str) {
-  
-  ui.addElV({
-    size: ui.font.measure(text),
-    renderObject: render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale, color: ui.lastEl().cell.color}
-  })
+  el := ui.addEl()
+  el.size = ui.font.measure(text)
+  el.renderObject = render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale, color: el.cell.color}
 }
 
 fn (ui: ^UI) spring*(power: real)

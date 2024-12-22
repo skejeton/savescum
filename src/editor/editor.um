@@ -65,6 +65,30 @@ type (
     list:           []world_data::EntityDesc
   }
 
+  Action = interface {
+    do(editor: ^Editor)
+    undo(editor: ^Editor)
+  }
+
+  TilePlaceAction = struct {
+    at:    th::Vf2
+    layer: int
+    prev:  int
+    curr:  int
+  }
+
+  GroupedAction = struct {
+    action: Action
+    group:  uint
+  }
+
+  ActionBuf = struct {
+    actions: []GroupedAction
+    from:    int
+    to:      int
+    group:   uint
+  }
+
   Editor = struct {
     // Misc
     debugTimer:        timer::Timer
@@ -90,11 +114,82 @@ type (
     currentRoom:          str
     dirty:                bool
     entitySearch:         str
+    actionBuf:            ActionBuf
 
     // UI state
     ui: ^ui::UI
   }
 )
+
+fn (it: ^TilePlaceAction) do(editor: ^Editor) {
+  editor.world.setTile(it.layer, trunc(it.at.x), trunc(it.at.y), it.curr)
+}
+
+fn (it: ^TilePlaceAction) undo(editor: ^Editor) {
+  editor.world.setTile(it.layer, trunc(it.at.x), trunc(it.at.y), it.prev)
+}
+
+fn (it: ^ActionBuf) do(action: Action) {
+  it.actions = slice(it.actions, 0, it.to)
+  it.actions = append(it.actions, GroupedAction{action, it.group})
+  it.to++
+}
+
+fn (it: ^ActionBuf) commit() {
+  it.group++
+}
+
+fn (it: ^ActionBuf) undo() {
+  if it.to == 0 || len(it.actions) == 0 {
+    return
+  }
+
+  it.to--
+  group := it.actions[it.to].group
+
+  for it.to >= 0 && it.actions[it.to].group == group {
+    it.to--
+  }
+
+  it.to++
+}
+
+fn (it: ^ActionBuf) redo() {
+  if it.to >= len(it.actions) {
+    return
+  }
+
+  group := it.actions[it.to].group
+
+  for it.to < len(it.actions) && it.actions[it.to].group == group {
+    it.to++
+  }
+}
+
+fn (it: ^ActionBuf) flush(editor: ^Editor) {
+  diff := it.to-it.from
+
+  if diff > 0 {
+    for i := 0; i < diff; i++ {
+      it.actions[it.from+i].action.do(editor)
+    }
+  } else {
+    for i := 0; i < abs(diff); i++ {
+      it.actions[it.from-i-1].action.undo(editor)
+    }
+  }
+
+  it.from = it.to
+}
+
+fn (editor: ^Editor) setTile(pos: th::Vf2, layer: int, tile: int) {
+  prev := editor.world.getTile(layer, trunc(pos.x), trunc(pos.y))
+  if prev == tile {
+    return
+  }
+
+  editor.actionBuf.do(TilePlaceAction{pos, layer, prev, tile})
+}
 
 fn updateZoom(init: real, plus: real): th::Vf2 {
   zoom := util::clamp(init+(init*plus), 8, 128)
@@ -109,7 +204,6 @@ fn roomToPath(room: str): str {
 fn createEditorEntities(): EditorEntities {
   return EditorEntities{list: []world_data::EntityDesc{}, entitySelected: -1}
 }
-
 
 fn editorLoadRoom(editor: ^Editor, room: str): bool {
   dbg::logt("ed: loading world")
@@ -401,6 +495,7 @@ fn loadRoom(editor: ^Editor, room: str) {
 
 
 type GridInteraction = struct {
+  commit:  bool
   placed:  bool
   removed: bool
   pos:     th::Vf2
@@ -423,6 +518,9 @@ fn putGrid(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
       if input::isPressed(.mouse3) {
         ps.removed = true
         ps.pos = grid.toGrid(input::getMousePos()).floor()
+      }
+      if input::isJustReleased(.mouse1) || input::isJustReleased(.mouse3) {
+        ps.commit = true
       }
     }
 
@@ -742,6 +840,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
     windowBtn("Room", {48*2, 48*2, 48, 48})
     windowBtn("Settings", {96, 192, 48, 48})
+    windowBtn("Action Log", {96, 192, 48, 48})
   })
 }
 
@@ -756,6 +855,23 @@ fn (editor: ^Editor) putWindows(ui: ^ui::UI) {
         implvtbl::VTBLImpl(ui.vtbl).wm.reset()
       }
     }, true)
+
+    ui.window("Action Log", |editor| {
+      groups := map[int]struct{count: int; undone: bool}{}
+
+      for i, action in editor.actionBuf.actions {
+        group := &groups[action.group]
+        group.count++
+        group.undone = editor.actionBuf.to <= i
+      }
+
+      for group, info in groups {
+        // @TODO(Theming)
+        color := info.undone ? 0x777777FF : 0x000000FF
+        ui.cellColor(color)
+        ui.label(sprintf("%3d * Group %d", info.count, group))
+      }
+    })
 
     ui.window("Room", |editor| {
       ui.label("Room name: ")
@@ -1075,13 +1191,17 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
           tile := editor.tileset.index(editor.tileSelected)
           // @TODO: I don't understand the "2" offset here.
           if tile > -2 {
-            editor.world.setTile(editor.tilemapLayer, sx, sy, tile+2)
+            editor.setTile({sx, sy}, editor.tilemapLayer, tile+2)
           }
         }
 
         if interaction.removed {
           sx, sy := floor(interaction.pos.x), floor(interaction.pos.y)
-          editor.world.setTile(editor.tilemapLayer, sx, sy, 0)
+          editor.setTile({sx, sy}, editor.tilemapLayer, 0)
+        }
+
+        if interaction.commit {
+          editor.actionBuf.commit()
         }
 
         ui.drawCustom(|editor| {
@@ -1183,6 +1303,12 @@ fn (editor: ^Editor) handleShortcuts*() {
         doEntityAction(editor.ui, editor, .duplicate, idx)
       }
     }
+    if input::isPressedRepeatc('z') {
+      editor.actionBuf.undo()
+    }
+    if input::isPressedRepeatc('y') {
+      editor.actionBuf.redo()
+    }
   }
   if input::isJustPressed(.fn25) {
     std::assert(false, "The F25 key? What's that?")
@@ -1270,6 +1396,8 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
     editor.putUi(ui)
     uicb(ui)
   }, editor.showUiDebugInfo)
+
+  editor.actionBuf.flush(editor)
 
   for i, ev in editor.ui.events {
     if ev.el.boxStyle == .button {
