@@ -628,7 +628,8 @@ fn (editor: ^Editor) putQuickAdd*(ui: ^ui::UI) {
     "TeleTo":   {"tele_off",  {5*32, 5*32}},
     "Boulder":  {"boulder", {32, 64}},
     "Lever":    {"lever", {32, 32}},
-    "LeverS":   {"lever_s", {32, 32}}
+    "LeverS":   {"lever_s", {32, 32}},
+    "Comment":  {"Comment", {32, 32}}
   }
 
   ui.window("Quick Add", |editor, options| {
@@ -1192,7 +1193,7 @@ fn (editor: ^Editor) handleShortcuts*() {
   if input::isJustPressed(.fn5) {
     editorToggleGame(editor)
   }
-  if input::isJustPressed(.fn4) {
+  if !input::isPressed(.alt) && input::isJustPressed(.fn4) {
     editor.showUiDebugInfo = !editor.showUiDebugInfo
   }
   if input::isJustPressed(.fn3) {

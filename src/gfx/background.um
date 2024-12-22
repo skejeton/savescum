@@ -201,5 +201,5 @@ fn drawBg*(screen: rect::Rect, which: Background, time: real) {
 }
 
 fn draw*(screen: rect::Rect, time: real) {
-  drawBg(screen, .cube, time)
+  drawBg(screen, .jazz, time)
 }

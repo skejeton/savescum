@@ -775,6 +775,8 @@ fn drawEntityObject*(name: str, tags: ^TagSet, rect: rect::Rect, scale: real): b
   } else if tags.isSet("Comment") {
     defaultFont.draw(name, rect.getPos().addf(1*cameraScale), 0x000000FF, scale/2)
     defaultFont.draw(name, rect.getPos(), 0xFFFFFFFF, scale/2)
+  } else if tags.isSet("first_save") || tags.isSet("force_load") {
+    // NOTHING
   } else {
     return false
   }
@@ -837,7 +839,7 @@ fn loadStateToChar(state: ChumState) {
   oldVisRect := pal.visRect
   pal = state
   pal.visRect = oldVisRect
-  pal.loadTime = 0.5
+  pal.loadTime = 0.25
   if insideStatic {
     pal.toggleActiveStatic = old.toggleActiveStatic
   }
@@ -999,6 +1001,7 @@ fn update*() {
   if !lockInput {
     if !noSaveLoad {
       if controls.isJustPressed(.load) || input::gamepad().isJustPressed(.lb) {
+        
         if len(saves) > 0 {
           for i := len(saves)-1; i >= 0; i-- {
             if !entCheckCollision(&saves[i].ent) {
@@ -1008,6 +1011,7 @@ fn update*() {
             }
           }
         }
+
       }
 
       if controls.isJustPressed(.save) || input::gamepad().isJustPressed(.rb) {
@@ -1061,6 +1065,30 @@ fn update*() {
           }
         }
       }
+      
+      if ent.tags.isSet("force_load") {
+        if coll::rectToRect(ent.rect, pal.ent.rect) {
+          if len(saves) > 0 {
+            for i := len(saves)-1; i >= 0; i-- {
+              if !entCheckCollision(&saves[i].ent) {
+                loadStateToChar(saves[i])
+                saves = delete(saves, i)
+                // FIXME: This is a hack
+                return
+              }
+            }
+          }
+        }
+      }
+
+      if ent.tags.isSet("first_save") {
+        if coll::rectToRect(ent.rect, pal.ent.rect) {
+          if len(saves) == 0 {
+            saves = append(saves, pal)
+          }
+        }
+      }
+
       if ent.tags.isSet("water") {
         if pal.toggleActiveWater {
           ent.rect.y = ent.originalRect.y
