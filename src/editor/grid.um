@@ -4,7 +4,7 @@ import (
   "canvas.um"
 )
 
-// NODE: by default each grid cell is exactly 1 unit, you can fix that by simply scaling it
+// NOTE: by default each grid cell is exactly 1 unit, you can fix that by simply scaling it
 type Grid* = struct {
   bb: rect::Rect
   o:  th::Vf2
