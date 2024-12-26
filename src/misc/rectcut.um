@@ -9,11 +9,6 @@ type Side = enum {
   right
 }
 
-fn left*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect)
-fn right*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect)
-fn top*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect)
-fn bottom*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect)
-
 fn right*(rect: rect::Rect, amount: real): (rect::Rect, rect::Rect) {
   return {x: rect.x, y: rect.y, w: rect.w-amount, h: rect.h},
          {x: rect.x+amount, y: rect.y, w: rect.w-amount, h: rect.h}
