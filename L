@@ -40,17 +40,17 @@ PROF=""
 TESTTYPE="any"
 NARG=0
 PROG_NAME=$0
-TOPHAT=./tophat
+TOPHAT=./umbox/tophat/tophat
 COMPILER=no_compiler_lol
 
 # Probe if we are running WSL.
 if grep -qi microsoft /proc/version; then
-  TOPHAT=./tophat.exe
+  TOPHAT=./umbox/tophat/tophat.exe
 fi
 
 # Probe if we are running some bash emulator on Windows
 if [[ "`uname`" == "WindowsNT" ]]; then
-  TOPHAT=./tophat.exe
+  TOPHAT=./umbox/tophat/tophat.exe
 fi
 
 if [ -x "$(command -v gcc)" ]; then
