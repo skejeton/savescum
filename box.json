@@ -18,6 +18,8 @@
 	],
 	"source": "https://github.com/skejeton/savescum",
 	"homepage": "https://savescum.lol",
-	"run_posix": "./umbox/tophat/tophat",
-	"run_windows": ".\\umbox\\tophat\\tophat"
+	"run": {
+		"posix": "./umbox/tophat/tophat",
+		"windows": ".\\umbox\\tophat\\tophat"
+	}
 }
