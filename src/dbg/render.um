@@ -46,11 +46,16 @@ fn (wl: ^WrapLayout) newLine() {
 }
 
 fn valueToDisplay*(value: any): DisplayToLayout {
-  text := sprintf("%v", value)
-  if v := ^str(value); v != null {
-    text = v^
+  text := ""
+  switch v := type(value) {
+    case uint:   text = sprintf("x%llX", v)
+    case uint8:  text = sprintf("x%hhX", v)
+    case uint16: text = sprintf("x%hX", v)
+    case uint32: text = sprintf("x%X", v)
+    case str:    text = sprintf("%s", v)
+    default:     text = sprintf("%v", value)
   }
-
+  
   color := 0xFF99FFFF
 
   switch v := type(value) {

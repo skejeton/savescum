@@ -1430,6 +1430,7 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
         { "Plain", global::plainBiscuit },
         { "Playthrough (ms)", editor.debugTimer.duration() },
         { "Playthrough Started", editor.debugTimer.going },
+        { "Test", uint(0xabcdef) },
         { "Memory usage", strings::formatBytes(memusage()) }
       }
     }, editor.dimDebugInfo)
