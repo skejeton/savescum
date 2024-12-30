@@ -14,11 +14,19 @@ fn mk*(): Timer {
 }
 
 fn (timer: ^Timer) start*() {
+  if timer.going {
+    exit(1, "Timer is already going")
+  }
+
   timer.going = true
   timer.from = th::time
 }
 
 fn (timer: ^Timer) stop*() {
+  if !timer.going {
+    exit(1, "Timer is already stopped")
+  }
+
   timer.going = false
   timer.to = th::time
 }
