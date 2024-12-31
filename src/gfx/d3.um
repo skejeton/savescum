@@ -13,7 +13,7 @@ type Camera* = struct {
 
 fn mkCamera*(width, height: real): Camera {
   return {
-    pos: {0, 0, -2},
+    pos: {0, 0, 0},
     near: height,
     width: width,
     height: height

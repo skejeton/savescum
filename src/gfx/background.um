@@ -159,6 +159,7 @@ fn drawCubeGeneric*(screen: rect::Rect, color: uint32, scale: real, rotate: [3]r
   cube := d3shapes::mkCube()
   cubeEdges := d3shapes::mkCubeEdges()
   camera := d3::mkCamera(screen.w, screen.h)
+  camera.pos[2] = -2
 
   for i, point^ in cube {
     point^ = d3::rotatePoint(point.mul(scale), rotate).add({0, 0, 6})
