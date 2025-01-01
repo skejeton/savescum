@@ -839,7 +839,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 
     windowBtn("Room", {48*2, 48*2, 48, 48})
     windowBtn("Settings", {96, 192, 48, 48})
-    windowBtn("Action Log", {96, 192, 48, 48})
+    windowBtn("Action Log", {144, 192, 48, 48})
   })
 }
 

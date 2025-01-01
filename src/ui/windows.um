@@ -47,7 +47,7 @@ fn (it: ^WindowManager) allocateRect(): rect::Rect {
     pos = it.lastWindow.rect.getPos().addf(20)
   }
 
-  return {pos.x, pos.y, 300, 300}
+  return {pos.x, pos.y, 256, 256}
 }
 
 fn (it: ^WindowManager) touchWindow(title: str) {
