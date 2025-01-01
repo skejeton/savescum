@@ -1433,7 +1433,7 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
         { "Test", uint(0xabcdef) },
         { "Memory usage", strings::formatBytes(memusage()) }
       }
-    }, editor.dimDebugInfo)
+    }, editor.dimDebugInfo, editor.ui.io.scale)
   }
 }
 

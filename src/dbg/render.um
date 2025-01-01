@@ -76,7 +76,7 @@ fn valueToDisplay*(value: any): DisplayToLayout {
   return {text: text, color: color}
 }
 
-fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool): bool {
+fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool, scale: real): bool {
   displaysToLayout := []DisplayToLayout{}
 
   and := dim ? 0xFFFFFF00 : 0xFFFFFFFF;
@@ -105,7 +105,7 @@ fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool): bo
     if display.newLine {
       column = 0
     } else {
-      size := font.measure(display.text)
+      size := font.measure(display.text).mulf(scale)
       alignment[column] = size.x > alignment[column] ? size.x : alignment[column]
       column++
     }
@@ -119,7 +119,7 @@ fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool): bo
     } else {
       text := display.text
       color := display.color
-      size := font.measure(text)
+      size := font.measure(text).mulf(scale)
       size.x = alignment[column]+10
 
       textRect := wl.pushNode(size)
@@ -132,7 +132,7 @@ fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool): bo
   canvas::drawRect(0x00000066&and, wl.box)
 
   for _, command in renderCommands {
-    font.draw(command.text, command.position, command.color)
+    font.draw(command.text, command.position, command.color, scale)
   }
 
   return coll::vf2ToRect(input::getMousePos(), wl.box)
