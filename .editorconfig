@@ -10,6 +10,6 @@ end_of_line = crlf
 [Makefile]
 indent_style = tab
 
-[*.{um,c}]
+[*.{um,c,h,cxx,cpp,hxx,hpp,inl}]
 indent_style = space
 indent_size = 2
