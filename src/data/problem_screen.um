@@ -19,13 +19,13 @@ fn restart() {
 }
 
 fn pushText(text: str, color: uint32 = th::white) {
-  font.draw(text, {0, y}, color, 1*window::getDpiScaleFactor())
-  y += (font.measure(" ").y + 10.0)*window::getDpiScaleFactor()
+  font.draw(text, {0, y}, color, 1)
+  y += font.measure(" ").y + 10.0*window::getDpiScaleFactor()
 }
 
 fn init() {
   // Try to load a better font, the fallback will be used otherwise.
-  f, err := font::load("data/font/FairfaxHD.ttf", 16)
+  f, err := font::load("data/font/FairfaxHD.ttf", 16*window::getDpiScaleFactor())
 
   if err.code != 0 {
     f = canvas::pixelFont
@@ -43,7 +43,7 @@ fn setup*(loader: ^resources::ResourceLoader) {
     }
 
     restart()
-    pushText("The program couldn't load some resources:")
+    pushText("Resources failed to load:")
     for i, error in loader.errors {
       pushText(" "+error, th::red)
     }
