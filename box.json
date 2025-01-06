@@ -20,6 +20,6 @@
 	"homepage": "https://savescum.lol",
 	"run": {
 		"posix": "./umbox/tophat/tophat",
-		"windows": ".\\umbox\\tophat\\tophat"
+		"windows": ".\\umbox\\tophat\\tophat -dpiaware"
 	}
 }

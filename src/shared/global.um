@@ -1,7 +1,11 @@
 import "rect.um"
 
+const (
+  version*: str = "7.5%"
+)
+
 var (
-  version*:         str = "7.5%"
+  // @TODO: Don't use a global for it, ideally only store constants here
   screen*:          rect::Rect
   plainBiscuit*:    bool = false // removes all unnecessary visual elements
 )
