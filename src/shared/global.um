@@ -1,7 +1,7 @@
 import "rect.um"
 
 const (
-  version*: str = "7.5%"
+  version* = "7.5%"
 )
 
 var (

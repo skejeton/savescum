@@ -4,9 +4,9 @@ import (
   "../ui/windows.um"
 )
 
-// Enables: alt+enter: Enter/Leave fullscreen
+// Enables: alt+enter, f11: Enter/Leave fullscreen
 fn fullscreen*() {
-	if input::isPressed(.alt) && input::isJustPressed(.enter) {
+	if (input::isPressed(.alt) && input::isJustPressed(.enter)) || input::isPressed(.fn11) {
     input::clear(.enter)
     window::setFullscreen(!window::isFullscreen())
 	}
