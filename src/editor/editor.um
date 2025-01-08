@@ -508,15 +508,15 @@ fn putGrid(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
 
     if ui.isActive() {
       if input::isPressed(.mouse2) || input::isPressed(.space) {
-        grid::gridPan(grid, input::getMouseDelta())
+        grid.pan(input::getMouseDelta())
       }
       if input::isPressed(.mouse1) {
         ps.placed = true
-        ps.pos = grid.toGrid(input::getMousePos()).floor()
+        ps.pos = grid.toGridCell(input::getMousePos())
       }
       if input::isPressed(.mouse3) {
         ps.removed = true
-        ps.pos = grid.toGrid(input::getMousePos()).floor()
+        ps.pos = grid.toGridCell(input::getMousePos())
       }
       if input::isJustReleased(.mouse1) || input::isJustReleased(.mouse3) {
         ps.commit = true
@@ -527,7 +527,7 @@ fn putGrid(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
     if ui.isHovered() {
       hovered = true
       wheel := input::getMouseScroll().y
-      grid::gridZoomInto(grid, updateZoom(grid.s.x, wheel/10.0), input::getMousePos())
+      grid.zoomInto(updateZoom(grid.s.x, wheel/10.0), input::getMousePos())
     }
 
     ui.drawCustom(|ui, hovered, grid| {
@@ -536,7 +536,7 @@ fn putGrid(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
       grid.o = dest.getDims().divf(2)
       grid.draw(0xFFFFFF11, 1)
       if hovered {
-        gridPos := grid.toGrid(input::getMousePos()).floor()
+        gridPos := grid.toGridCell(input::getMousePos())
         screenPos1 := grid.toScreen(gridPos)
         screenPos2 := grid.toScreen(gridPos.add({1, 1}))
         canvas::drawRect(0xFFFFFF22, {screenPos1.x, screenPos1.y, screenPos2.x-screenPos1.x, screenPos2.y-screenPos1.y})
@@ -1147,7 +1147,7 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
         if hovered {
           // @HACK: This should be done in UI event interception.
           wheel := input::getMouseScroll().y
-          grid::gridZoomInto(&editor.tilemapGrid, updateZoom(editor.tilemapGrid.s.x, wheel/10.0), input::getMousePos())
+          editor.tilemapGrid.zoomInto(updateZoom(editor.tilemapGrid.s.x, wheel/10.0), input::getMousePos())
         }
 
         ui.popId()
