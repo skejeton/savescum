@@ -49,3 +49,12 @@ fn setup*(loader: ^resources::ResourceLoader) {
     }
   })
 }
+
+fn setupOnError*(loader: ^resources::ResourceLoader): bool {
+  if len(loader.errors) == 0 {
+    return false
+  }
+
+  setup(loader)
+  return true
+}

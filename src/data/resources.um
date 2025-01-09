@@ -15,10 +15,6 @@ fn mk*(): ResourceLoader {
   return ResourceLoader{errors: []str{}}
 }
 
-fn (loader: ^ResourceLoader) hasErrors*(): bool {
-  return len(loader.errors) > 0
-}
-
 fn (loader: ^ResourceLoader) error*(path, why: str) {
   loader.errors = append(loader.errors, sprintf("Error loading %s: %s", path, why))
 }

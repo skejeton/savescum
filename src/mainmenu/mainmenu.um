@@ -114,9 +114,7 @@ fn (menu: ^MainMenu) setupEditor*() {
   menu.callbacks.frameCb = |editor| { editor.update(uicb) }
   menu.callbacks.destroyCb = |editor| { editor.destroy() }
 
-  if menu.rl.hasErrors() {
-    problem_screen::setup(menu.rl)
-  }
+  problem_screen::setupOnError(menu.rl)
 }
 
 fn (menu: ^MainMenu) showExit(ui: ^ui::UI) {
