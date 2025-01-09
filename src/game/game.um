@@ -80,7 +80,6 @@ fn (t: ^TagSet) isSet*(tag: str): bool {
 }
 
 fn initTagSetFromString*(s: str): TagSet {
-
   tagSet := TagSet{map[str]Tag{}}
 
   accum := ""
@@ -664,15 +663,15 @@ fn setup*() {
 
 fn init*(rl: ^resources::ResourceLoader) {
   controls = controls::mk()
-  bgAudio = resources::loadAudio(rl, "data/audio/soundtrack/scene1.ogg")
-  palStep = resources::loadAudio(rl, "data/audio/sfx/pal_walk.ogg")
-  palJump = resources::loadAudio(rl, "data/audio/sfx/pal_jump.ogg")
-  palLand = resources::loadAudio(rl, "data/audio/sfx/pal_land.ogg")
+  bgAudio = rl.loadAudio("data/audio/soundtrack/scene1.ogg")
+  palStep = rl.loadAudio("data/audio/sfx/pal_walk.ogg")
+  palJump = rl.loadAudio("data/audio/sfx/pal_jump.ogg")
+  palLand = rl.loadAudio("data/audio/sfx/pal_land.ogg")
 
   // bgAudio.setLooping(true)
-  defaultFont = resources::loadFont(rl, "data/font/FairfaxHD.ttf", 24*2, .linear)
-  imgObj = resources::loadImage(rl, "data/img/obj_interactive.png", .linear)
-  imgChum = resources::loadImage(rl, "data/img/chr_chum.png", .linear)
+  defaultFont = rl.loadFont("data/font/FairfaxHD.ttf", 24*2, .linear)
+  imgObj = rl.loadImage("data/img/obj_interactive.png", .linear)
+  imgChum = rl.loadImage("data/img/chr_chum.png", .linear)
 }
 
 fn updateEntities() {

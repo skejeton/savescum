@@ -32,9 +32,9 @@ var (
 )
 
 fn init*(rl: ^resources::ResourceLoader) {
-  imgClouds = resources::loadImage(rl, "data/img/bg_sky.png")
-  imgRocks = resources::loadImage(rl, "data/img/bg_pit.png")
-  imgFadedLine = resources::loadImage(rl, "data/img/fadedline.png")
+  imgClouds = rl.loadImage("data/img/bg_sky.png")
+  imgRocks = rl.loadImage("data/img/bg_pit.png")
+  imgFadedLine = rl.loadImage("data/img/fadedline.png")
 
   width = imgClouds.getDims().x
 }

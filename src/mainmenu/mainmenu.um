@@ -90,7 +90,7 @@ type MainMenu* = struct {
 }
 
 fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^MainMenu {
-  return new(MainMenu, {ui: ui, tileset: resources::loadImage(rl, "data/img/ts_sky.png", .linear), rl: rl})
+  return new(MainMenu, {ui: ui, tileset: rl.loadImage("data/img/ts_sky.png", .linear), rl: rl})
 }
 
 fn setup*() {

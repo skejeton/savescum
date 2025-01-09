@@ -19,11 +19,11 @@ fn (loader: ^ResourceLoader) hasErrors*(): bool {
   return len(loader.errors) > 0
 }
 
-fn loadingError*(loader: ^ResourceLoader, path, why: str) {
+fn (loader: ^ResourceLoader) error*(path, why: str) {
   loader.errors = append(loader.errors, sprintf("Error loading %s: %s", path, why))
 }
 
-fn loadImage*(loader: ^ResourceLoader, path: str, filter: image::Filter = .linear): image::Image {
+fn (loader: ^ResourceLoader) loadImage*(path: str, filter: image::Filter = .linear): image::Image {
   theImage, err := image::load(path)
 
   if i := ^image::Image(loader.cache[path]); i != null {
@@ -31,7 +31,7 @@ fn loadImage*(loader: ^ResourceLoader, path: str, filter: image::Filter = .linea
   }
   
   if err.code != 0 {
-    loadingError(loader, path, err.msg)
+    loader.error(path, err.msg)
   } else {
     theImage.setfilter(filter)
   }
@@ -40,7 +40,7 @@ fn loadImage*(loader: ^ResourceLoader, path: str, filter: image::Filter = .linea
   return theImage
 }
 
-fn loadAudio*(loader: ^ResourceLoader, path: str): audio::Sound {
+fn (loader: ^ResourceLoader) loadAudio*(path: str): audio::Sound {
   theAudio, err := audio::load(path)
 
   if a := ^audio::Sound(loader.cache[path]); a != null {
@@ -48,7 +48,7 @@ fn loadAudio*(loader: ^ResourceLoader, path: str): audio::Sound {
   }
   
   if err.code != 0 {
-    loadingError(loader, path, err.msg)
+    loader.error(path, err.msg)
   }
 
   loader.cache[path] = theAudio
@@ -56,7 +56,7 @@ fn loadAudio*(loader: ^ResourceLoader, path: str): audio::Sound {
 }
 
 
-fn loadFont*(loader: ^ResourceLoader, path: str, size: real, filter: image::Filter): font::Font {
+fn (loader: ^ResourceLoader) loadFont*(path: str, size: real, filter: image::Filter): font::Font {
   theFont, err := font::load(path, size, filter)
   
   if f := ^font::Font(loader.cache[path]); f != null {
@@ -64,7 +64,7 @@ fn loadFont*(loader: ^ResourceLoader, path: str, size: real, filter: image::Filt
   }
 
   if err.code != 0 {
-    loadingError(loader, path, err.msg)
+    loader.error(path, err.msg)
   }
 
   loader.cache[path] = theFont

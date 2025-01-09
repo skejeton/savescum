@@ -1344,11 +1344,11 @@ fn setup*() {
 fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^Editor {
   // @TODO: Since we update DPI, we need to also update the resources.
   resources := EditorResources {
-    tilesetImage: resources::loadImage(rl, "data/img/ts_sky.png", .linear),
-    toolbarIcons: resources::loadImage(rl, "data/img/ui/1_5x/icons.png", .linear),
-    superHotFire: resources::loadImage(rl, "data/img/SUPER HOT FIRE WTF.png", .linear),
-    pressFx:      resources::loadAudio(rl, "data/audio/sfx/press.ogg"),
-    releaseFx:    resources::loadAudio(rl, "data/audio/sfx/release.ogg"),
+    tilesetImage: rl.loadImage("data/img/ts_sky.png", .linear),
+    toolbarIcons: rl.loadImage("data/img/ui/1_5x/icons.png", .linear),
+    superHotFire: rl.loadImage("data/img/SUPER HOT FIRE WTF.png", .linear),
+    pressFx:      rl.loadAudio("data/audio/sfx/press.ogg"),
+    releaseFx:    rl.loadAudio("data/audio/sfx/release.ogg"),
     mainFont:     ui.font
   }
 

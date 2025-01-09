@@ -41,9 +41,9 @@ fn init*(cfg: Config) {
   rl := new(resources::ResourceLoader, resources::mk())
 
   ui := setup_ui::setup({
-    mainFont:   resources::loadFont(rl, "data/font/FairfaxHD.ttf", 24, .linear),
-    bevelImage: resources::loadImage(rl, "data/img/ui/1_5x/base.png", .linear),
-    glow:       resources::loadImage(rl, "data/img/ui/1_0x/glow.png", .linear)
+    mainFont:   rl.loadFont("data/font/FairfaxHD.ttf", 24, .linear),
+    bevelImage: rl.loadImage("data/img/ui/1_5x/base.png", .linear),
+    glow:       rl.loadImage("data/img/ui/1_0x/glow.png", .linear)
   })
 
   frameCb := signal::Callback{exit(1, "Invalid frame codepath")}
@@ -67,7 +67,7 @@ fn init*(cfg: Config) {
   case .game:
     // TODO: Make the initialization less hacky.
     game::setup()
-    tileset := atlas::mk(resources::loadImage(rl, "data/img/ts_sky.png", .linear), {4, 9})
+    tileset := atlas::mk(rl.loadImage("data/img/ts_sky.png", .linear), {4, 9})
     world := world::fromTileset(tileset)
     worldData := world_data::load(world, util::readFileStr("data/spiel/sc_wip.csv").item0, false)
     game::start(worldData)
