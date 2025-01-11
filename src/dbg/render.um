@@ -60,17 +60,8 @@ fn valueToDisplay*(value: any): DisplayToLayout {
 
   switch v := type(value) {
     case bool:   color = v ? 0x99FF99FF : 0xFF9999FF
-    case int:    color = 0x9999FFFF
-    case int8:   color = 0x9999FFFF
-    case int16:  color = 0x9999FFFF
-    case int32:  color = 0x9999FFFF
-    case uint:   color = 0x9999FFFF
-    case uint8:  color = 0x9999FFFF
-    case uint16: color = 0x9999FFFF
-    case uint32: color = 0x9999FFFF
-    case real32: color = 0x9999FFFF
-    case real:   color = 0x9999FFFF
     case str:    color = 0xFFFF99FF
+    default:     color = 0x9999FFFF
   }
 
   return {text: text, color: color}
@@ -79,7 +70,7 @@ fn valueToDisplay*(value: any): DisplayToLayout {
 fn renderDebugInfo*(font: font::Font, debugInfo: info::DebugInfo, dim: bool, scale: real): bool {
   displaysToLayout := []DisplayToLayout{}
 
-  and := dim ? 0xFFFFFF00 : 0xFFFFFFFF;
+  and := dim ? 0xFFFFFF22 : 0xFFFFFFFF;
 
   for _, display in debugInfo.displays {
     val := valueToDisplay(display.value)
