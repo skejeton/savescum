@@ -54,7 +54,7 @@ Create test
 -----------
 
 | Create a folder within ``test/`` directory.
-| Create a ``main.um`` in the folder you just made.
+| Create a ``tmain.um`` in the folder you just made.
 | Write code.
 
 Loading Prefix
