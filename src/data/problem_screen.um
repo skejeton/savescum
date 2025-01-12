@@ -19,7 +19,7 @@ fn restart() {
 }
 
 fn pushText(text: str, color: uint32 = th::white) {
-  font.draw(text, {0, y}, color, 1)
+  font.draw(text, scroll.add({0, y}), color, 1)
   y += font.measure(" ").y + 10.0*window::getDpiScaleFactor()
 }
 
