@@ -748,9 +748,8 @@ fn (editor: ^Editor) putQuickAdd*(ui: ^ui::UI) {
 }
 
 fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
-  ui.cellJustify(1)
   ui.cellPadding(5)
-  ui.row(|editor| {
+  ui.col(|editor| {
     if !editor.isPlaying {
       ui.boxStyle(.toolbar)
     }
@@ -835,6 +834,7 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     if ui.button("> <") {
       editor.zoomToCenter()
     }
+
     ui.spring(1)
 
     windowBtn("Room", {48*2, 48*2, 48, 48})
@@ -1174,65 +1174,79 @@ fn (editor: ^Editor) putWorldEntities(ui: ^ui::UI) {
 fn (editor: ^Editor) putUi(ui: ^ui::UI) {
   ui.col(|editor| {
     ui.cellJustify(1)
-    if !editor.isPlaying {
-      ui.row(|editor| {
-        ui.pushIdStr("Tilemap Editor")
-
-        ui.cellStretch()
-        ui.cellJustify(1)
-        interaction := putGrid(&editor.tilemapGrid, ui)
-
-        editor.putWorldEntities(ui)
-
-        // @TODO: Deduplicate
-        if interaction.placed {
-          sx, sy := floor(interaction.pos.x), floor(interaction.pos.y)
-          tile := editor.tileset.index(editor.tileSelected)
-          // @TODO: I don't understand the "2" offset here.
-          if tile > -2 {
-            editor.setTile({sx, sy}, editor.tilemapLayer, tile+2)
-          }
-        }
-
-        if interaction.removed {
-          sx, sy := floor(interaction.pos.x), floor(interaction.pos.y)
-          editor.setTile({sx, sy}, editor.tilemapLayer, 0)
-        }
-
-        if interaction.commit {
-          editor.actionBuf.commit()
-        }
-
-        ui.drawCustom(|editor| {
-          WorldEditCmd{
-            getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers),
-            dest,
-            editor.tilemapGrid,
-            &editor.world
-          }.draw({})
-
-          // Draw the bounding box
-          r := editor.world.getBoundingBox()
-          p1 := editor.tilemapGrid.toScreen(r.getPos())
-          p2 := editor.tilemapGrid.toScreen(r.getDims().add(r.getPos()))
-          canvas::drawRectLines(0xAAAAFF44, {p1.x, p1.y, p2.x-p1.x, p2.y-p1.y}, 2)
-        })
-
-        ui.popId()
-      }, ui.io.screen.w)
-    } else {
-      ui.row({
-        ui.pushIdStr("Gameplay")
-        ui.drawCustom({
-          game::update()
-          GameCmd{}.draw({})
-        })
-        ui.popId()
-      })
-    }
     ui.row(|editor| {
-      editor.putToolbar(ui)
+      if !editor.isPlaying {
+        ui.cellStretch()
+        ui.row(|editor| {
+          ui.pushIdStr("Tilemap Editor")
+
+          ui.cellStretch()
+          ui.cellJustify(1)
+          interaction := putGrid(&editor.tilemapGrid, ui)
+
+          editor.putWorldEntities(ui)
+
+          // @TODO: Deduplicate
+          if interaction.placed {
+            sx, sy := floor(interaction.pos.x), floor(interaction.pos.y)
+            tile := editor.tileset.index(editor.tileSelected)
+            // @TODO: I don't understand the "2" offset here.
+            if tile > -2 {
+              editor.setTile({sx, sy}, editor.tilemapLayer, tile+2)
+            }
+          }
+
+          if interaction.removed {
+            sx, sy := floor(interaction.pos.x), floor(interaction.pos.y)
+            editor.setTile({sx, sy}, editor.tilemapLayer, 0)
+          }
+
+          if interaction.commit {
+            editor.actionBuf.commit()
+          }
+
+          ui.drawCustom(|editor| {
+            WorldEditCmd{
+              getShownLayersBitmap(editor.tilemapLayer, editor.tilemapShowAllLayers),
+              dest,
+              editor.tilemapGrid,
+              &editor.world
+            }.draw({})
+
+            // Draw the bounding box
+            r := editor.world.getBoundingBox()
+            p1 := editor.tilemapGrid.toScreen(r.getPos())
+            p2 := editor.tilemapGrid.toScreen(r.getDims().add(r.getPos()))
+            canvas::drawRectLines(0xAAAAFF44, {p1.x, p1.y, p2.x-p1.x, p2.y-p1.y}, 2)
+          })
+
+          ui.popId()
+          ui.cellStretch()
+          editor.putToolbar(ui)
+
+        }, ui.io.screen.w)
+
+      } else {
+        ui.row({
+          ui.pushIdStr("Gameplay")
+          ui.drawCustom({
+            game::update()
+            GameCmd{}.draw({})
+          })
+          ui.popId()
+        })
+      }
     }, ui.io.screen.w)
+    ui.cellStretch()
+    ui.cellPadding(3)
+    ui.row(|editor| {
+      ui.boxStyle(.toolbar)
+      ui.label("Status here | ")
+      if editor.dirty {
+        ui.cellColor(0xFF0000FF)
+        ui.label("Yo, save it")
+      }
+    })
   }, ui.io.screen.h)
 
   editor.putWindows(ui)
