@@ -1177,6 +1177,7 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
     ui.row(|editor| {
       if !editor.isPlaying {
         ui.cellStretch()
+        ui.cellJustify(1)
         ui.row(|editor| {
           ui.pushIdStr("Tilemap Editor")
 
@@ -1221,11 +1222,7 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
           })
 
           ui.popId()
-          ui.cellStretch()
-          editor.putToolbar(ui)
-
-        }, ui.io.screen.w)
-
+        })
       } else {
         ui.row({
           ui.pushIdStr("Gameplay")
@@ -1236,6 +1233,8 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
           ui.popId()
         })
       }
+      ui.cellStretch()
+      editor.putToolbar(ui)
     }, ui.io.screen.w)
     ui.cellStretch()
     ui.cellPadding(3)
