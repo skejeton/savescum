@@ -1224,6 +1224,8 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
           ui.popId()
         })
       } else {
+        ui.cellStretch()
+        ui.cellJustify(1)
         ui.row({
           ui.pushIdStr("Gameplay")
           ui.drawCustom({
