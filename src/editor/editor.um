@@ -1242,7 +1242,12 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
     ui.cellPadding(3)
     ui.row(|editor| {
       ui.boxStyle(.toolbar)
-      ui.label("Status here | ")
+      if payload_trigger::aprilFools() {
+        ui.label(sprintf("SPF: %g | ", 1/fps::getFps()))
+      } else {
+        ui.label(sprintf("FPS: %g | ", fps::getFps()))
+      }
+      ui.label(sprintf("MEM: %s | ", strings::formatBytes(memusage())))
       if editor.dirty {
         ui.cellColor(0xFF0000FF)
         ui.label("Yo, save it")
@@ -1427,26 +1432,17 @@ fn (editor: ^Editor) update*(uicb: fn(ui: ^ui::UI)) {
     }
   }
 
-  fpsNode := debug_info::Display{ "FPS", fps::getFps() }
-  if payload_trigger::aprilFools() {
-    fpsNode = debug_info::Display{ "SPF", 1/fps::getFps() }
-  }
-
   if editor.showDebugInfo {
     editor.dimDebugInfo = render_debug_info::renderDebugInfo(editor.resources.mainFont, {
       displays: {
-        fpsNode,
         { "TPS", 1000.0/game::updateStepMs  },
         { "Room", editor.currentRoom },
         { "Frameskip", trunc(game::frameSkips) },
-        { "Dirty?", editor.dirty },
         { "Version", global::version },
         { "Scale", editor.tilemapGrid.s },
         { "Plain", global::plainBiscuit },
         { "Playthrough (ms)", editor.debugTimer.duration() },
-        { "Playthrough Started", editor.debugTimer.going },
-        { "Test", uint(0xabcdef) },
-        { "Memory usage", strings::formatBytes(memusage()) }
+        { "Playthrough Started", editor.debugTimer.going }
       }
     }, editor.dimDebugInfo, editor.ui.io.scale)
   }
