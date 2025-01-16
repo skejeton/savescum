@@ -29,7 +29,6 @@ import (
   "../game/game.um"
   "../misc/immcursor.um"
   "../shared/payload_trigger.um"
-  debug_info = "../dbg/info.um"
   render_debug_info = "../dbg/render.um"
   "../gfx/drawcmd.um"
   "grid.um"
