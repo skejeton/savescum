@@ -125,6 +125,7 @@ fn (it: ^TilePlaceAction) do(editor: ^Editor) {
 }
 
 fn (it: ^TilePlaceAction) undo(editor: ^Editor) {
+  editor.dirty = true
   editor.world.setTile(it.layer, trunc(it.at.x), trunc(it.at.y), it.prev)
 }
 
@@ -187,6 +188,7 @@ fn (editor: ^Editor) setTile(pos: th::Vf2, layer: int, tile: int) {
     return
   }
 
+  editor.dirty = true
   editor.actionBuf.do(TilePlaceAction{pos, layer, prev, tile})
 }
 
