@@ -121,6 +121,7 @@ type (
 )
 
 fn (it: ^TilePlaceAction) do(editor: ^Editor) {
+  editor.dirty = true
   editor.world.setTile(it.layer, trunc(it.at.x), trunc(it.at.y), it.curr)
 }
 
