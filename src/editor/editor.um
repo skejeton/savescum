@@ -786,6 +786,10 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       editorToggleGame(editor)
     }
 
+    windowBtn("Room", {48*2, 48*2, 48, 48})
+    windowBtn("Settings", {96, 192, 48, 48})
+    windowBtn("Action Log", {144, 192, 48, 48})
+
     windowBtn("Console", {48, 0, 48, 48})
 
     if editor.isPlaying {
@@ -836,12 +840,6 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     if ui.button("> <") {
       editor.zoomToCenter()
     }
-
-    ui.spring(1)
-
-    windowBtn("Room", {48*2, 48*2, 48, 48})
-    windowBtn("Settings", {96, 192, 48, 48})
-    windowBtn("Action Log", {144, 192, 48, 48})
   })
 }
 
