@@ -51,21 +51,21 @@ fn drawCloudStrip(scroll: real, y: real, colorMod: uint32, scale: real) {
 
 fn drawClouds*(screen: rect::Rect, tint: uint32, bg: uint32, scale: real, time: real) {
   const (
-    stripeCount = 5
+    stripCount = 5
   )
   step := scale * 60
 
-  origin := global::screen.h - 480 * scale - (stripeCount - 1) * step
+  origin := global::screen.h - 480 * scale - (stripCount - 1) * step
 
   width = imgClouds.getDims().x
   width *= scale
 
   canvas::drawRect(bg, global::screen)
 
-  for i := 0; i < stripeCount; i++ {
+  for i := 0; i < stripCount; i++ {
     yOffset := origin+i*step
-    scroll := (i + 1) * (i + 1) * time/5000.0 * -120/stripeCount
-    color := tint | (trunc(((i + 1.0) / stripeCount) * 0xFF) & 0xFF)
+    scroll := (i + 1) * (i + 1) * time/5000.0 * -120/stripCount
+    color := tint | (trunc(((i + 1.0) / stripCount) * 0xFF) & 0xFF)
 
     drawCloudStrip(scroll, yOffset, color, scale)
   }
