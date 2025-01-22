@@ -16,7 +16,7 @@
 
 			"name": "savescum",
 			"working_dir": "$project_path",	
-			"shell_cmd": "$project_path/umbox/tophat/tophat.exe -dpiaware"
+			"shell_cmd": "umbox run"
 		}
 	]
 }
