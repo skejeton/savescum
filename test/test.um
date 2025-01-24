@@ -13,7 +13,8 @@ import (
 // This is useful so you don't jam the assets folder with useless junk.
 fn pfx*(): str {
   pfx := std::getenv("TEST_PFX")
-  if len(pfx) < 5 || slice(pfx, 0, 5) != "test/" || pfx[len(pfx)-1] != "/" {
+  printf("%v\n", pfx)
+  if len(pfx) < 5 || (slice(pfx, 0, 5) != "test\\" && slice(pfx, 0, 5) != "test/") || (pfx[len(pfx)-1] != "/" && pfx[len(pfx)-1] != "\\") {
     exit(551, "Invalid test prefix")
   }
   return pfx
