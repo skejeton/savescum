@@ -8,8 +8,8 @@ import (
 fn generateResourceLoadingErrors(): ^resources::ResourceLoader {
   loader := new(resources::ResourceLoader)
   loader ^= resources::mk()
-  resources::loadingError(loader, "/home/bubsy/plok.txt", "Couldn't load document")
-  resources::loadingError(loader, "/home/plok/bubsy.txt", "Couldn't load document")
+  loader.error("/home/bubsy/plok.txt", "Couldn't load document")
+  loader.error("/home/plok/bubsy.txt", "Couldn't load document")
 
   return loader
 }

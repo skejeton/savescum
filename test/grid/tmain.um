@@ -39,7 +39,7 @@ fn init*() {
 
     targetScale = targetScale.addf(input::getMouseScroll().y)
 
-		grid::gridZoomInto(&grid, rerp::iVf2(grid.s, targetScale, 0.2), input::getMousePos())
+		grid.zoomInto(rerp::iVf2(grid.s, targetScale, 0.2), input::getMousePos())
 
   	if input::isPressed(.mouse2) {
   		mouseDelta := input::getMousePos().sub(lastMousePos)

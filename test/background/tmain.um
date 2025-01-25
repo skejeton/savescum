@@ -24,10 +24,7 @@ fn init*() {
   rl := resources::mk()
   background::init(&rl)
 
-  if rl.hasErrors() {
-    problem_screen::setup(&rl)
-    exit(1)
-  }
+  problem_screen::setupOnError(&rl)
 
   screen = {0, 0, 800, 600}
   scale = 1.0
