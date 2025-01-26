@@ -1248,6 +1248,7 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
         ui.label(sprintf("FPS: %g | ", fps::getFps()))
       }
       ui.label(sprintf("MEM: %s | ", strings::formatBytes(memusage())))
+      ui.label(sprintf("ROOM: %s | ", editor.currentRoom))
       if editor.dirty {
         ui.cellColor(0xFF0000FF)
         ui.label("Yo, save it")
