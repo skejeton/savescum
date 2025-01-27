@@ -786,10 +786,6 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       editorToggleGame(editor)
     }
 
-    windowBtn("Room", {48*2, 48*2, 48, 48})
-    windowBtn("Settings", {96, 192, 48, 48})
-    windowBtn("Action Log", {144, 192, 48, 48})
-
     windowBtn("Console", {48, 0, 48, 48})
 
     if editor.isPlaying {
@@ -797,6 +793,9 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
       return
     }
 
+    windowBtn("Settings", {96, 192, 48, 48})
+    windowBtn("Room", {48*2, 48*2, 48, 48})
+    windowBtn("Action Log", {144, 192, 48, 48})
     windowBtn("Tile Picker", {48*0, 48, 48, 48})
     windowBtn("Entity List", {48*0, 48*2, 48, 48})
 
