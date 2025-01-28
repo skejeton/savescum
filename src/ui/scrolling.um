@@ -11,11 +11,12 @@ fn put*(ui: ^ui::UI, scrollbar: ^scrollbar::Scrollbar) {
       return
     }
 
+    scrollingDelta := 0
     ui.pushIdStr("Scrollbar")
     ui.cellStretch()
     ui.cellSameSize()
     if ui.button("⮝") {
-      scrollbar.scrolling -= 20
+      scrollingDelta = -20
     }
     ui.cellJustify(1)
     ui.cellStretch()
@@ -53,8 +54,9 @@ fn put*(ui: ^ui::UI, scrollbar: ^scrollbar::Scrollbar) {
     ui.cellStretch()
     ui.cellSameSize()
     if ui.button("⮟") {
-      scrollbar.scrolling += 20
+      scrollingDelta = +20
     }
+    scrollbar.scrolling += scrollingDelta
     ui.popId()
   })
 
