@@ -137,7 +137,7 @@ fn putSingleLine*(ui: ^ui::UI, name: str, value: ^str): bool {
 
     ui.drawCustom(|name, focused, edit, ui| {
       // Draw the inside white
-      canvas::drawRect(th::white, dest.shrink({4*ui.io.scale, 4*ui.io.scale}))
+      canvas::drawRect(th::white, dest.shrink({3*ui.io.scale, 3*ui.io.scale}))
       canvas::beginScissorRect(dest.shrink({4*ui.io.scale, 4*ui.io.scale}))
 
       fontHeight := ui.font.measure(" ").y*ui.io.scale
