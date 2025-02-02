@@ -788,11 +788,6 @@ fn (ui: ^UI) col*(cb: fn(ui: ^UI), height: real = 0): ^El {
   return el
 }
 
-// @HACK: Just to make the editor compile while there's old code.
-fn (ui: ^UI) buttonOLD*(text: str, rect: rect::Rect, invert: bool = false): bool {
-  return false
-}
-
 // >>> DEBUG >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 // @NOTE: Step 1 in debug UI, draws the outlines.
