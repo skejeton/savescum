@@ -690,10 +690,9 @@ fn (ui: ^UI) img2*(img: image::Image, r: rect::Rect) {
 }
 
 fn (ui: ^UI) heading*(text: str) {
-  ui.addElV({
-    size: ui.font.measure(text).mulf(3),
-    renderObject: render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale*3, color: ui.cell.color}
-  })
+  el := ui.addEl()
+  el.size = ui.font.measure(text).mulf(3)
+  el.renderObject = render::RenderLabel{font: ui.font, text: text, scale: ui.io.scale*3, color: el.cell.color}
 }
 
 fn (ui: ^UI) label*(text: str) {
