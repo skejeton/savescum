@@ -141,7 +141,7 @@ fn putSingleLine*(ui: ^ui::UI, name: str, value: ^str): bool {
       canvas::beginScissorRect(dest.shrink({4*ui.io.scale, 4*ui.io.scale}))
 
       fontHeight := ui.font.measure(" ").y*ui.io.scale
-      textRect := rect::Rect{dest.x+5*ui.io.scale, dest.y+(dest.h-fontHeight)/2.0, dest.w-10*ui.io.scale, fontHeight}
+      textRect := rect::Rect{dest.x+4*ui.io.scale, dest.y+(dest.h-fontHeight)/2.0, dest.w-10*ui.io.scale, fontHeight}
       drawSingleLineEdit(ui, edit, textRect, focused, name)
 
       canvas::endScissor()
