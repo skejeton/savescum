@@ -11,14 +11,10 @@ import (
 )
 
 var date: std::DateTime
-var time: int
 
 fn update*() {
   /* Update every second */
-  if date.year == 0 || ((th::time - time) > 1000) {
-    time = th::time
-    date = std::gmtime(std::time())
-  }
+  date = std::gmtime(std::time())
 }
 
 /** 
