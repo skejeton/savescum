@@ -533,7 +533,6 @@ fn putGrid(grid: ^grid::Grid, ui: ^ui::UI): GridInteraction {
     }
 
     ui.drawCustom(|ui, hovered, grid| {
-      // @TODO: Scaling is not proportional to UI
       grid.bb = dest
       grid.o = dest.getDims().divf(2)
       grid.draw(0xFFFFFF11, 1)
@@ -1263,7 +1262,7 @@ fn editorSaveSession(editor: ^Editor): session::Session {
   session := session::Session{}
 
   session.pan           = editor.tilemapGrid.p
-  session.scale         = editor.tilemapGrid.s.x
+  session.scale         = editor.tilemapGrid.s.x/editor.tilemapGrid.gs
   session.room          = editor.currentRoom
   session.allLayers     = editor.tilemapShowAllLayers
   session.entityBypass  = editor.entityBypass
@@ -1278,9 +1277,11 @@ fn editorSaveSession(editor: ^Editor): session::Session {
 
 fn editorLoadSession(editor: ^Editor, session: session::Session) {
   loadRoom(editor, session.room)
+  scale := window::getDpiScaleFactor()-0.25
   editor.tilemapGrid.p        = session.pan
-  editor.tilemapGrid.s.x      = session.scale
-  editor.tilemapGrid.s.y      = session.scale
+  editor.tilemapGrid.gs       = scale
+  editor.tilemapGrid.s.x      = session.scale*scale
+  editor.tilemapGrid.s.y      = session.scale*scale
   editor.tilemapShowAllLayers = session.allLayers
   editor.entityBypass         = session.entityBypass
   editor.tilemapLayer         = session.layerSelected
@@ -1378,7 +1379,7 @@ fn mk*(ui: ^ui::UI, rl: ^resources::ResourceLoader): ^Editor {
 
   editor := &Editor{
     ui:                   ui,
-    tilemapGrid:          grid::Grid{s: {48, 48}},
+    tilemapGrid:          grid::Grid{s: {48*scale, 48*scale}},
     tilesetGrid:          grid::Grid{s: {48*scale, 48*scale}},
     tilemapShowAllLayers: false,
     entityBypass:         true,

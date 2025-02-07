@@ -10,6 +10,7 @@ type Grid* = struct {
   o:  th::Vf2
   p:  th::Vf2
   s:  th::Vf2
+  gs: real
 }
 
 type RenderGuide* = struct {
@@ -20,6 +21,10 @@ type RenderGuide* = struct {
   spacingv: th::Vf2 // spacing between each vertical line
   spacingh: th::Vf2 // spacing beween each horizontal line
   nv, nh:   int     // count of lines
+}
+
+fn (grid: ^Grid) baseScale*(): th::Vf2 {
+  return grid.s.divf(grid.gs)
 }
 
 fn (grid: ^Grid) toGridRel*(screen: th::Vf2): th::Vf2 {
