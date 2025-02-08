@@ -1189,10 +1189,7 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
           if interaction.placed {
             sx, sy := floor(interaction.pos.x), floor(interaction.pos.y)
             tile := editor.tileset.index(editor.tileSelected)
-            // @TODO: I don't understand the "2" offset here.
-            if tile > -2 {
-              editor.setTile({sx, sy}, editor.tilemapLayer, tile+2)
-            }
+            editor.setTile({sx, sy}, editor.tilemapLayer, tile+2)
           }
 
           if interaction.removed {
