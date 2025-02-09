@@ -1185,10 +1185,10 @@ fn (editor: ^Editor) putUi(ui: ^ui::UI) {
 
           editor.putWorldEntities(ui)
 
-          // @TODO: Deduplicate
           if interaction.placed {
             sx, sy := floor(interaction.pos.x), floor(interaction.pos.y)
             tile := editor.tileset.index(editor.tileSelected)
+            // NOTE: Plus 2 is due to some weird translation in atlas um.
             editor.setTile({sx, sy}, editor.tilemapLayer, tile+2)
           }
 
