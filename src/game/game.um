@@ -378,14 +378,9 @@ fn collSortShapesByProximity(shapes: ^[]Shape, along: th::Vf2) {
   })
 }
 
-fn entVsShape(ent: ^Character, s: Shape) {
-  r := s.rect
-
+fn entHandleShape(ent: ^Character, s: Shape) {
   // Not a valid collision (probably pushed back by other blocks?)
-  if coll::rectToRect(ent.rect, r) == false {
-    return
-  }
-  
+  r := s.rect
   snap := collCalcRectSnap(ent.rect, r)
 
   switch s.shape {
@@ -463,6 +458,12 @@ fn entVsShape(ent: ^Character, s: Shape) {
   }
 }
 
+fn entVsShape(ent: ^Character, s: Shape): bool {
+  r := s.rect
+  
+  return coll::rectToRect(ent.rect, r)
+}
+
 fn entConstructCollidingSolids(ent: ^Character): []Shape {
   tangents := world.getTangentTiles(rect::Rect{ent.rect.x-1, ent.rect.y-1, ent.rect.w+1, ent.rect.h+1})
   solids := []Shape{}
@@ -524,16 +525,11 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
 }
 
 fn entCheckCollision(ent: ^Character): bool {
-  r := util::rectShrink(ent.rect, 1)
-
   solids := entConstructCollidingSolids(ent)
   for i, shape in solids {
-    if shape.shape == .block {
-      if coll::rectToRect(r, shape.rect) {
-        return true
-      }
+    if entVsShape(ent, shape) {
+      return true
     }
-    // TODO: Just re-use the entVsShape function here.
   }
 
   return false
@@ -543,7 +539,9 @@ fn entSolveCollision(ent: ^Character) {
   solids := entConstructCollidingSolids(ent)
 
   for i, solid in solids {
-    entVsShape(ent, solid)
+    if entVsShape(ent, solid) {
+      entHandleShape(ent, solid)
+    }
   }
 }
 
