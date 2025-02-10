@@ -1,3 +1,8 @@
+import (
+  "../misc/util.um"
+  "th.um"
+)
+
 type (
   Access* = enum {
     read
@@ -15,6 +20,6 @@ fn get*(): Info {
 
   return {
     fsCaseSensetive: err.code != 0,
-    fsAccess: th::platform == .web ? .read : .readwrite
+    fsAccess: th::platform == .web ? Access.read : Access.readwrite
   }
 }
