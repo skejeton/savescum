@@ -26,7 +26,8 @@ fn init*() {
     bb: {20, 20, 600, 440},
     o: {0.0, 0.0},
     s: {64, 64},
-    p: {0, 0}
+    p: {0, 0},
+    gs: 1
   }
 
   lastMousePos = input::getMousePos()
