@@ -21,7 +21,6 @@ fn update*() {
  */
 fn adventDay*(): (int, int) {
   if date.month == 12 && date.day >= 1 && date.day <= 25 {
-    // TODO: Check if hour calculations are correct
     if date.hour >= 12 {
       return date.day, 24 - (date.hour - 12) - (date.minute > 30 ? 1 : 0)
     } else {
