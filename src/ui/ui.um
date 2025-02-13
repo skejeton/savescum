@@ -434,7 +434,6 @@ fn (ui: ^UI) pass*(cb: fn(ui: ^UI), debug: bool = false) {
   ui.ids = {fnv1::INIT}
   cb(ui)
 
-  // @TODO: This is a hack since it resets the activation, maybe we just shouldn't remove the OOB entity in the editor itself.
   if ui.retained[ui.attention.active].el == null {
     ui.attention.active = 0
   }
