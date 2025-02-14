@@ -4,8 +4,10 @@ import (
   "../misc/util.um"
 )
 
+const rate = 60
+
 var (
-  record: [60]real
+  record: [rate]real
   recordP: uint
   lastTimestamp: real
   fps: real
@@ -16,7 +18,7 @@ fn avgFps() {
   for _, datum in record {
     fps += datum
   }
-  fps /= 60
+  fps /= rate
 }
 
 fn limit*(to: int) {
@@ -24,7 +26,7 @@ fn limit*(to: int) {
 }
 
 fn update*() {
-  record[recordP%60] = th::time-lastTimestamp
+  record[recordP%rate] = th::time-lastTimestamp
   recordP++
   avgFps()
   lastTimestamp = th::time
