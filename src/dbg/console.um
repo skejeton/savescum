@@ -73,13 +73,29 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect, s
   canvas::beginScissorRect(r)
   canvas::drawRect(color::alpha(th::black, 0.70), r)
   
+  blockRects := []rect::Rect{}
+  cutoff := 10000
+
+  for i in con.blocks {
+    block := con.blocks[len(con.blocks)-i-1]
+    if pass.pos.y < r.y && cutoff != 10000 {
+      cutoff = i
+    }
+    blockRects = append(blockRects, allocBlock(&pass, block, scale))
+  }
+
   // FIXME: Inefficent
   //        right now size calculation and layouting of this console is done at the same time,
   //        so we cant spatially optimize its rendering
   for i in con.blocks {
+    if i == cutoff {
+      break
+    }
+    blockRect := blockRects[i]
+
     block := con.blocks[len(con.blocks)-i-1]
 
-    alpha := (pass.pos.y+vc.visualScroll)/r.h+0.4
+    alpha := (blockRect.y+vc.visualScroll)/r.h+0.4
     if alpha > 1.0 { alpha = 1.0 }
 
     bg := 0xFFFFFFFF
@@ -87,7 +103,6 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect, s
       bg = 0x000000FF
     }
 
-    blockRect := allocBlock(&pass, block, scale)
     
     renderBlock(&pass, vc, blockRect, block, color::alpha(bg, alpha*0.05), color::alpha(th::white, alpha), scale)
   }
