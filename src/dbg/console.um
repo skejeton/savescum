@@ -84,9 +84,6 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect, s
     blockRects = append(blockRects, allocBlock(&pass, block, scale))
   }
 
-  // FIXME: Inefficent
-  //        right now size calculation and layouting of this console is done at the same time,
-  //        so we cant spatially optimize its rendering
   for i in con.blocks {
     if i == cutoff {
       break
