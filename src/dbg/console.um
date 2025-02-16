@@ -78,7 +78,7 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect, s
 
   for i in con.blocks {
     block := con.blocks[len(con.blocks)-i-1]
-    if pass.pos.y < r.y && cutoff != 10000 {
+    if pass.pos.y < r.y && cutoff == 10000 {
       cutoff = i
     }
     blockRects = append(blockRects, allocBlock(&pass, block, scale))
