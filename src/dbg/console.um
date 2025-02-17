@@ -85,7 +85,7 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect, s
   }
 
   for i in con.blocks {
-    if i == cutoff {
+    if i > cutoff {
       break
     }
     blockRect := blockRects[i]
@@ -99,7 +99,6 @@ fn render*(con: ^Console, vc: ^VisualConsole, font: font::Font, r: rect::Rect, s
     if i % 2 == 0 {
       bg = 0x000000FF
     }
-
     
     renderBlock(&pass, vc, blockRect, block, color::alpha(bg, alpha*0.05), color::alpha(th::white, alpha), scale)
   }

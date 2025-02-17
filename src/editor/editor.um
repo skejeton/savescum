@@ -700,8 +700,7 @@ fn (editor: ^Editor) putEntityList(ui: ^ui::UI) {
     if ui.button("+") {
       appendEntity(&editor.entities, initEntityAtCenter(editor, makeRandomEntity(allocateEntityId(editor.entities.list))))
       editor.dirty = true
-      // @TODO: It will not scroll to the very bottom because the content size is not updated.
-      _scrollbar.scrolling = _scrollbar.contentSize - _scrollbar.viewportSize
+      _scrollbar.overflow = true
     }
 
     // For now, only one action can be applied at a time, due to indexing.

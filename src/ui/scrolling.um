@@ -65,6 +65,12 @@ fn put*(ui: ^ui::UI, scrollbar: ^scrollbar::Scrollbar) {
   } else if scrollbar.scrolling > scrollbar.contentSize-scrollbar.viewportSize {
     scrollbar.scrolling = util::max(scrollbar.contentSize-scrollbar.viewportSize, 0)
   }
+
+  if scrollbar.overflow {
+    // TODO: It will flicker
+    scrollbar.scrolling = 100000
+    scrollbar.overflow = false
+  }
 }
 
 fn putScrollbarArea*(ui: ^ui::UI, cb: fn (ui: ^ui::UI, scrollbar: ^scrollbar::Scrollbar)) {

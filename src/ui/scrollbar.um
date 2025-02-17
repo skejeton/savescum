@@ -4,5 +4,6 @@ type (
     scrolling:    real
     viewportSize: real
     contentSize:  real
+    overflow:     bool
   }
 )
