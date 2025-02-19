@@ -526,7 +526,10 @@ fn entConstructCollidingSolids(ent: ^Character): []Shape {
 
 fn entCheckCollision(ent: ^Character): bool {
   solids := entConstructCollidingSolids(ent)
+
   for i, shape in solids {
+    // FIXME: This is a shitty hotfix to prevent misdetecting invalid saves.
+    shape.rect = shape.rect.shrink({0.01, 0.01})
     if entVsShape(ent, shape) {
       return true
     }
