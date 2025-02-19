@@ -785,13 +785,13 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
     }
 
     windowBtn("Console", {48, 0, 48, 48})
+    windowBtn("Settings", {96, 192, 48, 48})
 
     if editor.isPlaying {
       windowBtn("Level Select", {48*3, 48*3, 48, 48})
       return
     }
 
-    windowBtn("Settings", {96, 192, 48, 48})
     windowBtn("Room", {48*2, 48*2, 48, 48})
     windowBtn("Action Log", {144, 192, 48, 48})
     windowBtn("Tile Picker", {48*0, 48, 48, 48})
@@ -841,16 +841,12 @@ fn (editor: ^Editor) putToolbar(ui: ^ui::UI) {
 }
 
 fn (editor: ^Editor) putWindows(ui: ^ui::UI) {
+
+
   if !editor.isPlaying {
     editor.putEntityEditor(ui)
     editor.putEntityList(ui)
 
-    ui.window("Settings", {
-      ui.cellStretch()
-      if ui.button("Reset UI") {
-        implvtbl::VTBLImpl(ui.vtbl).wm.reset()
-      }
-    }, true)
 
     ui.window("Action Log", |editor| {
       groups := map[int]struct{count: int; undone: bool}{}
@@ -944,6 +940,17 @@ fn (editor: ^Editor) putWindows(ui: ^ui::UI) {
       })
     })
   }
+  
+  ui.window("Settings", {
+    ui.cellStretch()
+    if ui.button("Reset UI") {
+      implvtbl::VTBLImpl(ui.vtbl).wm.reset()
+    }
+    ui.cellStretch()
+    if ui.button("Plain Biscuit", uint(global::plainBiscuit)) {
+      global::plainBiscuit = !global::plainBiscuit
+    }
+  }, true)
 
   ui.window("Console", {
     // @TODO: This will block the window dragging, to fix that I should implement a way to mask which events are handled by the element.
